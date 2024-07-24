@@ -1,0 +1,25 @@
+<launch>
+    <arg name="output_name" default="Bark013_150wall_10mdis_v1"/>
+    <arg name="output_dir" default="/home/star/ActiveSlam/bags_for_vins_orb"/>
+    <node pkg="rosbag" type="record" name="rosbag_record" output="screen" required="true" args="
+        -O $(arg output_dir)/$(arg output_name)
+        /airsim_node/drone_1/front_center_custom/Scene
+        /airsim_node/drone_1/front_center_custom/Scene/camera_info
+        /airsim_node/drone_1/front_center_custom_2/Scene
+        /airsim_node/drone_1/front_center_custom_2/Scene/camera_info
+        /airsim_node/drone_1/imu/Imu
+        /airsim_node/drone_1/odom_local_enu
+        /airsim_node/drone_1/odometry
+        /vins_estimator/image_track
+        /vins_estimator/odometry
+        /vins_estimator/path
+        /vins_estimator/point_cloud
+        /ORB_SLAM3/image_track
+        /ORB_SLAM3/odometry
+        /ORB_SLAM3/path
+        /ORB_SLAM3/point_cloud
+        /ORB_SLAM3/pose
+        /tf
+        /tf_static
+    "/>
+</launch>

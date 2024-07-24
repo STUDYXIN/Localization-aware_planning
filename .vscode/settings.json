@@ -1,0 +1,12 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/star/ActiveSlam/my_git/devel/lib/python3/dist-packages",
+        "/home/star/ActiveSlam/ActiveSlam_airsim/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/star/ActiveSlam/my_git/devel/lib/python3/dist-packages",
+        "/home/star/ActiveSlam/ActiveSlam_airsim/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
+}

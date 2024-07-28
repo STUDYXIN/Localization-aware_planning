@@ -8,7 +8,12 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 from sensor_msgs import point_cloud2
 from nav_msgs.msg import Odometry
+import signal
+import sys
 
+def signal_handler(sig, frame):
+    plt.close()
+    sys.exit(0)
 class PointCloudVisualizer:
     def __init__(self):
         rospy.init_node('point_cloud_visualizer')
@@ -132,8 +137,10 @@ class PointCloudVisualizer:
         return self.line_orb_point, self.line_vins_point, self.line_x_vins, self.line_y_vins, self.line_z_vins, self.line_x_orb, self.line_y_orb, self.line_z_orb
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)  # 捕捉 SIGINT 信号
     try:
+        rospy.init_node('point_cloud_visualizer', anonymous=True)
         point_cloud_visualizer = PointCloudVisualizer()
         rospy.spin()
     except KeyboardInterrupt:
-        plt.close()
+        pass

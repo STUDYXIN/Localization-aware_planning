@@ -15,7 +15,19 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
     camera_models
     pcl_ros
-    image_transport)
+    image_transport
+    message_generation)
+
+add_message_files(
+  FILES
+  ErrorOutputWithTimestamp.msg
+)
+generate_messages(
+  DEPENDENCIES
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
 
 find_package(OpenCV REQUIRED)
 
@@ -23,7 +35,13 @@ find_package(OpenCV REQUIRED)
 
 find_package(Ceres REQUIRED)
 
-include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} /usr/include/ncurses)
+
+# Find PCL package
+find_package(PCL 1.10 REQUIRED COMPONENTS common io visualization)
+
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3)
@@ -33,7 +51,7 @@ include_directories(
   ${PCL_LIBRARIES}
 )
 
-catkin_package()
+catkin_package(CATKIN_DEPENDS message_runtime std_msgs geometry_msgs)
 
 add_library(vins_lib
     src/estimator/parameters.cpp
@@ -46,20 +64,21 @@ add_library(vins_lib
     src/factor/marginalization_factor.cpp
     src/utility/utility.cpp
     src/utility/visualization.cpp
+    src/utility/FeaturetrackImagebyKeyboard.cpp
     src/utility/CameraPoseVisualization.cpp
     src/initial/solve_5pts.cpp
     src/initial/initial_aligment.cpp
     src/initial/initial_sfm.cpp
     src/initial/initial_ex_rotation.cpp
     src/featureTracker/feature_tracker.cpp)
-target_link_libraries(vins_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(vins_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} ${PCL_LIBRARIES} ncurses)
 
 add_executable(vins_node src/rosNodeTest.cpp)
-target_link_libraries(vins_node vins_lib) 
+target_link_libraries(vins_node vins_lib ncurses ${PCL_LIBRARIES}) 
 
 add_executable(kitti_odom_test src/KITTIOdomTest.cpp)
-target_link_libraries(kitti_odom_test vins_lib) 
+target_link_libraries(kitti_odom_test vins_lib ncurses) 
 
 add_executable(kitti_gps_test src/KITTIGPSTest.cpp)
-target_link_libraries(kitti_gps_test vins_lib) 
+target_link_libraries(kitti_gps_test vins_lib ncurses) 
 

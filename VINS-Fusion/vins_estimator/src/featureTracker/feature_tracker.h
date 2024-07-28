@@ -33,6 +33,9 @@
 #include "../estimator/parameters.h"
 #include "../utility/tic_toc.h"
 
+#include "../utility/FeaturetrackImagebyKeyboard.h"
+#include <vins/ErrorOutputWithTimestamp.h>
+
 using namespace std;
 using namespace camodocal;
 using namespace Eigen;
@@ -46,6 +49,7 @@ class FeatureTracker
 public:
     FeatureTracker();
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> trackImage(double _cur_time, const cv::Mat &_img, const cv::Mat &_img1 = cv::Mat());
+    map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> trackImage_with_compareOdomDepth(double _cur_time, const cv::Mat &_img, const cv::Mat &_img1, const cv::Mat &_depth, const cv::Mat &_depth_right, const Vector3d &Pi, Matrix3d &Ri);
     void setMask();
     void readIntrinsicParameter(const vector<string> &calib_file);
     void showUndistortion(const string &name);
@@ -65,8 +69,10 @@ public:
     double distance(cv::Point2f &pt1, cv::Point2f &pt2);
     void removeOutliers(set<int> &removePtsIds);
     cv::Mat getTrackImage();
+    void getErrorImageandtopic(cv::Mat &image_track, vins::ErrorOutputWithTimestamp &_error_msg);
     bool inBorder(const cv::Point2f &pt);
-
+    TraImagebyKey traImagebyKey;
+    bool traImagebyKey_start_triggle;
     int row, col;
     cv::Mat imTrack;
     cv::Mat mask;

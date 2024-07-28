@@ -111,8 +111,8 @@ class PtsChangedraw:
                     cv2.circle(self.img, (int(x), int(y)), 2, (0, 255, 0), -1)
             
             # Show the image
-            cv2.imshow('Image with Points', self.img)
-            cv2.waitKey(1)
+            # cv2.imshow('Image with Points', self.img)
+            # cv2.waitKey(1)
         
 
     def evaluate_callback(self, airsim_msg, vins_msg):

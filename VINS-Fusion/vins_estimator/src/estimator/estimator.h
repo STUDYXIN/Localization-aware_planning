@@ -36,7 +36,7 @@
 #include "../factor/projectionOneFrameTwoCamFactor.h"
 #include "../featureTracker/feature_tracker.h"
 
-
+#include <vins/ErrorOutputWithTimestamp.h>
 class Estimator
 {
   public:
@@ -48,7 +48,7 @@ class Estimator
     void initFirstPose(Eigen::Vector3d p, Eigen::Matrix3d r);
     void inputIMU(double t, const Vector3d &linearAcceleration, const Vector3d &angularVelocity);
     void inputFeature(double t, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &featureFrame);
-    void inputImage(double t, const cv::Mat &_img, Vector3d &Pi, Matrix3d &Ri, const cv::Mat &_img1 = cv::Mat(),  const cv::Mat &_depth= cv::Mat());
+    void inputImage(double t, const cv::Mat &_img, Vector3d &Pi, Matrix3d &Ri, const cv::Mat &_img1 = cv::Mat(),  const cv::Mat &_depth= cv::Mat(), const cv::Mat &_depth_right= cv::Mat());
     void processIMU(double t, double dt, const Vector3d &linear_acceleration, const Vector3d &angular_velocity);
     void processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header);
     void processMeasurements();
@@ -181,4 +181,5 @@ class Estimator
     bool startEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
     bool endEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
     void setCntService(ros::NodeHandle &nh);
+
 };

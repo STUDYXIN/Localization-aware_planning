@@ -22,10 +22,10 @@ class DroneController:
         self.start_x = 0.0  
         self.start_y = 0.0
         self.start_z = self.target_height
-        self.goal_x = 0.0  # Circle center coordinates in ENU
-        self.goal_y = 150.0
+        self.goal_x = 150.0  # Circle center coordinates in ENU
+        self.goal_y = 0.0
         self.goal_z = 15.0
-        self.step = 1.0     #速度
+        self.step = 5.0     #速度
         self.jerk = 2.0
         self.yaw = 0.5*math.pi        #正面0.5*math.pi
         self.a_agst_f = 0.005*self.step**2

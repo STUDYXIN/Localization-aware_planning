@@ -1471,7 +1471,8 @@ void AirsimROSWrapper::img_response_timer_cb(const ros::TimerEvent &event) {
     std::vector<ImageRequest> request = {
         ImageRequest("front_center_custom", ImageType::Scene, false, false),
         ImageRequest("front_center_custom", ImageType::DepthPlanar, true),
-        ImageRequest("front_center_custom_2", ImageType::Scene, false, false)};
+        ImageRequest("front_center_custom_2", ImageType::Scene, false, false),
+        ImageRequest("front_center_custom_2", ImageType::DepthPlanar, true)};
     std::string vehicle_name = "drone_1";
     const std::vector<ImageResponse> &img_response =
         airsim_client_images_.simGetImages(request, vehicle_name);

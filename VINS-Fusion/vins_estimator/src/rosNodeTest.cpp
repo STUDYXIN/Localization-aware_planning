@@ -31,6 +31,7 @@ queue<sensor_msgs::PointCloudConstPtr> feature_buf;
 queue<sensor_msgs::ImageConstPtr> img0_buf;
 queue<sensor_msgs::ImageConstPtr> img1_buf;
 queue<sensor_msgs::ImageConstPtr> depth_buf;
+queue<sensor_msgs::ImageConstPtr> depth_right_buf;
 queue<nav_msgs::OdometryConstPtr> odom_buf;
 std::mutex m_buf;
 
@@ -60,6 +61,13 @@ void depth_callback(const sensor_msgs::ImageConstPtr &depth_msg)
 {
     m_buf.lock();
     depth_buf.push(depth_msg);
+    m_buf.unlock();
+}
+
+void depth_right_callback(const sensor_msgs::ImageConstPtr &depth_right_msg)
+{
+    m_buf.lock();
+    depth_right_buf.push(depth_right_msg);
     m_buf.unlock();
 }
 
@@ -93,6 +101,8 @@ cv::Mat getDepthImageFromMsg(const sensor_msgs::ImageConstPtr &img_msg)
     return ptr->image.clone();
 }
 
+
+
 // extract images with same timestamp from two topics
 void sync_process()
 {
@@ -100,24 +110,25 @@ void sync_process()
     {
         if(STEREO)
         {
-            cv::Mat image0, image1, depth;
+            cv::Mat image0, image1, depth, depth_right;
             Eigen::Vector3d translation;
             Eigen::Quaterniond quaternion;
             Eigen::Matrix3d rotation;
             std_msgs::Header header;
             double time = 0;
             m_buf.lock();
-            if (!img0_buf.empty() && !img1_buf.empty() && !odom_buf.empty() && !depth_buf.empty())
+            if (!img0_buf.empty() && !img1_buf.empty() && !odom_buf.empty() && !depth_buf.empty() && !depth_right_buf.empty())
             {
                 double time0 = img0_buf.front()->header.stamp.toSec();
                 double time1 = img1_buf.front()->header.stamp.toSec();
                 double timeodom = odom_buf.front()->header.stamp.toSec();
                 double timedepth = depth_buf.front()->header.stamp.toSec();
+                double timedepth_right = depth_right_buf.front()->header.stamp.toSec();
                 // 0.003s sync tolerance
                 if(time0 < time1 - 0.08)
                 {
                     img0_buf.pop();
-                    printf("throw img0\n");
+                    // printf("throw img0\n");
                 }
                 else if(timeodom < time1 - 0.08)
                 {
@@ -129,10 +140,15 @@ void sync_process()
                     depth_buf.pop();
                     // printf("throw odom\n");
                 }
-                else if(time0 > time1 + 0.08 || timeodom > time1 + 0.08 || timedepth > time1 + 0.08)
+                else if(timedepth_right < time1 - 0.08)
                 {
-                    depth_buf.pop();
-                    printf("throw img1\n");
+                    depth_right_buf.pop();
+                    // printf("throw odom\n");
+                }
+                else if(time0 > time1 + 0.08 || timeodom > time1 + 0.08 || timedepth > time1 + 0.08 || timedepth_right > time1 + 0.08)
+                {
+                    img1_buf.pop();
+                    // printf("throw img1\n");
                 }
                 else
                 {
@@ -144,6 +160,8 @@ void sync_process()
                     img1_buf.pop();
                     depth = getDepthImageFromMsg(depth_buf.front());
                     depth_buf.pop();
+                    depth_right = getDepthImageFromMsg(depth_right_buf.front());
+                    depth_right_buf.pop();
                     // printf("find img0 and img1\n");
                     translation.x() = odom_buf.front()->pose.pose.position.x;
                     translation.y() = odom_buf.front()->pose.pose.position.y;
@@ -160,8 +178,8 @@ void sync_process()
             m_buf.unlock();
             if(!image0.empty())
             {
-                estimator.inputImage(time, image0, translation, rotation, image1, depth);
                 // std::cout << "time_input" << time << "Translation: " << translation.transpose() << "Rotation Matrix: \n" << rotation << std::endl;
+                estimator.inputImage(time, image0, translation, rotation, image1, depth, depth_right);
             }
         }
         else
@@ -325,6 +343,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub_cam_switch = n.subscribe("/vins_cam_switch", 100, cam_switch_callback);
     ros::Subscriber sub_odom_truth = n.subscribe("/airsim_node/drone_1/odometry", 100, odom_truth_callback);
     ros::Subscriber sub_depth = n.subscribe("/airsim_node/drone_1/front_center_custom/DepthPlanar", 100, depth_callback);
+    ros::Subscriber sub_depth_right = n.subscribe("/airsim_node/drone_1/front_center_custom_2/DepthPlanar", 100, depth_right_callback);
 
     std::thread sync_thread{sync_process};
     ros::spin();

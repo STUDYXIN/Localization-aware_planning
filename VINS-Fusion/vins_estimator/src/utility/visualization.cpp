@@ -25,6 +25,7 @@ ros::Publisher pub_keyframe_point;
 ros::Publisher pub_extrinsic;
 
 ros::Publisher pub_image_track;
+ros::Publisher pub_error_track;
 ros::Publisher pub_now_pts;
 
 ros::Subscriber sub_airsim_pose_init;
@@ -55,6 +56,7 @@ void registerPub(ros::NodeHandle &n) {
   pub_keyframe_point = n.advertise<sensor_msgs::PointCloud2>("keyframe_point", 1000);
   pub_extrinsic = n.advertise<nav_msgs::Odometry>("extrinsic", 1000);
   pub_image_track = n.advertise<sensor_msgs::Image>("image_track", 1000);
+  pub_error_track = n.advertise<vins::ErrorOutputWithTimestamp>("ErrorOutputWithTimestamp", 1000);
   pub_now_pts = n.advertise<sensor_msgs::PointCloud>("now_pts", 1000);
   sub_airsim_pose_init =
       n.subscribe("/airsim_node/drone_1/odom_local_enu", 1000, airsimPoseInitCallback);
@@ -127,6 +129,14 @@ void pubTrackImage(const cv::Mat &imgTrack, const double t) {
   header.stamp = ros::Time(t);
   sensor_msgs::ImagePtr imgTrackMsg = cv_bridge::CvImage(header, "bgr8", imgTrack).toImageMsg();
   pub_image_track.publish(imgTrackMsg);
+}
+
+void publast_time_ErrorImage_error(const cv::Mat &imgTrack, const vins::ErrorOutputWithTimestamp &error_msg)
+{
+  std_msgs::Header header = error_msg.header;
+  sensor_msgs::ImagePtr imgTrackMsg = cv_bridge::CvImage(header, "bgr8", imgTrack).toImageMsg();
+  pub_image_track.publish(imgTrackMsg);
+  pub_error_track.publish(error_msg);
 }
 
 void printStatistics(const Estimator &estimator, double t) {
@@ -234,8 +244,8 @@ void pubOdometry(const Estimator &estimator, const std_msgs::Header &header) {
           << estimator.Vs[WINDOW_SIZE].y() << "," << estimator.Vs[WINDOW_SIZE].z() << "," << endl;
     foutC.close();
     Eigen::Vector3d tmp_T = estimator.Ps[WINDOW_SIZE];
-    printf("time: %f, t: %f %f %f q: %f %f %f %f \n", header.stamp.toSec(), tmp_T.x(), tmp_T.y(),
-           tmp_T.z(), tmp_Q.w(), tmp_Q.x(), tmp_Q.y(), tmp_Q.z());
+    // printf("time: %f, t: %f %f %f q: %f %f %f %f \n", header.stamp.toSec(), tmp_T.x(), tmp_T.y(),
+          //  tmp_T.z(), tmp_Q.w(), tmp_Q.x(), tmp_Q.y(), tmp_Q.z());
   }
 }
 
@@ -436,7 +446,7 @@ void pubtruthPointCloud(Estimator &estimator, const std_msgs::Header &header) {
         // std::cout << "y: " << y << " x: " << x << std::endl;
         // std::cout << "depth_value: " << depth_value << "  depth_estimated: " << it_per_id.estimated_depth << std::endl;
     } else {
-        std::cerr << "Invalid coordinates: y=" << y << " x=" << x << std::endl;
+        // std::cerr << "Invalid coordinates: y=" << y << " x=" << x << std::endl;
         continue;
     }
 

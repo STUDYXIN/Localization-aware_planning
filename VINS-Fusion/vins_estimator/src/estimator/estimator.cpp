@@ -158,21 +158,30 @@ void Estimator::changeSensorType(int use_imu, int use_stereo) {
   }
 }
 
-void Estimator::inputImage(double t, const cv::Mat &_img, Vector3d &Pi, Matrix3d &Ri, const cv::Mat &_img1, const cv::Mat &_depth) {
+void Estimator::inputImage(double t, const cv::Mat &_img, Vector3d &Pi, Matrix3d &Ri, const cv::Mat &_img1, const cv::Mat &_depth, const cv::Mat &_depth_right) {
   inputImageCnt++;
   map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> featureFrame;
   TicToc featureTrackerTime;
-
-  if (_img1.empty())
+  if(!_depth.empty())
+    featureFrame = featureTracker.trackImage_with_compareOdomDepth(t, _img, _img1, _depth, _depth_right, Pi, Ri);
+  else if (_img1.empty())
     featureFrame = featureTracker.trackImage(t, _img);
   else
     featureFrame = featureTracker.trackImage(t, _img, _img1);
   // printf("featureTracker time: %f\n", featureTrackerTime.toc());
 
-  if (SHOW_TRACK) {
+  if (SHOW_TRACK && _depth.empty()) {
     cv::Mat imgTrack = featureTracker.getTrackImage();
     pubTrackImage(imgTrack, t);
     pubcurrentpts(featureTracker.pt2ros_cloud);
+  }
+
+  if (SHOW_TRACK && !_depth.empty())
+  {
+    cv::Mat imgTrack;
+    vins::ErrorOutputWithTimestamp error_msg;
+    featureTracker.getErrorImageandtopic(imgTrack,error_msg);
+    publast_time_ErrorImage_error(imgTrack,error_msg);
   }
 
   if (MULTIPLE_THREAD) {
@@ -1029,7 +1038,7 @@ void Estimator::optimization() {
   // printf("solver costs: %f \n", t_solver.toc());
 
   double2vector();
-  printf("frame_count: %d \n", frame_count);
+  // printf("frame_count: %d \n", frame_count);
 
   if (frame_count < WINDOW_SIZE)
     return;

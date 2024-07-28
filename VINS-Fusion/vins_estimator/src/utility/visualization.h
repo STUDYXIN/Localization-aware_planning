@@ -51,6 +51,8 @@ void pubLatestCameraPose(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q,
 
 void pubTrackImage(const cv::Mat &imgTrack, const double t);
 
+void publast_time_ErrorImage_error(const cv::Mat &imgTrack, const vins::ErrorOutputWithTimestamp &error_msg);
+
 void printStatistics(const Estimator &estimator, double t);
 
 void pubOdometry(const Estimator &estimator, const std_msgs::Header &header);

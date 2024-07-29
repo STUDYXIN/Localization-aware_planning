@@ -4,7 +4,7 @@
   "SimMode": "Multirotor",
   "ViewModeX": "NoDisplay",
   "ViewModeXX": "SpringArmChase",
-  "ViewMode": "Fpv",
+  "ViewMode": "FlyWithMe",
   "Vehicles": {
     "drone_1": {
       "VehicleType": "SimpleFlight",
@@ -88,6 +88,17 @@
             {
               "PublishToRos": 1,
               "ImageType": 0,
+              "Width": 640,
+              "Height": 480,
+              "FOV_Degrees": 90,
+              "DepthOfFieldFstop": 2.8,
+              "DepthOfFieldFocalDistance": 200.0,
+              "DepthOfFieldFocalRegion": 200.0,
+              "TargetGamma": 1.5
+            },
+            {
+              "PublishToRos": 1,
+              "ImageType": 1,
               "Width": 640,
               "Height": 480,
               "FOV_Degrees": 90,

@@ -32,6 +32,7 @@
 
 
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <std_msgs/String.h>
 #include <ncurses.h>
 
@@ -42,6 +43,9 @@
 #include <cmath>
 
 #include <vins/ErrorOutputWithTimestamp.h>
+#include "../utility/tic_toc.h"
+
+#include <fstream>
 
 using namespace std;
 using namespace camodocal;
@@ -52,6 +56,45 @@ extern std::mutex mtx;
 #define START_DRIFT_PER_FRAME_VIEW 1
 #define SHOW_ERROR_LAST_FRAME 2
 #define BEGIN_WITH_SHOW_ERRORE 3
+#define RECORD_ERROR_SHOW 4
+
+
+class FeaturePerFrame_error
+{
+  public:
+    cv::Point2f point2D, pointright2D;
+    float depth, depth_right;
+    double cur_time;
+    Vector3d Pbw, point_truth;
+    Matrix3d Rbw;
+    bool is_stereo = false;
+    FeaturePerFrame_error(const cv::Point2f &_point, const cv::Point2f &_point_right, float _depth,  float _depth_right, double t, const Vector3d &Pi, const Matrix3d &Ri, const Vector3d &_point_truth)
+        : point2D(_point), pointright2D(_point_right), depth(_depth), depth_right(_depth_right), cur_time(t), Pbw(Pi), point_truth(_point_truth), Rbw(Ri), is_stereo(true)
+    {
+    }
+
+    FeaturePerFrame_error(const cv::Point2f &_point, float _depth, double t, const Vector3d &Pi, const Matrix3d &Ri, const Vector3d &_point_truth)
+        : point2D(_point), depth(_depth), cur_time(t), Pbw(Pi), point_truth(_point_truth), Rbw(Ri), is_stereo(false)
+    {
+    }
+};
+
+
+class FeaturePerID_error
+{
+  public:
+    const int feature_id;
+    int start_frame;
+    vector<FeaturePerFrame_error> feature_per_frame;
+    int used_num;
+    double sum_stereo_error, sum_track_error, sum_truth_error[4];
+
+    FeaturePerID_error(int _feature_id, int _start_frame)
+        : feature_id(_feature_id), start_frame(_start_frame), used_num(1), 
+            sum_stereo_error(0), sum_track_error(0), sum_truth_error{0, 0, 0, 0}
+    {
+    }
+};
 
 class TraImagebyKey
 {
@@ -68,6 +111,10 @@ public:
     void last_frame_LK_error();
     void left_and_right_error();
     void do_result_show();
+    void storage_feature();
+    void show_feature_storaged();
+    void record_begin(const Vector3d &final_vins_odom);
+    double score_for_one_feature(cv::Point2f score_point, const cv::Mat &imLeft);
     // void visualizePointCloud();
 public:
     double cur_time, last_time;
@@ -97,6 +144,9 @@ public:
     double fontScale;
     cv::Scalar color;
     vins::ErrorOutputWithTimestamp error_msg;
-
+    list<FeaturePerID_error> feature;
+    int frame_now;
+    Vector3d final_error;
 };
+
 

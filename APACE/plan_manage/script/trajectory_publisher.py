@@ -7,6 +7,7 @@ import numpy as np
 from geometry_msgs.msg import Point, Quaternion
 import math
 import copy
+from std_msgs.msg import Bool
 #play_start: -800 -8000 202 go(150m)
 class DroneController:
     def __init__(self):
@@ -48,6 +49,7 @@ class DroneController:
         self.reachstep = 0
 
         self.position_command_pub = rospy.Publisher('/position_cmd', PositionCommand, queue_size=10)
+        self.triggle_pub = rospy.Publisher('/vins_record_triggle', Bool, queue_size=10)
         rospy.Subscriber('/airsim_node/drone_1/odom_local_enu', Odometry, self.odom_callback)
 
         # 设置发布频率
@@ -168,5 +170,8 @@ if __name__ == '__main__':
         # controller.assummaxa = controller.step**2/(2*math.sqrt(p_s2c**2-controller.radius**2))
         controller.assummaxa = math.sqrt(controller.jerk*controller.step)
         controller.run()
+        msg = Bool()
+        msg.data = True  # 或者 False
+        controller.triggle_pub.publish(msg)
     except rospy.ROSInterruptException:
         pass

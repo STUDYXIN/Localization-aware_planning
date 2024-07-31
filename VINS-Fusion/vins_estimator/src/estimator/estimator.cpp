@@ -1473,3 +1473,8 @@ void Estimator::updateLatestStates() {
   }
   mPropagate.unlock();
 }
+
+void Estimator::callrecord()
+{
+  featureTracker.traImagebyKey.record_begin(Ps[WINDOW_SIZE]);
+}

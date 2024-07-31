@@ -24,6 +24,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
+#include "std_msgs/Bool.h"
 Estimator estimator;
 
 queue<sensor_msgs::ImuConstPtr> imu_buf;
@@ -62,6 +63,13 @@ void depth_callback(const sensor_msgs::ImageConstPtr &depth_msg)
     m_buf.lock();
     depth_buf.push(depth_msg);
     m_buf.unlock();
+}
+void record_triggle_callback(const std_msgs::Bool::ConstPtr& msg)
+{
+    if (msg->data) {
+        ROS_WARN("Received RECORD message");
+        estimator.callrecord();
+    }
 }
 
 void depth_right_callback(const sensor_msgs::ImageConstPtr &depth_right_msg)
@@ -344,6 +352,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub_odom_truth = n.subscribe("/airsim_node/drone_1/odometry", 100, odom_truth_callback);
     ros::Subscriber sub_depth = n.subscribe("/airsim_node/drone_1/front_center_custom/DepthPlanar", 100, depth_callback);
     ros::Subscriber sub_depth_right = n.subscribe("/airsim_node/drone_1/front_center_custom_2/DepthPlanar", 100, depth_right_callback);
+    ros::Subscriber sub_record_triggle= n.subscribe("/vins_record_triggle", 100, record_triggle_callback);
 
     std::thread sync_thread{sync_process};
     ros::spin();

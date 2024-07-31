@@ -782,9 +782,9 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
         }
         prev_un_right_pts_map = cur_un_right_pts_map;
     }
-    if(SHOW_TRACK)
+    bool drawTrack_itself = traImagebyKey.draw_input(_cur_time, ids, ids_right, _img, _img1, _depth, _depth_right, Pi, Ri, cur_pts, cur_right_pts);
+    if(SHOW_TRACK && !drawTrack_itself)
         drawTrack(cur_img, rightImg, ids, cur_pts, cur_right_pts, prevLeftPtsMap);
-    traImagebyKey.draw_input(_cur_time, ids, ids_right, _img, _img1, _depth, _depth_right, Pi, Ri, cur_pts, cur_right_pts);
     // 转换成cur_pt2ros发送
     sensor_msgs::PointCloud point_cloud;
     point_cloud.header.stamp = ros::Time(cur_time);

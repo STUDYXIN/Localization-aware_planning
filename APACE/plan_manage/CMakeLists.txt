@@ -45,6 +45,7 @@ script/point_cloud_difference.py
 script/cloud_num_draw.py
 script/pub_cloud_through_depth.py
 script/differnce_show.py
+script/trajectory_publisher_with_triggle.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

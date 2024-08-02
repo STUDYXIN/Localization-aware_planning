@@ -24,3 +24,6 @@ roslaunch airsim_ctrl ctrl_md_exploration.launch #运行rosbag不用启动
 roslaunch vins vins_airsim.launch
 roslaunch plan_manage vins_tra_pub_rviz.launch
 ```
+
+## start_record_zsh.sh
+在运行airsim工程后启动，需要检查result目录是否有features_data.csv和start_vins_signal.txt。

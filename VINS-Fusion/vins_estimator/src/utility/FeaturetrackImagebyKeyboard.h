@@ -58,6 +58,8 @@ extern std::mutex mtx;
 #define BEGIN_WITH_SHOW_ERRORE 3
 #define RECORD_ERROR_SHOW 4
 
+#define  CV_DESCALE(x,n)     (((x) + (1 << ((n)-1))) >> (n))
+
 
 class FeaturePerFrame_error
 {
@@ -88,12 +90,22 @@ class FeaturePerID_error
     vector<FeaturePerFrame_error> feature_per_frame;
     int used_num;
     double sum_stereo_error, sum_track_error, sum_truth_error[4];
+    double score;
+    array<double, 3> stereo_error_first_triangulate_time;
+    vector<array<double, 3>> track_error_per_frame;
+    vector<array<double, 4>> truth_error_per_frame;
 
     FeaturePerID_error(int _feature_id, int _start_frame)
         : feature_id(_feature_id), start_frame(_start_frame), used_num(1), 
-            sum_stereo_error(0), sum_track_error(0), sum_truth_error{0, 0, 0, 0}
+            sum_stereo_error(0), sum_track_error(0), sum_truth_error{0, 0, 0, 0}, score(0), stereo_error_first_triangulate_time{0, 0, 0}
     {
     }
+    void Compute_stereo_error(Eigen::Vector2d &reflect_pt, cv::Point2f &point2D){
+        stereo_error_first_triangulate_time[0] = reflect_pt[0] - point2D.x;
+        stereo_error_first_triangulate_time[1] = reflect_pt[1] - point2D.y;
+        stereo_error_first_triangulate_time[2] = std::sqrt(std::pow(stereo_error_first_triangulate_time[0], 2) + std::pow(stereo_error_first_triangulate_time[1], 2));
+    }
+    void save_per_feature_to_csv(std::ofstream& file) const;
 };
 
 class TraImagebyKey
@@ -113,8 +125,10 @@ public:
     void do_result_show();
     void storage_feature();
     void show_feature_storaged();
+    void show_feature_storaged_improve();
     void record_begin(const Vector3d &final_vins_odom);
     double score_for_one_feature(cv::Point2f score_point, const cv::Mat &imLeft);
+    void save_features_to_csv(const std::string& filename) const;
     // void visualizePointCloud();
 public:
     double cur_time, last_time;

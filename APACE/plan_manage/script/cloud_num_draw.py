@@ -36,6 +36,7 @@ class PointCloudVisualizer:
         self.ax.set_xlabel('Time')
         self.ax.set_ylabel('Number of Points/10 or Difference')
         self.ax.legend()
+        self.diff_last = 0
 
         # 创建消息订阅者
         self.margin_sub = message_filters.Subscriber('/vins_estimator/margin_cloud', PointCloud2)
@@ -78,7 +79,6 @@ class PointCloudVisualizer:
         # self.vins_pos_last = vins_pos
         # # 计算差值
         diff = airsim_pos - vins_pos - self.start_diff
-
         # 更新数据
         self.t_data.append(time_now)
         self.x_data.append(diff[0])  # x方向的差值

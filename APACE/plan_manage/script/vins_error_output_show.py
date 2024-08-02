@@ -33,17 +33,17 @@ class PointCloudVisualizer:
         # 初始化绘图
         self.fig, self.ax = plt.subplots()
         self.t_data, self.t_data2, self.stereo_data, self.frame_track_data, self.x_data, self.y_data, self.z_data, self.vins_pos_last = [], [], [], [], [], [], [], []
-        self.line_stereo, = self.ax.plot([], [], 'red', label='stereo_error * 100')
-        self.line_frame, = self.ax.plot([], [], 'green', label='frame_track_error * 100')
-        self.line_x, = self.ax.plot([], [], color='blue', label='X difference')
-        self.line_y, = self.ax.plot([], [], color='orange', label='Y difference')
-        self.line_z, = self.ax.plot([], [], color='purple', label='Z difference')
+        self.line_stereo, = self.ax.plot([], [], 'red', label='whole difference')
+        self.line_frame, = self.ax.plot([], [], 'green', label='frame_track_error ')
+        self.line_x, = self.ax.plot([], [], color='blue', label='X d_difference')
+        self.line_y, = self.ax.plot([], [], color='orange', label='Y d_difference')
+        self.line_z, = self.ax.plot([], [], color='purple', label='Z d_difference')
         self.ax.set_xlim(0, 200)  # 初始 x 轴范围
         self.ax.set_ylim(-50, 200)  # 初始 y 轴范围
         self.ax.set_xlabel('Time')
         self.ax.set_ylabel('Data')
         self.ax.legend()
-
+        self.last_diff = 0
         # 创建消息订阅者
         self.vins_odom_sub = message_filters.Subscriber('/vins_estimator/odometry', Odometry)
         self.vins_error_sub = message_filters.Subscriber('/vins_estimator/ErrorOutputWithTimestamp', ErrorOutputWithTimestamp)
@@ -74,14 +74,15 @@ class PointCloudVisualizer:
       
         # # 计算差值
         diff = vins_odom_pos - vins_error_pos
-
+        d_diff = 10*(diff- self.last_diff) 
+        self.last_diff = diff
         # 更新数据
         self.t_data.append(time_now)
-        self.x_data.append(diff[0])  # x方向的差值
-        self.y_data.append(diff[1])  # y方向的差值
-        self.z_data.append(diff[2])  # z方向的差值
-        self.stereo_data.append(vins_error_sub.stereo_error*100)  
-        self.frame_track_data.append(vins_error_sub.frame_track_error*100)  
+        self.x_data.append(d_diff[0])  # x方向的差值
+        self.y_data.append(d_diff[1])  # y方向的差值
+        self.z_data.append(d_diff[2])  # z方向的差值
+        self.stereo_data.append((d_diff[0]*d_diff[0]+d_diff[1]*d_diff[1]+d_diff[2]*d_diff[2])**0.5)  
+        self.frame_track_data.append(vins_error_sub.frame_track_error)  
         # rospy.loginfo("Time %.2f :\n\tdiff: (%.2f %.2f %.2f)\n\tairs: (%.2f %.2f %.2f)\n\tvins:(%.2f %.2f %.2f)",time_now,diff[0],diff[1],diff[2],airsim_pos[0],airsim_pos[1],airsim_pos[2],vins_pos[0],vins_pos[1],vins_pos[2])
 
 

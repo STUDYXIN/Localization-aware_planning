@@ -287,7 +287,8 @@ bool TraImagebyKey::draw_input(double _cur_time, vector<int> _ids, vector<int> _
     else if (start_show_triggle == RECORD_ERROR_SHOW)
     {
         std::cout << " Compute_begin! " << endl;
-        show_feature_storaged();
+        // show_feature_storaged();
+        show_feature_storaged_improve();
         std::cout << " Compute_endl! " << endl;
         last_show_triggle = start_show_triggle = SHOW_EVERYFRAME_FEATURE;
         return false;
@@ -493,11 +494,14 @@ void TraImagebyKey::storage_feature()
         {
             feature.push_back(FeaturePerID_error(feature_id, frame_now));
             feature.back().feature_per_frame.push_back(featurePerFrame_error_this);
+            feature.back().score = score_for_one_feature(cur_pts[i],img);
         }
         else if (it->feature_id == feature_id)
         {
             it->feature_per_frame.push_back(featurePerFrame_error_this);
             it->used_num++;
+            if(it->score == 0)
+                it->score = score_for_one_feature(cur_pts[i],img);
         }
     }
     frame_now++;
@@ -703,6 +707,68 @@ void TraImagebyKey::show_feature_storaged()
     // std::cout << output.str() << std::endl;
 }
 
+void TraImagebyKey::show_feature_storaged_improve()
+{
+    //show_feature_storaged这个函数求得误差不符合实际运行情况
+    TicToc timer;
+    timer.tic(); 
+    feature.sort([](const FeaturePerID_error &a, const FeaturePerID_error &b) {
+        return a.used_num < b.used_num;
+    });
+    for (auto &feature_per_ID : feature)
+    {
+        for (int i = 0; i < feature_per_ID.used_num - 1; i++)
+        {
+            //Record the truth error each frame********** */   
+            auto feature_per_ID_per_frame = feature_per_ID.feature_per_frame;
+            Vector3d point_diff = feature_per_ID_per_frame[i + 1].point_truth - feature_per_ID_per_frame[i].point_truth;
+            std::array<double, 4> truth_error_this_frame = {point_diff.x(), point_diff.y(), point_diff.z(), point_diff.norm()};
+            feature_per_ID.truth_error_per_frame.push_back(truth_error_this_frame);
+            //************************************** */
+
+            // Reflect next frame to this frame and compute error********** */
+            Eigen::Vector2d a(feature_per_ID_per_frame[i+1].point2D.x, feature_per_ID_per_frame[i+1].point2D.y);
+            Eigen::Vector3d b;
+            m_camera[0]->liftProjective(a, b);
+            Eigen::Vector3d pc = Eigen::Vector3d(b.x() / b.z(), b.y() / b.z(), 1) * feature_per_ID_per_frame[i+1].depth;
+            Eigen::Vector3d pb = Rcb[0] * pc + Pcb[0];
+            Eigen::Vector3d pw = feature_per_ID_per_frame[i+1].Rbw * pb + feature_per_ID_per_frame[i+1].Pbw;
+            Rwb = feature_per_ID_per_frame[i].Rbw.transpose();
+            Pwb = -Rwb * feature_per_ID_per_frame[i].Pbw;
+            Eigen::Vector3d pc0 = Rbc[0] * (Rwb * pw + Pwb) + Pbc[0];
+            Eigen::Vector2d reflect_pt;
+            m_camera[0]->spaceToPlane(pc0, reflect_pt);
+            double x_track_error = reflect_pt[0] - feature_per_ID_per_frame.front().point2D.x;
+            double y_track_error = reflect_pt[1] - feature_per_ID_per_frame.front().point2D.y;
+            std::array<double, 3> track_error_per_frame_this_frame = {x_track_error,y_track_error,std::sqrt(std::pow(x_track_error, 2) + std::pow(y_track_error, 2))};
+            feature_per_ID.track_error_per_frame.push_back(track_error_per_frame_this_frame);
+            //************************************** */
+
+            // Find the first isstereo frame and compute error********** */
+            if (feature_per_ID_per_frame[i].is_stereo == false)
+                continue;
+            else
+            {
+                Eigen::Vector2d a(feature_per_ID_per_frame[i].pointright2D.x, feature_per_ID_per_frame[i].pointright2D.y);
+                Eigen::Vector3d b;
+                m_camera[1]->liftProjective(a, b);
+                Eigen::Vector3d pc = Eigen::Vector3d(b.x() / b.z(), b.y() / b.z(), 1) * feature_per_ID_per_frame[i].depth_right;
+                Eigen::Vector3d pb = Rcb[1] * pc + Pcb[1];
+                Eigen::Vector3d pc2 = Rbc[0] * pb + Pbc[0];
+                Eigen::Vector2d reflect_pt;
+                m_camera[0]->spaceToPlane(pc2, reflect_pt);
+                feature_per_ID.Compute_stereo_error(reflect_pt,feature_per_ID_per_frame[i].point2D);
+            }
+            //************************************** */
+        }
+    }
+    std::string packagePath = ros::package::getPath("vins");
+    std::string filePath = packagePath + "/../result/features_data.csv";
+    // Compute the Statistic data
+    save_features_to_csv(filePath);
+}
+
+
 void TraImagebyKey::record_begin(const Vector3d &final_vins_odom)
 {
     final_error = Pbw - final_vins_odom;
@@ -711,5 +777,115 @@ void TraImagebyKey::record_begin(const Vector3d &final_vins_odom)
 
 double TraImagebyKey::score_for_one_feature(cv::Point2f score_point, const cv::Mat &imLeft)
 {
+    // 定义窗口大小和半尺寸
+    cv::Size winSize(21, 21);
+    cv::Point2f halfWin((winSize.width - 1) * 0.5f, (winSize.height - 1) * 0.5f);
     
+    // 图像和导数的指针
+    const cv::Mat& I = imLeft; // 图像
+    cv::Mat derivI; // 图像导数
+    cv::Sobel(I, derivI, CV_16S, 1, 1); // 计算导数
+
+    // 通道数
+    int cn = I.channels();
+    int cn2 = cn * 2;
+
+    // 特征点在当前金字塔层的坐标
+    cv::Point2f prevPt = score_point - halfWin;
+    cv::Point2i iprevPt(cvFloor(prevPt.x), cvFloor(prevPt.y));
+
+    // 边界检查
+    if (iprevPt.x < -winSize.width || iprevPt.x >= derivI.cols ||
+        iprevPt.y < -winSize.height || iprevPt.y >= derivI.rows)
+    {
+        return 0; // 超出边界，无法计算
+    }
+
+    // 双线性插值系数
+    float a = prevPt.x - iprevPt.x;
+    float b = prevPt.y - iprevPt.y;
+    const int W_BITS = 14;
+    const float FLT_SCALE = 1.f / (1 << 20);
+    int iw00 = cvRound((1.f - a) * (1.f - b) * (1 << W_BITS));
+    int iw01 = cvRound(a * (1.f - b) * (1 << W_BITS));
+    int iw10 = cvRound((1.f - a) * b * (1 << W_BITS));
+    int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
+
+    // 步长
+    int stepI = (int)(I.step / I.elemSize1());
+    int dstep = (int)(derivI.step / derivI.elemSize1());
+
+    // 计算累加和
+    double iA11 = 0, iA12 = 0, iA22 = 0;
+
+    // 遍历窗口
+    for (int y = 0; y < winSize.height; y++)
+    {
+        const uchar* src = I.ptr() + (y + iprevPt.y) * stepI + iprevPt.x * cn;
+        const short* dsrc = derivI.ptr<short>() + (y + iprevPt.y) * dstep + iprevPt.x * cn2;
+
+        for (int x = 0; x < winSize.width; x++)
+        {
+            int ival = CV_DESCALE(src[x] * iw00 + src[x + cn] * iw01 +
+                                  src[x + stepI] * iw10 + src[x + stepI + cn] * iw11, W_BITS - 5);
+            int ixval = CV_DESCALE(dsrc[0] * iw00 + dsrc[cn2] * iw01 +
+                                   dsrc[dstep] * iw10 + dsrc[dstep + cn2] * iw11, W_BITS);
+            int iyval = CV_DESCALE(dsrc[1] * iw00 + dsrc[cn2 + 1] * iw01 +
+                                   dsrc[dstep + 1] * iw10 + dsrc[dstep + cn2 + 1] * iw11, W_BITS);
+
+            iA11 += (double)(ixval * ixval);
+            iA12 += (double)(ixval * iyval);
+            iA22 += (double)(iyval * iyval);
+        }
+    }
+
+    // 计算矩阵元素
+    float A11 = iA11 * FLT_SCALE;
+    float A12 = iA12 * FLT_SCALE;
+    float A22 = iA22 * FLT_SCALE;
+
+    // 计算最小特征值
+    float minEig = (A22 + A11 - std::sqrt((A11 - A22) * (A11 - A22) + 4.f * A12 * A12)) /
+                   (2 * winSize.width * winSize.height);
+
+    return minEig*10e3;
 }
+
+void TraImagebyKey::save_features_to_csv(const std::string& filename) const {
+        std::ofstream ofs(filename, std::ios::binary);
+        if (!ofs) {
+            std::cerr << "Error opening file for writing: " << filename << std::endl;
+            return;
+        }
+
+        // Write header
+        ofs << "feature_id,start_frame,used_num,score,"
+            << "stereo_error[3],track_error_per_frame[3],truth_error_per_frame[4]\n";
+
+        for (const auto &it : feature)
+        {
+            it.save_per_feature_to_csv(ofs);
+        }
+        std::cerr << "Successfully write " << feature.size() << " features to \" " << filename << " \"!!!!" << std::endl;
+        ofs.close();
+}
+
+ // 将每一个数据保存到 CSV 文件
+void FeaturePerID_error::save_per_feature_to_csv(std::ofstream& file) const {
+        file << feature_id << ',' << start_frame << ',' << used_num << ',' << score << ',' 
+             << stereo_error_first_triangulate_time[0] << ' ' 
+             << stereo_error_first_triangulate_time[1] << ' ' 
+             << stereo_error_first_triangulate_time[2] << ',';
+
+        // Write track_error_per_frame
+        for (const auto& error : track_error_per_frame) {
+            file << error[0] << ' ' << error[1] << ' ' << error[2] << ';';
+        }
+        file << ',';
+
+        // Write truth_error_per_frame
+        for (const auto& error : truth_error_per_frame) {
+            file << error[0] << ' ' << error[1] << ' ' << error[2] << ' ' << error[3] << ';';
+        }
+        file << '\n';
+    }

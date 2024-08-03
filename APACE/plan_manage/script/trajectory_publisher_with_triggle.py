@@ -25,11 +25,11 @@ class DroneController:
         self.takeoffstep = 2.0
         ####################起始位置###################
         self.start_x = 0.0  
-        self.start_y = 5.0
+        self.start_y = 0.0
         self.start_z = self.target_height
         ####################终止位置###################
         self.goal_x = 150.0  # Circle center coordinates in ENU
-        self.goal_y = 5.0
+        self.goal_y = 0.0
         self.goal_z = 9.0
         ################速度加速度调节##################
         self.step2start = 1.0     #去终点速度
@@ -229,6 +229,7 @@ class DroneController:
             msg.data = True  # 或者 False
             controller.triggle_pub.publish(msg)
             self.isrecord = True
+            self.clear_and_write(self.full_path, 'have_recoeded')
         if dis < 0.5 :
             return False
         else:

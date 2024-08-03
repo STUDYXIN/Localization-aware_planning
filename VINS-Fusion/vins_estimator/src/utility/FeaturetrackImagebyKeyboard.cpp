@@ -500,8 +500,6 @@ void TraImagebyKey::storage_feature()
         {
             it->feature_per_frame.push_back(featurePerFrame_error_this);
             it->used_num++;
-            if(it->score == 0)
-                it->score = score_for_one_feature(cur_pts[i],img);
         }
     }
     frame_now++;
@@ -738,14 +736,14 @@ void TraImagebyKey::show_feature_storaged_improve()
             Eigen::Vector3d pc0 = Rbc[0] * (Rwb * pw + Pwb) + Pbc[0];
             Eigen::Vector2d reflect_pt;
             m_camera[0]->spaceToPlane(pc0, reflect_pt);
-            double x_track_error = reflect_pt[0] - feature_per_ID_per_frame.front().point2D.x;
-            double y_track_error = reflect_pt[1] - feature_per_ID_per_frame.front().point2D.y;
+            double x_track_error = reflect_pt[0] - feature_per_ID_per_frame[i].point2D.x;
+            double y_track_error = reflect_pt[1] - feature_per_ID_per_frame[i].point2D.y;
             std::array<double, 3> track_error_per_frame_this_frame = {x_track_error,y_track_error,std::sqrt(std::pow(x_track_error, 2) + std::pow(y_track_error, 2))};
             feature_per_ID.track_error_per_frame.push_back(track_error_per_frame_this_frame);
             //************************************** */
 
             // Find the first isstereo frame and compute error********** */
-            if (feature_per_ID_per_frame[i].is_stereo == false)
+            if (feature_per_ID_per_frame[i].is_stereo == false || feature_per_ID.is_stereo_computed == true)
                 continue;
             else
             {
@@ -875,7 +873,7 @@ void FeaturePerID_error::save_per_feature_to_csv(std::ofstream& file) const {
         file << feature_id << ',' << start_frame << ',' << used_num << ',' << score << ',' 
              << stereo_error_first_triangulate_time[0] << ' ' 
              << stereo_error_first_triangulate_time[1] << ' ' 
-             << stereo_error_first_triangulate_time[2] << ',';
+             << stereo_error_first_triangulate_time[2] << ';' << ',';
 
         // Write track_error_per_frame
         for (const auto& error : track_error_per_frame) {

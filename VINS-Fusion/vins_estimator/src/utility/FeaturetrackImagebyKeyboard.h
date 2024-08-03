@@ -91,19 +91,21 @@ class FeaturePerID_error
     int used_num;
     double sum_stereo_error, sum_track_error, sum_truth_error[4];
     double score;
+    bool is_stereo_computed;
     array<double, 3> stereo_error_first_triangulate_time;
     vector<array<double, 3>> track_error_per_frame;
     vector<array<double, 4>> truth_error_per_frame;
 
     FeaturePerID_error(int _feature_id, int _start_frame)
         : feature_id(_feature_id), start_frame(_start_frame), used_num(1), 
-            sum_stereo_error(0), sum_track_error(0), sum_truth_error{0, 0, 0, 0}, score(0), stereo_error_first_triangulate_time{0, 0, 0}
+            sum_stereo_error(0), sum_track_error(0), sum_truth_error{0, 0, 0, 0}, score(0), is_stereo_computed(false), stereo_error_first_triangulate_time{}
     {
     }
     void Compute_stereo_error(Eigen::Vector2d &reflect_pt, cv::Point2f &point2D){
         stereo_error_first_triangulate_time[0] = reflect_pt[0] - point2D.x;
         stereo_error_first_triangulate_time[1] = reflect_pt[1] - point2D.y;
         stereo_error_first_triangulate_time[2] = std::sqrt(std::pow(stereo_error_first_triangulate_time[0], 2) + std::pow(stereo_error_first_triangulate_time[1], 2));
+        is_stereo_computed = true;
     }
     void save_per_feature_to_csv(std::ofstream& file) const;
 };

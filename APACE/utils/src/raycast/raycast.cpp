@@ -1,16 +1,22 @@
 #include "raycast/raycast.h"
 
-int RayCaster::signum(int x) { return x == 0 ? 0 : x < 0 ? -1 : 1; }
+int RayCaster::signum(int x) { return x == 0 ? 0 : x < 0 ? -1
+                                                         : 1; }
 
-double RayCaster::mod(double value, double modulus) {
+double RayCaster::mod(double value, double modulus)
+{
   return fmod(fmod(value, modulus) + modulus, modulus);
 }
 
-double RayCaster::intbound(double s, double ds) {
+double RayCaster::intbound(double s, double ds)
+{
   // Find the smallest positive t such that s+t*ds is an integer.
-  if (ds < 0) {
+  if (ds < 0)
+  {
     return intbound(-s, -ds);
-  } else {
+  }
+  else
+  {
     s = mod(s, 1);
     // problem is now s+t*ds = 1
     return (1 - s) / ds;
@@ -19,7 +25,8 @@ double RayCaster::intbound(double s, double ds) {
 
 void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end,
                         const Eigen::Vector3d &min, const Eigen::Vector3d &max,
-                        int &output_points_cnt, Eigen::Vector3d *output) {
+                        int &output_points_cnt, Eigen::Vector3d *output)
+{
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
   // by John Amanatides and Andrew Woo, 1987
   // <http://www.cse.yorku.ca/~amana/research/grid.pdf>
@@ -74,8 +81,10 @@ void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end
     return;
 
   double dist = 0;
-  while (true) {
-    if (x >= min.x() && x < max.x() && y >= min.y() && y < max.y() && z >= min.z() && z < max.z()) {
+  while (true)
+  {
+    if (x >= min.x() && x < max.x() && y >= min.y() && y < max.y() && z >= min.z() && z < max.z())
+    {
       output[output_points_cnt](0) = x;
       output[output_points_cnt](1) = y;
       output[output_points_cnt](2) = z;
@@ -101,21 +110,30 @@ void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end
     // X axis, and similarly for Y and Z. Therefore, choosing the least tMax
     // chooses the closest cube boundary. Only the first case of the four
     // has been commented in detail.
-    if (tMaxX < tMaxY) {
-      if (tMaxX < tMaxZ) {
+    if (tMaxX < tMaxY)
+    {
+      if (tMaxX < tMaxZ)
+      {
         // Update which cube we are now in.
         x += stepX;
         // Adjust tMaxX to the next X-oriented boundary crossing.
         tMaxX += tDeltaX;
-      } else {
+      }
+      else
+      {
         z += stepZ;
         tMaxZ += tDeltaZ;
       }
-    } else {
-      if (tMaxY < tMaxZ) {
+    }
+    else
+    {
+      if (tMaxY < tMaxZ)
+      {
         y += stepY;
         tMaxY += tDeltaY;
-      } else {
+      }
+      else
+      {
         z += stepZ;
         tMaxZ += tDeltaZ;
       }
@@ -125,7 +143,8 @@ void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end
 
 void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end,
                         const Eigen::Vector3d &min, const Eigen::Vector3d &max,
-                        std::vector<Eigen::Vector3d> *output) {
+                        std::vector<Eigen::Vector3d> *output)
+{
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
   // by John Amanatides and Andrew Woo, 1987
   // <http://www.cse.yorku.ca/~amana/research/grid.pdf>
@@ -182,8 +201,10 @@ void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end
     return;
 
   double dist = 0;
-  while (true) {
-    if (x >= min.x() && x < max.x() && y >= min.y() && y < max.y() && z >= min.z() && z < max.z()) {
+  while (true)
+  {
+    if (x >= min.x() && x < max.x() && y >= min.y() && y < max.y() && z >= min.z() && z < max.z())
+    {
       output->push_back(Eigen::Vector3d(x, y, z));
 
       dist = (Eigen::Vector3d(x, y, z) - start).squaredNorm();
@@ -191,7 +212,8 @@ void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end
       if (dist > maxDist)
         return;
 
-      if (output->size() > 1500) {
+      if (output->size() > 1500)
+      {
         std::cerr << "Error, too many racyast voxels." << std::endl;
         throw std::out_of_range("Too many raycast voxels");
       }
@@ -204,21 +226,30 @@ void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end
     // X axis, and similarly for Y and Z. Therefore, choosing the least tMax
     // chooses the closest cube boundary. Only the first case of the four
     // has been commented in detail.
-    if (tMaxX < tMaxY) {
-      if (tMaxX < tMaxZ) {
+    if (tMaxX < tMaxY)
+    {
+      if (tMaxX < tMaxZ)
+      {
         // Update which cube we are now in.
         x += stepX;
         // Adjust tMaxX to the next X-oriented boundary crossing.
         tMaxX += tDeltaX;
-      } else {
+      }
+      else
+      {
         z += stepZ;
         tMaxZ += tDeltaZ;
       }
-    } else {
-      if (tMaxY < tMaxZ) {
+    }
+    else
+    {
+      if (tMaxY < tMaxZ)
+      {
         y += stepY;
         tMaxY += tDeltaY;
-      } else {
+      }
+      else
+      {
         z += stepZ;
         tMaxZ += tDeltaZ;
       }
@@ -226,9 +257,11 @@ void RayCaster::Raycast(const Eigen::Vector3d &start, const Eigen::Vector3d &end
   }
 }
 
-bool RayCaster::setInput(const Eigen::Vector3d& start,
-                         const Eigen::Vector3d& end /* , const Eigen::Vector3d& min,
-                         const Eigen::Vector3d& max */) {
+bool RayCaster::setInput(const Eigen::Vector3d &start,
+                         const Eigen::Vector3d &end /* , const Eigen::Vector3d& min,
+                         const Eigen::Vector3d& max */
+)
+{
   start_ = start;
   end_ = end;
   // max_ = max;
@@ -275,7 +308,8 @@ bool RayCaster::setInput(const Eigen::Vector3d& start,
     return true;
 }
 
-bool RayCaster::step(Eigen::Vector3d &ray_pt) {
+bool RayCaster::step(Eigen::Vector3d &ray_pt)
+{
   // if (x_ >= min_.x() && x_ < max_.x() && y_ >= min_.y() && y_ < max_.y() &&
   // z_ >= min_.z() && z_ <
   // max_.z())
@@ -285,7 +319,8 @@ bool RayCaster::step(Eigen::Vector3d &ray_pt) {
 
   // dist_ = (Eigen::Vector3d(x_, y_, z_) - start_).squaredNorm();
 
-  if (x_ == endX_ && y_ == endY_ && z_ == endZ_) {
+  if (x_ == endX_ && y_ == endY_ && z_ == endZ_)
+  {
     return false;
   }
 
@@ -298,21 +333,30 @@ bool RayCaster::step(Eigen::Vector3d &ray_pt) {
   // X axis, and similarly for Y and Z. Therefore, choosing the least tMax
   // chooses the closest cube boundary. Only the first case of the four
   // has been commented in detail.
-  if (tMaxX_ < tMaxY_) {
-    if (tMaxX_ < tMaxZ_) {
+  if (tMaxX_ < tMaxY_)
+  {
+    if (tMaxX_ < tMaxZ_)
+    {
       // Update which cube we are now in.
       x_ += stepX_;
       // Adjust tMaxX to the next X-oriented boundary crossing.
       tMaxX_ += tDeltaX_;
-    } else {
+    }
+    else
+    {
       z_ += stepZ_;
       tMaxZ_ += tDeltaZ_;
     }
-  } else {
-    if (tMaxY_ < tMaxZ_) {
+  }
+  else
+  {
+    if (tMaxY_ < tMaxZ_)
+    {
       y_ += stepY_;
       tMaxY_ += tDeltaY_;
-    } else {
+    }
+    else
+    {
       z_ += stepZ_;
       tMaxZ_ += tDeltaZ_;
     }
@@ -321,13 +365,15 @@ bool RayCaster::step(Eigen::Vector3d &ray_pt) {
   return true;
 }
 
-void RayCaster::setParams(const double &res, const Eigen::Vector3d &origin) {
+void RayCaster::setParams(const double &res, const Eigen::Vector3d &origin)
+{
   resolution_ = res;
   half_ = Eigen::Vector3d(0.5, 0.5, 0.5);
   offset_ = half_ - origin / resolution_;
 }
 
-bool RayCaster::input(const Eigen::Vector3d &start, const Eigen::Vector3d &end) {
+bool RayCaster::input(const Eigen::Vector3d &start, const Eigen::Vector3d &end)
+{
   start_ = start / resolution_;
   end_ = end / resolution_;
 
@@ -366,17 +412,16 @@ bool RayCaster::input(const Eigen::Vector3d &start, const Eigen::Vector3d &end) 
   step_num_ = 0;
 
   // Avoids an infinite loop.
-  if (stepX_ == 0 && stepY_ == 0 && stepZ_ == 0)
-    return false;
-  else
-    return true;
+  return !(stepX_ == 0 && stepY_ == 0 && stepZ_ == 0);
 }
 
-bool RayCaster::nextId(Eigen::Vector3i &idx) {
+bool RayCaster::nextId(Eigen::Vector3i &idx)
+{
   auto tmp = Eigen::Vector3d(x_, y_, z_);
   idx = (tmp + offset_).cast<int>();
 
-  if (x_ == endX_ && y_ == endY_ && z_ == endZ_) {
+  if (x_ == endX_ && y_ == endY_ && z_ == endZ_)
+  {
     return false;
   }
 
@@ -384,21 +429,30 @@ bool RayCaster::nextId(Eigen::Vector3i &idx) {
   // X axis, and similarly for Y and Z. Therefore, choosing the least tMax
   // chooses the closest cube boundary. Only the first case of the four
   // has been commented in detail.
-  if (tMaxX_ < tMaxY_) {
-    if (tMaxX_ < tMaxZ_) {
+  if (tMaxX_ < tMaxY_)
+  {
+    if (tMaxX_ < tMaxZ_)
+    {
       // Update which cube we are now in.
       x_ += stepX_;
       // Adjust tMaxX to the next X-oriented boundary crossing.
       tMaxX_ += tDeltaX_;
-    } else {
+    }
+    else
+    {
       z_ += stepZ_;
       tMaxZ_ += tDeltaZ_;
     }
-  } else {
-    if (tMaxY_ < tMaxZ_) {
+  }
+  else
+  {
+    if (tMaxY_ < tMaxZ_)
+    {
       y_ += stepY_;
       tMaxY_ += tDeltaY_;
-    } else {
+    }
+    else
+    {
       z_ += stepZ_;
       tMaxZ_ += tDeltaZ_;
     }
@@ -407,11 +461,13 @@ bool RayCaster::nextId(Eigen::Vector3i &idx) {
   return true;
 }
 
-bool RayCaster::nextPos(Eigen::Vector3d &pos) {
+bool RayCaster::nextPos(Eigen::Vector3d &pos)
+{
   auto tmp = Eigen::Vector3d(x_, y_, z_);
   pos = (tmp + half_) * resolution_;
 
-  if (x_ == endX_ && y_ == endY_ && z_ == endZ_) {
+  if (x_ == endX_ && y_ == endY_ && z_ == endZ_)
+  {
     return false;
   }
 
@@ -419,21 +475,30 @@ bool RayCaster::nextPos(Eigen::Vector3d &pos) {
   // X axis, and similarly for Y and Z. Therefore, choosing the least tMax
   // chooses the closest cube boundary. Only the first case of the four
   // has been commented in detail.
-  if (tMaxX_ < tMaxY_) {
-    if (tMaxX_ < tMaxZ_) {
+  if (tMaxX_ < tMaxY_)
+  {
+    if (tMaxX_ < tMaxZ_)
+    {
       // Update which cube we are now in.
       x_ += stepX_;
       // Adjust tMaxX to the next X-oriented boundary crossing.
       tMaxX_ += tDeltaX_;
-    } else {
+    }
+    else
+    {
       z_ += stepZ_;
       tMaxZ_ += tDeltaZ_;
     }
-  } else {
-    if (tMaxY_ < tMaxZ_) {
+  }
+  else
+  {
+    if (tMaxY_ < tMaxZ_)
+    {
       y_ += stepY_;
       tMaxY_ += tDeltaY_;
-    } else {
+    }
+    else
+    {
       z_ += stepZ_;
       tMaxZ_ += tDeltaZ_;
     }

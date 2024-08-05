@@ -29,6 +29,7 @@
     <arg name="init_yaw" value="1.57"/>
 
     <arg name="goal_x" value="-3.5"/>
+    <!-- <arg name="goal_x" value="-2.5"/> -->
     <arg name="goal_y" value="18.0"/>
     <arg name="goal_z" value="2.0"/>
 
@@ -70,6 +71,6 @@
     <arg name="ld_yaw_covisibility" value="0.5"/>
   </include>
 
-  <node pkg="tf" type="static_transform_publisher" name="drone1_pub" args="0 0 0 0 0 0 drone_1 world 100"/>
+  <!-- <node pkg="tf" type="static_transform_publisher" name="drone1_pub" args="0 0 0 0 0 0 drone_1 world 100"/> -->
 
 </launch>

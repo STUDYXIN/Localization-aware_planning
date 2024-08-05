@@ -173,10 +173,6 @@
 
     <param name="fsm/wp_num" value="1" type="int"/>
 
-    <!-- <param name="fsm/wp0_x" value="3.0" type="double"/>
-    <param name="fsm/wp0_y" value="20.0" type="double"/>
-    <param name="fsm/wp0_z" value="2.0" type="double"/> -->
-
     <param name="fsm/wp0_x" value="$(arg goal_x)" type="double"/>
     <param name="fsm/wp0_y" value="$(arg goal_y)" type="double"/>
     <param name="fsm/wp0_z" value="$(arg goal_z)" type="double"/>
@@ -280,16 +276,10 @@
 
   <!-- trajectory server -->
   <node pkg="plan_manage" name="traj_server_node" type="traj_server" output="screen">
-    <!-- <remap from="/position_cmd" to="/planning/pos_cmd"/> -->
     <remap from="/odom_world" to="$(arg odometry_topic)"/>
 
     <param name="traj_server/init_sleep_time" value="1.5" type="double"/>
     <param name="traj_server/pub_traj_id" value="4" type="int"/>
-
-    <!-- <param name="traj_server/init_x" value="3.0" type="double"/>
-    <param name="traj_server/init_y" value="0.0" type="double"/>
-    <param name="traj_server/init_z" value="2.0" type="double"/>
-    <param name="traj_server/init_yaw" value="0.0" type="double"/> -->
     
     <param name="traj_server/init_x" value="$(arg init_x)" type="double"/>
     <param name="traj_server/init_y" value="$(arg init_y)" type="double"/>
@@ -311,10 +301,13 @@
 
   </node>
 
-  <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
-    <remap from="~odom" to="$(arg odometry_topic)"/>
-    <remap from="~goal" to="/move_base_simple/goal"/>
-    <remap from="~traj_start_trigger" to="/traj_start_trigger" />
-    <param name="waypoint_type" value="manual-lonely-waypoint"/>
+  <node pkg="odom_visualization" name="odom_visualization" type="odom_visualization" output="screen">
+        <remap from="~odom" to="$(arg odometry_topic)"/>
+        <param name="color/a" value="1.0"/>    
+        <param name="color/r" value="0.0"/>        
+        <param name="color/g" value="0.0"/>        
+        <param name="color/b" value="1.0"/>       
+        <param name="covariance_scale" value="100.0"/>       
+        <param name="robot_scale" value="1.0"/>
   </node>
 </launch>

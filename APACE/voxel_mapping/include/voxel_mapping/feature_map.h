@@ -32,7 +32,6 @@ namespace voxel_mapping
       double depth_max_;
     };
 
-
     void loadMap(const string &filename);
     void getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
     void getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res);

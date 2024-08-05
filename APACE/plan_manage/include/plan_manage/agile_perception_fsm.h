@@ -23,81 +23,82 @@
 
 using std::vector;
 
-namespace fast_planner {
-class AgilePerceptionFSM {
-private:
-  /* ---------- flag ---------- */
-  enum FSM_EXEC_STATE { INIT, WAIT_TARGET, GEN_NEW_TRAJ, EXEC_TRAJ, REPLAN_NEW };
-  enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2, REFENCE_PATH = 3 };
+namespace fast_planner
+{
+  class AgilePerceptionFSM
+  {
+  private:
+    /* ---------- flag ---------- */
+    enum FSM_EXEC_STATE
+    {
+      INIT,
+      WAIT_TARGET,
+      GEN_NEW_TRAJ,
+      EXEC_TRAJ
+    };
 
-  /* planning utils */
-  FastPlannerManager::Ptr planner_manager_;
-  PlanningVisualization::Ptr visualization_;
+    enum TARGET_TYPE
+    {
+      MANUAL_TARGET = 1,
+      PRESET_TARGET = 2,
+      REFENCE_PATH = 3
+    };
 
-  /* parameters */
-  int target_type_; // 1 mannual select, 2 hard code
-  double no_replan_thresh_, replan_thresh_;
-  double waypoints_[50][3];
-  int waypoint_num_;
+    /* planning utils */
+    FastPlannerManager::Ptr planner_manager_;
+    PlanningVisualization::Ptr visualization_;
 
-  /* planning data */
-  bool trigger_, have_target_, have_odom_;
-  FSM_EXEC_STATE exec_state_;
+    /* parameters */
+    int target_type_; // 1 mannual select, 2 hard code
+    double no_replan_thresh_, replan_thresh_;
+    double waypoints_[50][3];
+    int waypoint_num_;
 
-  Eigen::Vector3d odom_pos_, odom_vel_; // odometry state
-  Eigen::Quaterniond odom_orient_;
+    /* planning data */
+    bool trigger_, have_target_, have_odom_;
+    FSM_EXEC_STATE exec_state_;
 
-  Eigen::Vector3d start_pt_, start_vel_, start_acc_, start_yaw_; // start state
-  Eigen::Vector3d end_pt_, end_vel_, end_yaw_;                   // target state
-  int current_wp_;
+    Eigen::Vector3d odom_pos_, odom_vel_; // odometry state
+    Eigen::Quaterniond odom_orient_;
 
-  /* ROS utils */
-  ros::NodeHandle node_;
-  ros::Timer exec_timer_, safety_timer_, vis_timer_, test_something_timer_;
-  ros::Subscriber waypoint_sub_, odom_sub_;
-  ros::ServiceServer map_save_service_, map_load_service_, start_eval_service_, end_eval_service_;
-  ros::Publisher replan_pub_, new_pub_, bspline_pub_;
+    double start_yaw_, end_yaw_;
+    Eigen::Vector3d start_pt_, start_vel_, start_acc_; // start state
+    Eigen::Vector3d end_pt_, end_vel_;                 // target state
+    int current_wp_;
 
-  /* Error evaluate */
-  bool start_eval_;
-  bool end_eval_;
-  double beginning_time_;
-  double beginning_error_;
-  double last_eval_time_;
-  typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, nav_msgs::Odometry>
-      SyncPolicyErrorEvaluate;
-  typedef shared_ptr<message_filters::Synchronizer<SyncPolicyErrorEvaluate>>
-      SynchronizerErrorEvaluate;
-  shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> airsim_sync_sub_;
-  shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> vins_sync_sub_;
-  SynchronizerErrorEvaluate sync_error_evaluate_;
+    /* ROS utils */
+    ros::NodeHandle node_;
+    ros::Timer exec_timer_;
+    ros::Subscriber waypoint_sub_, odom_sub_;
+    ros::ServiceServer map_save_service_, map_load_service_, start_eval_service_, end_eval_service_;
+    ros::Publisher bspline_pub_;
 
-  /* ROS callbacks */
-  void execFSMCallback(const ros::TimerEvent &e);
-  void waypointCallback(const nav_msgs::PathConstPtr &msg);
-  void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
-  void evaluateCallback(const nav_msgs::OdometryConstPtr &airsim_msg,
-                        const nav_msgs::OdometryConstPtr &vins_msg);
+    /* ROS callbacks */
+    void execFSMCallback(const ros::TimerEvent &e);
+    void waypointCallback(const nav_msgs::PathConstPtr &msg);
+    void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
 
-  /* ROS services */
-  bool saveMapCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
-  bool loadMapCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
-  bool startEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
-  bool endEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
+    /* ROS services */
+    bool saveMapCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
+    bool loadMapCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
 
-  /* Helper functions */
-  void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call);
-  void printFSMExecState();
-  bool callAgilePerceptionReplan(); // front-end and back-end method
+    /* Helper functions */
+    void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call);
 
-public:
-  AgilePerceptionFSM(/* args */) {}
-  ~AgilePerceptionFSM() {}
+    /**
+     * \brief 调用Agile Perception replan算法，整个项目核心创新点的入口
+     *
+     * \note 集成了运动规划的前端和后端方法
+     *
+     * \return True代表规划成功，False代表规划失败
+     */
+    bool callAgilePerceptionReplan();
 
-  void init(ros::NodeHandle &nh);
+  public:
+    void init(ros::NodeHandle &nh);
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
 
 } // namespace fast_planner
 

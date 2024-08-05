@@ -47,7 +47,8 @@ visualization_msgs::Marker meshROS;
 sensor_msgs::Range heightROS;
 string _frame_id;
 
-void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
+void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
+{
   if (msg->header.frame_id == string("null"))
     return;
   colvec pose(6);
@@ -65,11 +66,13 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
   vel(1) = msg->twist.twist.linear.y;
   vel(2) = msg->twist.twist.linear.z;
 
-  if (origin && !isOriginSet) {
+  if (origin && !isOriginSet)
+  {
     isOriginSet = true;
     poseOrigin = pose;
   }
-  if (origin) {
+  if (origin)
+  {
     vel = trans(ypr_to_R(pose.rows(3, 5))) * vel;
     pose = pose_update(pose_inverse(poseOrigin), pose);
     vel = ypr_to_R(pose.rows(3, 5)) * vel;
@@ -119,7 +122,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
 
   // Path
   static ros::Time prevt = msg->header.stamp;
-  if ((msg->header.stamp - prevt).toSec() > 0.1) {
+  if ((msg->header.stamp - prevt).toSec() > 0.1)
+  {
     prevt = msg->header.stamp;
     pathROS.header = poseROS.header;
     pathROS.poses.push_back(poseROS);
@@ -133,14 +137,16 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
   bool G = msg->twist.covariance[33];
   bool V = msg->twist.covariance[34];
   bool L = msg->twist.covariance[35];
-  if (cov_color) {
+  if (cov_color)
+  {
     r = G;
     g = V;
     b = L;
   }
 
   // Covariance Position
-  if (cov_pos) {
+  if (cov_pos)
+  {
     mat P(6, 6);
     for (int j = 0; j < 6; j++)
       for (int i = 0; i < 6; i++)
@@ -148,11 +154,14 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
     colvec eigVal;
     mat eigVec;
     eig_sym(eigVal, eigVec, P.submat(0, 0, 2, 2));
-    if (det(eigVec) < 0) {
-      for (int k = 0; k < 3; k++) {
+    if (det(eigVec) < 0)
+    {
+      for (int k = 0; k < 3; k++)
+      {
         mat eigVecRev = eigVec;
         eigVecRev.col(k) *= -1;
-        if (det(eigVecRev) > 0) {
+        if (det(eigVecRev) > 0)
+        {
           eigVec = eigVecRev;
           break;
         }
@@ -183,7 +192,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
   }
 
   // Covariance Velocity
-  if (cov_vel) {
+  if (cov_vel)
+  {
     mat P(3, 3);
     for (int j = 0; j < 3; j++)
       for (int i = 0; i < 3; i++)
@@ -193,11 +203,14 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
     colvec eigVal;
     mat eigVec;
     eig_sym(eigVal, eigVec, P);
-    if (det(eigVec) < 0) {
-      for (int k = 0; k < 3; k++) {
+    if (det(eigVec) < 0)
+    {
+      for (int k = 0; k < 3; k++)
+      {
         mat eigVecRev = eigVec;
         eigVecRev.col(k) *= -1;
-        if (det(eigVecRev) > 0) {
+        if (det(eigVecRev) > 0)
+        {
           eigVec = eigVecRev;
           break;
         }
@@ -231,7 +244,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
   static colvec ppose = pose;
   static ros::Time pt = msg->header.stamp;
   ros::Time t = msg->header.stamp;
-  if ((t - pt).toSec() > 0.5) {
+  if ((t - pt).toSec() > 0.5)
+  {
     trajROS.header.frame_id = string("world");
     trajROS.header.stamp = ros::Time::now();
     trajROS.ns = string("trajectory");
@@ -321,7 +335,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
   q(1) = msg->pose.pose.orientation.x;
   q(2) = msg->pose.pose.orientation.y;
   q(3) = msg->pose.pose.orientation.z;
-  if (cross_config) {
+  if (cross_config)
+  {
     colvec ypr = R_to_ypr(quaternion_to_R(q));
     ypr(0) += 45.0 * PI / 180.0;
     q = R_to_quaternion(ypr_to_R(ypr));
@@ -341,7 +356,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
   meshPub.publish(meshROS);
 
   // TF for raw sensor visualization
-  if (tf45) {
+  if (tf45)
+  {
     tf::Transform transform;
     transform.setOrigin(tf::Vector3(pose(0), pose(1), pose(2)));
     transform.setRotation(tf::Quaternion(q(1), q(2), q(3), q(0)));
@@ -371,7 +387,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr &msg) {
   }
 }
 
-void cmd_callback(const quadrotor_msgs::PositionCommand cmd) {
+void cmd_callback(const quadrotor_msgs::PositionCommand cmd)
+{
   if (cmd.header.frame_id == string("null"))
     return;
 
@@ -397,7 +414,8 @@ void cmd_callback(const quadrotor_msgs::PositionCommand cmd) {
   meshROS.pose.position.y = cmd.position.y;
   meshROS.pose.position.z = cmd.position.z;
 
-  if (cross_config) {
+  if (cross_config)
+  {
     colvec ypr = R_to_ypr(quaternion_to_R(q));
     ypr(0) += 45.0 * PI / 180.0;
     q = R_to_quaternion(ypr_to_R(ypr));
@@ -417,12 +435,12 @@ void cmd_callback(const quadrotor_msgs::PositionCommand cmd) {
   meshPub.publish(meshROS);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   ros::init(argc, argv, "odom_visualization");
   ros::NodeHandle n("~");
 
-  n.param("mesh_resource", mesh_resource,
-          std::string("package://odom_visualization/meshes/hummingbird.mesh"));
+  n.param("mesh_resource", mesh_resource, std::string("package://odom_visualization/meshes/hummingbird.mesh"));
   n.param("color/r", color_r, 1.0);
   n.param("color/g", color_g, 0.0);
   n.param("color/b", color_b, 0.0);

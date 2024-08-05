@@ -11,17 +11,20 @@ using std::cout;
 using std::endl;
 using namespace uav_utils;
 
-Controller::Controller(Parameter_t &param_) : param(param_) {
+Controller::Controller(Parameter_t &param_) : param(param_)
+{
   is_configured = false;
   int_e_v.setZero();
 }
 
-void Controller::config() {
+void Controller::config()
+{
   config_gain(param.hover_gain);
   is_configured = true;
 }
 
-void Controller::config_gain(const Parameter_t::Gain &gain) {
+void Controller::config_gain(const Parameter_t::Gain &gain)
+{
   Kp.setZero();
   Kv.setZero();
   Ka.setZero();
@@ -43,7 +46,8 @@ void Controller::config_gain(const Parameter_t::Gain &gain) {
 
 Eigen::Quaterniond Controller::computeDesiredAttitude(
     const Eigen::Vector3d &desired_acceleration, const double reference_heading,
-    const Eigen::Quaterniond &attitude_estimate) const {
+    const Eigen::Quaterniond &attitude_estimate) const
+{
   // desired_acceleration means the desired thrust and is perpendicular to the
   // body frame.
 
@@ -53,18 +57,20 @@ Eigen::Quaterniond Controller::computeDesiredAttitude(
   const Eigen::Vector3d x_C = q_heading * Eigen::Vector3d::UnitX();
   const Eigen::Vector3d y_C = q_heading * Eigen::Vector3d::UnitY();
   Eigen::Vector3d z_B;
-  if (almostZero(desired_acceleration.norm())) {
+  if (almostZero(desired_acceleration.norm()))
+  {
     // In case of free fall we keep the thrust direction to be the estimated one
     // This only works assuming that we are in this condition for a very short
     // time (otherwise attitude drifts)
     z_B = attitude_estimate * Eigen::Vector3d::UnitZ();
-  } else {
+  }
+  else
+  {
     z_B = desired_acceleration.normalized();
   }
 
   const Eigen::Vector3d x_B_prototype = y_C.cross(z_B);
-  const Eigen::Vector3d x_B =
-      computeRobustBodyXAxis(x_B_prototype, x_C, y_C, attitude_estimate);
+  const Eigen::Vector3d x_B = computeRobustBodyXAxis(x_B_prototype, x_C, y_C, attitude_estimate);
   const Eigen::Vector3d y_B = (z_B.cross(x_B)).normalized();
   // From the computed desired body axes we can now compose a desired attitude
   const Eigen::Matrix3d R_W_B((Eigen::Matrix3d() << x_B, y_B, z_B).finished());
@@ -74,23 +80,18 @@ Eigen::Quaterniond Controller::computeDesiredAttitude(
   return desired_attitude;
 }
 
-Controller_Output_t Controller::computeNominalReferenceInputs(
-    const Desired_State_t &reference_state,
-    const Odom_Data_t &attitude_estimate) const {
+Controller_Output_t Controller::computeNominalReferenceInputs(const Desired_State_t &reference_state, const Odom_Data_t &attitude_estimate) const
+{
 
   Controller_Output_t reference_command;
-  const Eigen::Quaterniond q_heading = Eigen::Quaterniond(
-      Eigen::AngleAxisd(reference_state.yaw, Eigen::Vector3d::UnitZ()));
+  const Eigen::Quaterniond q_heading = Eigen::Quaterniond(Eigen::AngleAxisd(reference_state.yaw, Eigen::Vector3d::UnitZ()));
   const Eigen::Vector3d x_C = q_heading * Eigen::Vector3d::UnitX();
   const Eigen::Vector3d y_C = q_heading * Eigen::Vector3d::UnitY();
   const Eigen::Vector3d des_acc = reference_state.a + Vector3d(0, 0, param.gra);
   // desired thrust direction, the same as se3 planner
 
-  //	F_des = u_v * param.mass +
-  //	Vector3d(0, 0, param.mass * param.gra) + Ka * param.mass * des.a;
   // Reference attitude
-  const Eigen::Quaterniond q_W_B =
-      computeDesiredAttitude(des_acc, reference_state.yaw, attitude_estimate.q);
+  const Eigen::Quaterniond q_W_B = computeDesiredAttitude(des_acc, reference_state.yaw, attitude_estimate.q);
   // same as planner
 
   const Eigen::Vector3d x_B = q_W_B * Eigen::Vector3d::UnitX();
@@ -103,10 +104,13 @@ Controller_Output_t Controller::computeNominalReferenceInputs(
   reference_command.normalized_thrust = des_acc.norm();
 
   // Reference body rates
-  if (almostZeroThrust(reference_command.normalized_thrust)) {
+  if (almostZeroThrust(reference_command.normalized_thrust))
+  {
     reference_command.roll_rate = 0.0;
     reference_command.pitch_rate = 0.0;
-  } else {
+  }
+  else
+  {
     reference_command.roll_rate = -1.0 / reference_command.normalized_thrust *
                                   y_B.dot(reference_state.jerk);
     reference_command.pitch_rate = 1.0 / reference_command.normalized_thrust *
@@ -114,9 +118,12 @@ Controller_Output_t Controller::computeNominalReferenceInputs(
   }
   //   reference_command.yaw_rate = 0.0;
 
-  if (almostZero((y_C.cross(z_B)).norm())) {
+  if (almostZero((y_C.cross(z_B)).norm()))
+  {
     reference_command.yaw_rate = 0.0;
-  } else {
+  }
+  else
+  {
     reference_command.yaw_rate = 1.0 / (y_C.cross(z_B)).norm() *
                                  (reference_state.head_rate * x_C.dot(x_B) +
                                   reference_command.pitch_rate * y_C.dot(z_B));
@@ -170,23 +177,25 @@ Controller_Output_t Controller::computeNominalReferenceInputs(
 
 void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
                         Controller_Output_t &u,
-                        SO3_Controller_Output_t &u_so3) {
-
-
-
-  /*step1
+                        SO3_Controller_Output_t &u_so3)
+{
+  /*
+  *step1
   Compute reference inputs
   */
   // Compute reference inputs
   std::string constraint_info("");
   Eigen::Vector3d drag_accelerations = Eigen::Vector3d::Zero();
   Controller_Output_t reference_inputs;
-  if (param.perform_aerodynamics_compensation) {
+  if (param.perform_aerodynamics_compensation)
+  {
     // Compute reference inputs that compensate for aerodynamic drag
     // computeAeroCompensatedReferenceInputs(reference_state, state_estimate,
     //                                       config, &reference_inputs,
     // 									 	&drag_accelerations);
-  } else {
+  }
+  else
+  {
     // In this case we are not considering aerodynamic accelerations
     drag_accelerations = Eigen::Vector3d::Zero();
     // Compute reference inputs as feed forward terms
@@ -203,7 +212,8 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
 
   Vector3d e_p, e_v, F_des;
   double e_yaw = 0.0;
-  if (des.v(0) != 0.0 || des.v(1) != 0.0 || des.v(2) != 0.0) {
+  if (des.v(0) != 0.0 || des.v(1) != 0.0 || des.v(2) != 0.0)
+  {
     // ROS_INFO("Reset integration");
     int_e_v.setZero();
   }
@@ -217,16 +227,20 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
   e_v = des.v + u_p - odom.v;
 
   const std::vector<double> integration_enable_limits = {0.1, 0.1, 0.1};
-  for (size_t k = 0; k < 3; ++k) {
-    if (std::fabs(e_v(k)) < 0.2) {
+  for (size_t k = 0; k < 3; ++k)
+  {
+    if (std::fabs(e_v(k)) < 0.2)
+    {
       int_e_v(k) += e_v(k) * 1.0 / 50.0;
     }
   }
   Eigen::Vector3d u_v_p = wRc * Kv * cRw * e_v;
   const std::vector<double> integration_output_limits = {0.4, 0.4, 0.4};
   Eigen::Vector3d u_v_i = wRc * Kvi * cRw * int_e_v;
-  for (size_t k = 0; k < 3; ++k) {
-    if (std::fabs(u_v_i(k)) > integration_output_limits[k]) {
+  for (size_t k = 0; k < 3; ++k)
+  {
+    if (std::fabs(u_v_i(k)) > integration_output_limits[k])
+    {
       uav_utils::limit_range(u_v_i(k), integration_output_limits[k]);
       ROS_INFO("Integration saturate for axis %zu, value=%.3f", k, u_v_i(k));
     }
@@ -237,7 +251,7 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
     e_yaw -= (2 * M_PI);
   while (e_yaw < -M_PI)
     e_yaw += (2 * M_PI);
-  double u_yaw = Kyaw * e_yaw;
+
   F_des = u_v * param.mass + Vector3d(0, 0, param.mass * param.gra) +
           Ka * param.mass * des.a;
   F_des -= drag_accelerations * param.mass;
@@ -251,18 +265,8 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
     ROS_WARN("FULL THRUST");
   u.thrust = u.thrust >= fullparam ? fullparam : u.thrust;
 
-  // if(param.use_yaw_rate_ctrl){
-  // 	u.yaw_mode = Controller_Output_t::CTRL_YAW_RATE;
-  // 	u.yaw = u_yaw;
-  // }
-  // else{
-  // 	u.yaw_mode = Controller_Output_t::CTRL_YAW;
-  // 	u.yaw = des.yaw;
-  // }
-  const Eigen::Quaterniond desired_attitude =
-      computeDesiredAttitude(F_des / param.mass, des.yaw, odom.q);
-  const Eigen::Vector3d feedback_bodyrates =
-      computeFeedBackControlBodyrates(desired_attitude, odom.q);
+  const Eigen::Quaterniond desired_attitude = computeDesiredAttitude(F_des / param.mass, des.yaw, odom.q);
+  const Eigen::Vector3d feedback_bodyrates = computeFeedBackControlBodyrates(desired_attitude, odom.q);
   u.roll_rate = reference_inputs.roll_rate + feedback_bodyrates.x();
   u.pitch_rate = reference_inputs.pitch_rate + feedback_bodyrates.y();
   u.yaw_rate = reference_inputs.yaw_rate + feedback_bodyrates.z();
@@ -276,32 +280,15 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
   uav_utils::limit_range(u.roll_rate, limit_rate); // 3.0
   uav_utils::limit_range(u.pitch_rate, limit_rate);
   uav_utils::limit_range(u.yaw_rate, 1.5);
-
-  // printf("roll_rate: %f \n",u.roll_rate);
-  // printf("pitch_rate: %f \n",u.pitch_rate);
 };
 
-void Controller::publish_ctrl(const Controller_Output_t &u,
-                              const ros::Time &stamp) {
+void Controller::publish_ctrl(const Controller_Output_t &u, const ros::Time &stamp)
+{
   mavros_msgs::AttitudeTarget msg;
 
   msg.header.stamp = stamp;
   msg.header.frame_id = std::string("FCU");
 
-  // msg.type_mask = mavros_msgs::AttitudeTarget::IGNORE_ROLL_RATE  |
-  // 				mavros_msgs::AttitudeTarget::IGNORE_PITCH_RATE |
-  // 				mavros_msgs::AttitudeTarget::IGNORE_YAW_RATE;
-
-  // Eigen::Vector3d uAngle(u.yaw,u.pitch,u.roll);
-  // Eigen::Quaterniond quaternion = ypr_to_quaternion(uAngle);
-  // Eigen::Quaterniond quaternion;
-  // quaternion = Eigen::AngleAxisd(AngleAxisd(uAngle(0),Vector3d::UnitZ())) *
-  // 			 Eigen::AngleAxisd(AngleAxisd(uAngle(1),Vector3d::UnitY()))
-  // * Eigen::AngleAxisd(AngleAxisd(uAngle(2),Vector3d::UnitX()));
-  // msg.orientation.x = quaternion.x();
-  // msg.orientation.y = quaternion.y();
-  // msg.orientation.z = quaternion.z();
-  // msg.orientation.w = quaternion.w();
   msg.body_rate.x = u.roll_rate;
   msg.body_rate.y = u.pitch_rate;
   msg.body_rate.z = u.yaw_rate;
@@ -310,7 +297,8 @@ void Controller::publish_ctrl(const Controller_Output_t &u,
   ctrl_FCU_pub.publish(msg);
 }
 
-void Controller::publish_zero_ctrl(const ros::Time &stamp) {
+void Controller::publish_zero_ctrl(const ros::Time &stamp)
+{
   mavros_msgs::AttitudeTarget msg;
 
   msg.header.stamp = stamp;
@@ -322,10 +310,7 @@ void Controller::publish_zero_ctrl(const ros::Time &stamp) {
 
   Eigen::Vector3d uAngle(0.0, 0.0, 0.0);
   Eigen::Quaterniond quaternion = ypr_to_quaternion(uAngle);
-  // Eigen::Quaterniond quaternion;
-  // quaternion = Eigen::AngleAxisd(AngleAxisd(uAngle(0),Vector3d::UnitZ())) *
-  // 			 Eigen::AngleAxisd(AngleAxisd(uAngle(1),Vector3d::UnitY()))
-  // * Eigen::AngleAxisd(AngleAxisd(uAngle(2),Vector3d::UnitX()));
+
   msg.orientation.x = quaternion.x();
   msg.orientation.y = quaternion.y();
   msg.orientation.z = quaternion.z();
@@ -335,19 +320,23 @@ void Controller::publish_zero_ctrl(const ros::Time &stamp) {
 
   ctrl_FCU_pub.publish(msg);
 }
-bool Controller::almostZero(const double value) const {
+bool Controller::almostZero(const double value) const
+{
   return fabs(value) < 0.001;
 }
-bool Controller::almostZeroThrust(const double thrust_value) const {
+bool Controller::almostZeroThrust(const double thrust_value) const
+{
   return fabs(thrust_value) < 0.01;
 }
 Eigen::Vector3d Controller::computeRobustBodyXAxis(
     const Eigen::Vector3d &x_B_prototype, const Eigen::Vector3d &x_C,
     const Eigen::Vector3d &y_C,
-    const Eigen::Quaterniond &attitude_estimate) const {
+    const Eigen::Quaterniond &attitude_estimate) const
+{
   Eigen::Vector3d x_B = x_B_prototype;
 
-  if (almostZero(x_B.norm())) {
+  if (almostZero(x_B.norm()))
+  {
     // if cross(y_C, z_B) == 0, they are collinear =>
     // every x_B lies automatically in the x_C - z_C plane
 
@@ -356,14 +345,19 @@ Eigen::Vector3d Controller::computeRobustBodyXAxis(
         attitude_estimate * Eigen::Vector3d::UnitX();
     const Eigen::Vector3d x_B_projected =
         x_B_estimated - (x_B_estimated.dot(y_C)) * y_C;
-    if (almostZero(x_B_projected.norm())) {
+    if (almostZero(x_B_projected.norm()))
+    {
       // Not too much intelligent stuff we can do in this case but it should
       // basically never occur
       x_B = x_C;
-    } else {
+    }
+    else
+    {
       x_B = x_B_projected.normalized();
     }
-  } else {
+  }
+  else
+  {
     x_B.normalize();
   }
 
@@ -378,7 +372,8 @@ Eigen::Vector3d Controller::computeRobustBodyXAxis(
 }
 Eigen::Vector3d Controller::computeFeedBackControlBodyrates(
     const Eigen::Quaterniond &desired_attitude,
-    const Eigen::Quaterniond &attitude_estimate) {
+    const Eigen::Quaterniond &attitude_estimate)
+{
   // Compute the error quaternion
   const Eigen::Quaterniond q_e = attitude_estimate.inverse() * desired_attitude;
   // Compute desired body rates from control error
@@ -386,11 +381,14 @@ Eigen::Vector3d Controller::computeFeedBackControlBodyrates(
   double krp = param.track_gain.Krp;
   double kyaw = param.track_gain.Kyaw;
 
-  if (q_e.w() >= 0) {
+  if (q_e.w() >= 0)
+  {
     bodyrates.x() = 2.0 * krp * q_e.x();
     bodyrates.y() = 2.0 * krp * q_e.y();
     bodyrates.z() = 2.0 * kyaw * q_e.z();
-  } else {
+  }
+  else
+  {
     bodyrates.x() = -2.0 * krp * q_e.x();
     bodyrates.y() = -2.0 * krp * q_e.y();
     bodyrates.z() = -2.0 * kyaw * q_e.z();
@@ -400,7 +398,8 @@ Eigen::Vector3d Controller::computeFeedBackControlBodyrates(
 }
 Eigen::Vector3d
 Controller::computePIDErrorAcc(const Odom_Data_t &state_estimate,
-                               const Desired_State_t &reference_state) {
+                               const Desired_State_t &reference_state)
+{
   // Compute the desired accelerations due to control errors in world frame
   // with a PID controller
   Eigen::Vector3d acc_error;

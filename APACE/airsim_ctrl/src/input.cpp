@@ -1,6 +1,7 @@
 #include "input.h"
 #include <uav_utils/converters.h>
-RC_Data_t::RC_Data_t() {
+RC_Data_t::RC_Data_t()
+{
   rcv_stamp = ros::Time(0);
 
   last_mode = -1.0;
@@ -12,18 +13,21 @@ RC_Data_t::RC_Data_t() {
   enter_api_mode = false;
 }
 
-void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg) {
+void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
+{
   msg = *pMsg;
   rcv_stamp = ros::Time::now();
 
   mode = ((double)msg.channels[4] - 1000.0) / 1000.0;
   gear = ((double)msg.channels[5] - 1000.0) / 1000.0;
 
-  if (!have_init_last_mode) {
+  if (!have_init_last_mode)
+  {
     have_init_last_mode = true;
     last_mode = mode;
   }
-  if (!have_init_last_gear) {
+  if (!have_init_last_gear)
+  {
     have_init_last_gear = true;
     last_gear = gear;
   }
@@ -40,9 +44,12 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg) {
   else
     is_api_mode = false;
 
-  if (is_api_mode && last_gear < GEAR_SHIFT_VALUE && gear > GEAR_SHIFT_VALUE) {
+  if (is_api_mode && last_gear < GEAR_SHIFT_VALUE && gear > GEAR_SHIFT_VALUE)
+  {
     enter_command_mode = true;
-  } else if (gear < GEAR_SHIFT_VALUE) {
+  }
+  else if (gear < GEAR_SHIFT_VALUE)
+  {
     enter_command_mode = false;
   }
 
@@ -55,33 +62,41 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg) {
   last_gear = gear;
 }
 
-void RC_Data_t::check_validity() {
-  if (mode >= -1.1 && mode <= 1.1 && gear >= -1.1 && gear <= 1.1) {
+void RC_Data_t::check_validity()
+{
+  if (mode >= -1.1 && mode <= 1.1 && gear >= -1.1 && gear <= 1.1)
+  {
     // pass
-  } else {
+  }
+  else
+  {
     ROS_ERROR("RC data validity check fail. mode=%f, gear=%f", mode, gear);
   }
 }
 
-Odom_Data_t::Odom_Data_t() {
+Odom_Data_t::Odom_Data_t()
+{
   rcv_stamp = ros::Time(0);
   q.setIdentity();
   odom_init = false;
 };
 
-void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg) {
+void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg)
+{
   msg = *pMsg;
   rcv_stamp = ros::Time::now();
   uav_utils::extract_odometry(pMsg, p, v, q, w);
   odom_init = true;
 }
 
-Imu_Data_t::Imu_Data_t() {
+Imu_Data_t::Imu_Data_t()
+{
   rcv_stamp = ros::Time(0);
   imu_init = false;
 }
 
-void Imu_Data_t::feed(sensor_msgs::ImuConstPtr pMsg) {
+void Imu_Data_t::feed(sensor_msgs::ImuConstPtr pMsg)
+{
   msg = *pMsg;
   rcv_stamp = ros::Time::now();
 
@@ -102,16 +117,19 @@ void Imu_Data_t::feed(sensor_msgs::ImuConstPtr pMsg) {
 
 State_Data_t::State_Data_t() {}
 
-void State_Data_t::feed(mavros_msgs::StateConstPtr pMsg) {
+void State_Data_t::feed(mavros_msgs::StateConstPtr pMsg)
+{
   current_state = *pMsg;
 }
 
-Command_Data_t::Command_Data_t() {
+Command_Data_t::Command_Data_t()
+{
   rcv_stamp = ros::Time(0);
   cmd_init = false;
 }
 
-void Command_Data_t::feed(quadrotor_msgs::PositionCommandConstPtr pMsg) {
+void Command_Data_t::feed(quadrotor_msgs::PositionCommandConstPtr pMsg)
+{
 
   static double last_time;
   static double last_yaw;
@@ -143,11 +161,14 @@ void Command_Data_t::feed(quadrotor_msgs::PositionCommandConstPtr pMsg) {
   jerk(2) = msg.jerk.z;
 
   yaw = uav_utils::normalize_angle(msg.yaw);
-  if (!cmd_init) {
+  if (!cmd_init)
+  {
     last_time = now_time;
     head_rate = 0.0;
     last_yaw = yaw;
-  } else {
+  }
+  else
+  {
     double diff_time = now_time - last_time;
     last_time = now_time;
     double diff_yaw;

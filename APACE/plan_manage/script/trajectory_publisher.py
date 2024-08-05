@@ -7,6 +7,8 @@ import numpy as np
 from geometry_msgs.msg import Point, Quaternion
 import math
 import copy
+from std_msgs.msg import Bool
+
 #play_start: -800 -8000 202 go(150m)
 class DroneController:
     def __init__(self):
@@ -23,9 +25,14 @@ class DroneController:
         self.start_y = 0.0
         self.start_z = self.target_height
         self.goal_x = 0.0  # Circle center coordinates in ENU
-        self.goal_y = 150.0
+        #self.goal_y = 150.0
+        self.goal_y = rospy.get_param('goal_y',150.0)
+        print('goal: ',self.goal_y)
         self.goal_z = 15.0
-        self.step = 1.0     #速度
+
+        #self.step = 1.0     #速度
+        self.step=rospy.get_param('~vel',1.0)
+        print('vel: ',self.step)
         self.jerk = 2.0
         self.yaw = 0.5*math.pi        #正面0.5*math.pi
         self.a_agst_f = 0.005*self.step**2
@@ -48,6 +55,7 @@ class DroneController:
         self.reachstep = 0
 
         self.position_command_pub = rospy.Publisher('/position_cmd', PositionCommand, queue_size=10)
+        self.msg_pub = rospy.Publisher('/exp_msg', Bool, queue_size=10)
         rospy.Subscriber('/airsim_node/drone_1/odom_local_enu', Odometry, self.odom_callback)
 
         # 设置发布频率
@@ -152,6 +160,8 @@ class DroneController:
                 self.rate.sleep()
             else:
                 rospy.loginfo("return  (%f,%f,%f)",self.current_position.x, self.current_position.y, self.current_position.z)
+                msg=Bool()
+                self.msg_pub.publish(msg)
                 return
 
 if __name__ == '__main__':

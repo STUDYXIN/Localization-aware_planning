@@ -1,7 +1,13 @@
 <launch>
   <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find plan_manage)/config/test.rviz" />
   <!-- <node name="circle_trajectory_publisher" pkg="plan_manage" type="circle_trajectory_publisher.py" output="screen" /> -->
-  <node name="trajectory_publisher" pkg="plan_manage" type="trajectory_publisher.py" output="screen" />
+
+  <node name="trajectory_publisher" pkg="plan_manage" type="trajectory_publisher.py" output="screen">
+    <param name="vel" value="2.0" type="double"/>
+  </node>
+
+
+
   <node name="visual_traj_pub" pkg="plan_manage" type="visual_traj_pub.py" output="screen" />
   <!-- <node name="point_cloud_difference" pkg="plan_manage" type="point_cloud_difference.py" output="screen" /> -->
   <!-- <node name="cloud_num_draw" pkg="plan_manage" type="cloud_num_draw.py" output="screen" /> -->

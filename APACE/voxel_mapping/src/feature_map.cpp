@@ -5,20 +5,10 @@ namespace voxel_mapping
   void FeatureMap::loadMap(const string &filename)
   {
     features_cloud_.clear();
-    bool use_simple_features = (filename == "") ? true : false;
+    bool use_simple_features = (filename == "");
 
     if (use_simple_features)
     {
-      // Simple line features at fixed height
-      // for (int i = 0; i < 50; i++) {
-      //   double step = 20.0 / 50;
-      //   pcl::PointXYZ p;
-      //   p.x = 5.0;
-      //   p.y = i * step;
-      //   p.z = 5.0;
-      //   features_cloud_.push_back(p);
-      // }
-
       // Features at the central of the wall
       for (double y = 3.0; y < 17.0; y += 0.2)
       {
@@ -33,9 +23,8 @@ namespace voxel_mapping
       }
     }
     else
-    {
       pcl::io::loadPCDFile<pcl::PointXYZ>(filename, features_cloud_);
-    }
+
     features_kdtree_.setInputCloud(features_cloud_.makeShared());
   }
 
@@ -58,11 +47,8 @@ namespace voxel_mapping
 
     vector<int> pointIdxRadiusSearch;
     vector<float> pointRadiusSquaredDistance;
-    pointIdxRadiusSearch.clear();
-    pointRadiusSquaredDistance.clear();
 
-    features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch,
-                                  pointRadiusSquaredDistance);
+    features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
     for (int index : pointIdxRadiusSearch)
     {

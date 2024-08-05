@@ -68,8 +68,7 @@ STRICT_MODE_OFF // todo what does this do?
 #include <unordered_map>
     // #include "nodelet/nodelet.h"
 
-    struct SimpleMatrix
-{
+    struct SimpleMatrix {
   int rows;
   int cols;
   double *data;
@@ -77,8 +76,7 @@ STRICT_MODE_OFF // todo what does this do?
   SimpleMatrix(int rows, int cols, double *data) : rows(rows), cols(cols), data(data) {}
 };
 
-struct VelCmd
-{
+struct VelCmd {
   double x;
   double y;
   double z;
@@ -102,8 +100,7 @@ struct VelCmd
   //     vehicle_name(vehicle_name) {};
 };
 
-struct GimbalCmd
-{
+struct GimbalCmd {
   std::string vehicle_name;
   std::string camera_name;
   msr::airlib::Quaternionr target_quat;
@@ -118,8 +115,7 @@ struct GimbalCmd
   //         target_quat(target_quat) {};
 };
 
-class AirsimROSWrapper
-{
+class AirsimROSWrapper {
   using AirSimSettings = msr::airlib::AirSimSettings;
   using SensorBase = msr::airlib::SensorBase;
   using CameraSetting = msr::airlib::AirSimSettings::CameraSetting;
@@ -131,15 +127,11 @@ class AirsimROSWrapper
   using ImageType = msr::airlib::ImageCaptureBase::ImageType;
 
 public:
-  enum class AIRSIM_MODE : unsigned
-  {
-    DRONE,
-    CAR
-  };
+  enum class AIRSIM_MODE : unsigned { DRONE, CAR };
 
   AirsimROSWrapper(const ros::NodeHandle &nh, const ros::NodeHandle &nh_private,
                    const std::string &host_ip);
-  ~AirsimROSWrapper() {};
+  ~AirsimROSWrapper(){};
 
   void initialize_airsim();
   void initialize_ros();
@@ -151,16 +143,14 @@ public:
   bool is_used_img_timer_cb_queue_;
 
 private:
-  struct SensorPublisher
-  {
+  struct SensorPublisher {
     SensorBase::SensorType sensor_type;
     std::string sensor_name;
     ros::Publisher publisher;
   };
 
   // utility struct for a SINGLE robot
-  class VehicleROS
-  {
+  class VehicleROS {
   public:
     virtual ~VehicleROS() {}
     std::string vehicle_name;
@@ -188,8 +178,7 @@ private:
     // std::string mode_;
   };
 
-  class CarROS : public VehicleROS
-  {
+  class CarROS : public VehicleROS {
   public:
     msr::airlib::CarApiBase::CarState curr_car_state;
 
@@ -201,8 +190,7 @@ private:
     msr::airlib::CarApiBase::CarControls car_cmd;
   };
 
-  class MultiRotorROS : public VehicleROS
-  {
+  class MultiRotorROS : public VehicleROS {
   public:
     /// State
     msr::airlib::MultirotorState curr_drone_state;

@@ -2,7 +2,8 @@
 
 Parameter_t::Parameter_t() {}
 
-void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh) {
+void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
+{
   read_essential_param(nh, "gain/hover/Kp0", hover_gain.Kp0);
   read_essential_param(nh, "gain/hover/Kp1", hover_gain.Kp1);
   read_essential_param(nh, "gain/hover/Kp2", hover_gain.Kp2);
@@ -70,6 +71,7 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh) {
 
 void Parameter_t::init() { full_thrust = mass * gra / hov_percent; };
 
-void Parameter_t::config_full_thrust(double hov) {
+void Parameter_t::config_full_thrust(double hov)
+{
   full_thrust = hover.use_hov_percent_kf ? (mass * gra / hov) : full_thrust;
 };

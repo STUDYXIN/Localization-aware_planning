@@ -54,8 +54,7 @@ namespace voxel_mapping
       bool publish_tsdf_slice_, publish_esdf_slice_, publish_occupancy_grid_slice_;
       double publish_tsdf_period_, publish_esdf_period_, publish_occupancy_grid_period_;
       double tsdf_slice_height_, esdf_slice_height_, occupancy_grid_slice_height_;
-      double tsdf_slice_visualization_height_, esdf_slice_visualization_height_,
-          occupancy_grid_slice_visualization_height_;
+      double tsdf_slice_visualization_height_, esdf_slice_visualization_height_, occupancy_grid_slice_visualization_height_;
 
       string world_frame_, sensor_frame_;
 

@@ -30,9 +30,6 @@ namespace fast_planner
   {
     // SECTION stable
   public:
-    FastPlannerManager();
-    ~FastPlannerManager();
-
     /* main planning interface */
     void planExploreTraj(const vector<Eigen::Vector3d> &tour, const Eigen::Vector3d &cur_vel,
                          const Eigen::Vector3d &cur_acc, const bool reach_end,
@@ -41,15 +38,10 @@ namespace fast_planner
                         const Vector3d &acc, bool &truncated, const double &time_lb);
     void shortenPath(vector<Vector3d> &path);
 
-    void planYaw(const Eigen::Vector3d &start_yaw);
-    void planYawPercepAgnostic();
     void planYawCovisibility();
-    void planYawPreset(const Eigen::Vector3d &start_yaw, const double &end_yaw);
 
     void initPlanModules(ros::NodeHandle &nh);
-    void setGlobalWaypoints(vector<Eigen::Vector3d> &waypoints);
 
-    bool checkTrajCollision(double &distance);
     void calcNextYaw(const double &last_yaw, double &yaw);
 
     /* Map save & load service*/
@@ -58,8 +50,6 @@ namespace fast_planner
 
     PlanParameters pp_;
     LocalTrajData local_data_;
-    GlobalTrajData global_data_;
-    MidPlanData plan_data_;
     EDTEnvironment::Ptr edt_environment_;
     unique_ptr<Astar> path_finder_;
     RayCaster::Ptr caster_;
@@ -73,37 +63,11 @@ namespace fast_planner
 
     void updateTrajInfo();
 
-    // topology guided optimization
-
-    Eigen::MatrixXd paramLocalTraj(double start_t, double &dt, double &duration);
-    Eigen::MatrixXd reparamLocalTraj(const double &start_t, const double &duration, const double &dt);
-
-    void selectBestTraj(NonUniformBspline &traj);
-    void refineTraj(NonUniformBspline &best_traj);
-    void reparamBspline(NonUniformBspline &bspline, double ratio, Eigen::MatrixXd &ctrl_pts,
-                        double &dt, double &time_inc);
-
   public:
-    typedef shared_ptr<FastPlannerManager> Ptr;
-
-    void planYawActMap(const Eigen::Vector3d &start_yaw);
-    void test();
-    void searchFrontier(const Eigen::Vector3d &p);
+    using Ptr = shared_ptr<FastPlannerManager>;
 
   private:
-    // unique_ptr<FrontierFinder> frontier_finder_;
-    // unique_ptr<HeadingPlanner> heading_planner_;
     unique_ptr<YawInitialPlanner> yaw_initial_planner_;
-    unique_ptr<VisibilityUtil> visib_util_;
-
-    double max_yaw_vel = 0.0;
-
-    // Benchmark method, local exploration
-  public:
-    bool localExplore(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc,
-                      Eigen::Vector3d end_pt);
-
-    // !SECTION
   };
 } // namespace fast_planner
 

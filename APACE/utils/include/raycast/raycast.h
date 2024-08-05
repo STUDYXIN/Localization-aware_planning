@@ -8,7 +8,8 @@
 
 using std::shared_ptr;
 
-class RayCaster {
+class RayCaster
+{
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

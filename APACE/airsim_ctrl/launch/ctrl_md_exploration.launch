@@ -1,6 +1,5 @@
 <launch>
 	<arg name="uavname" default="fpv" />
-	<!-- <arg name="use_octree" value="true"/> -->
 	<arg name="enable_vins" default="false"/>
 	
 	<!-- airsim  ros -->

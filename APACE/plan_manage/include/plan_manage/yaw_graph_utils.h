@@ -19,100 +19,103 @@ using std::unordered_map;
 using std::vector;
 using voxel_mapping::MapServer;
 
-namespace fast_planner {
-class YawEdge;
-class BaseVertex;
-class YawVertex;
+namespace fast_planner
+{
+  class YawEdge;
+  class BaseVertex;
+  class YawVertex;
 
-class YawEdge {
-public:
-  typedef shared_ptr<YawEdge> Ptr;
-  YawEdge(const double &gain, const shared_ptr<YawVertex> &v) {
-    gain_ = gain;
-    next_vertex_ = v;
-  }
-  ~YawEdge() {}
+  class YawEdge
+  {
+  public:
+    typedef shared_ptr<YawEdge> Ptr;
+    YawEdge(const double &gain, const shared_ptr<YawVertex> &v)
+    {
+      gain_ = gain;
+      next_vertex_ = v;
+    }
 
-  double gain_;
-  shared_ptr<YawVertex> next_vertex_;
-};
+    double gain_;
+    shared_ptr<YawVertex> next_vertex_;
+  };
 
-// Basic vertex type containing only general artributes required by graph search
-class BaseVertex {
-public:
-  typedef shared_ptr<BaseVertex> Ptr;
-  BaseVertex() {}
-  ~BaseVertex() {}
+  // Basic vertex type containing only general artributes required by graph search
+  class BaseVertex
+  {
+  public:
+    typedef shared_ptr<BaseVertex> Ptr;
 
-  virtual void print() { std::cout << "no data in base vertex" << std::endl; }
+    virtual void print() { std::cout << "no data in base vertex" << std::endl; }
 
-  int id_;
-  double g_value_;
-};
+    int id_;
+    double g_value_;
+  };
 
-// vertex type for yaw planning
-class YawVertex : public BaseVertex {
-public:
-  typedef shared_ptr<YawVertex> Ptr;
-  YawVertex(const double &y, const double gain, const int &id, const Eigen::Vector3d &pos,
-            const Eigen::Vector3d &acc, const bool vir = false) {
-    yaw_ = y;
-    info_gain_ = gain;
-    id_ = id;
-    pos_ = pos;
-    acc_ = acc;
-    virtual_ = vir;
-  }
-  ~YawVertex() {}
-  virtual void print() { std::cout << "yaw: " << yaw_ << std::endl; }
+  // vertex type for yaw planning
+  class YawVertex : public BaseVertex
+  {
+  public:
+    typedef shared_ptr<YawVertex> Ptr;
+    YawVertex(const double &y, const double gain, const int &id, const Eigen::Vector3d &pos,
+              const Eigen::Vector3d &acc, const bool vir = false)
+    {
+      yaw_ = y;
+      info_gain_ = gain;
+      id_ = id;
+      pos_ = pos;
+      acc_ = acc;
+      virtual_ = vir;
+    }
 
-  void printNeighbors() {
-    for (YawEdge::Ptr e : edges_)
-      e->next_vertex_->print();
-    // for (YawVertex::Ptr vb : neighbors_)
-    //   vb->print();
-  }
+    virtual void print() { std::cout << "yaw: " << yaw_ << std::endl; }
 
-  double gain(const YawVertex::Ptr &v) { return virtual_ ? 0 : v->info_gain_; }
+    void printNeighbors()
+    {
+      for (YawEdge::Ptr e : edges_)
+        e->next_vertex_->print();
+    }
 
-  double dist(const YawVertex::Ptr &v) {
-    return virtual_ || v->virtual_ ? 0 : fabs(yaw_ - v->yaw_);
-  }
+    double gain(const YawVertex::Ptr &v)
+    {
+      return virtual_ ? 0 : v->info_gain_;
+    }
 
-  // list<YawVertex::Ptr> neighbors_;
-  vector<YawEdge::Ptr> edges_;
-  YawVertex::Ptr parent_;
+    double dist(const YawVertex::Ptr &v)
+    {
+      return virtual_ || v->virtual_ ? 0 : fabs(yaw_ - v->yaw_);
+    }
 
-  double yaw_;
-  double info_gain_;
-  bool virtual_;
+    vector<YawEdge::Ptr> edges_;
+    YawVertex::Ptr parent_;
 
-  Eigen::Vector3d pos_, acc_;
+    double yaw_;
+    double info_gain_;
+    bool virtual_;
 
-private:
-  double visib_;
-};
+    Eigen::Vector3d pos_, acc_;
 
-// Graph with standard graph searching algorithm
-class Graph {
-public:
-  Graph() {}
-  ~Graph() {}
+  private:
+    double visib_;
+  };
 
-  void print();
-  void addVertex(const YawVertex::Ptr &vertex);
-  void addEdge(const int &from, const int &to, const double &gain);
+  // Graph with standard graph searching algorithm
+  class Graph
+  {
+  public:
+    void print();
+    void addVertex(const YawVertex::Ptr &vertex);
+    void addEdge(const int &from, const int &to, const double &gain);
 
-  void setParams(const double &w, const double &my, const double &dt);
-  void dijkstraSearch(const int &start, const int &goal, vector<YawVertex::Ptr> &path);
+    void setParams(const double &w, const double &my, const double &dt);
+    void dijkstraSearch(const int &start, const int &goal, vector<YawVertex::Ptr> &path);
 
-private:
-  double penal(const double &diff);
-  vector<YawVertex::Ptr> vertice_;
-  double w_;
-  double max_yaw_rate_;
-  double dt_;
-};
+  public:
+    double penal(const double &diff);
+    vector<YawVertex::Ptr> vertice_;
+    double w_;
+    double max_yaw_rate_;
+    double dt_;
+  };
 
 } // namespace fast_planner
 

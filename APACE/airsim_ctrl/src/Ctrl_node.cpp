@@ -1,23 +1,25 @@
 #include "CtrlFSM.h"
 #include <ros/ros.h>
 
-//#include <quadrotor_msgs/SO3Command.h>
+// #include <quadrotor_msgs/SO3Command.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <quadrotor_msgs/PositionCommand.h>
-//#include <geometry_msgs/PoseWithCovarianceStamped.h>
-//#include <std_msgs/Header.h>
-//#include <geometry_msgs/Vector3Stamped.h>
+// #include <geometry_msgs/PoseWithCovarianceStamped.h>
+// #include <std_msgs/Header.h>
+// #include <geometry_msgs/Vector3Stamped.h>
 #include "std_msgs/Float32.h"
 #include <signal.h>
 
 CtrlFSM *pFSM;
 
-void mySigintHandler(int sig) {
+void mySigintHandler(int sig)
+{
   ROS_INFO("[Ctrl] exit...");
   ros::shutdown();
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   ros::init(argc, argv, "Ctrl");
   ros::NodeHandle nh("~");
   signal(SIGINT, mySigintHandler);
@@ -56,19 +58,19 @@ int main(int argc, char *argv[]) {
   ros::Subscriber cmd_sub = nh.subscribe<quadrotor_msgs::PositionCommand>(
       "cmd", 100, boost::bind(&Command_Data_t::feed, &fsm.cmd_data, _1), ros::VoidConstPtr(),
       ros::TransportHints().tcpNoDelay());
-  //上面两个都没问题
+  // 上面两个都没问题
 
   ros::Subscriber imu_sub =
       nh.subscribe<sensor_msgs::Imu>("imu", 100, boost::bind(&Imu_Data_t::feed, &fsm.imu_data, _1),
                                      ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
-  fsm.controller.ctrl_FCU_pub =
-      nh.advertise<mavros_msgs::AttitudeTarget>("/setpoint_raw/attitude", 10);
+  fsm.controller.ctrl_FCU_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/setpoint_raw/attitude", 10);
   fsm.controller.debug_roll_pub = nh.advertise<std_msgs::Float32>("/debug_roll", 10);
   fsm.controller.debug_pitch_pub = nh.advertise<std_msgs::Float32>("/debug_pitch", 10);
   fsm.traj_start_trigger_pub = nh.advertise<geometry_msgs::PoseStamped>("/traj_start_trigger", 10);
   ros::Rate r(param.ctrl_rate);
   // ---- process ----
-  while (ros::ok()) {
+  while (ros::ok())
+  {
     r.sleep();
     ros::spinOnce();
     if (fsm.px4_init())

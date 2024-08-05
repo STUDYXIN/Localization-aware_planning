@@ -27,8 +27,30 @@ TraImagebyKey::TraImagebyKey(): cloud(new pcl::PointCloud<pcl::PointXYZ>())
     fontFace =  cv::FONT_HERSHEY_SIMPLEX;   // 设置字体类型
     fontScale = 0.7;                        // 设置字体大小
     color = cv::Scalar(255,255,255);        // 设置字体颜色
-
+    begin_save_picture = false;
     frame_now = 0;
+    picture_directory = ros::package::getPath("vins") + "/../result/score_compare";
+    picture_num = 0;
+    int maxNumber = -1;  // 初始值为 -1，表示没有找到任何数字
+    for (const auto& entry : fs::directory_iterator(picture_directory)) {
+        std::string filename = entry.path().filename().string();
+        // 确保是 PNG 文件
+        if (filename.find(".png") != std::string::npos) {
+            // 从文件名中提取数字
+            std::string numberStr = filename.substr(filename.find("output") + 6, filename.find(".png") - (filename.find("output") + 6));
+            int number;
+            try {
+                number = std::stoi(numberStr);
+                maxNumber = std::max(maxNumber, number);
+            } catch (std::invalid_argument&) {
+                ROS_ERROR("numbernow:%s",numberStr);
+                // 如果无法转换为整数，跳过
+                continue;
+            }
+        }
+    }
+    maxNumber++;
+    picture_num = std::max(maxNumber, picture_num);
 }
 
 int TraImagebyKey::IDfind(int id, const vector<int> _ids)
@@ -122,6 +144,11 @@ void TraImagebyKey::keyboardListener()
         { // ASCII code for 4
             ROS_WARN("4 key pressed <<<< SHOW_RECORD_ERROR_SHOW >>>>");
             start_show_triggle = last_show_triggle = RECORD_ERROR_SHOW;
+        }
+        if (ch == 53)
+        { // ASCII code for 5
+            ROS_WARN("5 key pressed <<<< SAVE_THIS_PICTURE >>>>");
+            begin_save_picture = true;
         }
         if (ch == 32)
         { // ASCII code for SPACE
@@ -240,6 +267,7 @@ bool TraImagebyKey::draw_input(double _cur_time, vector<int> _ids, vector<int> _
         do_result_show();
         left_and_right_error();
         storage_feature();
+        // compute_score_and_show();
         prev_pts = cur_pts;
         Pbw0 = Pbw;
         Rbw0 = Rbw;
@@ -269,6 +297,7 @@ bool TraImagebyKey::draw_input(double _cur_time, vector<int> _ids, vector<int> _
         ids = _ids;
         ids_right = _ids_right;
         storage_feature();
+        // compute_score_and_show();
         prev_pts = cur_pts;
         Pbw0 = Pbw;
         Rbw0 = Rbw;
@@ -503,6 +532,60 @@ void TraImagebyKey::storage_feature()
         }
     }
     frame_now++;
+}
+
+void TraImagebyKey::compute_score_and_show()
+{
+    // cv::cvtColor(img, image_score, cv::COLOR_GRAY2RGB);
+    // std::vector<std::pair<cv::Point2f, double>> features_with_score;
+    // for (const auto& pt : cur_pts) {
+    //     double score = score_for_one_feature(pt, image_score);
+    //     features_with_score.emplace_back(pt, score);
+    // }
+    // std::sort(features_with_score.begin(), features_with_score.end(), [](const auto& a, const auto& b) {
+    //     return a.second < b.second; // 按分数从高到低排序
+    // });
+
+    // for (size_t i = 0; i < features_with_score.size(); i++)
+    // {
+    //     const auto& pt = features_with_score[i].first;
+    //     int brightness = static_cast<int>((i+1.0) / features_with_score.size() * 255);
+    //     brightness = std::max(0, std::min(255, brightness));
+    //     cv::circle(image_score, pt, 3, cv::Scalar(brightness, brightness, brightness), 2);
+    //     //  std::cout << " i: " << i << " size: " << features_with_score.size() << "brightness" << brightness<< endl;
+    // }
+    // cv::imshow("Highlighted Features", image_score);
+    // cv::waitKey(1);
+
+    if(begin_save_picture)
+    {
+        begin_save_picture = !begin_save_picture;
+        std::string filePath = picture_directory + "/output"+std::to_string(picture_num)+".png";
+        picture_num++;
+        bool success = cv::imwrite(filePath, img);
+        if (success) 
+            std::cout << "图像保存成功!路径: "<< filePath << std::endl;
+        std::string packagePath = ros::package::getPath("vins");
+        std::string filename  = packagePath + "/../result/score_compare/feature_num.csv";
+        std::ofstream ofs(filename, std::ios::binary | std::ios::app); 
+        if (!ofs)
+        {
+            std::cerr << "Error opening file for writing: " << filename << std::endl;
+            return;
+        }
+        // Write header
+        if (ofs.tellp() == 0)
+            ofs << "feature\n";
+
+        for (const auto &pts : cur_pts)
+        {
+            ofs  << pts.x << ' ' << pts.y << ';' ;
+        }
+        ofs << '\n';
+        std::cerr << "Successfully write " << feature.size() << " features to \" " << filename << " \"!!!!" << std::endl;
+        ofs.close();
+    }
+
 }
 
 void TraImagebyKey::show_feature_storaged()
@@ -773,33 +856,25 @@ void TraImagebyKey::record_begin(const Vector3d &final_vins_odom)
     start_show_triggle = last_show_triggle = RECORD_ERROR_SHOW;
 }
 
-double TraImagebyKey::score_for_one_feature(cv::Point2f score_point, const cv::Mat &imLeft)
-{
-    // 定义窗口大小和半尺寸
+double TraImagebyKey::score_for_one_feature(cv::Point2f score_point, const cv::Mat &imLeft) {
     cv::Size winSize(21, 21);
     cv::Point2f halfWin((winSize.width - 1) * 0.5f, (winSize.height - 1) * 0.5f);
-    
-    // 图像和导数的指针
-    const cv::Mat& I = imLeft; // 图像
-    cv::Mat derivI; // 图像导数
+
+    const cv::Mat& I = imLeft;
+    cv::Mat derivI;
     cv::Sobel(I, derivI, CV_16S, 1, 1); // 计算导数
 
-    // 通道数
     int cn = I.channels();
     int cn2 = cn * 2;
 
-    // 特征点在当前金字塔层的坐标
     cv::Point2f prevPt = score_point - halfWin;
     cv::Point2i iprevPt(cvFloor(prevPt.x), cvFloor(prevPt.y));
 
-    // 边界检查
     if (iprevPt.x < -winSize.width || iprevPt.x >= derivI.cols ||
-        iprevPt.y < -winSize.height || iprevPt.y >= derivI.rows)
-    {
+        iprevPt.y < -winSize.height || iprevPt.y >= derivI.rows) {
         return 0; // 超出边界，无法计算
     }
 
-    // 双线性插值系数
     float a = prevPt.x - iprevPt.x;
     float b = prevPt.y - iprevPt.y;
     const int W_BITS = 14;
@@ -809,21 +884,16 @@ double TraImagebyKey::score_for_one_feature(cv::Point2f score_point, const cv::M
     int iw10 = cvRound((1.f - a) * b * (1 << W_BITS));
     int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
 
-    // 步长
     int stepI = (int)(I.step / I.elemSize1());
     int dstep = (int)(derivI.step / derivI.elemSize1());
 
-    // 计算累加和
     double iA11 = 0, iA12 = 0, iA22 = 0;
 
-    // 遍历窗口
-    for (int y = 0; y < winSize.height; y++)
-    {
+    for (int y = 0; y < winSize.height; y++) {
         const uchar* src = I.ptr() + (y + iprevPt.y) * stepI + iprevPt.x * cn;
         const short* dsrc = derivI.ptr<short>() + (y + iprevPt.y) * dstep + iprevPt.x * cn2;
 
-        for (int x = 0; x < winSize.width; x++)
-        {
+        for (int x = 0; x < winSize.width; x++) {
             int ival = CV_DESCALE(src[x] * iw00 + src[x + cn] * iw01 +
                                   src[x + stepI] * iw10 + src[x + stepI + cn] * iw11, W_BITS - 5);
             int ixval = CV_DESCALE(dsrc[0] * iw00 + dsrc[cn2] * iw01 +
@@ -837,16 +907,14 @@ double TraImagebyKey::score_for_one_feature(cv::Point2f score_point, const cv::M
         }
     }
 
-    // 计算矩阵元素
-    float A11 = iA11 * FLT_SCALE;
-    float A12 = iA12 * FLT_SCALE;
-    float A22 = iA22 * FLT_SCALE;
+    double A11 = iA11 * FLT_SCALE;
+    double A12 = iA12 * FLT_SCALE;
+    double A22 = iA22 * FLT_SCALE;
 
-    // 计算最小特征值
-    float minEig = (A22 + A11 - std::sqrt((A11 - A22) * (A11 - A22) + 4.f * A12 * A12)) /
-                   (2 * winSize.width * winSize.height);
+    double minEig = (A22 + A11 - std::sqrt((A11 - A22) * (A11 - A22) + 4.0 * A12 * A12)) /
+                    (2 * winSize.width * winSize.height);
 
-    return minEig*10e3;
+    return minEig * 1e3; // 调整系数，确保返回值范围合理
 }
 
 void TraImagebyKey::save_features_to_csv(const std::string& filename) const {
@@ -887,3 +955,25 @@ void FeaturePerID_error::save_per_feature_to_csv(std::ofstream& file) const {
         }
         file << '\n';
     }
+
+void TraImagebyKey::get_feature_fronted(const int &fronted_num, pcl::PointCloud<pcl::PointXYZ> &features_cloud)
+{
+    feature.sort([](const FeaturePerID_error &a, const FeaturePerID_error &b) {
+        return a.used_num > b.used_num;
+    });
+    int feature_num = std::min(fronted_num, static_cast<int>(feature.size()));
+    int feature_count = 0;
+    features_cloud.clear();
+    for (auto &feature_per_ID : feature)
+    {
+        Eigen::Vector3d point_eigen = feature_per_ID.feature_per_frame[0].point_truth;
+        pcl::PointXYZ point_pcl;
+        point_pcl.x = point_eigen.x();
+        point_pcl.y = point_eigen.y();
+        point_pcl.z = point_eigen.z();
+        features_cloud.push_back(point_pcl);
+        feature_count++;
+        if(feature_count >= fronted_num)
+            break;
+    }
+}

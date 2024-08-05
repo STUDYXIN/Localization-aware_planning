@@ -65,6 +65,8 @@ void pubCameraPose(const Estimator &estimator, const std_msgs::Header &header);
 
 void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header);
 
+void pubfrontedPointCloud(const Estimator &estimator, const std_msgs::Header &header);
+
 void pubtruthPointCloud(Estimator &estimator, const std_msgs::Header &header);
 
 void pubTF(const Estimator &estimator, const std_msgs::Header &header);

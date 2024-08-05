@@ -109,7 +109,9 @@ cv::Mat getDepthImageFromMsg(const sensor_msgs::ImageConstPtr &img_msg)
     return ptr->image.clone();
 }
 
-
+void traj_start_trigger_callback(const geometry_msgs::PoseStamped& msg) {
+    estimator.fronted_point_pub();
+}
 
 // extract images with same timestamp from two topics
 void sync_process()
@@ -353,6 +355,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub_depth = n.subscribe("/airsim_node/drone_1/front_center_custom/DepthPlanar", 100, depth_callback);
     ros::Subscriber sub_depth_right = n.subscribe("/airsim_node/drone_1/front_center_custom_2/DepthPlanar", 100, depth_right_callback);
     ros::Subscriber sub_record_triggle= n.subscribe("/vins_record_triggle", 100, record_triggle_callback);
+    ros::Subscriber sub_traj = n.subscribe("/traj_start_trigger", 10, traj_start_trigger_callback);
 
     std::thread sync_thread{sync_process};
     ros::spin();

@@ -80,6 +80,7 @@ class Estimator
     bool IMUAvailable(double t);
     void initFirstIMUPose(vector<pair<double, Eigen::Vector3d>> &accVector);
     void callrecord();
+    void fronted_point_pub();
 
     enum SolverFlag
     {
@@ -183,4 +184,5 @@ class Estimator
     bool endEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
     void setCntService(ros::NodeHandle &nh);
 
+    pcl::PointCloud<pcl::PointXYZ> features_cloud;
 };

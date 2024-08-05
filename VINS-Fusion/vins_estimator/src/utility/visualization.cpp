@@ -13,7 +13,7 @@ using namespace ros;
 using namespace Eigen;
 ros::Publisher pub_odometry, pub_latest_odometry, pub_latest_camera_pose;
 ros::Publisher pub_path;
-ros::Publisher pub_point_cloud, pub_margin_cloud;
+ros::Publisher pub_point_cloud, pub_margin_cloud, pub_fronted_point_cloud;
 ros::Publisher pub_key_poses;
 ros::Publisher pub_camera_pose;
 ros::Publisher pub_camera_pose_visual;
@@ -48,6 +48,7 @@ void registerPub(ros::NodeHandle &n) {
   // pub_path = n.advertise<nav_msgs::Path>("path_pag", 1000);
   pub_odometry = n.advertise<nav_msgs::Odometry>("odometry", 1000);
   pub_point_cloud = n.advertise<sensor_msgs::PointCloud2>("point_cloud", 1000);
+  pub_fronted_point_cloud = n.advertise<sensor_msgs::PointCloud2>("fronted_point_cloud", 1000);
   pub_margin_cloud = n.advertise<sensor_msgs::PointCloud2>("margin_cloud", 1000);
   pub_key_poses = n.advertise<visualization_msgs::Marker>("key_poses", 1000);
   pub_camera_pose = n.advertise<geometry_msgs::PoseStamped>("camera_pose", 1000);
@@ -392,6 +393,19 @@ void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header) {
   pub_margin_cloud.publish(margin_cloud_msg);
 }
 
+void pubfrontedPointCloud(const Estimator &estimator, const std_msgs::Header &header) {
+  pcl::PointCloud<pcl::PointXYZ> point_cloud = estimator.features_cloud;
+  
+  point_cloud.width = point_cloud.points.size();
+  point_cloud.height = 1;
+  point_cloud.is_dense = true;
+
+  sensor_msgs::PointCloud2 point_cloud_msg;
+  pcl::toROSMsg(point_cloud, point_cloud_msg);
+  point_cloud_msg.header = header;
+  pub_fronted_point_cloud.publish(point_cloud_msg);
+
+}
 void pubtruthPointCloud(Estimator &estimator, const std_msgs::Header &header) {
  pcl::PointCloud<pcl::PointXYZ> point_cloud;
   for (auto &it_per_id : estimator.f_manager.feature) {

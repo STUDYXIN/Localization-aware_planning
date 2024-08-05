@@ -326,6 +326,7 @@ void Estimator::processMeasurements() {
       // pubPointCloud(*this, header);
       pubKeyframe(*this);
       pubTF(*this, header);
+      pubfrontedPointCloud(*this, header);
       mProcess.unlock();
     }
 
@@ -1477,4 +1478,10 @@ void Estimator::updateLatestStates() {
 void Estimator::callrecord()
 {
   featureTracker.traImagebyKey.record_begin(Ps[WINDOW_SIZE]);
+}
+
+void Estimator::fronted_point_pub()
+{
+  featureTracker.traImagebyKey.get_feature_fronted(150, features_cloud);
+
 }

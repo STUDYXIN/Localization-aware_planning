@@ -19,25 +19,25 @@ class DroneController:
         rospy.init_node('drone_takeoff_controller', anonymous=True)
         #固定参数
         self.rate = rospy.Rate(10)  # 10 Hz, adjust as needed
-        self.record_dis = 100.0
+        self.record_dis = 145.0
         ####################起飞参数###################
         self.target_height = 10.0  # 目标高度2米
         self.takeoffstep = 2.0
         ####################起始位置###################
-        self.start_x = 0.0  
+        self.start_x = 5.0  
         self.start_y = 0.0
         self.start_z = self.target_height
         ####################终止位置###################
-        self.goal_x = 150.0  # Circle center coordinates in ENU
+        self.goal_x = 50.0  # Circle center coordinates in ENU
         self.goal_y = 0.0
-        self.goal_z = 9.0
+        self.goal_z = 10.0
         ################速度加速度调节##################
         self.step2start = 1.0     #去终点速度
         self.jerk2start = 0.5
 
         self.step = 5.0     #速度
         self.jerk = 2.0
-        self.yaw = 0.5*math.pi        #正面0.5*math.pi
+        self.yaw = 0.5*math.pi       #正面0.5*math.pi
         self.a_agst_f = 0
         ##############################################
 

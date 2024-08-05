@@ -70,5 +70,5 @@ done
 
 # Test for real
 # gnome-terminal --tab --title="Planner" -- zsh -c "roslaunch ego_planner rmua_test4_real.launch; exec zsh;"
-cleanup
+# cleanup
 echo "脚本执行完毕。"

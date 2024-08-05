@@ -46,10 +46,15 @@
 #include "../utility/tic_toc.h"
 
 #include <fstream>
+#include <filesystem>
+#include <regex>
+#include <algorithm>
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace camodocal;
 using namespace Eigen;
+namespace fs = boost::filesystem;
 extern std::mutex mtx;
 
 #define SHOW_EVERYFRAME_FEATURE 0
@@ -57,6 +62,7 @@ extern std::mutex mtx;
 #define SHOW_ERROR_LAST_FRAME 2
 #define BEGIN_WITH_SHOW_ERRORE 3
 #define RECORD_ERROR_SHOW 4
+
 
 #define  CV_DESCALE(x,n)     (((x) + (1 << ((n)-1))) >> (n))
 
@@ -126,18 +132,20 @@ public:
     void left_and_right_error();
     void do_result_show();
     void storage_feature();
+    void compute_score_and_show();
     void show_feature_storaged();
     void show_feature_storaged_improve();
     void record_begin(const Vector3d &final_vins_odom);
     double score_for_one_feature(cv::Point2f score_point, const cv::Mat &imLeft);
     void save_features_to_csv(const std::string& filename) const;
+    void get_feature_fronted(const int &fronted_num, pcl::PointCloud<pcl::PointXYZ> &features_cloud);
     // void visualizePointCloud();
 public:
     double cur_time, last_time;
     cv::Mat img;
     cv::Mat img1;
     cv::Mat depth,depth_right; 
-    cv::Mat track_image, last_image_left, last_track_image;
+    cv::Mat track_image, last_image_left, last_track_image, image_score;
     Vector3d Pbw, Pwb, Pbw0, Pva, Pav, Pwb0, Pcb[2],Pbc[2],Pi_last;
     Matrix3d Rbw, Rwb, Rbw0, Rva, Rav, Rwb0, Rcb[2],Rbc[2],Ri_last;
     Eigen::Matrix4d body_T_cam[2];
@@ -163,6 +171,9 @@ public:
     list<FeaturePerID_error> feature;
     int frame_now;
     Vector3d final_error;
+    bool begin_save_picture;
+    int picture_num;
+    std::string picture_directory;
 };
 
 

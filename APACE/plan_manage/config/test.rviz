@@ -10,6 +10,7 @@ Panels:
         - /Odometry2/Shape1
         - /PointCloud21
         - /PointCloud22
+        - /PointCloud24
         - /Odometry3/Shape1
         - /Image2
       Splitter Ratio: 0.6029411554336548
@@ -31,7 +32,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -301,7 +302,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.20000000298023224
+      Size (m): 1
       Style: Flat Squares
       Topic: /vins_estimator/point_cloud
       Unreliable: false

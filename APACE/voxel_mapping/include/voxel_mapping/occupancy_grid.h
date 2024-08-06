@@ -34,9 +34,6 @@ namespace voxel_mapping
       MODE mode_;
     };
 
-    OccupancyGrid(){};
-    ~OccupancyGrid(){};
-
     void inputPointCloud(const PointCloudType &pointcloud);
 
     void updateOccupancyVoxel(const VoxelAddress &addr);
@@ -48,9 +45,8 @@ namespace voxel_mapping
 
     OccupancyType queryOccupancy(const Position &pos);
 
-    void publishPointcloud(PointCloudType pcd);
-
     void saveMap(const string &filename);
+    void loadMap();
     void loadMap(const string &filename);
     void loadMapFromPcd(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
 

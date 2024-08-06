@@ -4,6 +4,7 @@
 #include <plan_manage/traj_server.h>
 
 #include <backward/backward.hpp>
+
 namespace backward
 {
   backward::SignalHandling sh;

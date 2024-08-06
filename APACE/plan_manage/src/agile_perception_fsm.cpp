@@ -80,6 +80,8 @@ namespace fast_planner
     // Case3: 生成一条新的轨迹，如果生成成功则进入EXEC_TRAJ状态，否则还是GEN_NEW_TRAJ状态，等待下一次尝试生成
     case GEN_NEW_TRAJ:
     {
+      planner_manager_->map_server_->enable_add_feature_ = false;
+
       // Step1: 把从感知模块得到的状态变量作为规划的起始状态输入
       start_pt_ = odom_pos_;
       start_vel_ = odom_vel_;

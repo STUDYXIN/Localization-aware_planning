@@ -1,4 +1,5 @@
-#include <pathfinding/astar.h>
+#include "pathfinding/astar.h"
+
 #include <sstream>
 
 using namespace std;
@@ -28,9 +29,6 @@ namespace fast_planner
     /* ---------- map params ---------- */
     this->inv_resolution_ = 1.0 / resolution_;
     edt_env_->map_server_->getRegion(origin_, map_size_3d_);
-    // cout << "init astar" << endl;
-    // cout << "origin_: " << origin_.transpose() << endl;
-    // cout << "map size: " << map_size_3d_.transpose() << endl;
 
     path_node_pool_.resize(allocate_num_);
     for (int i = 0; i < (int)allocate_num_; i++)
@@ -50,6 +48,22 @@ namespace fast_planner
 
   int Astar::search(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &end_pt)
   {
+    ROS_INFO("Fuck");
+
+    if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::OCCUPIED ||
+        edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::UNKNOWN)
+    {
+      cout << "start point is not valid!" << endl;
+      return NO_PATH;
+    }
+
+    if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(end_pt).value == voxel_mapping::OccupancyType::OCCUPIED ||
+        edt_env_->map_server_->getOccupancyGrid()->getVoxel(end_pt).value == voxel_mapping::OccupancyType::UNKNOWN)
+    {
+      cout << "end point is not valid!" << endl;
+      return NO_PATH;
+    }
+
     NodePtr cur_node = path_node_pool_[0];
     cur_node->parent = NULL;
     cur_node->position = start_pt;
@@ -107,14 +121,10 @@ namespace fast_planner
             nbr_pos = cur_pos + step;
             // Check safety
             if (!edt_env_->map_server_->getOccupancyGrid()->isInBox(nbr_pos))
-            {
               continue;
-            }
 
-            if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value ==
-                    voxel_mapping::OccupancyType::OCCUPIED ||
-                edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value ==
-                    voxel_mapping::OccupancyType::UNKNOWN)
+            if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value == voxel_mapping::OccupancyType::OCCUPIED ||
+                edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value == voxel_mapping::OccupancyType::UNKNOWN)
             {
               continue;
             }
@@ -126,10 +136,8 @@ namespace fast_planner
             for (double l = 0.1; l < len; l += 0.1)
             {
               Vector3d ckpt = cur_pos + l * dir;
-              if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value ==
-                      voxel_mapping::OccupancyType::OCCUPIED ||
-                  edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value ==
-                      voxel_mapping::OccupancyType::UNKNOWN)
+              if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value == voxel_mapping::OccupancyType::OCCUPIED ||
+                  edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value == voxel_mapping::OccupancyType::UNKNOWN)
               {
                 safe = false;
                 break;
@@ -177,9 +185,7 @@ namespace fast_planner
             open_set_map_[nbr_idx] = neighbor;
           }
     }
-    // cout << "open set empty, no path!" << endl;
-    // cout << "use node num: " << use_node_num_ << endl;
-    // cout << "iter num: " << iter_num_ << endl;
+
     return NO_PATH;
   }
 

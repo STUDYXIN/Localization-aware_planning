@@ -59,8 +59,7 @@ namespace voxel_mapping
       std::vector<VoxelType> data;
     };
 
-    MapBase() : map_data_(new MapData()), raycaster_(new RayCaster()){};
-    ~MapBase(){};
+    MapBase() : map_data_(new MapData()), raycaster_(new RayCaster()) {};
 
     virtual void initMapData();
     virtual void initRaycaster();

@@ -111,7 +111,7 @@ namespace fast_planner
     ros::Duration(2.5).sleep();
     ROS_INFO("[Traj server] Initilization finished");
 
-    startTrigger();
+    // startTrigger();
   }
 
   /* ------------------------------ ROS callbacks ----------------------------- */

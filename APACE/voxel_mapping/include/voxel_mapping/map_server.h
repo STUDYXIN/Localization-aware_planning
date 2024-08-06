@@ -72,9 +72,8 @@ namespace voxel_mapping
     void depthCallback(const sensor_msgs::ImageConstPtr &img);
     void globalMapCallback(const sensor_msgs::PointCloud2ConstPtr &msg);
     void featureCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg);
-    void covarianceCallback(const sensor_msgs::PointCloud2ConstPtr &pcd_msg,
-                            const nav_msgs::OdometryConstPtr &odo_msg);
     void publishMapTimerCallback(const ros::TimerEvent &event);
+    void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
 
     void publishTSDF();
     void publishTSDFSlice();
@@ -118,7 +117,7 @@ namespace voxel_mapping
     void scaleColor(const double value, const double max_value, const double min_value,
                     double &color_value);
 
-  private:
+  public:
     Config config_;
 
     ros::Publisher tsdf_pub_, tsdf_slice_pub_;
@@ -128,7 +127,7 @@ namespace voxel_mapping
     ros::Publisher interpolated_pose_pub_;
     ros::Publisher feature_pub_;
     ros::Publisher depth_pointcloud_pub_;
-    ros::Subscriber depth_sub_, pointcloud_sub_, feature_cloud_sub_;
+    ros::Subscriber depth_sub_, pointcloud_sub_, feature_cloud_sub_, odom_sub_;
     ros::Timer publish_map_timer_;
 
     // Debug visualization
@@ -146,6 +145,12 @@ namespace voxel_mapping
 
     Position pos_min_, pos_max_;
     bool load_map_from_pcd_;
+
+    bool has_ready_ = false;
+    bool has_odom_ = false;
+    bool enable_add_feature_ = true;
+    ros::Time init_time_;
+    Eigen::Vector3d pos_;
   };
 } // namespace voxel_mapping
 

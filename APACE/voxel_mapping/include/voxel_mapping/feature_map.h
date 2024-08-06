@@ -10,6 +10,7 @@
 #include <pcl/search/impl/kdtree.hpp>
 #include <pcl/search/kdtree.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/filters/voxel_grid.h>
 
 using std::shared_ptr;
 using std::string;
@@ -21,8 +22,6 @@ namespace voxel_mapping
   class FeatureMap
   {
   public:
-    // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     typedef shared_ptr<FeatureMap> Ptr;
     typedef shared_ptr<const FeatureMap> ConstPtr;
 
@@ -33,6 +32,7 @@ namespace voxel_mapping
     };
 
     void loadMap(const string &filename);
+    void addFeatureCloud(const Eigen::Vector3d &pos, const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
     void getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
     void getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res);
     void getFeaturesIndex(const Eigen::Vector3d &pos, vector<int> &res);

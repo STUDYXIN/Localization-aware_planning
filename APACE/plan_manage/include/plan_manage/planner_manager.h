@@ -54,7 +54,7 @@ namespace fast_planner
     unique_ptr<Astar> path_finder_;
     RayCaster::Ptr caster_;
 
-  private:
+  public:
     string occupancy_map_file_, esdf_map_file_, feature_map_file_;
 
     /* main planning algorithms & modules */

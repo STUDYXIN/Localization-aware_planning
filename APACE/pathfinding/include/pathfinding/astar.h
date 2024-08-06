@@ -30,7 +30,6 @@ namespace fast_planner
 
     /* -------------------- */
     Node() { parent = NULL; }
-    ~Node(){};
   };
   typedef Node *NodePtr;
 

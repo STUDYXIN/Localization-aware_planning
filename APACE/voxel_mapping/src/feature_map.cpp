@@ -28,6 +28,38 @@ namespace voxel_mapping
     features_kdtree_.setInputCloud(features_cloud_.makeShared());
   }
 
+  void FeatureMap::addFeatureCloud(const Eigen::Vector3d &pos, const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+  {
+    for (const auto &pt : cloud->points)
+    {
+      Eigen::Vector3d pt_eigen(pt.x, pt.y, pt.z);
+      double dist = (pt_eigen - pos).norm();
+
+      if (dist > config_.depth_max_ || dist < config_.depth_min_)
+        continue;
+
+      features_cloud_.push_back(pt);
+    }
+
+    // features_cloud_ += *cloud;
+
+    if (features_cloud_.points.empty())
+      return;
+
+    ROS_INFO("Size before filtering: %d", static_cast<int>(features_cloud_.points.size()));
+
+    pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
+    voxel_filter.setInputCloud(features_cloud_.makeShared());
+    voxel_filter.setLeafSize(0.1, 0.1, 0.1); // Set the voxel size
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    voxel_filter.filter(*filtered_cloud);
+    features_cloud_ = *filtered_cloud;
+
+    ROS_INFO("Size after filtering: %d", static_cast<int>(features_cloud_.points.size()));
+
+    features_kdtree_.setInputCloud(features_cloud_.makeShared());
+  }
+
   void FeatureMap::getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
   {
     cloud = features_cloud_.makeShared();
@@ -50,7 +82,7 @@ namespace voxel_mapping
 
     features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
-    for (int index : pointIdxRadiusSearch)
+    for (const auto &index : pointIdxRadiusSearch)
     {
       Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
       if ((f - pos).norm() > config_.depth_min_)
@@ -75,8 +107,7 @@ namespace voxel_mapping
     pointIdxRadiusSearch.clear();
     pointRadiusSquaredDistance.clear();
 
-    features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch,
-                                  pointRadiusSquaredDistance);
+    features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
     for (int index : pointIdxRadiusSearch)
     {

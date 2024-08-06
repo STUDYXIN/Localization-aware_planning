@@ -154,7 +154,7 @@
     <param name="voxel_mapping/occupancy_grid/occupancy_grid_mode" value="GEN_TSDF" type="string"/>
 
     <param name="voxel_mapping/feature_map/depth_min" value="0.2" type="double"/>
-    <param name="voxel_mapping/feature_map/depth_max" value="5.0" type="double"/>
+    <param name="voxel_mapping/feature_map/depth_max" value="70.0" type="double"/>
 
     <param name="transformer/world_frame" value="$(arg world_frame)" type="string"/>
     <param name="transformer/sensor_frame" value="$(arg sensor_frame)" type="string"/>
@@ -300,6 +300,14 @@
     <param name="perception_utils/vis_dist" value="1.0" type="double"/>
 
   </node>
+
+<node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
+    <remap from="~odom" to="$(arg odometry_topic)"/>
+    <remap from="~goal" to="/move_base_simple/goal"/>
+    <remap from="~traj_start_trigger" to="/traj_start_trigger" />
+    <param name="waypoint_type" value="manual-lonely-waypoint"/>
+  </node>
+
 
   <node pkg="odom_visualization" name="odom_visualization" type="odom_visualization" output="screen">
         <remap from="~odom" to="$(arg odometry_topic)"/>

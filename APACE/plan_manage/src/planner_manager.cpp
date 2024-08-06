@@ -88,10 +88,8 @@ namespace fast_planner
   }
 
   // !SECTION
-  void FastPlannerManager::planExploreTraj(const vector<Eigen::Vector3d> &tour,
-                                           const Eigen::Vector3d &cur_vel,
-                                           const Eigen::Vector3d &cur_acc, const bool reach_end,
-                                           const double &time_lb)
+  void FastPlannerManager::planExploreTraj(const vector<Eigen::Vector3d> &tour, const Eigen::Vector3d &cur_vel, const Eigen::Vector3d &cur_acc,
+                                           const bool reach_end, const double &time_lb)
   {
     if (tour.empty())
       ROS_ERROR("Empty path to traj planner");
@@ -110,11 +108,6 @@ namespace fast_planner
     // Step1: 调用waypointsTraj函数生成初始的分段多项式轨迹
     PolynomialTraj init_traj;
     PolynomialTraj::waypointsTraj(pos, cur_vel, zero, cur_acc, zero, times, init_traj);
-    auto traj3 = init_traj.getTraj();
-    std::cout << ANSI_COLOR_RED_BOLD;
-    std::cout << "Trajectory3: " << endl;
-    for (const auto &pt : traj3)
-      std::cout << pt.transpose() << std::endl;
 
     // Step2: 基于B样条曲线的轨迹优化，首先生成一条均匀B样条曲线
     double duration = init_traj.getTotalTime();
@@ -160,9 +153,14 @@ namespace fast_planner
       bspline_optimizers_[0]->setTimeLowerBound(time_lb);
 
     // 这里使用了平滑约束、动力学可行性约束、起点约束、终点约束、避障约束、
+    // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY |
+    //                 BsplineOptimizer::START | BsplineOptimizer::END | BsplineOptimizer::MINTIME |
+    //                 BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
+    //                 BsplineOptimizer::VERTICALVISIBILITY;
+
     int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY |
                     BsplineOptimizer::START | BsplineOptimizer::END | BsplineOptimizer::MINTIME |
-                    BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
+                    BsplineOptimizer::PARALLAX |
                     BsplineOptimizer::VERTICALVISIBILITY;
 
     bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func);
@@ -171,9 +169,8 @@ namespace fast_planner
     updateTrajInfo();
   }
 
-  int FastPlannerManager::planLocalMotion(const Vector3d &next_pos, const Vector3d &pos,
-                                          const Vector3d &vel, const Vector3d &acc, bool &truncated,
-                                          const double &time_lb)
+  int FastPlannerManager::planLocalMotion(const Vector3d &next_pos, const Vector3d &pos, const Vector3d &vel, const Vector3d &acc,
+                                          bool &truncated, const double &time_lb)
   {
     // Start optimization
     // Plan trajectory (position and yaw) to the next viewpoint
@@ -189,16 +186,7 @@ namespace fast_planner
     }
 
     vector<Vector3d> path_waypoint = path_finder_->getPath();
-    std::cout << ANSI_COLOR_YELLOW_BOLD;
-    std::cout << "Trajectory1: " << endl;
-    for (const auto &pt : path_waypoint)
-      std::cout << pt.transpose() << std::endl;
-
     shortenPath(path_waypoint);
-    std::cout << ANSI_COLOR_GREEN_BOLD;
-    std::cout << "Trajectory2: " << endl;
-    for (const auto &pt : path_waypoint)
-      std::cout << pt.transpose() << std::endl;
 
     vector<Vector3d> truncated_path;
 
@@ -217,11 +205,6 @@ namespace fast_planner
         truncated_path.push_back(cur_pt);
       }
     }
-
-    std::cout << ANSI_COLOR_GREEN_BOLD;
-    std::cout << "Trajectory3: " << endl;
-    for (const auto &pt : truncated_path)
-      std::cout << pt.transpose() << std::endl;
 
     // Step2: 到这里拿到了路径规划生成的waypoints，接下来用这些waypoints生成trajetory
     planExploreTraj(truncated ? truncated_path : path_waypoint, vel, acc, !truncated, time_lb);

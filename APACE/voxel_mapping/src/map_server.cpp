@@ -76,18 +76,14 @@ namespace voxel_mapping
 
     nh.param("voxel_mapping/publish_tsdf_slice", config_.publish_tsdf_slice_, false);
     nh.param("voxel_mapping/publish_esdf_slice", config_.publish_esdf_slice_, false);
-    nh.param("voxel_mapping/publish_occupancy_grid_slice", config_.publish_occupancy_grid_slice_,
-             false);
+    nh.param("voxel_mapping/publish_occupancy_grid_slice", config_.publish_occupancy_grid_slice_, false);
     nh.param("voxel_mapping/publish_tsdf_period", config_.publish_tsdf_period_, 1.0);
     nh.param("voxel_mapping/publish_esdf_period", config_.publish_esdf_period_, 1.0);
-    nh.param("voxel_mapping/publish_occupancy_grid_period", config_.publish_occupancy_grid_period_,
-             1.0);
+    nh.param("voxel_mapping/publish_occupancy_grid_period", config_.publish_occupancy_grid_period_, 1.0);
     nh.param("voxel_mapping/tsdf_slice_height", config_.tsdf_slice_height_, -1.0);
-    nh.param("voxel_mapping/tsdf_slice_visualization_height",
-             config_.tsdf_slice_visualization_height_, -1.0);
+    nh.param("voxel_mapping/tsdf_slice_visualization_height", config_.tsdf_slice_visualization_height_, -1.0);
     nh.param("voxel_mapping/esdf_slice_height", config_.esdf_slice_height_, -1.0);
-    nh.param("voxel_mapping/esdf_slice_visualization_height",
-             config_.esdf_slice_visualization_height_, -1.0);
+    nh.param("voxel_mapping/esdf_slice_visualization_height", config_.esdf_slice_visualization_height_, -1.0);
     nh.param("voxel_mapping/occupancy_grid_slice_height", config_.occupancy_grid_slice_height_, -1.0);
     nh.param("voxel_mapping/world_frame", config_.world_frame_, string("world"));
     nh.param("voxel_mapping/sensor_frame", config_.sensor_frame_, string("camera"));
@@ -124,10 +120,8 @@ namespace voxel_mapping
     // Occupancy grid configuration
     OccupancyGrid::Config &occupancy_grid_config = occupancy_grid_->config_;
     string occupancy_grid_mode;
-    nh.param("voxel_mapping/occupancy_grid/TSDF_cutoff_dist", occupancy_grid_config.TSDF_cutoff_dist_,
-             0.1);
-    nh.param("voxel_mapping/occupancy_grid/occupancy_grid_mode", occupancy_grid_mode,
-             string("GEN_TSDF"));
+    nh.param("voxel_mapping/occupancy_grid/TSDF_cutoff_dist", occupancy_grid_config.TSDF_cutoff_dist_, 0.1);
+    nh.param("voxel_mapping/occupancy_grid/occupancy_grid_mode", occupancy_grid_mode, string("GEN_TSDF"));
     if (occupancy_grid_mode == "GEN_TSDF")
       occupancy_grid_config.mode_ = OccupancyGrid::Config::MODE::GEN_TSDF;
     else if (occupancy_grid_mode == "GEN_PCL")
@@ -169,44 +163,37 @@ namespace voxel_mapping
     interpolated_pose_pub_ = nh.advertise<nav_msgs::Odometry>("/voxel_mapping/interpolated_pose", 10);
     feature_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/features", 10);
     depth_pointcloud_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/depth_pointcloud", 10);
+    debug_visualization_pub_ = nh.advertise<visualization_msgs::Marker>("/voxel_mapping/debug_visualization", 10);
 
     // Initialize callbacks
     pointcloud_sub_ = nh.subscribe("/voxel_mapping/pointcloud", 100, &MapServer::globalMapCallback, this);
-    debug_visualization_pub_ = nh.advertise<visualization_msgs::Marker>("/voxel_mapping/debug_visualization", 10);
+    feature_cloud_sub_ = nh.subscribe("/voxel_mapping/feature_cloud", 100, &MapServer::featureCloudCallback, this);
+    odom_sub_ = nh.subscribe("/odom_world", 1, &MapServer::odometryCallback, this);
 
     // Initialize timer
-    publish_map_timer_ =
-        nh.createTimer(ros::Duration(0.05), &MapServer::publishMapTimerCallback, this);
+    publish_map_timer_ = nh.createTimer(ros::Duration(0.05), &MapServer::publishMapTimerCallback, this);
 
     if (config_.verbose_)
     {
       ROS_INFO("[MapServer] Voxel mapping server initialized with parameters: ");
       ROS_INFO("  - Resolution: %.2f", map_config.resolution_);
-      ROS_INFO("  - Map size: %.2f x %.2f x %.2f", map_config.map_size_(0), map_config.map_size_(1),
-               map_config.map_size_(2));
-      ROS_INFO("  - Map size index: %d x %d x %d", map_config.map_size_idx_(0),
-               map_config.map_size_idx_(1), map_config.map_size_idx_(2));
-      ROS_INFO("  - Box min: %.2f , %.2f , %.2f", map_config.box_min_(0), map_config.box_min_(1),
-               map_config.box_min_(2));
-      ROS_INFO("  - Box max: %.2f , %.2f , %.2f", map_config.box_max_(0), map_config.box_max_(1),
-               map_config.box_max_(2));
-      ROS_INFO("  - Box min index: %d , %d , %d", map_config.box_min_idx_(0),
-               map_config.box_min_idx_(1), map_config.box_min_idx_(2));
-      ROS_INFO("  - Box max index: %d , %d , %d", map_config.box_max_idx_(0),
-               map_config.box_max_idx_(1), map_config.box_max_idx_(2));
-      ROS_INFO("  - Visualizing Box min: %.2f , %.2f , %.2f", map_config.vbox_min_(0),
-               map_config.vbox_min_(1), map_config.vbox_min_(2));
-      ROS_INFO("  - Visualizing Box max: %.2f , %.2f , %.2f", map_config.vbox_max_(0),
-               map_config.vbox_max_(1), map_config.vbox_max_(2));
-      ROS_INFO("  - Visualizing Box min index: %d , %d , %d", map_config.vbox_min_idx_(0),
-               map_config.vbox_min_idx_(1), map_config.vbox_min_idx_(2));
-      ROS_INFO("  - Visualizing Box max index: %d , %d , %d", map_config.vbox_max_idx_(0),
-               map_config.vbox_max_idx_(1), map_config.vbox_max_idx_(2));
+      ROS_INFO("  - Map size: %.2f x %.2f x %.2f", map_config.map_size_(0), map_config.map_size_(1), map_config.map_size_(2));
+      ROS_INFO("  - Map size index: %d x %d x %d", map_config.map_size_idx_(0), map_config.map_size_idx_(1), map_config.map_size_idx_(2));
+      ROS_INFO("  - Box min: %.2f , %.2f , %.2f", map_config.box_min_(0), map_config.box_min_(1), map_config.box_min_(2));
+      ROS_INFO("  - Box max: %.2f , %.2f , %.2f", map_config.box_max_(0), map_config.box_max_(1), map_config.box_max_(2));
+      ROS_INFO("  - Box min index: %d , %d , %d", map_config.box_min_idx_(0), map_config.box_min_idx_(1), map_config.box_min_idx_(2));
+      ROS_INFO("  - Box max index: %d , %d , %d", map_config.box_max_idx_(0), map_config.box_max_idx_(1), map_config.box_max_idx_(2));
+      ROS_INFO("  - Visualizing Box min: %.2f , %.2f , %.2f", map_config.vbox_min_(0), map_config.vbox_min_(1), map_config.vbox_min_(2));
+      ROS_INFO("  - Visualizing Box max: %.2f , %.2f , %.2f", map_config.vbox_max_(0), map_config.vbox_max_(1), map_config.vbox_max_(2));
+      ROS_INFO("  - Visualizing Box min index: %d , %d , %d", map_config.vbox_min_idx_(0), map_config.vbox_min_idx_(1), map_config.vbox_min_idx_(2));
+      ROS_INFO("  - Visualizing Box max index: %d , %d , %d", map_config.vbox_max_idx_(0), map_config.vbox_max_idx_(1), map_config.vbox_max_idx_(2));
       ROS_INFO("  - TSDF truncated distance: %.2f", tsdf_config.truncated_dist_);
     }
 
     pos_min_ = Eigen::Vector3d::Zero();
     pos_max_ = Eigen::Vector3d::Zero();
+
+    init_time_ = ros::Time::now();
   }
 
   void MapServer::depthCallback(const sensor_msgs::ImageConstPtr &image_msg)
@@ -258,6 +245,28 @@ namespace voxel_mapping
     }
   }
 
+  void MapServer::featureCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
+  {
+    // if (ros::Time::now() - init_time_ < ros::Duration(1.0))
+    //   return;
+    if (!enable_add_feature_ || !has_odom_)
+      return;
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::fromROSMsg(*msg, *cloud);
+
+    feature_map_->addFeatureCloud(pos_, cloud);
+  }
+
+  void MapServer::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
+  {
+    pos_(0) = msg->pose.pose.position.x;
+    pos_(1) = msg->pose.pose.position.y;
+    pos_(2) = msg->pose.pose.position.z;
+
+    has_odom_ = true;
+  }
+
   void MapServer::globalMapCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
   {
     if (load_map_from_pcd_)
@@ -306,11 +315,9 @@ namespace voxel_mapping
 
     for (int x = tsdf_->map_config_.vbox_min_idx_[0]; x < tsdf_->map_config_.vbox_max_idx_[0]; ++x)
     {
-      for (int y = tsdf_->map_config_.vbox_min_idx_[1]; y < tsdf_->map_config_.vbox_max_idx_[1];
-           ++y)
+      for (int y = tsdf_->map_config_.vbox_min_idx_[1]; y < tsdf_->map_config_.vbox_max_idx_[1]; ++y)
       {
-        for (int z = tsdf_->map_config_.vbox_min_idx_[2]; z < tsdf_->map_config_.vbox_max_idx_[2];
-             ++z)
+        for (int z = tsdf_->map_config_.vbox_min_idx_[2]; z < tsdf_->map_config_.vbox_max_idx_[2]; ++z)
         {
           VoxelIndex idx(x, y, z);
           Position pos = tsdf_->indexToPosition(idx);
@@ -442,11 +449,9 @@ namespace voxel_mapping
 
     for (int x = tsdf_->map_config_.vbox_min_idx_[0]; x < tsdf_->map_config_.vbox_max_idx_[0]; ++x)
     {
-      for (int y = tsdf_->map_config_.vbox_min_idx_[1]; y < tsdf_->map_config_.vbox_max_idx_[1];
-           ++y)
+      for (int y = tsdf_->map_config_.vbox_min_idx_[1]; y < tsdf_->map_config_.vbox_max_idx_[1]; ++y)
       {
-        for (int z = tsdf_->map_config_.vbox_min_idx_[2]; z < tsdf_->map_config_.vbox_max_idx_[2];
-             ++z)
+        for (int z = tsdf_->map_config_.vbox_min_idx_[2]; z < tsdf_->map_config_.vbox_max_idx_[2]; ++z)
         {
           VoxelIndex idx(x, y, z);
           Position pos = occupancy_grid_->indexToPosition(idx);
@@ -522,8 +527,7 @@ namespace voxel_mapping
     feature_map_pub_.publish(pointcloud_msg);
   }
 
-  void MapServer::publishDepthPointcloud(const PointCloudType &pointcloud,
-                                         const ros::Time &img_stamp)
+  void MapServer::publishDepthPointcloud(const PointCloudType &pointcloud, const ros::Time &img_stamp)
   {
     if (depth_pointcloud_pub_.getNumSubscribers() == 0)
       return;
@@ -537,8 +541,7 @@ namespace voxel_mapping
     pointcloud_msg.header.frame_id = config_.sensor_frame_;
     depth_pointcloud_pub_.publish(pointcloud_msg);
   }
-  void MapServer::publishInterpolatedPose(const Transformation &sensor_pose,
-                                          const ros::Time &img_stamp)
+  void MapServer::publishInterpolatedPose(const Transformation &sensor_pose, const ros::Time &img_stamp)
   {
     nav_msgs::Odometry odo_msg;
     odo_msg.header.stamp = img_stamp;
@@ -799,14 +802,16 @@ namespace voxel_mapping
 
   void MapServer::loadMap(const string &filename_occu, const string &filename_esdf, const string &filename_feature)
   {
-    occupancy_grid_->loadMap(filename_occu);
-    esdf_->loadMap(filename_esdf);
-    feature_map_->loadMap(filename_feature);
+    occupancy_grid_->loadMap();
+    // occupancy_grid_->loadMap(filename_occu);
+    // esdf_->loadMap(filename_esdf);
+    //  feature_map_->loadMap(filename_feature);
     std::cout << "[MapServer] Finished loading occupancy and esdf map." << std::endl;
+
+    has_ready_ = true;
   }
 
-  void MapServer::scaleColor(const double value, const double max_value, const double min_value,
-                             double &color_value)
+  void MapServer::scaleColor(const double value, const double max_value, const double min_value, double &color_value)
   {
     // Scale the value to the range [0, 1]
     double scaled_value = (value - min_value) / (max_value - min_value);

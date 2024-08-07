@@ -16,23 +16,27 @@
 
 typedef std::chrono::duration<double> Duration;
 
-class TicToc {
+class TicToc
+{
 public:
   TicToc() { tic(); }
 
-  void tic() {
+  void tic()
+  {
     //
     start = std::chrono::system_clock::now();
   }
 
   // return in seconds
-  double toc() {
+  double toc()
+  {
     end = std::chrono::system_clock::now();
     Duration elapsed_seconds = end - start;
     return elapsed_seconds.count() * Duration::period::num / Duration::period::den;
   }
 
-  void toc(std::string msg) {
+  void toc(std::string msg)
+  {
     end = std::chrono::system_clock::now();
     Duration elapsed_seconds = end - start;
     std::cout << msg << " "

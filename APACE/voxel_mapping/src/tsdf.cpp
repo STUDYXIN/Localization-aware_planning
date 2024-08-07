@@ -2,6 +2,8 @@
 #include "voxel_mapping/esdf.h"
 #include "voxel_mapping/occupancy_grid.h"
 
+using namespace std;
+
 namespace voxel_mapping
 {
 
@@ -24,17 +26,8 @@ namespace voxel_mapping
       map_data_->update_bbox_max_ = sensor_position;
       reset_updated_bbox_ = false;
     }
-    if (reset_updated_bbox_)
-    {
-      map_data_->update_bbox_min_ = sensor_position;
-      map_data_->update_bbox_max_ = sensor_position;
-      reset_updated_bbox_ = false;
-    }
 
-    Position point_w, point_c, voxel_pos, raycast_start, raycast_end;
-    VoxelIndex voxel_idx;
-    VoxelAddress voxel_addr;
-    FloatingPoint value, weight;
+    Position point_w, point_c, raycast_start, raycast_end;
 
     for (const auto &point : pointcloud.points)
     {
@@ -53,8 +46,7 @@ namespace voxel_mapping
       raycast_start = point_w + (point_w - sensor_position).normalized() * config_.truncated_dist_behind_;
       // limit the raycast range
       if ((point_w - sensor_position).norm() > config_.raycast_max_)
-        raycast_start =
-            sensor_position + (point_w - sensor_position).normalized() * config_.raycast_max_;
+        raycast_start = sensor_position + (point_w - sensor_position).normalized() * config_.raycast_max_;
       else if ((point_w - sensor_position).norm() < config_.raycast_min_)
         continue;
       raycast_end = sensor_position;
@@ -71,12 +63,14 @@ namespace voxel_mapping
 
       // Update each voxel on the ray from point to sensor
       raycaster_->input(raycast_start, raycast_end);
+
+      VoxelIndex voxel_idx;
       while (raycaster_->nextId(voxel_idx))
       {
-        voxel_pos = indexToPosition(voxel_idx);
-        voxel_addr = indexToAddress(voxel_idx);
-        value = computeDistance(sensor_position, point_w, voxel_pos);
-        weight = computeWeight(value, depth);
+        Position voxel_pos = indexToPosition(voxel_idx);
+        VoxelAddress voxel_addr = indexToAddress(voxel_idx);
+        FloatingPoint value = computeDistance(sensor_position, point_w, voxel_pos);
+        FloatingPoint weight = computeWeight(value, depth);
         updateTSDFVoxel(voxel_addr, value, weight);
         if (occupancy_grid_->config_.mode_ == OccupancyGrid::Config::MODE::GEN_TSDF)
           occupancy_grid_->updateOccupancyVoxel(voxel_addr);
@@ -97,8 +91,7 @@ namespace voxel_mapping
     }
   }
 
-  FloatingPoint TSDF::computeDistance(const Position &origin, const Position &point,
-                                      const Position &voxel)
+  FloatingPoint TSDF::computeDistance(const Position &origin, const Position &point, const Position &voxel)
   {
     const Position v_voxel_origin = voxel - origin;
     const Position v_point_origin = point - origin;
@@ -120,8 +113,7 @@ namespace voxel_mapping
 
     if (sdf < -map_config_.resolution_)
     {
-      dropoff_weight = simple_weight * (config_.truncated_dist_ + sdf) /
-                       (config_.truncated_dist_ - map_config_.resolution_);
+      dropoff_weight = simple_weight * (config_.truncated_dist_ + sdf) / (config_.truncated_dist_ - map_config_.resolution_);
       dropoff_weight = std::max(dropoff_weight, 0.0);
     }
     else
@@ -129,37 +121,30 @@ namespace voxel_mapping
       dropoff_weight = simple_weight;
     }
 
-    // updated_weight =
-    //     (integration_mode == INTEGRATION_MODE::DEINTEGRATION) ? -dropoff_weight : dropoff_weight;
-
     return dropoff_weight;
   }
 
-  void TSDF::updateTSDFVoxel(const VoxelAddress &addr, const FloatingPoint &sdf,
-                             const FloatingPoint &weight)
+  void TSDF::updateTSDFVoxel(const VoxelAddress &addr, const FloatingPoint &sdf, const FloatingPoint &weight)
   {
+    auto &voxel = map_data_->data[addr];
+
     // Treated it as unknown if the weight is 0 after voxel update
-    if (map_data_->data[addr].weight + weight < config_.epsilon_)
+    if (voxel.weight + weight < config_.epsilon_)
     {
-      map_data_->data[addr].value = 1.0;
-      map_data_->data[addr].weight = 0.0;
+      voxel.value = 1.0;
+      voxel.weight = 0.0;
       return;
     }
 
-    // Unknow voxel as weight is 0, reset the value to 0
-    if (map_data_->data[addr].weight < config_.epsilon_)
-      map_data_->data[addr].value = 0.0;
+    // Unknown voxel as weight is 0, reset the value to 0
+    if (voxel.weight < config_.epsilon_)
+      voxel.value = 0.0;
 
-    map_data_->data[addr].value =
-        (map_data_->data[addr].value * map_data_->data[addr].weight + sdf * weight) /
-        (map_data_->data[addr].weight + weight);
-    map_data_->data[addr].weight = map_data_->data[addr].weight + weight;
+    voxel.value = (voxel.value * voxel.weight + sdf * weight) / (voxel.weight + weight);
+    voxel.weight += weight;
 
-    map_data_->data[addr].value =
-        (map_data_->data[addr].value > 0.0)
-            ? std::min(config_.truncated_dist_, map_data_->data[addr].value)
-            : std::max(-config_.truncated_dist_, map_data_->data[addr].value);
-    map_data_->data[addr].weight = std::min(10000.0, map_data_->data[addr].weight);
+    voxel.value = (voxel.value > 0.0) ? std::min(config_.truncated_dist_, voxel.value) : std::max(-config_.truncated_dist_, voxel.value);
+    voxel.weight = std::min(10000.0, voxel.weight);
   }
 
   void TSDF::getUpdatedBox(Eigen::Vector3d &bmin, Eigen::Vector3d &bmax, bool reset)

@@ -48,8 +48,6 @@ namespace fast_planner
 
   int Astar::search(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &end_pt)
   {
-    ROS_INFO("Fuck");
-
     if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::OCCUPIED ||
         edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::UNKNOWN)
     {

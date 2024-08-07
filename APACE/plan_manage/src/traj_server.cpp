@@ -233,6 +233,7 @@ namespace fast_planner
 
     ros::Time time_now = ros::Time::now();
     double t_cur = (time_now - start_time_).toSec();
+
     Eigen::Vector3d pos, vel, acc, jer;
     double yaw, yawdot;
 
@@ -266,10 +267,7 @@ namespace fast_planner
       start_eval_ = false;
     }
     else
-    {
-      ROS_ERROR("[Traj server] Invalid time: start_time_: %.2lf, t_cur: %.2lf, traj_duration_: %.2lf",
-                start_time_.toSec(), t_cur, traj_duration_);
-    }
+      ROS_ERROR("[Traj server] Invalid time: start_time_: %.2lf, t_cur: %.2lf, traj_duration_: %.2lf", start_time_.toSec(), t_cur, traj_duration_);
 
     if (vel.norm() > max_vel)
       max_vel = vel.norm();
@@ -326,18 +324,12 @@ namespace fast_planner
       end_time = ros::Time::now();
     }
     last_time = time_now;
-
-    // if (traj_cmd_.size() > 100000)
-    //   traj_cmd_.erase(traj_cmd_.begin(), traj_cmd_.begin() + 1000);
   }
 
-  void TrajServer::evaluateCallback(const nav_msgs::OdometryConstPtr &airsim_msg,
-                                    const nav_msgs::OdometryConstPtr &vins_msg)
+  void TrajServer::evaluateCallback(const nav_msgs::OdometryConstPtr &airsim_msg, const nav_msgs::OdometryConstPtr &vins_msg)
   {
     if (!start_eval_)
       return;
-
-    // const double z_offset = 0.57;
 
     double time_now = ros::Time::now().toSec() - start_time.toSec();
     double time_diff = time_now - last_eval_time_;
@@ -359,12 +351,11 @@ namespace fast_planner
       num_eval_++;
       last_eval_error_ = error;
 
-      ROS_INFO("[Traj server] Estimation error: %f, RMSE: %f", last_eval_error_, RMSE_);
+      ROS_INFO("[Traj server] Current Estimation error(trans part): %f, RMSE(trans part): %f", last_eval_error_, RMSE_);
     }
   }
 
-  bool TrajServer::startEvalCallback(std_srvs::Empty::Request &request,
-                                     std_srvs::Empty::Response &response)
+  bool TrajServer::startEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response)
   {
     start_eval_ = true;
     start_eval_time_ = ros::Time::now().toSec();
@@ -402,17 +393,12 @@ namespace fast_planner
 
     double diff = yaw_cmd - yaw_cur;
     if (fabs(diff) <= M_PI)
-    {
       yaw_cmd = yaw_cur + diff;
-    }
     else if (diff > M_PI)
-    {
       yaw_cmd = yaw_cur + diff - 2 * M_PI;
-    }
     else if (diff < -M_PI)
-    {
       yaw_cmd = yaw_cur + diff + 2 * M_PI;
-    }
+
     diff = yaw_cmd - yaw_cur;
 
     // Set b-spline params
@@ -434,7 +420,7 @@ namespace fast_planner
     }
 
     Eigen::MatrixXd points(waypoints.size(), 3);
-    for (int i = 0; i < waypoints.size(); ++i)
+    for (size_t i = 0; i < waypoints.size(); ++i)
       points.row(i) = waypoints[i].transpose();
 
     Eigen::VectorXd times(waypoints.size() - 1);
@@ -442,8 +428,7 @@ namespace fast_planner
 
     // Given desired waypoints and corresponding time stamps, fit a B-spline and execute it
     PolynomialTraj poly;
-    PolynomialTraj::waypointsTraj(points, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), times, poly);
+    PolynomialTraj::waypointsTraj(points, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), times, poly);
 
     // Fit the polynomial with B-spline
     vector<Eigen::Vector3d> point_set, boundary_der;

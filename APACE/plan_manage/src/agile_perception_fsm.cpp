@@ -201,6 +201,8 @@ namespace fast_planner
     double max_yaw_vel = 60 * M_PI / 180.0;
     double time_lb = min(diff, 2 * M_PI - diff) / max_yaw_vel;
 
+    TicToc t_total;
+
     // Step1: 进行论文里的Position Trajectory Generation
     TicToc t_replan;
     auto plan_success = planner_manager_->planLocalMotion(end_pt_, start_pt_, start_vel_, start_acc_, truncated, time_lb);
@@ -216,6 +218,9 @@ namespace fast_planner
     TicToc t_yaw;
     planner_manager_->planYawCovisibility();
     ROS_WARN("[Local Planner] Plan yaw time: %fs", t_yaw.toc());
+
+    ROS_WARN("[Local Planner] Plan total time: %fs", t_total.toc());
+    // ROS_BREAK();
 
     auto info = &planner_manager_->local_data_;
     info->start_time_ = ros::Time::now();

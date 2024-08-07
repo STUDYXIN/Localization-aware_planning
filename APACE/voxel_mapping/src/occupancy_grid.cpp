@@ -1,30 +1,35 @@
 #include "voxel_mapping/occupancy_grid.h"
 #include "voxel_mapping/tsdf.h"
 
+using namespace std;
 namespace voxel_mapping
 {
   void OccupancyGrid::inputPointCloud(const PointCloudType &pointcloud) {}
 
   void OccupancyGrid::updateOccupancyVoxel(const VoxelAddress &addr)
   {
+    // cout << "[OccupancyGrid] Update occupancy voxel" << endl;
+
     if (tsdf_->getVoxel(addr).weight < 1e-5)
     {
+      // cout << "set unknown" << endl;
       map_data_->data[addr].value = OccupancyType::UNKNOWN;
       return;
     }
 
     if (tsdf_->getVoxel(addr).value < config_.TSDF_cutoff_dist_)
     {
+      // cout << "set occupied" << endl;
       map_data_->data[addr].value = OccupancyType::OCCUPIED;
     }
     else
     {
+      // cout << "set free" << endl;
       map_data_->data[addr].value = OccupancyType::FREE;
     }
   }
 
-  bool OccupancyGrid::queryOcclusion(const Position &sensor_position, const Position &feature_point,
-                                     const double raycast_tolerance)
+  bool OccupancyGrid::queryOcclusion(const Position &sensor_position, const Position &feature_point, const double raycast_tolerance)
   {
     VoxelIndex voxel_idx;
     VoxelAddress voxel_addr;

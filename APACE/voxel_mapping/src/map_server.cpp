@@ -166,9 +166,16 @@ namespace voxel_mapping
     debug_visualization_pub_ = nh.advertise<visualization_msgs::Marker>("/voxel_mapping/debug_visualization", 10);
 
     // Initialize callbacks
+    depth_sub_ = nh.subscribe("/voxel_mapping/depth_image_topic", 100, &MapServer::depthCallback, this);
     pointcloud_sub_ = nh.subscribe("/voxel_mapping/pointcloud", 100, &MapServer::globalMapCallback, this);
     feature_cloud_sub_ = nh.subscribe("/voxel_mapping/feature_cloud", 100, &MapServer::featureCloudCallback, this);
     odom_sub_ = nh.subscribe("/odom_world", 1, &MapServer::odometryCallback, this);
+
+    // depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "/map_ros/depth", 50));
+    // odom_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_, "/map_ros/pose", 25));
+
+    // sync_image_odom_.reset(new message_filters::Synchronizer<MapServer::SyncPolicyImageOdom>(MapServer::SyncPolicyImageOdom(100), *depth_sub_, *odom_sub_));
+    // sync_image_odom_->registerCallback(boost::bind(&MapServer::depthPoseCallback, this, _1, _2));
 
     // Initialize timer
     publish_map_timer_ = nh.createTimer(ros::Duration(0.05), &MapServer::publishMapTimerCallback, this);
@@ -198,11 +205,6 @@ namespace voxel_mapping
 
   void MapServer::depthCallback(const sensor_msgs::ImageConstPtr &image_msg)
   {
-    if (config_.verbose_)
-    {
-      ROS_INFO("[MapServer] Received depth image with stamp: %f", image_msg->header.stamp.toSec());
-    }
-
     TicToc tic1;
     cv::Mat depth_image;
     PointCloudType pointcloud;
@@ -240,9 +242,7 @@ namespace voxel_mapping
     }
 
     if (config_.verbose_time_)
-    {
       ROS_INFO("[MapServer] Depth callback time: %fs", tic1.toc());
-    }
   }
 
   void MapServer::featureCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -310,8 +310,6 @@ namespace voxel_mapping
     pcl::PointXYZI point;
     const FloatingPoint min_dist = -tsdf_->config_.result_truncated_dist_;
     const FloatingPoint max_dist = tsdf_->config_.result_truncated_dist_;
-    // const FloatingPoint min_dist = -tsdf_->config_.truncated_dist_;
-    // const FloatingPoint max_dist = tsdf_->config_.truncated_dist_;
 
     for (int x = tsdf_->map_config_.vbox_min_idx_[0]; x < tsdf_->map_config_.vbox_max_idx_[0]; ++x)
     {
@@ -364,8 +362,7 @@ namespace voxel_mapping
 
     for (int x = tsdf_->map_config_.vbox_min_idx_[0]; x < tsdf_->map_config_.vbox_max_idx_[0]; ++x)
     {
-      for (int y = tsdf_->map_config_.vbox_min_idx_[1]; y < tsdf_->map_config_.vbox_max_idx_[1];
-           ++y)
+      for (int y = tsdf_->map_config_.vbox_min_idx_[1]; y < tsdf_->map_config_.vbox_max_idx_[1]; ++y)
       {
         VoxelIndex idx(x, y, 0);
         Position pos = tsdf_->indexToPosition(idx);
@@ -407,8 +404,7 @@ namespace voxel_mapping
 
     for (int x = esdf_->map_config_.vbox_min_idx_[0]; x < esdf_->map_config_.vbox_max_idx_[0]; ++x)
     {
-      for (int y = esdf_->map_config_.vbox_min_idx_[1]; y < esdf_->map_config_.vbox_max_idx_[1];
-           ++y)
+      for (int y = esdf_->map_config_.vbox_min_idx_[1]; y < esdf_->map_config_.vbox_max_idx_[1]; ++y)
       {
         VoxelIndex idx(x, y, 0);
         Position pos = esdf_->indexToPosition(idx);
@@ -462,6 +458,7 @@ namespace voxel_mapping
             point.x = pos(0);
             point.y = pos(1);
             point.z = pos(2);
+            // std::cout << "Occupied point: " << point.x << ", " << point.y << ", " << point.z << std::endl;
             pointcloud.points.push_back(point);
           }
         }
@@ -535,12 +532,21 @@ namespace voxel_mapping
     if (config_.verbose_)
       ROS_INFO("[MapServer] Publishing depth pointcloud...");
 
+    Eigen::Matrix4f Twc = Eigen::Matrix4f::Identity();
+    Twc.block<3, 3>(0, 0) = pointcloud.sensor_orientation_.toRotationMatrix();
+    Twc.block<3, 1>(0, 3) = pointcloud.sensor_origin_.head<3>();
+
+    PointCloudType pointcloud_w;
+    pcl::transformPointCloud(pointcloud, pointcloud_w, Twc);
+
     sensor_msgs::PointCloud2 pointcloud_msg;
-    pcl::toROSMsg(pointcloud, pointcloud_msg);
+    pcl::toROSMsg(pointcloud_w, pointcloud_msg);
     pointcloud_msg.header.stamp = img_stamp;
-    pointcloud_msg.header.frame_id = config_.sensor_frame_;
+    // pointcloud_msg.header.frame_id = config_.sensor_frame_;
+    pointcloud_msg.header.frame_id = "world";
     depth_pointcloud_pub_.publish(pointcloud_msg);
   }
+
   void MapServer::publishInterpolatedPose(const Transformation &sensor_pose, const ros::Time &img_stamp)
   {
     nav_msgs::Odometry odo_msg;
@@ -587,11 +593,11 @@ namespace voxel_mapping
     debug_visualization_pub_.publish(marker);
   }
 
-  void MapServer::depthToPointcloud(const cv::Mat &depth_image, const Transformation &T_w_c,
-                                    PointCloudType &pointcloud, const ros::Time &img_stamp)
+  void MapServer::depthToPointcloud(const cv::Mat &depth_image, const Transformation &T_w_c, PointCloudType &pointcloud, const ros::Time &img_stamp)
   {
     Position pt_c, pt_w;
-    const uint16_t *row_ptr;
+    // const uint16_t *row_ptr;
+    const float *row_ptr;
     FloatingPoint depth;
     int cols = depth_image.cols;
     int rows = depth_image.rows;
@@ -599,22 +605,18 @@ namespace voxel_mapping
 
     pointcloud.points.resize(cols * rows / (config_.skip_pixel_ * config_.skip_pixel_));
 
-    for (int v = config_.depth_filter_margin_; v < rows - config_.depth_filter_margin_;
-         v += config_.skip_pixel_)
+    for (int v = config_.depth_filter_margin_; v < rows - config_.depth_filter_margin_; v += config_.skip_pixel_)
     {
       //  Pointer to the first element (exclude the margin) in n-th row
-      row_ptr = depth_image.ptr<uint16_t>(v) + config_.depth_filter_margin_;
-      for (int u = config_.depth_filter_margin_; u < cols - config_.depth_filter_margin_;
-           u += config_.skip_pixel_)
+      // row_ptr = depth_image.ptr<uint16_t>(v) + config_.depth_filter_margin_;
+      row_ptr = depth_image.ptr<float>(v) + config_.depth_filter_margin_;
+      for (int u = config_.depth_filter_margin_; u < cols - config_.depth_filter_margin_; u += config_.skip_pixel_)
       {
-        depth = (*row_ptr) * 0.001; // mm to m
+        // depth = (*row_ptr) * 0.001; // mm to m
+        depth = *row_ptr;
         row_ptr = row_ptr + config_.skip_pixel_;
         if (depth == 0)
           continue;
-
-        // double z = -(v - config_.cy_) * depth / config_.fy_;
-        // if (z < 0.1)
-        //   continue;
 
         // Point in camera frame
         if (config_.mode_ == MapServer::Config::Mode::AIRSIM)
@@ -644,14 +646,10 @@ namespace voxel_mapping
     publishDepthPointcloud(pointcloud, img_stamp);
   }
 
-  bool MapServer::getNextImageFromQueue(std::queue<sensor_msgs::ImageConstPtr> &queue,
-                                        cv::Mat &depth_image, Transformation &sensor_pose,
-                                        ros::Time &img_stamp)
+  bool MapServer::getNextImageFromQueue(std::queue<sensor_msgs::ImageConstPtr> &queue, cv::Mat &depth_image, Transformation &sensor_pose, ros::Time &img_stamp)
   {
     if (queue.empty())
-    {
       return false;
-    }
 
     if (config_.verbose_)
       ROS_INFO("[MapServer] Getting next image from queue...");
@@ -663,14 +661,17 @@ namespace voxel_mapping
     if (transformer_->lookupTransform(image_msg->header.stamp, sensor_pose))
     {
       if (config_.verbose_)
-        ROS_INFO("[MapServer] Found sensor pose for image timestamp: %f",
-                 image_msg->header.stamp.toSec());
+        ROS_INFO("[MapServer] Found sensor pose for image timestamp: %f", image_msg->header.stamp.toSec());
 
       // TODO: maybe no need for cv::Mat
+      // cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(image_msg, image_msg->encoding);
+      // if (image_msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+      //   (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, config_.depth_scaling_factor_);
+      // cv_ptr->image.copyTo(depth_image);
+
       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(image_msg, image_msg->encoding);
-      if (image_msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
-        (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, config_.depth_scaling_factor_);
       cv_ptr->image.copyTo(depth_image);
+
       img_stamp = image_msg->header.stamp;
 
       queue.pop();
@@ -680,14 +681,13 @@ namespace voxel_mapping
     {
       if (config_.verbose_)
         ROS_ERROR("[MapServer] Failed to lookup transform for image");
+
       if (queue.size() >= kMaxQueueSize)
       {
         if (config_.verbose_)
           ROS_ERROR("[MapServer] Queue size is too large, dropping oldest image");
         while (queue.size() >= kMaxQueueSize)
-        {
           queue.pop();
-        }
       }
     }
 

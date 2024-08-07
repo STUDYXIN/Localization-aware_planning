@@ -58,6 +58,24 @@
   <arg name="max_acc"/>
   <arg name="max_vel_yaw"/>
 
+  <arg name="point_num"/>
+
+  <arg name="point0_x"/>
+  <arg name="point0_y"/>
+  <arg name="point0_z"/>
+
+  <arg name="point1_x"/>
+  <arg name="point1_y"/>
+  <arg name="point1_z"/>
+
+  <arg name="point2_x"/>
+  <arg name="point2_y"/>
+  <arg name="point2_z"/>
+
+  <arg name="point3_x"/>
+  <arg name="point3_y"/>
+  <arg name="point3_z"/>
+
   <arg name="ld_smooth"/>
   <arg name="ld_dist"/>
   <arg name="ld_feasi"/>
@@ -171,11 +189,24 @@
     <param name="fsm/thresh_replan" value="1.5" type="double"/>
     <param name="fsm/thresh_no_replan" value="2.0" type="double"/>
 
-    <param name="fsm/wp_num" value="1" type="int"/>
+    <param name="fsm/wp_num" value="$(arg point_num)" type="int"/>
 
-    <param name="fsm/wp0_x" value="$(arg goal_x)" type="double"/>
+    <param name="fsm/wp0_x" value="$(arg point0_x)" type="double"/>
+    <param name="fsm/wp0_y" value="$(arg point0_y)" type="double"/>
+    <param name="fsm/wp0_z" value="$(arg point0_z)" type="double"/>
+    <param name="fsm/wp1_x" value="$(arg point1_x)" type="double"/>
+    <param name="fsm/wp1_y" value="$(arg point1_y)" type="double"/>
+    <param name="fsm/wp1_z" value="$(arg point1_z)" type="double"/>
+    <param name="fsm/wp2_x" value="$(arg point2_x)" type="double"/>
+    <param name="fsm/wp2_y" value="$(arg point2_y)" type="double"/>
+    <param name="fsm/wp2_z" value="$(arg point2_z)" type="double"/>
+    <param name="fsm/wp3_x" value="$(arg point3_x)" type="double"/>
+    <param name="fsm/wp3_y" value="$(arg point3_y)" type="double"/>
+    <param name="fsm/wp3_z" value="$(arg point3_z)" type="double"/>
+
+    <!-- <param name="fsm/wp0_x" value="$(arg goal_x)" type="double"/>
     <param name="fsm/wp0_y" value="$(arg goal_y)" type="double"/>
-    <param name="fsm/wp0_z" value="$(arg goal_z)" type="double"/>
+    <param name="fsm/wp0_z" value="$(arg goal_z)" type="double"/> -->
  
     <!-- <param name="fsm/wp0_x" value="8.0" type="double"/>
     <param name="fsm/wp0_y" value="10.0" type="double"/>
@@ -301,7 +332,7 @@
 
   </node>
 
-<node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
+  <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
     <remap from="~odom" to="$(arg odometry_topic)"/>
     <remap from="~goal" to="/move_base_simple/goal"/>
     <remap from="~traj_start_trigger" to="/traj_start_trigger" />
@@ -318,4 +349,9 @@
         <param name="covariance_scale" value="100.0"/>       
         <param name="robot_scale" value="1.0"/>
   </node>
+
+  <include file="$(find map_publisher)/launch/map_publisher.launch"/>
+
+  <node pkg="map_publisher" name="visual_gt_path" type="visual_gt_path.py" output="screen"/>
+
 </launch>

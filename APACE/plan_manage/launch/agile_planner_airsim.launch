@@ -1,27 +1,37 @@
 <launch>
-  <include file="$(find plan_manage)/launch/algorithm.xml">
+  <include file="$(find plan_manage)/launch/algorithm.xml">    
+    <!-- <arg name="mode" value="airsim"/>
+    <arg name="mode" value="uav_simulator"/> -->
     <arg name="mode" value="real"/>
 
-    <!-- <arg name="map_min_x" value="-16.0"/>
-    <arg name="map_min_y" value="-5.0"/>
+    <arg name="map_min_x" value="-16.0"/>
+    <arg name="map_min_y" value="-16.0"/>
     <arg name="map_min_z" value="-2.0"/>
     <arg name="map_max_x" value="16.0"/>
-    <arg name="map_max_y" value="27.0"/>
-    <arg name="map_max_z" value="5.0"/> -->
+    <arg name="map_max_y" value="16.0"/>
+    <arg name="map_max_z" value="5.0"/> 
 
-    <arg name="map_min_x" value="-2.0"/>
+    <arg name="box_min_x" value="-15.0"/>
+    <arg name="box_min_y" value="-15.0"/>
+    <arg name="box_min_z" value="0.0"/>
+    <arg name="box_max_x" value="15.0"/>
+    <arg name="box_max_y" value="15.0"/>
+    <arg name="box_max_z" value="5.0"/>
+
+    <arg name="vbox_min_x" value="-15.0"/>
+    <arg name="vbox_min_y" value="-15.0"/>
+    <arg name="vbox_min_z" value="-1.0"/>
+    <arg name="vbox_max_x" value="15.0"/>
+    <arg name="vbox_max_y" value="15.0"/>
+    <arg name="vbox_max_z" value="5.0"/> 
+
+    <!-- <arg name="map_min_x" value="-2.0"/>
     <arg name="map_min_y" value="-5.0"/>
     <arg name="map_min_z" value="0.0"/>
     <arg name="map_max_x" value="32.0"/>
     <arg name="map_max_y" value="15.0"/>
     <arg name="map_max_z" value="15.0"/>
 
-    <!-- <arg name="box_min_x" value="-15.0"/>
-    <arg name="box_min_y" value="-4.0"/>
-    <arg name="box_min_z" value="0.0"/>
-    <arg name="box_max_x" value="15.0"/>
-    <arg name="box_max_y" value="14.0"/>
-    <arg name="box_max_z" value="5.0"/> -->
 
     <arg name="box_min_x" value="-1.0"/>
     <arg name="box_min_y" value="-4.0"/>
@@ -30,38 +40,36 @@
     <arg name="box_max_y" value="14.0"/>
     <arg name="box_max_z" value="14.0"/>
 
-    <!-- <arg name="vbox_min_x" value="-15.0"/>
-    <arg name="vbox_min_y" value="-4.0"/>
-    <arg name="vbox_min_z" value="-1.0"/>
-    <arg name="vbox_max_x" value="15.0"/>
-    <arg name="vbox_max_y" value="26.0"/>
-    <arg name="vbox_max_z" value="5.0"/>  -->
 
     <arg name="vbox_min_x" value="0.0"/>
     <arg name="vbox_min_y" value="-4.0"/>
     <arg name="vbox_min_z" value="1.0"/>
     <arg name="vbox_max_x" value="15.0"/>
     <arg name="vbox_max_y" value="14.0"/>
-    <arg name="vbox_max_z" value="5.0"/> 
+    <arg name="vbox_max_z" value="14.0"/>  -->
     
-    <!-- <arg name="init_x" value="0.0"/>
-    <arg name="init_y" value="2.0"/>
-    <arg name="init_z" value="2.0"/>
-    <arg name="init_yaw" value="1.57"/> -->
-
     <arg name="init_x" value="0.0"/>
     <arg name="init_y" value="0.0"/>
-    <arg name="init_z" value="10.0"/>
+    <arg name="init_z" value="1.0"/>
     <arg name="init_yaw" value="1.57"/>
 
+    <arg name="point_num" value="4" />
 
-    <!-- <arg name="goal_x" value="-3.5"/>
-    <arg name="goal_y" value="18.0"/>
-    <arg name="goal_z" value="2.0"/> -->
+    <arg name="point0_x" value="8.0" />
+    <arg name="point0_y" value="8.0" />
+    <arg name="point0_z" value="0.0" />
 
-    <arg name="goal_x" value="28.0"/>
-    <arg name="goal_y" value="0.0"/>
-    <arg name="goal_z" value="10.0"/>
+    <arg name="point1_x" value="-8.0" />
+    <arg name="point1_y" value="8.0" />
+    <arg name="point1_z" value="0.0" />
+
+    <arg name="point2_x" value="-10.0" />
+    <arg name="point2_y" value="-10.0" />
+    <arg name="point2_z" value="0.0" />
+
+    <arg name="point3_x" value="10.0" />
+    <arg name="point3_y" value="-10.0" />
+    <arg name="point3_z" value="0.0" />
 
     <arg name="occupancy_map_file" value="$(find voxel_mapping)/data/feature_center_occu.txt"/>
     <arg name="esdf_map_file" value="$(find voxel_mapping)/data/feature_center_esdf.txt"/>

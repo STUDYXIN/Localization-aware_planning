@@ -17,20 +17,25 @@
 
 using std::shared_ptr;
 
-class Transformer {
+class Transformer
+{
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  typedef shared_ptr<Transformer> Ptr;
-  typedef shared_ptr<const Transformer> ConstPtr;
+  using Ptr = shared_ptr<Transformer>;
+  using ConstPtr = shared_ptr<const Transformer>;
 
-  struct Config {
-    enum class POSE_TYPE { POSE, ODOM, TRANSFORM, UNKNOWN };
+  struct Config
+  {
+    enum class POSE_TYPE
+    {
+      POSE,
+      ODOM,
+      TRANSFORM,
+      UNKNOWN
+    };
     POSE_TYPE pose_topic_type_;
   };
-
-  Transformer(){};
-  ~Transformer(){};
 
   Transformer(ros::NodeHandle &nh);
 
@@ -43,7 +48,7 @@ public:
 
 private:
   Config config_;
-  
+
   std::string world_frame_;
   std::string sensor_frame_;
   ros::Duration timestamp_tolerance_;

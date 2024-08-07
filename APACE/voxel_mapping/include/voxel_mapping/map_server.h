@@ -9,6 +9,7 @@
 #include <message_filters/synchronizer.h>
 #include <opencv2/opencv.hpp>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/common/transforms.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/Marker.h>
@@ -127,7 +128,19 @@ namespace voxel_mapping
     ros::Publisher interpolated_pose_pub_;
     ros::Publisher feature_pub_;
     ros::Publisher depth_pointcloud_pub_;
-    ros::Subscriber depth_sub_, pointcloud_sub_, feature_cloud_sub_, odom_sub_;
+
+    ros::Subscriber pointcloud_sub_;
+    ros::Subscriber feature_cloud_sub_;
+    ros::Subscriber depth_sub_;
+    ros::Subscriber odom_sub_;
+
+    // using SyncPolicyImageOdom = message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::PoseStamped>;
+    // using SynchronizerImageOdom = shared_ptr<message_filters::Synchronizer<SyncPolicyImageOdom>> SynchronizerImagePose;
+
+    // shared_ptr<message_filters::Subscriber<sensor_msgs::Image>> depth_sub_;
+    // shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> odom_sub_;
+    // SynchronizerImageOdom sync_image_odom_;
+
     ros::Timer publish_map_timer_;
 
     // Debug visualization

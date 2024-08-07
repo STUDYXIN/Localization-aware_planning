@@ -270,7 +270,7 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
   u.roll_rate = reference_inputs.roll_rate + feedback_bodyrates.x();
   u.pitch_rate = reference_inputs.pitch_rate + feedback_bodyrates.y();
   u.yaw_rate = reference_inputs.yaw_rate + feedback_bodyrates.z();
-  // ROS_INFO_STREAM("roll_rate: "<<u.roll_rate);
+
   double limit_rate = 6 * 3.14;
   if (u.roll_rate >= limit_rate)
     ROS_INFO("ROLL RATE LIMIT!");
@@ -279,7 +279,7 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
 
   uav_utils::limit_range(u.roll_rate, limit_rate); // 3.0
   uav_utils::limit_range(u.pitch_rate, limit_rate);
-  uav_utils::limit_range(u.yaw_rate, 1.5);
+  uav_utils::limit_range(u.yaw_rate, 1.0);
 };
 
 void Controller::publish_ctrl(const Controller_Output_t &u, const ros::Time &stamp)
@@ -328,10 +328,9 @@ bool Controller::almostZeroThrust(const double thrust_value) const
 {
   return fabs(thrust_value) < 0.01;
 }
-Eigen::Vector3d Controller::computeRobustBodyXAxis(
-    const Eigen::Vector3d &x_B_prototype, const Eigen::Vector3d &x_C,
-    const Eigen::Vector3d &y_C,
-    const Eigen::Quaterniond &attitude_estimate) const
+Eigen::Vector3d Controller::computeRobustBodyXAxis(const Eigen::Vector3d &x_B_prototype, const Eigen::Vector3d &x_C,
+                                                   const Eigen::Vector3d &y_C,
+                                                   const Eigen::Quaterniond &attitude_estimate) const
 {
   Eigen::Vector3d x_B = x_B_prototype;
 
@@ -370,9 +369,8 @@ Eigen::Vector3d Controller::computeRobustBodyXAxis(
 
   return x_B;
 }
-Eigen::Vector3d Controller::computeFeedBackControlBodyrates(
-    const Eigen::Quaterniond &desired_attitude,
-    const Eigen::Quaterniond &attitude_estimate)
+Eigen::Vector3d Controller::computeFeedBackControlBodyrates(const Eigen::Quaterniond &desired_attitude,
+                                                            const Eigen::Quaterniond &attitude_estimate)
 {
   // Compute the error quaternion
   const Eigen::Quaterniond q_e = attitude_estimate.inverse() * desired_attitude;
@@ -396,9 +394,7 @@ Eigen::Vector3d Controller::computeFeedBackControlBodyrates(
 
   return bodyrates;
 }
-Eigen::Vector3d
-Controller::computePIDErrorAcc(const Odom_Data_t &state_estimate,
-                               const Desired_State_t &reference_state)
+Eigen::Vector3d Controller::computePIDErrorAcc(const Odom_Data_t &state_estimate, const Desired_State_t &reference_state)
 {
   // Compute the desired accelerations due to control errors in world frame
   // with a PID controller

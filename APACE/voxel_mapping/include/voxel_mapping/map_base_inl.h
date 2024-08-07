@@ -67,15 +67,13 @@ namespace voxel_mapping
   template <typename VoxelType>
   void MapBase<VoxelType>::indexToAddress(const VoxelIndex &idx, VoxelAddress &addr)
   {
-    addr = idx[0] * map_config_.map_size_idx_(1) * map_config_.map_size_idx_(2) +
-           idx[1] * map_config_.map_size_idx_(2) + idx[2];
+    addr = idx[0] * map_config_.map_size_idx_(1) * map_config_.map_size_idx_(2) + idx[1] * map_config_.map_size_idx_(2) + idx[2];
   }
 
   template <typename VoxelType>
   VoxelAddress MapBase<VoxelType>::indexToAddress(const VoxelIndex &idx)
   {
-    return idx[0] * map_config_.map_size_idx_(1) * map_config_.map_size_idx_(2) +
-           idx[1] * map_config_.map_size_idx_(2) + idx[2];
+    return idx[0] * map_config_.map_size_idx_(1) * map_config_.map_size_idx_(2) + idx[1] * map_config_.map_size_idx_(2) + idx[2];
   }
 
   template <typename VoxelType>

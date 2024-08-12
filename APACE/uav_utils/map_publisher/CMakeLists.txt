@@ -141,6 +141,8 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/map_publisher.cpp)
 
+add_executable(visual_gt_path src/visual_gt_path.cpp)
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,6 +156,11 @@ add_executable(${PROJECT_NAME}_node src/map_publisher.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+)
+
+target_link_libraries(visual_gt_path
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
 )

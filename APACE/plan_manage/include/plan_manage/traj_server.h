@@ -81,10 +81,9 @@ namespace fast_planner
     double RMSE_;
     int num_eval_;
     Eigen::Vector3d error_bias_;
-    typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, nav_msgs::Odometry>
-        SyncPolicyErrorEvaluate;
-    typedef shared_ptr<message_filters::Synchronizer<SyncPolicyErrorEvaluate>>
-        SynchronizerErrorEvaluate;
+    using SyncPolicyErrorEvaluate = message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, nav_msgs::Odometry>;
+    using SynchronizerErrorEvaluate = shared_ptr<message_filters::Synchronizer<SyncPolicyErrorEvaluate>>;
+
     shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> airsim_sync_sub_;
     shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> vins_sync_sub_;
     SynchronizerErrorEvaluate sync_error_evaluate_;

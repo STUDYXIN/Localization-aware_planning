@@ -20,7 +20,7 @@
 
     <arg name="vbox_min_x" value="-15.0"/>
     <arg name="vbox_min_y" value="-15.0"/>
-    <arg name="vbox_min_z" value="-1.0"/>
+    <arg name="vbox_min_z" value="-2.0"/>
     <arg name="vbox_max_x" value="15.0"/>
     <arg name="vbox_max_y" value="15.0"/>
     <arg name="vbox_max_z" value="5.0"/> 

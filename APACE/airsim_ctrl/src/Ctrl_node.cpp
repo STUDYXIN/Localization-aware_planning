@@ -45,8 +45,7 @@ int main(int argc, char *argv[])
       ros::TransportHints().tcpNoDelay());
   // 上面两个都没问题
 
-  ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>("imu", 100, boost::bind(&Imu_Data_t::feed, &fsm.imu_data, _1),
-                                                           ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+  ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>("imu", 100, boost::bind(&Imu_Data_t::feed, &fsm.imu_data, _1), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
   fsm.controller.ctrl_FCU_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/setpoint_raw/attitude", 10);
   fsm.controller.debug_roll_pub = nh.advertise<std_msgs::Float32>("/debug_roll", 10);
   fsm.controller.debug_pitch_pub = nh.advertise<std_msgs::Float32>("/debug_pitch", 10);

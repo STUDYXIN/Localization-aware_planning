@@ -26,3 +26,6 @@ gnome-terminal -t "Planner" -x bash -c "roslaunch plan_manage agile_planner_airs
 
 sleep 8s
 gnome-terminal -t "Perception" -x bash -c "roslaunch vins vins_airsim.launch;exec bash;"
+
+# sleep 0.5s
+# gnome-terminal -t "Checker" -x bash -c "rosrun map_publisher collision_checker.py;exec bash;"

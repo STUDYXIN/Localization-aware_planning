@@ -13,6 +13,7 @@ namespace voxel_mapping
   {
     raycaster_->setParams(map_config_.resolution_, map_config_.map_min_);
   }
+
   template <typename VoxelType>
   void MapBase<VoxelType>::resetMap()
   {
@@ -79,12 +80,12 @@ namespace voxel_mapping
   template <typename VoxelType>
   bool MapBase<VoxelType>::isInMap(const Position &pos)
   {
-    if (pos(0) < map_config_.map_min_(0) + 1e-4 || pos(1) < map_config_.map_min_(1) + 1e-4 ||
-        pos(2) < map_config_.map_min_(2) + 1e-4)
+    if (pos(0) < map_config_.map_min_(0) + 1e-4 || pos(1) < map_config_.map_min_(1) + 1e-4 || pos(2) < map_config_.map_min_(2) + 1e-4)
       return false;
-    if (pos(0) > map_config_.map_max_(0) - 1e-4 || pos(1) > map_config_.map_max_(1) - 1e-4 ||
-        pos(2) > map_config_.map_max_(2) - 1e-4)
+
+    if (pos(0) > map_config_.map_max_(0) - 1e-4 || pos(1) > map_config_.map_max_(1) - 1e-4 || pos(2) > map_config_.map_max_(2) - 1e-4)
       return false;
+
     return true;
   }
 
@@ -93,9 +94,10 @@ namespace voxel_mapping
   {
     if (idx(0) < 0 || idx(1) < 0 || idx(2) < 0)
       return false;
-    if (idx(0) > map_config_.map_size_idx_(0) - 1 || idx(1) > map_config_.map_size_idx_(1) - 1 ||
-        idx(2) > map_config_.map_size_idx_(2) - 1)
+
+    if (idx(0) > map_config_.map_size_idx_(0) - 1 || idx(1) > map_config_.map_size_idx_(1) - 1 || idx(2) > map_config_.map_size_idx_(2) - 1)
       return false;
+
     return true;
   }
 
@@ -105,9 +107,7 @@ namespace voxel_mapping
     for (int i = 0; i < 3; ++i)
     {
       if (pos[i] < map_config_.box_min_[i] || pos[i] > map_config_.box_max_[i])
-      {
         return false;
-      }
     }
     return true;
   }
@@ -118,10 +118,9 @@ namespace voxel_mapping
     for (int i = 0; i < 3; ++i)
     {
       if (idx[i] < map_config_.box_min_idx_[i] || idx[i] > map_config_.box_max_idx_[i])
-      {
         return false;
-      }
     }
+
     return true;
   }
 
@@ -145,8 +144,17 @@ namespace voxel_mapping
   }
 
   template <typename VoxelType>
-  Position MapBase<VoxelType>::closestPointInMap(const Position &point,
-                                                 const Position &sensor_position)
+  Position MapBase<VoxelType>::posRounding(const Position &pos)
+  {
+    VoxelIndex idx;
+    positionToIndex(pos, idx);
+    Position rounded_pos;
+    indexToPosition(idx, rounded_pos);
+    return rounded_pos;
+  }
+
+  template <typename VoxelType>
+  Position MapBase<VoxelType>::closestPointInMap(const Position &point, const Position &sensor_position)
   {
     Position diff = point - sensor_position;
     Position max_tc = map_config_.map_max_ - sensor_position;
@@ -186,6 +194,24 @@ namespace voxel_mapping
   {
     return map_data_->data[addr];
   }
+
+  // template <typename VoxelType, typename VoxelValue>
+  // void MapBase<VoxelType>::setVoxel(const Position &pos, const VoxelValue &voxel)
+  // {
+  //   setVoxel(positionToAddress(pos), voxel);
+  // }
+
+  // template <typename VoxelType, typename VoxelValue>
+  // void MapBase<VoxelType>::setVoxel(const VoxelIndex &idx, const VoxelValue &voxel)
+  // {
+  //   setVoxel(indexToAddress(idx), voxel);
+  // }
+
+  // template <typename VoxelType, typename VoxelValue>
+  // void MapBase<VoxelType>::setVoxel(const VoxelAddress &addr, const VoxelValue &voxel)
+  // {
+  //   map_data_->data[addr].value = voxel;
+  // }
 
   template <typename VoxelType>
   void MapBase<VoxelType>::getMapBoundingBox(Position &min, Position &max)

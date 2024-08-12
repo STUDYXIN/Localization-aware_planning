@@ -49,16 +49,16 @@ namespace fast_planner
     pubs_.push_back(debug_pub_);
 
     // pubs_[10]
-    traj_bmk_pub_ =
-        node.advertise<visualization_msgs::Marker>("/planning_vis/trajectory_benchmark", 1000);
+    traj_bmk_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/trajectory_benchmark", 1000);
     pubs_.push_back(traj_bmk_pub_);
 
     // pubs_[11]
-    yaw_array_bmk_pub_ =
-        node.advertise<visualization_msgs::MarkerArray>("/planning_vis/yaw_array_benchmark", 100);
+    yaw_array_bmk_pub_ = node.advertise<visualization_msgs::MarkerArray>("/planning_vis/yaw_array_benchmark", 100);
     pubs_.push_back(yaw_array_bmk_pub_);
 
     frontier_pcl_pub_ = node.advertise<sensor_msgs::PointCloud2>("/planning_vis/frontier_pcl", 1000);
+
+    goal_point_pub_ = nh.advertise<visualization_msgs::Marker>("/planning_vis/goal_point", 20);
 
     node.param("planning_vis/world_frame", world_frame_, string("world"));
 
@@ -1053,6 +1053,30 @@ namespace fast_planner
     sensor_msgs::PointCloud2 pointcloud_msg;
     pcl::toROSMsg(*pointcloud, pointcloud_msg);
     frontier_pcl_pub_.publish(pointcloud_msg);
+  }
+
+  void PlanningVisualization::displayGoalPoint(const Eigen::Vector3d &goal_point, Eigen::Vector4d color, const double scale, int id)
+  {
+    visualization_msgs::Marker sphere;
+    sphere.header.frame_id = "world";
+    sphere.header.stamp = ros::Time::now();
+    sphere.type = visualization_msgs::Marker::SPHERE;
+    sphere.action = visualization_msgs::Marker::ADD;
+    sphere.id = id;
+
+    sphere.pose.orientation.w = 1.0;
+    sphere.color.r = color(0);
+    sphere.color.g = color(1);
+    sphere.color.b = color(2);
+    sphere.color.a = color(3);
+    sphere.scale.x = scale;
+    sphere.scale.y = scale;
+    sphere.scale.z = scale;
+    sphere.pose.position.x = goal_point(0);
+    sphere.pose.position.y = goal_point(1);
+    sphere.pose.position.z = goal_point(2);
+
+    goal_point_pub_.publish(sphere);
   }
 
 } // namespace fast_planner

@@ -87,12 +87,44 @@ namespace fast_planner
     map_server_->loadMap(occupancy_map_file_, esdf_map_file_, feature_map_file_);
   }
 
+  bool FastPlannerManager::checkTrajCollision(double &distance)
+  {
+    double t_now = (ros::Time::now() - local_data_.start_time_).toSec();
+
+    double tm, tmp;
+    local_data_.position_traj_.getTimeSpan(tm, tmp);
+    Eigen::Vector3d cur_pt = local_data_.position_traj_.evaluateDeBoor(tm + t_now);
+
+    double radius = 0.0;
+    Eigen::Vector3d fut_pt;
+    double fut_t = 0.02;
+
+    while (radius < 6.0 && t_now + fut_t < local_data_.duration_)
+    {
+      fut_pt = local_data_.position_traj_.evaluateDeBoor(tm + t_now + fut_t);
+
+      double dist = edt_environment_->evaluateCoarseEDT(fut_pt, -1.0);
+      if (dist < 0.1)
+      {
+        distance = radius;
+        return false;
+      }
+
+      radius = (fut_pt - cur_pt).norm();
+      fut_t += 0.02;
+    }
+
+    return true;
+  }
+
   // !SECTION
   void FastPlannerManager::planExploreTraj(const vector<Eigen::Vector3d> &tour, const Eigen::Vector3d &cur_vel, const Eigen::Vector3d &cur_acc,
                                            const bool reach_end, const double &time_lb)
   {
     if (tour.empty())
       ROS_ERROR("Empty path to traj planner");
+
+    TicToc t2;
 
     // Generate traj through waypoints-based method
     const int pt_num = tour.size();
@@ -108,6 +140,10 @@ namespace fast_planner
     // Step1: 调用waypointsTraj函数生成初始的分段多项式轨迹
     PolynomialTraj init_traj;
     PolynomialTraj::waypointsTraj(pos, cur_vel, zero, cur_acc, zero, times, init_traj);
+
+    ROS_WARN("[Local Planner] Plan t2: %fs", t2.toc());
+
+    TicToc t3;
 
     // Step2: 基于B样条曲线的轨迹优化，首先生成一条均匀B样条曲线
     double duration = init_traj.getTotalTime();
@@ -131,7 +167,11 @@ namespace fast_planner
     NonUniformBspline::parameterizeToBspline(dt, points, boundary_deri, pp_.bspline_degree_, ctrl_pts);
     NonUniformBspline tmp_traj(ctrl_pts, pp_.bspline_degree_, dt);
 
+    ROS_WARN("[Local Planner] Plan t3: %fs", t3.toc());
+
     // Step3: 在上面得到的均匀B样条曲线基础上进行B样条曲线优化，得到最终的轨迹
+    TicToc t4;
+
     vector<Vector3d> start, end;
     vector<bool> start_idx, end_idx;
 
@@ -160,22 +200,26 @@ namespace fast_planner
 
     int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY |
                     BsplineOptimizer::START | BsplineOptimizer::END | BsplineOptimizer::MINTIME |
-                    BsplineOptimizer::PARALLAX |
-                    BsplineOptimizer::VERTICALVISIBILITY;
+                    BsplineOptimizer::DISTANCE;
 
     bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func);
     local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
+    local_data_.velocity_traj_ = local_data_.position_traj_.getDerivative();
+    local_data_.acceleration_traj_ = local_data_.velocity_traj_.getDerivative();
 
-    updateTrajInfo();
+    local_data_.start_pos_ = local_data_.position_traj_.evaluateDeBoorT(0.0);
+    local_data_.duration_ = local_data_.position_traj_.getTimeSum();
+
+    ROS_WARN("[Local Planner] Plan t4: %fs", t4.toc());
   }
 
-  int FastPlannerManager::planLocalMotion(const Vector3d &next_pos, const Vector3d &pos, const Vector3d &vel, const Vector3d &acc,
-                                          bool &truncated, const double &time_lb)
+  int FastPlannerManager::planLocalMotion(const Vector3d &next_pos, const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, bool &truncated, const double &time_lb)
   {
     // Start optimization
     // Plan trajectory (position and yaw) to the next viewpoint
 
     // Step1: 调用A*算法接口进行全局规划，并简单处理得到缩短的路径（由一堆三维路径点组成）
+    TicToc t1;
     path_finder_->reset();
     if (path_finder_->search(pos, next_pos) != Astar::REACH_END)
     {
@@ -205,6 +249,8 @@ namespace fast_planner
         truncated_path.push_back(cur_pt);
       }
     }
+
+    ROS_WARN("[Local Planner] Plan t1: %fs", t1.toc());
 
     // Step2: 到这里拿到了路径规划生成的waypoints，接下来用这些waypoints生成trajetory
     planExploreTraj(truncated ? truncated_path : path_waypoint, vel, acc, !truncated, time_lb);
@@ -254,19 +300,9 @@ namespace fast_planner
     path = short_tour;
   }
 
-  void FastPlannerManager::updateTrajInfo()
-  {
-    local_data_.velocity_traj_ = local_data_.position_traj_.getDerivative();
-    local_data_.acceleration_traj_ = local_data_.velocity_traj_.getDerivative();
-
-    local_data_.start_pos_ = local_data_.position_traj_.evaluateDeBoorT(0.0);
-    local_data_.duration_ = local_data_.position_traj_.getTimeSum();
-
-    local_data_.traj_id_++;
-  }
-
   void FastPlannerManager::planYawCovisibility()
   {
+    TicToc t5;
     // Yaw b-spline has same segment number as position b-spline
     Eigen::MatrixXd position_ctrl_pts = local_data_.position_traj_.getControlPoint();
     int ctrl_pts_num = position_ctrl_pts.rows();
@@ -293,6 +329,10 @@ namespace fast_planner
     // Step1: 使用图搜索算法给出一条初始的yaw轨迹(yaw_waypoints)，跟position_traj一一对应，除了首尾各添了个0
     vector<double> yaw_waypoints;
     yaw_initial_planner_->searchPathOfYaw(twb_pos, twb_acc, dt_yaw, yaw_waypoints);
+
+    ROS_WARN("[Local Planner] Plan t5: %fs", t5.toc());
+
+    TicToc t6;
 
     // 后面优化选项选择了WAYPOINTS，所以这里需要把waypoints设置好
     vector<Eigen::Vector3d> waypts;
@@ -348,6 +388,93 @@ namespace fast_planner
     local_data_.yaw_traj_.setUniformBspline(yaw, 3, dt_yaw);
     local_data_.yawdot_traj_ = local_data_.yaw_traj_.getDerivative();
     local_data_.yawdotdot_traj_ = local_data_.yawdot_traj_.getDerivative();
+
+    cout<<
+
+    ROS_WARN("[Local Planner] Plan t6: %fs", t6.toc());
+  }
+
+  void FastPlannerManager::callYawPrepare(const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, const Vector3d &yaw)
+  {
+    ROS_WARN("[Planner_Manager] Yaw preparation starts");
+
+    double yaw_cur = yaw(0);
+    double yaw_cmd = local_data_.yaw_traj_.evaluateDeBoorT(0.0)[0];
+
+    // Round yaw_cur to [-PI, PI]
+    while (yaw_cur < -M_PI)
+      yaw_cur += 2 * M_PI;
+    while (yaw_cur > M_PI)
+      yaw_cur -= 2 * M_PI;
+
+    double diff = yaw_cmd - yaw_cur;
+    if (fabs(diff) <= M_PI)
+      yaw_cmd = yaw_cur + diff;
+    else if (diff > M_PI)
+      yaw_cmd = yaw_cur + diff - 2 * M_PI;
+    else if (diff < -M_PI)
+      yaw_cmd = yaw_cur + diff + 2 * M_PI;
+
+    diff = yaw_cmd - yaw_cur;
+
+    // Set b-spline params
+    const int seg_num = 12;
+    const double yaw_vel = M_PI / 12.0;
+    const double duration = fabs(diff) / yaw_vel;
+    const double dt_yaw = duration / seg_num; // time of B-spline segment
+
+    // Define waypoints such that yaw change is uniform
+    vector<Eigen::Vector3d> waypoints;
+    for (int i = 0; i < seg_num + 1; i++)
+    {
+      double t = i * dt_yaw;
+      double yaw = yaw_cur + diff * t / duration;
+      Eigen::Vector3d waypt;
+      waypt(0) = yaw;
+      waypt(1) = waypt(2) = 0.0;
+      waypoints.push_back(waypt);
+    }
+
+    Eigen::MatrixXd points(waypoints.size(), 3);
+    for (size_t i = 0; i < waypoints.size(); ++i)
+      points.row(i) = waypoints[i].transpose();
+
+    Eigen::VectorXd times(waypoints.size() - 1);
+    times.setConstant(dt_yaw);
+
+    // Given desired waypoints and corresponding time stamps, fit a B-spline and execute it
+    PolynomialTraj poly;
+    PolynomialTraj::waypointsTraj(points, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), times, poly);
+
+    // Fit the polynomial with B-spline
+    vector<Eigen::Vector3d> point_set, boundary_der;
+    for (double ts = 0; ts <= 1e-3 + duration; ts += dt_yaw)
+      point_set.push_back(poly.evaluate(ts, 0));
+
+    boundary_der.push_back(poly.evaluate(0, 1));
+    boundary_der.push_back(poly.evaluate(duration, 1));
+    boundary_der.push_back(poly.evaluate(0, 2));
+    boundary_der.push_back(poly.evaluate(duration, 2));
+
+    Eigen::MatrixXd yaw_ctrl_pts;
+    NonUniformBspline::parameterizeToBspline(dt_yaw, point_set, boundary_der, 3, yaw_ctrl_pts);
+
+    prepare_yaw_data_.yaw_traj_.setUniformBspline(yaw_ctrl_pts, 3, dt_yaw);
+    prepare_yaw_data_.yawdot_traj_ = prepare_yaw_data_.yaw_traj_.getDerivative();
+    prepare_yaw_data_.yawdotdot_traj_ = prepare_yaw_data_.yawdot_traj_.getDerivative();
+
+    Eigen::MatrixXd pos_ctrl_pts = yaw_ctrl_pts;
+    for (int i = 0; i < pos_ctrl_pts.rows(); i++)
+      pos_ctrl_pts.row(i) = pos.transpose();
+
+    prepare_yaw_data_.position_traj_.setUniformBspline(pos_ctrl_pts, pp_.bspline_degree_, dt_yaw);
+    prepare_yaw_data_.velocity_traj_ = prepare_yaw_data_.position_traj_.getDerivative();
+    prepare_yaw_data_.acceleration_traj_ = prepare_yaw_data_.velocity_traj_.getDerivative();
+
+    prepare_yaw_data_.start_pos_ = pos;
+    prepare_yaw_data_.duration_ = prepare_yaw_data_.position_traj_.getTimeSum();
+
+    ROS_WARN("[Planner_Manager] Yaw preparation done");
   }
 
   void FastPlannerManager::calcNextYaw(const double &last_yaw, double &yaw)

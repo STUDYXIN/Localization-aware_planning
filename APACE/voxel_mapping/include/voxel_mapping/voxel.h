@@ -5,12 +5,9 @@
 
 namespace voxel_mapping
 {
-
   enum class OccupancyType
   {
     UNKNOWN,
-    UNKNOWN_FRONTIER_OCCUPIED,
-    UNKNOWN_FRONTIER_FREE,
     OCCUPIED,
     FREE
   };
@@ -28,6 +25,18 @@ namespace voxel_mapping
   struct ESDFVoxel
   {
     FloatingPoint value = 0.0;
+  };
+
+  enum class FeatureType
+  {
+    UNKNOWN,
+    HASFEATURE,
+    NOFEATURE
+  };
+
+  struct FeatureVoxel
+  {
+    FeatureType value = FeatureType::UNKNOWN;
   };
 
 } // namespace voxel_mapping

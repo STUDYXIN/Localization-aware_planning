@@ -149,8 +149,8 @@
     <param name="voxel_mapping/publish_tsdf_period" value="true" type="bool"/>
     <param name="voxel_mapping/publish_esdf_period" value="true" type="bool"/>
     <param name="voxel_mapping/publish_occupancy_grid_period" value="true" type="bool"/>
-    <param name="voxel_mapping/tsdf_slice_height" value="0.5" type="double"/>
-    <param name="voxel_mapping/tsdf_slice_visualization_height" value="0.5" type="double"/>
+    <param name="voxel_mapping/tsdf_slice_height" value="1.0" type="double"/>
+    <param name="voxel_mapping/tsdf_slice_visualization_height" value="1.0" type="double"/>
     <param name="voxel_mapping/esdf_slice_height" value="1.0" type="double"/>
     <param name="voxel_mapping/esdf_slice_visualization_height" value="1.0" type="double"/>
     <param name="voxel_mapping/occupancy_grid_slice_height" value="-0.5" type="double"/>
@@ -173,6 +173,10 @@
 
     <param name="voxel_mapping/feature_map/depth_min" value="0.2" type="double"/>
     <param name="voxel_mapping/feature_map/depth_max" value="70.0" type="double"/>
+
+    <param name="voxel_mapping/feature_grid/depth_min" value="0.2" type="double"/>
+    <param name="voxel_mapping/feature_grid/depth_max" value="70.0" type="double"/>
+    <param name="voxel_mapping/feature_grid/TSDF_cutoff_dist" value="0.8" type="double"/>
 
     <param name="transformer/world_frame" value="$(arg world_frame)" type="string"/>
     <param name="transformer/sensor_frame" value="$(arg sensor_frame)" type="string"/>
@@ -306,7 +310,7 @@
   </node>
 
   <!-- trajectory server -->
-  <node pkg="plan_manage" name="traj_server_node" type="traj_server" output="screen">
+  <node pkg="plan_manage" name="traj_server_node" type="traj_server" output="log">
     <remap from="/odom_world" to="$(arg odometry_topic)"/>
 
     <param name="traj_server/init_sleep_time" value="1.5" type="double"/>
@@ -352,6 +356,7 @@
 
   <include file="$(find map_publisher)/launch/map_publisher.launch"/>
 
-  <node pkg="map_publisher" name="visual_gt_path" type="visual_gt_path.py" output="screen"/>
-
+  <!-- <node pkg="map_publisher" name="visual_gt_path" type="visual_gt_path.py" output="screen"/> -->
+  
+  <node pkg="map_publisher" name="visual_gt_path" type="visual_gt_path" output="screen"/>
 </launch>

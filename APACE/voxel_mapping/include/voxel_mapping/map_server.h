@@ -18,6 +18,7 @@
 #include "tic_toc.h"
 #include "transformer/transformer.h"
 #include "voxel_mapping/esdf.h"
+#include "voxel_mapping/feature_grid.h"
 #include "voxel_mapping/feature_map.h"
 #include "voxel_mapping/occupancy_grid.h"
 #include "voxel_mapping/tsdf.h"
@@ -68,6 +69,7 @@ namespace voxel_mapping
     ESDF::Ptr getESDF() { return esdf_; }
     OccupancyGrid::Ptr getOccupancyGrid() { return occupancy_grid_; }
     Transformer::Ptr getTransformer() { return transformer_; }
+    FeatureGrid::Ptr getFeatureGrid() { return feature_grid_; }
     FeatureMap::Ptr getFeatureMap() { return feature_map_; }
 
     void depthCallback(const sensor_msgs::ImageConstPtr &img);
@@ -78,10 +80,9 @@ namespace voxel_mapping
 
     void publishTSDF();
     void publishTSDFSlice();
-    void publishESDF();
     void publishESDFSlice();
     void publishOccupancyGrid();
-    void publishOccupancyGridSlice();
+    void publishFeatureGrid();
     void publishFeatureMap();
     void publishFeaturePointcloud(const AlignedVector<Position> features);
     void publishDepthPointcloud(const PointCloudType &pointcloud, const ros::Time &img_stamp);
@@ -105,10 +106,18 @@ namespace voxel_mapping
     double getResolution();
     int getVoxelNum();
     void getBox(Eigen::Vector3d &bmin, Eigen::Vector3d &bmax);
-    bool isInBox(const Position &pos);
-    bool isInBox(const VoxelIndex &idx);
-    OccupancyType getOccupancy(const Eigen::Vector3d &pos);
-    OccupancyType getOccupancy(const Eigen::Vector3i &idx);
+
+    template <typename T>
+    bool isInBox(const T &input)
+    {
+      return tsdf_->isInBox(input);
+    }
+
+    template <typename T>
+    OccupancyType getOccupancy(const T &input)
+    {
+      return occupancy_grid_->getVoxel(input).value;
+    }
 
     void getExploredRegion(Position &bbox_min, Position &bbox_max);
 
@@ -124,6 +133,7 @@ namespace voxel_mapping
     ros::Publisher tsdf_pub_, tsdf_slice_pub_;
     ros::Publisher esdf_pub_, esdf_slice_pub_;
     ros::Publisher occupancy_grid_pub_, occupancy_grid_slice_pub_;
+    ros::Publisher feature_grid_pub_;
     ros::Publisher feature_map_pub_;
     ros::Publisher interpolated_pose_pub_;
     ros::Publisher feature_pub_;
@@ -150,6 +160,7 @@ namespace voxel_mapping
     ESDF::Ptr esdf_;
     OccupancyGrid::Ptr occupancy_grid_;
     FeatureMap::Ptr feature_map_;
+    FeatureGrid::Ptr feature_grid_;
     Transformer::Ptr transformer_;
 
     std::queue<sensor_msgs::ImageConstPtr> image_queue_;

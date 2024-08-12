@@ -7,7 +7,7 @@ namespace fast_planner
   {
     traj_id_ = 0;
 
-    energy, max_vel, max_acc, cur_vel, cur_acc = 0.0;
+    max_vel, max_acc, cur_vel, cur_acc = 0.0;
 
     start_eval_ = false;
     last_eval_time_ = -1.0;
@@ -139,11 +139,9 @@ namespace fast_planner
     if (msg.child_frame_id == "X" || msg.child_frame_id == "O")
       return;
     odom = msg;
-    traj_real_.push_back(Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y,
-                                         odom.pose.pose.position.z));
+    traj_real_.push_back(Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z));
 
-    Eigen::Quaterniond odom_orient_(odom.pose.pose.orientation.w, odom.pose.pose.orientation.x,
-                                    odom.pose.pose.orientation.y, odom.pose.pose.orientation.z);
+    Eigen::Quaterniond odom_orient_(odom.pose.pose.orientation.w, odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z);
     Eigen::Vector3d rot_x = odom_orient_.toRotationMatrix().block(0, 0, 3, 1);
     double yaw_real = atan2(rot_x(1), rot_x(0));
     yaw_traj_real_.push_back(yaw_real);
@@ -205,13 +203,13 @@ namespace fast_planner
 
     receive_traj_ = true;
 
-    double yaw_cmd_start = traj_[3].evaluateDeBoorT(0)[0];
-    double yaw_current = yaw_traj_real_.back();
-    if (fabs(yaw_cmd_start - yaw_current) > 1e-3)
-    {
-      Eigen::Vector3d pos = traj_real_.back();
-      prepareYaw(pos, yaw_cmd_start, yaw_current);
-    }
+    // double yaw_cmd_start = traj_[3].evaluateDeBoorT(0)[0];
+    // double yaw_current = yaw_traj_real_.back();
+    // if (fabs(yaw_cmd_start - yaw_current) > 1e-3)
+    // {
+    //   Eigen::Vector3d pos = traj_real_.back();
+    //   prepareYaw(pos, yaw_cmd_start, yaw_current);
+    // }
 
     start_time_ = ros::Time::now();
     start_eval_ = true;
@@ -234,10 +232,10 @@ namespace fast_planner
     ros::Time time_now = ros::Time::now();
     double t_cur = (time_now - start_time_).toSec();
 
-    Eigen::Vector3d pos, vel, acc, jer;
+    Eigen::Vector3d pos, vel, acc;
     double yaw, yawdot;
 
-    if (t_cur < traj_duration_ && t_cur >= 0.0)
+    if (t_cur >= 0.0 && t_cur < traj_duration_)
     {
       // Current time within range of planned traj
       pos = traj_[0].evaluateDeBoorT(t_cur);
@@ -245,7 +243,6 @@ namespace fast_planner
       acc = traj_[2].evaluateDeBoorT(t_cur);
       yaw = traj_[3].evaluateDeBoorT(t_cur)[0];
       yawdot = traj_[4].evaluateDeBoorT(t_cur)[0];
-      jer = traj_[5].evaluateDeBoorT(t_cur);
     }
     else if (t_cur >= traj_duration_)
     {
@@ -257,22 +254,10 @@ namespace fast_planner
       yaw = traj_[3].evaluateDeBoorT(traj_duration_)[0];
       yawdot = 0.0;
 
-      // Report info of the whole flight
-      double len = calcPathLength(traj_cmd_);
-      double flight_t = (end_time - start_time).toSec();
-      ROS_WARN_ONCE("[Traj server] Estimation error: %.2lf, RMSE: %.2lf, Flight time: %.2lf, Path "
-                    "length: %.2lf, Max vel: %.2lf, Max acc: %.2lf",
-                    last_eval_error_, RMSE_, flight_t, len, max_vel, max_acc);
-
       start_eval_ = false;
     }
     else
       ROS_ERROR("[Traj server] Invalid time: start_time_: %.2lf, t_cur: %.2lf, traj_duration_: %.2lf", start_time_.toSec(), t_cur, traj_duration_);
-
-    if (vel.norm() > max_vel)
-      max_vel = vel.norm();
-    if (acc.norm() > max_acc)
-      max_acc = acc.norm();
 
     cmd.header.stamp = time_now;
     cmd.trajectory_id = traj_id_;
@@ -308,22 +293,9 @@ namespace fast_planner
     }
     else if ((pos - traj_cmd_.back()).norm() > 1e-6)
     {
-      // Add new different commanded position
-      // Detect pos jump, disabled for agile flight
-      // Eigen::Vector3d last_pos = traj_cmd_.back();
-      // if ((pos - last_pos).norm() > 0.05) {
-      //   ROS_ERROR("[Traj server] pos jump from %.2lf, %.2lf, %.2lf to %.2lf, %.2lf, %.2lf",
-      //             last_pos[0], last_pos[1], last_pos[2], pos[0], pos[1], pos[2]);
-      // }
-
       traj_cmd_.push_back(pos);
       yaw_traj_cmd_.push_back(yaw);
-
-      double dt = (time_now - last_time).toSec();
-      energy += jer.squaredNorm() * dt;
-      end_time = ros::Time::now();
     }
-    last_time = time_now;
   }
 
   void TrajServer::evaluateCallback(const nav_msgs::OdometryConstPtr &airsim_msg, const nav_msgs::OdometryConstPtr &vins_msg)

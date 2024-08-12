@@ -38,6 +38,7 @@ namespace voxel_mapping
             { tmp_buffer2_[indexToAddress(VoxelIndex(x, y, z))].value = val; },
             idx_min[1], idx_max[1], 1);
       }
+
     for (int y = idx_min[1]; y <= idx_max[1]; y++)
       for (int z = idx_min[2]; z <= idx_max[2]; z++)
       {

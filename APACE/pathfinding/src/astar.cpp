@@ -48,15 +48,17 @@ namespace fast_planner
 
   int Astar::search(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &end_pt)
   {
-    if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::OCCUPIED ||
-        edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::UNKNOWN)
+    // if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::OCCUPIED ||
+    //     edt_env_->map_server_->getOccupancyGrid()->getVoxel(start_pt).value == voxel_mapping::OccupancyType::UNKNOWN)
+    if (edt_env_->map_server_->getOccupancy(start_pt) == voxel_mapping::OccupancyType::OCCUPIED)
     {
       cout << "start point is not valid!" << endl;
       return NO_PATH;
     }
 
-    if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(end_pt).value == voxel_mapping::OccupancyType::OCCUPIED ||
-        edt_env_->map_server_->getOccupancyGrid()->getVoxel(end_pt).value == voxel_mapping::OccupancyType::UNKNOWN)
+    // if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(end_pt).value == voxel_mapping::OccupancyType::OCCUPIED ||
+    //     edt_env_->map_server_->getOccupancyGrid()->getVoxel(end_pt).value == voxel_mapping::OccupancyType::UNKNOWN)
+    if (edt_env_->map_server_->getOccupancy(end_pt) == voxel_mapping::OccupancyType::OCCUPIED)
     {
       cout << "end point is not valid!" << endl;
       return NO_PATH;
@@ -121,11 +123,14 @@ namespace fast_planner
             if (!edt_env_->map_server_->getOccupancyGrid()->isInBox(nbr_pos))
               continue;
 
-            if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value == voxel_mapping::OccupancyType::OCCUPIED ||
-                edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value == voxel_mapping::OccupancyType::UNKNOWN)
-            {
+            // if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value == voxel_mapping::OccupancyType::OCCUPIED ||
+            //     edt_env_->map_server_->getOccupancyGrid()->getVoxel(nbr_pos).value == voxel_mapping::OccupancyType::UNKNOWN)
+            // {
+            //   continue;
+            // }
+
+            if (edt_env_->map_server_->getOccupancy(nbr_pos) == voxel_mapping::OccupancyType::OCCUPIED)
               continue;
-            }
 
             bool safe = true;
             Vector3d dir = nbr_pos - cur_pos;
@@ -134,17 +139,17 @@ namespace fast_planner
             for (double l = 0.1; l < len; l += 0.1)
             {
               Vector3d ckpt = cur_pos + l * dir;
-              if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value == voxel_mapping::OccupancyType::OCCUPIED ||
-                  edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value == voxel_mapping::OccupancyType::UNKNOWN)
+              // if (edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value == voxel_mapping::OccupancyType::OCCUPIED ||
+              //     edt_env_->map_server_->getOccupancyGrid()->getVoxel(ckpt).value == voxel_mapping::OccupancyType::UNKNOWN)
+
+              if (edt_env_->map_server_->getOccupancy(ckpt) == voxel_mapping::OccupancyType::OCCUPIED)
               {
                 safe = false;
                 break;
               }
             }
             if (!safe)
-            {
               continue;
-            }
 
             // Check not in close set
             Eigen::Vector3i nbr_idx;

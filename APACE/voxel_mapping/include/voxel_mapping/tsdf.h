@@ -37,8 +37,7 @@ namespace voxel_mapping
 
     void inputPointCloud(const PointCloudType &pointcloud);
 
-    FloatingPoint computeDistance(const Position &origin, const Position &point,
-                                  const Position &voxel);
+    FloatingPoint computeDistance(const Position &origin, const Position &point, const Position &voxel);
     FloatingPoint computeWeight(const FloatingPoint &sdf, const FloatingPoint &depth);
     void updateTSDFVoxel(const VoxelAddress &addr, const FloatingPoint &sdf,
                          const FloatingPoint &weight = 1.0);

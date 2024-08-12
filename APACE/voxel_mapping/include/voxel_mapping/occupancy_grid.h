@@ -19,8 +19,8 @@ namespace voxel_mapping
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    typedef shared_ptr<OccupancyGrid> Ptr;
-    typedef shared_ptr<const OccupancyGrid> ConstPtr;
+    using Ptr = shared_ptr<OccupancyGrid>;
+    using ConstPtr = shared_ptr<const OccupancyGrid>;
 
     struct Config
     {
@@ -38,16 +38,16 @@ namespace voxel_mapping
 
     void updateOccupancyVoxel(const VoxelAddress &addr);
 
+    void setOccupancyVoxel(const VoxelIndex &addr, const OccupancyType type);
+
     void setTSDF(const shared_ptr<TSDF> &tsdf) { tsdf_ = tsdf; }
 
-    bool queryOcclusion(const Position &sensor_position, const Position &feature_point,
-                        const double raycast_tolerance);
+    bool queryOcclusion(const Position &sensor_position, const Position &feature_point, const double raycast_tolerance);
 
     OccupancyType queryOccupancy(const Position &pos);
 
     void saveMap(const string &filename);
-    void loadMap();
-    void loadMap(const string &filename);
+    void loadMap(const string &filename = "");
     void loadMapFromPcd(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
 
     Config config_;

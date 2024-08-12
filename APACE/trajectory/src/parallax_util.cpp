@@ -349,8 +349,7 @@ namespace fast_planner
         n3_norm = n3.norm();
         b_norm = b.norm();
         c_norm = c.norm();
-        dsin_theta3_dn3 = (pow(-n3_norm, 2) * b.cross(c) - pow(c_norm, 2) * n3) /
-                          (pow(n3_norm, 3) * b_norm * c_norm);
+        dsin_theta3_dn3 = (pow(-n3_norm, 2) * b.cross(c) - pow(c_norm, 2) * n3) / (pow(n3_norm, 3) * b_norm * c_norm);
         double dv3_dsin_theta3 = k3 * exp(-k3 * (sin_theta3 - sin((M_PI - fov_horizontal) / 2.0))) * pow(v3_theta3, 2);
 
         // Combine gradients using chain rule

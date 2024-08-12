@@ -8,25 +8,24 @@ namespace voxel_mapping
 
   void OccupancyGrid::updateOccupancyVoxel(const VoxelAddress &addr)
   {
-    // cout << "[OccupancyGrid] Update occupancy voxel" << endl;
-
     if (tsdf_->getVoxel(addr).weight < 1e-5)
     {
       // cout << "set unknown" << endl;
-      map_data_->data[addr].value = OccupancyType::UNKNOWN;
+      // map_data_->data[addr].value = OccupancyType::UNKNOWN;
+      setVoxel(addr, OccupancyType::UNKNOWN);
       return;
     }
 
     if (tsdf_->getVoxel(addr).value < config_.TSDF_cutoff_dist_)
-    {
-      // cout << "set occupied" << endl;
-      map_data_->data[addr].value = OccupancyType::OCCUPIED;
-    }
+      setVoxel(addr, OccupancyType::OCCUPIED);
     else
-    {
-      // cout << "set free" << endl;
-      map_data_->data[addr].value = OccupancyType::FREE;
-    }
+      setVoxel(addr, OccupancyType::FREE);
+  }
+
+  void OccupancyGrid::setOccupancyVoxel(const VoxelIndex &idx, const OccupancyType type)
+  {
+    VoxelAddress addr = indexToAddress(idx);
+    map_data_->data[addr].value = type;
   }
 
   bool OccupancyGrid::queryOcclusion(const Position &sensor_position, const Position &feature_point, const double raycast_tolerance)
@@ -75,27 +74,29 @@ namespace voxel_mapping
     ofs.close();
   }
 
-  void OccupancyGrid::loadMap()
-  {
-    for (size_t i = 0; i < map_data_->data.size(); ++i)
-      map_data_->data[i].value = OccupancyType::FREE;
-  }
-
   void OccupancyGrid::loadMap(const string &filename)
   {
-    std::ifstream ifs(filename);
-    if (!ifs.is_open())
+    if (filename.empty())
     {
-      std::cerr << "Failed to open file: " << filename << std::endl;
-      return;
+      for (size_t i = 0; i < map_data_->data.size(); ++i)
+        map_data_->data[i].value = OccupancyType::FREE;
     }
-    for (size_t i = 0; i < map_data_->data.size(); ++i)
+    else
     {
-      int value;
-      ifs >> value;
-      map_data_->data[i].value = (OccupancyType)value;
+      std::ifstream ifs(filename);
+      if (!ifs.is_open())
+      {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+      }
+      for (size_t i = 0; i < map_data_->data.size(); ++i)
+      {
+        int value;
+        ifs >> value;
+        map_data_->data[i].value = (OccupancyType)value;
+      }
+      ifs.close();
     }
-    ifs.close();
   }
 
   void OccupancyGrid::loadMapFromPcd(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)

@@ -46,7 +46,7 @@ namespace voxel_mapping
     if (features_cloud_.points.empty())
       return;
 
-    ROS_INFO("Size before filtering: %d", static_cast<int>(features_cloud_.points.size()));
+    // ROS_INFO("Size before filtering: %d", static_cast<int>(features_cloud_.points.size()));
 
     pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
     voxel_filter.setInputCloud(features_cloud_.makeShared());
@@ -55,7 +55,7 @@ namespace voxel_mapping
     voxel_filter.filter(*filtered_cloud);
     features_cloud_ = *filtered_cloud;
 
-    ROS_INFO("Size after filtering: %d", static_cast<int>(features_cloud_.points.size()));
+    // ROS_INFO("Size after filtering: %d", static_cast<int>(features_cloud_.points.size()));
 
     features_kdtree_.setInputCloud(features_cloud_.makeShared());
   }
@@ -67,7 +67,7 @@ namespace voxel_mapping
 
   void FeatureMap::getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res)
   {
-    if (features_cloud_.points.size() == 0)
+    if (features_cloud_.points.empty())
       return;
 
     res.clear();
@@ -90,40 +90,4 @@ namespace voxel_mapping
     }
   }
 
-  void FeatureMap::getFeaturesIndex(const Eigen::Vector3d &pos, vector<int> &res)
-  {
-    if (features_cloud_.points.size() == 0)
-      return;
-
-    res.clear();
-
-    pcl::PointXYZ searchPoint;
-    searchPoint.x = pos(0);
-    searchPoint.y = pos(1);
-    searchPoint.z = pos(2);
-
-    vector<int> pointIdxRadiusSearch;
-    vector<float> pointRadiusSquaredDistance;
-    pointIdxRadiusSearch.clear();
-    pointRadiusSquaredDistance.clear();
-
-    features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
-
-    for (int index : pointIdxRadiusSearch)
-    {
-      Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
-      if ((f - pos).norm() > config_.depth_min_)
-        res.push_back(index);
-    }
-  }
-
-  void FeatureMap::indexToFeatures(const vector<int> &index, vector<Eigen::Vector3d> &res)
-  {
-    res.clear();
-    for (int ind : index)
-    {
-      Eigen::Vector3d f(features_cloud_[ind].x, features_cloud_[ind].y, features_cloud_[ind].z);
-      res.push_back(f);
-    }
-  }
 } // namespace voxel_mapping

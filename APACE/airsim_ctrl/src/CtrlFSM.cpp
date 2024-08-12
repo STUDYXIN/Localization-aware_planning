@@ -6,8 +6,7 @@ using std::cout;
 using std::endl;
 using namespace uav_utils;
 
-CtrlFSM::CtrlFSM(Parameter_t &param_, Controller &controller_, HovThrKF &hov_thr_kf_)
-    : param(param_), controller(controller_), hov_thr_kf(hov_thr_kf_)
+CtrlFSM::CtrlFSM(Parameter_t &param_, Controller &controller_, HovThrKF &hov_thr_kf_) : param(param_), controller(controller_), hov_thr_kf(hov_thr_kf_)
 {
   state = MANUAL_CTRL;
   hover_pose.setZero();

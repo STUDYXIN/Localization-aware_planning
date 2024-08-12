@@ -27,7 +27,7 @@ namespace voxel_mapping
       reset_updated_bbox_ = false;
     }
 
-    Position point_w, point_c, raycast_start, raycast_end;
+    Position point_w, point_c;
 
     for (const auto &point : pointcloud.points)
     {
@@ -43,13 +43,14 @@ namespace voxel_mapping
         depth = point_w.z();
 
       // raycast more behind the obstacle surface
-      raycast_start = point_w + (point_w - sensor_position).normalized() * config_.truncated_dist_behind_;
+      Position raycast_start = point_w + (point_w - sensor_position).normalized() * config_.truncated_dist_behind_;
       // limit the raycast range
       if ((point_w - sensor_position).norm() > config_.raycast_max_)
         raycast_start = sensor_position + (point_w - sensor_position).normalized() * config_.raycast_max_;
       else if ((point_w - sensor_position).norm() < config_.raycast_min_)
         continue;
-      raycast_end = sensor_position;
+
+      Position raycast_end = sensor_position;
 
       // Get the closest point, i.e. the raycast line's intersection with map boundary
       if (!isInMap(raycast_start))
@@ -99,7 +100,14 @@ namespace voxel_mapping
     const FloatingPoint dist_G = v_point_origin.norm();
     const FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
 
-    FloatingPoint sdf = static_cast<FloatingPoint>(dist_G - dist_G_V);
+    FloatingPoint sdf = dist_G - dist_G_V;
+    // if (sdf < 0.0)
+    // {
+    //   cout << "origin: " << origin.transpose() << endl;
+    //   cout << "point: " << point.transpose() << endl;
+    //   cout << "voxel: " << voxel.transpose() << endl;
+    //   cout << "Debug" << endl;
+    // }
     sdf = (sdf > 0.0) ? min(config_.truncated_dist_, sdf) : max(-config_.truncated_dist_, sdf);
 
     return sdf;
@@ -117,9 +125,7 @@ namespace voxel_mapping
       dropoff_weight = std::max(dropoff_weight, 0.0);
     }
     else
-    {
       dropoff_weight = simple_weight;
-    }
 
     return dropoff_weight;
   }

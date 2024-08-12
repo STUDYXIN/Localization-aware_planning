@@ -10,15 +10,15 @@ namespace fast_planner
   const int BsplineOptimizer::GUIDE = (1 << 5);
   const int BsplineOptimizer::WAYPOINTS = (1 << 6);
   const int BsplineOptimizer::MINTIME = (1 << 8);
+
   const int BsplineOptimizer::PARALLAX = (1 << 11);
   const int BsplineOptimizer::VERTICALVISIBILITY = (1 << 12);
   const int BsplineOptimizer::YAWCOVISIBILITY = (1 << 13);
 
-  const int BsplineOptimizer::GUIDE_PHASE = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::GUIDE |
-                                            BsplineOptimizer::START | BsplineOptimizer::END;
-  const int BsplineOptimizer::NORMAL_PHASE =
-      BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::DISTANCE | BsplineOptimizer::FEASIBILITY |
-      BsplineOptimizer::START | BsplineOptimizer::END;
+  const int BsplineOptimizer::GUIDE_PHASE = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::GUIDE | BsplineOptimizer::START | BsplineOptimizer::END;
+
+  const int BsplineOptimizer::NORMAL_PHASE = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::DISTANCE | BsplineOptimizer::FEASIBILITY |
+                                             BsplineOptimizer::START | BsplineOptimizer::END;
 
   void BsplineOptimizer::setParam(ros::NodeHandle &nh)
   {
@@ -582,7 +582,7 @@ namespace fast_planner
       for (int j = 0; j < 4; j++)
         q_cur.push_back(q[i + j]);
 
-      Eigen::Vector3d knot_mid = 1 / 12.0 * ((q_cur[0] + 4 * q_cur[1] + q_cur[2]) + (q_cur[1] + 4 * q_cur[2] + q_cur[3]));
+      Eigen::Vector3d knot_mid = ((q_cur[0] + 4 * q_cur[1] + q_cur[2]) + (q_cur[1] + 4 * q_cur[2] + q_cur[3])) / 12.0;
       vector<Eigen::Vector3d> features;
       edt_environment_->getFeaturesInFovDepth(knot_mid, features);
 
@@ -601,8 +601,7 @@ namespace fast_planner
     }
   }
 
-  void BsplineOptimizer::calcYawCoVisbilityCost(const vector<Eigen::Vector3d> &q, const double &dt,
-                                                double &cost, vector<Eigen::Vector3d> &gradient_q)
+  void BsplineOptimizer::calcYawCoVisbilityCost(const vector<Eigen::Vector3d> &q, const double &dt, double &cost, vector<Eigen::Vector3d> &gradient_q)
   {
     // q.size = n+1, pos_.size = n-p+2 = (n+1) - 2, where p = 3
     CHECK_EQ(q.size() - 2, pos_.size()) << "q and pos_ have incompatible size!";
@@ -779,6 +778,8 @@ namespace fast_planner
     /// Cost10：yaw共视性约束
     if (cost_function_ & YAWCOVISIBILITY)
     {
+      cout << "calcYawCoVisbilityCost start" << endl;
+
       calcYawCoVisbilityCost(g_q_, dt, f_yaw_covisibility, g_yaw_covisib_);
       f_combine += ld_yaw_covisib_ * f_yaw_covisibility;
       for (int i = 0; i < point_num_; i++)
@@ -786,6 +787,8 @@ namespace fast_planner
         for (int j = 0; j < dim_; j++)
           grad[dim_ * i + j] += ld_yaw_covisib_ * g_yaw_covisib_[i](j);
       }
+
+      cout << "calcYawCoVisbilityCost end" << endl;
     }
 
     bool verbose = false;

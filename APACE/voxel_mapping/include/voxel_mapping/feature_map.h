@@ -35,8 +35,6 @@ namespace voxel_mapping
     void addFeatureCloud(const Eigen::Vector3d &pos, const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
     void getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
     void getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res);
-    void getFeaturesIndex(const Eigen::Vector3d &pos, vector<int> &res);
-    void indexToFeatures(const vector<int> &index, vector<Eigen::Vector3d> &res);
 
     Config config_;
 

@@ -33,8 +33,6 @@ namespace fast_planner
     void evaluateEDTWithGrad(const Eigen::Vector3d &pos, double &dist, Eigen::Vector3d &grad);
     double evaluateCoarseEDT(Eigen::Vector3d &pos, double time);
     void getFeaturesInFovDepth(const Eigen::Vector3d &pos, std::vector<Eigen::Vector3d> &res);
-    void getFeaturesIndexInFovDepth(const Eigen::Vector3d &pos, std::vector<int> &res);
-    void getFeaturesUsingIndex(const std::vector<int> &index, std::vector<Eigen::Vector3d> &res);
 
     // deprecated
     void getSurroundDistance(Eigen::Vector3d pts[2][2][2], double dists[2][2][2]);

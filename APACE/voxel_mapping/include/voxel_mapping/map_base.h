@@ -81,11 +81,45 @@ namespace voxel_mapping
     bool isInBox(const VoxelIndex &idx);
     void boundBox(Position &min, Position &max);
     void boundIndex(VoxelIndex &idx);
+    Position posRounding(const Position &pos);
     Position closestPointInMap(const Position &point, const Position &sensor_position);
 
     VoxelType getVoxel(const Position &pos);
     VoxelType getVoxel(const VoxelIndex &idx);
     VoxelType getVoxel(const VoxelAddress &addr);
+
+    template <typename VoxelValue>
+    void setVoxel(const Position &pos, const VoxelValue &voxel)
+    {
+      setVoxel(positionToAddress(pos), voxel);
+    }
+
+    template <typename VoxelValue>
+    void setVoxel(const VoxelIndex &idx, const VoxelValue &voxel)
+    {
+      setVoxel(indexToAddress(idx), voxel);
+    }
+
+    template <typename VoxelValue>
+    void setVoxel(const VoxelAddress &addr, const VoxelValue &voxel)
+    {
+      map_data_->data[addr].value = voxel;
+    }
+
+    // void setVoxel(const Position &pos, const VoxelType &voxel)
+    // {
+    //   setVoxel(positionToAddress(pos), voxel);
+    // }
+
+    // void setVoxel(const VoxelIndex &idx, const VoxelType &voxel)
+    // {
+    //   setVoxel(indexToAddress(idx), voxel);
+    // }
+
+    // void setVoxel(const VoxelAddress &addr, const VoxelType &voxel)
+    // {
+    //   map_data_->data[addr] = voxel;
+    // }
 
     void getMapBoundingBox(Position &min, Position &max);
     void getBoxBoundingBox(Position &min, Position &max);

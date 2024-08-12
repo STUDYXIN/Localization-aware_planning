@@ -34,7 +34,9 @@ namespace fast_planner
       INIT,
       WAIT_TARGET,
       GEN_NEW_TRAJ,
-      EXEC_TRAJ
+      YAW_PREPARE,
+      EXEC_TRAJ,
+      REPLAN_TRAJ
     };
 
     enum TARGET_TYPE
@@ -53,6 +55,7 @@ namespace fast_planner
     double no_replan_thresh_, replan_thresh_;
     double waypoints_[50][3];
     int waypoint_num_;
+    double last_arrive_time_;
 
     /* planning data */
     bool trigger_, have_target_, have_odom_;
@@ -61,20 +64,22 @@ namespace fast_planner
     Eigen::Vector3d odom_pos_, odom_vel_; // odometry state
     Eigen::Quaterniond odom_orient_;
 
-    double start_yaw_, end_yaw_;
+    Eigen::Vector3d start_yaw_, end_yaw_;
     Eigen::Vector3d start_pt_, start_vel_, start_acc_; // start state
     Eigen::Vector3d end_pt_, end_vel_;                 // target state
     int current_wp_;
 
     /* ROS utils */
     ros::NodeHandle node_;
-    ros::Timer exec_timer_;
+    ros::Timer exec_timer_, safety_timer_;
     ros::Subscriber waypoint_sub_, odom_sub_;
     ros::ServiceServer map_save_service_, map_load_service_, start_eval_service_, end_eval_service_;
-    ros::Publisher bspline_pub_;
+    ros::Publisher bspline_pub_, replan_pub_, new_pub_;
 
     /* ROS callbacks */
     void execFSMCallback(const ros::TimerEvent &e);
+    void checkCollisionCallback(const ros::TimerEvent &e);
+
     void waypointCallback(const nav_msgs::PathConstPtr &msg);
     void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
 
@@ -93,6 +98,10 @@ namespace fast_planner
      * \return True代表规划成功，False代表规划失败
      */
     bool callAgilePerceptionReplan();
+
+    bool calcTrajLenInKnownSpace(double &len);
+
+    void pubBspline(LocalTrajData &traj_data);
 
   public:
     void init(ros::NodeHandle &nh);

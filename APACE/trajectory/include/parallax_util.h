@@ -30,10 +30,9 @@ namespace fast_planner
     EDTEnvironment::Ptr edt_env_; // Environment and mapping API
 
   public:
-    ParallaxUtil(){};
     ParallaxUtil(const ros::NodeHandle &nh);
     ParallaxUtil(ParallaxConfig config);
-    ~ParallaxUtil(){};
+
     void setEDTEnvironment(const EDTEnvironment::Ptr &edt);
 
     // Parallax

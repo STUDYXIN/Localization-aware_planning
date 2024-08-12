@@ -4,11 +4,11 @@ namespace voxel_mapping
 {
   MapServer::MapServer(ros::NodeHandle &nh)
   {
-
     tsdf_.reset(new TSDF());
     esdf_.reset(new ESDF());
     occupancy_grid_.reset(new OccupancyGrid());
     feature_map_.reset(new FeatureMap());
+    feature_grid_.reset(new FeatureGrid());
     transformer_.reset(new Transformer(nh));
 
     /* ------------------------ Map general configuration ----------------------- */
@@ -57,6 +57,7 @@ namespace voxel_mapping
     // Use same general configuration
     esdf_->map_config_ = map_config;
     occupancy_grid_->map_config_ = map_config;
+    feature_grid_->map_config_ = map_config;
 
     /* ----------------------- Map specific configurations ---------------------- */
 
@@ -134,6 +135,11 @@ namespace voxel_mapping
     nh.param("voxel_mapping/feature_map/depth_min", feature_map_config.depth_min_, 0.0);
     nh.param("voxel_mapping/feature_map/depth_max", feature_map_config.depth_max_, 5.0);
 
+    FeatureGrid::Config &feature_grid_config = feature_grid_->config_;
+    nh.param("voxel_mapping/feature_grid/depth_min", feature_grid_config.depth_min_, 0.0);
+    nh.param("voxel_mapping/feature_grid/depth_max", feature_grid_config.depth_max_, 5.0);
+    nh.param("voxel_mapping/feature_grid/TSDF_cutoff_dist", occupancy_grid_config.TSDF_cutoff_dist_, 0.1);
+
     /* ----------------------------- Initialization ----------------------------- */
 
     // Initialize TSDF
@@ -153,12 +159,17 @@ namespace voxel_mapping
     occupancy_grid_->initRaycaster();
     occupancy_grid_->setTSDF(tsdf_);
 
+    // Initialize feature grid
+    feature_grid_->initMapData();
+    feature_grid_->setTSDF(tsdf_);
+
     // Initialize publishers
     tsdf_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/tsdf", 10);
     tsdf_slice_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/tsdf_slice", 10);
     esdf_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/esdf", 10);
     esdf_slice_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/esdf_slice", 10);
     occupancy_grid_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/occupancy_grid", 10);
+    feature_grid_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/feature_grid", 10);
     feature_map_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/feature_map", 10);
     interpolated_pose_pub_ = nh.advertise<nav_msgs::Odometry>("/voxel_mapping/interpolated_pose", 10);
     feature_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/voxel_mapping/features", 10);
@@ -249,13 +260,17 @@ namespace voxel_mapping
   {
     // if (ros::Time::now() - init_time_ < ros::Duration(1.0))
     //   return;
-    if (!enable_add_feature_ || !has_odom_)
+    // if (!enable_add_feature_ || !has_odom_)
+    //   return;
+
+    if (!has_odom_)
       return;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::fromROSMsg(*msg, *cloud);
 
-    feature_map_->addFeatureCloud(pos_, cloud);
+    // feature_map_->addFeatureCloud(pos_, cloud);
+    feature_grid_->addFeatureCloud(pos_, cloud);
   }
 
   void MapServer::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
@@ -264,6 +279,28 @@ namespace voxel_mapping
     pos_(1) = msg->pose.pose.position.y;
     pos_(2) = msg->pose.pose.position.z;
 
+    VoxelIndex idx;
+    tsdf_->positionToIndex(pos_, idx);
+
+    const int inflate_pixel = 3;
+
+    const VoxelIndex min_idx = idx - inflate_pixel * VoxelIndex::Ones();
+    const VoxelIndex max_idx = idx + inflate_pixel * VoxelIndex::Ones();
+
+    for (int x = min_idx[0]; x <= max_idx[0]; ++x)
+    {
+      for (int y = min_idx[1]; y <= max_idx[1]; ++y)
+      {
+        for (int z = min_idx[2]; z <= max_idx[2]; ++z)
+        {
+          VoxelIndex idx(x, y, z);
+          if (!isInBox(idx))
+            continue;
+          if (getOccupancy(idx) == OccupancyType::UNKNOWN)
+            occupancy_grid_->setOccupancyVoxel(idx, OccupancyType::FREE);
+        }
+      }
+    }
     has_odom_ = true;
   }
 
@@ -295,7 +332,10 @@ namespace voxel_mapping
       publishOccupancyGrid();
 
     if (config_.publish_feature_map_)
-      publishFeatureMap();
+    {
+      publishFeatureGrid();
+      // publishFeatureMap();
+    }
   }
 
   void MapServer::publishTSDF()
@@ -366,16 +406,21 @@ namespace voxel_mapping
       {
         VoxelIndex idx(x, y, 0);
         Position pos = tsdf_->indexToPosition(idx);
-        pos.z() = config_.tsdf_slice_height_;
+        // pos.z() = config_.tsdf_slice_height_;
+        pos.z() = pos_.z();
         tsdf_->positionToIndex(pos, idx);
 
         // unknown or cleared voxel
-        if (tsdf_->getVoxel(idx).weight < tsdf_->config_.epsilon_)
+        // if (tsdf_->getVoxel(idx).weight < tsdf_->config_.epsilon_)
+        //   continue;
+
+        if (getOccupancy(idx) == OccupancyType::UNKNOWN)
           continue;
 
         point.x = pos(0);
         point.y = pos(1);
-        point.z = config_.tsdf_slice_visualization_height_;
+        // point.z = config_.tsdf_slice_visualization_height_;
+        point.z = pos(2);
         point.intensity = (tsdf_->getVoxel(idx).value - min_dist) / (max_dist - min_dist);
         pointcloud.points.push_back(point);
       }
@@ -453,7 +498,7 @@ namespace voxel_mapping
           Position pos = occupancy_grid_->indexToPosition(idx);
 
           // unknown or cleared voxel
-          if (occupancy_grid_->getVoxel(idx).value == OccupancyType::OCCUPIED)
+          if (getOccupancy(idx) == OccupancyType::OCCUPIED)
           {
             point.x = pos(0);
             point.y = pos(1);
@@ -523,6 +568,74 @@ namespace voxel_mapping
     pcl::toROSMsg(*pointcloud, pointcloud_msg);
     feature_map_pub_.publish(pointcloud_msg);
   }
+
+  void MapServer::publishFeatureGrid()
+  {
+    if (feature_grid_pub_.getNumSubscribers() == 0)
+      return;
+
+    if (config_.verbose_)
+      ROS_INFO_THROTTLE(1.0, "[MapServer] Publishing feature grid...");
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud;
+    feature_grid_->getFeatureCloud(pointcloud);
+
+    pointcloud->width = pointcloud->points.size();
+    pointcloud->height = 1;
+    pointcloud->is_dense = true;
+    pointcloud->header.frame_id = config_.world_frame_;
+
+    // ROS_INFO("Visualize feature grid size: %d", static_cast<int>(pointcloud->size()));
+
+    sensor_msgs::PointCloud2 pointcloud_msg;
+    pcl::toROSMsg(*pointcloud, pointcloud_msg);
+    feature_grid_pub_.publish(pointcloud_msg);
+  }
+
+  // void MapServer::publishFeatureGrid()
+  // {
+  //   if (feature_grid_pub_.getNumSubscribers() == 0)
+  //     return;
+
+  //   if (config_.verbose_)
+  //     ROS_INFO_THROTTLE(1.0, "[MapServer] Publishing feature grid...");
+
+  //   pcl::PointCloud<pcl::PointXYZ> pointcloud;
+  //   pcl::PointXYZ point;
+
+  //   for (int x = tsdf_->map_config_.vbox_min_idx_[0]; x < tsdf_->map_config_.vbox_max_idx_[0]; ++x)
+  //   {
+  //     for (int y = tsdf_->map_config_.vbox_min_idx_[1]; y < tsdf_->map_config_.vbox_max_idx_[1]; ++y)
+  //     {
+  //       for (int z = tsdf_->map_config_.vbox_min_idx_[2]; z < tsdf_->map_config_.vbox_max_idx_[2]; ++z)
+  //       {
+  //         VoxelIndex idx(x, y, z);
+  //         Position pos = occupancy_grid_->indexToPosition(idx);
+
+  //         // unknown or cleared voxel
+  //         if (feature_grid_->getVoxel(idx).value == FeatureType::HASFEATURE)
+  //         {
+  //           point.x = pos(0);
+  //           point.y = pos(1);
+  //           point.z = pos(2);
+  //           // std::cout << "Occupied point: " << point.x << ", " << point.y << ", " << point.z << std::endl;
+  //           pointcloud.points.push_back(point);
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   pointcloud.width = pointcloud.points.size();
+  //   pointcloud.height = 1;
+  //   pointcloud.is_dense = true;
+  //   pointcloud.header.frame_id = config_.world_frame_;
+
+  //   ROS_INFO("Visualize feature grid size: %d", static_cast<int>(pointcloud.points.size()));
+
+  //   sensor_msgs::PointCloud2 pointcloud_msg;
+  //   pcl::toROSMsg(pointcloud, pointcloud_msg);
+  //   feature_grid_pub_.publish(pointcloud_msg);
+  // }
 
   void MapServer::publishDepthPointcloud(const PointCloudType &pointcloud, const ros::Time &img_stamp)
   {
@@ -766,19 +879,6 @@ namespace voxel_mapping
   {
     bmin = tsdf_->map_config_.box_min_;
     bmax = tsdf_->map_config_.box_max_;
-  }
-
-  bool MapServer::isInBox(const Position &pos) { return tsdf_->isInBox(pos); };
-  bool MapServer::isInBox(const VoxelIndex &idx) { return tsdf_->isInBox(idx); };
-
-  OccupancyType MapServer::getOccupancy(const Eigen::Vector3d &pos)
-  {
-    return occupancy_grid_->getVoxel(pos).value;
-  }
-
-  OccupancyType MapServer::getOccupancy(const Eigen::Vector3i &idx)
-  {
-    return occupancy_grid_->getVoxel(idx).value;
   }
 
   void MapServer::getExploredRegion(Position &bbox_min, Position &bbox_max)

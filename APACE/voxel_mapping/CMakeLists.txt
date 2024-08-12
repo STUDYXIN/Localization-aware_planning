@@ -56,6 +56,7 @@ add_library(voxel_mapping
   src/esdf.cpp
   src/occupancy_grid.cpp
   src/feature_map.cpp
+  src/feature_grid.cpp
 )
 target_link_libraries(voxel_mapping
   ${catkin_LIBRARIES} 

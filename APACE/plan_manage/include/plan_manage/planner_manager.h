@@ -44,12 +44,19 @@ namespace fast_planner
 
     void calcNextYaw(const double &last_yaw, double &yaw);
 
+    void callYawPrepare(const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, const Vector3d &yaw);
+
     /* Map save & load service*/
     void saveMapService();
     void loadMapService();
 
+    bool checkTrajCollision(double &distance);
+
     PlanParameters pp_;
+
     LocalTrajData local_data_;
+    LocalTrajData prepare_yaw_data_;
+
     EDTEnvironment::Ptr edt_environment_;
     unique_ptr<Astar> path_finder_;
     RayCaster::Ptr caster_;
@@ -60,8 +67,6 @@ namespace fast_planner
     /* main planning algorithms & modules */
     voxel_mapping::MapServer::Ptr map_server_;
     vector<BsplineOptimizer::Ptr> bspline_optimizers_;
-
-    void updateTrajInfo();
 
   public:
     using Ptr = shared_ptr<FastPlannerManager>;

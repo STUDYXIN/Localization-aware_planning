@@ -105,17 +105,7 @@ namespace fast_planner
 
   void EDTEnvironment::getFeaturesInFovDepth(const Eigen::Vector3d &pos, std::vector<Eigen::Vector3d> &res)
   {
-    map_server_->getFeatureMap()->getFeatures(pos, res);
+    map_server_->getFeatureGrid()->getFeatures(pos, res);
   }
 
-  void EDTEnvironment::getFeaturesIndexInFovDepth(const Eigen::Vector3d &pos, std::vector<int> &res)
-  {
-    map_server_->getFeatureMap()->getFeaturesIndex(pos, res);
-  }
-
-  void EDTEnvironment::getFeaturesUsingIndex(const std::vector<int> &index,
-                                             std::vector<Eigen::Vector3d> &res)
-  {
-    map_server_->getFeatureMap()->indexToFeatures(index, res);
-  }
 } // namespace fast_planner

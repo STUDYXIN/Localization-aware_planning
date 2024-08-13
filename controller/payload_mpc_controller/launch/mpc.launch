@@ -1,0 +1,28 @@
+<launch>
+  <!-- <arg name="odom_topic" default="/vins_estimator/odometry" /> -->
+  <arg name="odom_topic" default="/odom_pub/odom" />
+  <arg name="imu_topic" default="/airsim_node/drone_1/imu/imu" />
+  <arg name="traj_topic" default="/trajectory_generator_node/trajectory" />
+  <arg name="cmd_topic" default="/airsim_node/drone_1/angle_rate_throttle_frame" />
+
+  <!-- map -->
+  <!-- <remap from="/traj_start_trigger" to="/move_base_simple/goal"/> -->
+
+  <node pkg="payload_mpc_controller" type="mpc_controller_node" name="mpc_controller_node" output="screen">
+    <rosparam command="load" file="$(find payload_mpc_controller)/config/mpc.yaml" />
+    <rosparam command="load" file="$(find payload_mpc_controller)/config/model.yaml" />
+    <remap from="~odom" to="$(arg odom_topic)"/>
+    <remap from="~drone_imu/data" to="$(arg imu_topic)"/>
+
+    <!-- <remap from="/mavros/esc_telemetry" to="rpm" /> -->
+
+    <remap from="~traj" to="$(arg traj_topic)"/>
+    <!-- <remap from="/mavros/setpoint_raw/attitude" to="$(arg cmd_topic)"/> -->
+
+    <remap from="~start_trigger" to="/traj_start_trigger"/>
+    <remap from="~cmd_trigger" to="/hummingbird/goal"/>
+  </node>
+
+  <node pkg="odom_pub" type="odom_pub_node" name="odom_pub" output="screen"/>
+
+</launch>

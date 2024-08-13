@@ -1,0 +1,60 @@
+# using receved time (only for one traj )
+use_simulation: true 
+use_fix_yaw: false   # using fix yaw. 
+
+# Cost on states
+Q_pos_xy:   250.0    # Cost for horizontal positon error //default: 200     0.5 
+Q_pos_z:    1000.0    # Cost for horizontal positon error //default: 200     0.5 
+Q_attitude_rp:  120.0   # Cost for attitude error           //default: 50     0.1
+Q_attitude_yaw:  120.0    # Cost for attitude error           //default: 50     0.1
+Q_velocity:  25.0   # Cost for velocity error           //default: 10    0.05
+
+# Cost on Inputs
+R_accz:     0.5  # Cost on accz input            //default: 1
+R_pitchroll:  1.0      # Cost on pitch and roll rate
+R_yaw:        1.0      # Cost on yaw rate
+
+# Exponential scaling: W_i = W * exp(-i/N * cost_scaling).
+# cost_scaling = 0 means no scaling W_i = W. 
+state_cost_exponential: 0.5     # Scaling for state costs
+input_cost_exponential: 0.5   # scaling for input costs
+
+# Limits for inputs
+max_bodyrate_xy:    3.0       # ~ pi [rad/s]
+max_bodyrate_z:     1.2         # ~ pi*2/3 [rad/s]
+max_acceleration_z: 20.0      # ~ 200% gravity [m/s2]
+max_velocity:      10.0      # [m/s]
+
+# use ending pos for better ending tracking performance
+use_trajectory_ending_pos: true
+
+# Print information such as timing to terminal
+print_info:   false
+
+# control fsm param
+ctrl_freq_max: 100.0
+
+# control fsm param for real-world experiments
+max_manual_vel: 1.0
+max_angle: 30  # Attitude angle limit in degree. A negative value means no limit.
+low_voltage: -0.1 # 4S battery
+
+filter:
+    sample_freq_quad_acc: 400.0
+    sample_freq_quad_omg: 400.0
+
+    cutoff_freq_quad_acc: 20.0
+    cutoff_freq_quad_omg: 20.0 #0.0 means no filter
+
+rc_reverse: # *
+    roll: false
+    pitch: true
+    yaw: false
+    throttle: true
+
+msg_timeout:
+    odom: 0.5
+    rc:   0.5
+    cmd:  0.5
+    imu:  0.5
+    bat:  0.5

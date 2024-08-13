@@ -1,0 +1,36 @@
+<launch>
+	<!-- odom_pub or vins -->
+	<arg name="odom_topic" default="/vins_estimator/odometry" /> 
+	<!-- <arg name="odom_topic" default="/odom_pub/odom" />  -->
+  	<arg name="imu_topic" default="/airsim_node/drone_1/imu/imu" />
+  	<!-- <arg name="traj_topic" default="/trajectory_generator_node/trajectory" /> -->
+  	<arg name="cmd_topic" default="/position_cmd" />
+
+	<node pkg="px4ctrl" type="px4ctrl_node" name="px4ctrl" output="screen">
+		<rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_masuav01.yaml" />
+		<!-- <remap from="~odom" to="/vicon_imu_ekf_odom" /> -->
+
+		<!-- <remap from="~odom" to="/vins_fusion/imu_propagate" /> -->
+
+		<remap from="~cmd" to="$(arg cmd_topic)" />
+
+		
+		<remap from="~odom" to="$(arg odom_topic)"/>
+		<remap from="~drone_imu/data" to="$(arg imu_topic)"/>
+
+		<!-- <remap from="/mavros/esc_telemetry" to="rpm" /> -->
+
+		<!-- <remap from="/mavros/setpoint_raw/attitude" to="$(arg cmd_topic)"/> -->
+
+	</node>
+
+	
+	<!-- <node pkg="odom_pub" type="odom_pub_node" name="odom_pub" output="screen" > -->
+	<!-- </node> -->
+	
+	<!--node name="rviz" pkg="rviz" type="rviz" output="screen"
+		args="-d $(find odom_pub)/config/odom.rviz">
+	</node-->
+
+
+</launch>

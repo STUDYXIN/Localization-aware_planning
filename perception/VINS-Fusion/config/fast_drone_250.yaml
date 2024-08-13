@@ -1,0 +1,162 @@
+%YAML:1.0
+
+#common parameters
+#support: 1 imu 1 cam; 1 imu 2 cam: 2 cam; 
+imu: 1
+num_of_cam: 2
+
+
+imu_topic: "/mavros/imu/data_raw"
+image0_topic: "/camera/infra1/image_rect_raw"
+image1_topic: "/camera/infra2/image_rect_raw"
+
+
+
+
+output_path: "/home/nzl-star/vins-output"
+
+
+cam0_calib: "left.yaml"
+cam1_calib: "right.yaml"
+image_width: 640
+image_height: 480
+   
+
+# Extrinsic parameter between IMU and Camera.
+estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+                        # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
+# body_T_cam0: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ -1.7769667536850164e-02, 2.7822707649383660e-02,
+#        9.9945491937089748e-01, 5.1757853548876596e-02,
+#        -9.9965558463884763e-01, 1.8813123628542261e-02,
+#        -1.8296952743588668e-02, 2.2909432841935282e-02,
+#        -1.9311939726339100e-02, -9.9943582251107765e-01,
+#        2.7478822129271441e-02, 6.8091000178377131e-02, 0., 0., 0., 1. ]
+# body_T_cam1: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ -1.8690657912828090e-02, 2.8314614646779757e-02,
+#        9.9942430523986681e-01, 4.3658887576879052e-02,
+#        -9.9963091908104806e-01, 1.9181421333793525e-02,
+#        -1.9237949287674194e-02, -2.8116410829370362e-02,
+#        -1.9715093810714679e-02, -9.9941500672794592e-01,
+#        2.7945650878354100e-02, 6.6100574529627767e-02, 0., 0., 0., 1. ]
+
+# body_T_cam0: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ 1.1927690638496635e-02, 1.3218079602545396e-02,
+#        9.9984149372170650e-01, 4.2410779737271906e-02,
+#        -9.9980454368342198e-01, -1.5609292139071362e-02,
+#        1.2133607415006464e-02, 9.2565634936803386e-03,
+#        1.5767200956945060e-02, -9.9979079430175699e-01,
+#        1.3029313237673312e-02, 7.3248625318809393e-02, 0., 0., 0., 1. ]
+# body_T_cam1: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ 1.1383289194924595e-02, 1.2938485330622085e-02,
+#        9.9985149713567667e-01, 4.0919930224220226e-02,
+#        -9.9980899235371257e-01, -1.5739512924481946e-02,
+#        1.1586480982346270e-02, -4.0174899778083840e-02,
+#        1.5887087075953099e-02, -9.9979241011834530e-01,
+#        1.2756846553585888e-02, 7.3661679484884154e-02, 0., 0., 0., 1. ]
+# body_T_cam0: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ 2.9891659611785970e-02, -3.6045890155199101e-03,
+#        9.9954664504648427e-01, 1.9338588249791192e-02,
+#        -9.9934618579410284e-01, 2.0240548963819216e-02,
+#        2.9958656786011728e-02, 1.7902462533557560e-02,
+#        -2.0339361455855298e-02, -9.9978864122156974e-01,
+#        -2.9972086840330814e-03, 7.8089594585157879e-02, 0., 0., 0., 1. ]
+# body_T_cam1: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ 3.0086289190994542e-02, -3.6213720179087416e-03,
+#        9.9954074497612355e-01, 2.0479053147442319e-02,
+#        -9.9933950173934627e-01, 2.0280878449621231e-02,
+#        3.0153710097881647e-02, -3.1984086494458906e-02,
+#        -2.0380762156289423e-02, -9.9978776329480046e-01,
+#        -3.0088037339071061e-03, 7.7678476956343168e-02, 0., 0., 0., 1. ]
+
+# body_T_cam0: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ -9.9901484753550829e-01, 1.8473768505802478e-02,
+#        -4.0349154647889900e-02, 2.7496063711169718e-02,
+#        4.0271199600848115e-02, -4.5726646178132491e-03,
+#        -9.9917832303398268e-01, -6.7934861763871970e-03,
+#        -1.8643092187562799e-02, -9.9981888890712967e-01,
+#        3.8241990271186133e-03, 6.9556883498314764e-02, 0., 0., 0., 1. ]
+# body_T_cam1: !!opencv-matrix
+#    rows: 4
+#    cols: 4
+#    dt: d
+#    data: [ -9.9913218945806115e-01, 1.8705487038807998e-02,
+#        -3.7215221931115802e-02, -3.6689629051396402e-02,
+#        3.7133464649513684e-02, -4.6993749502426407e-03,
+#        -9.9929926532455748e-01, -3.8583067735064886e-03,
+#        -1.8867267737129670e-02, -9.9981399301555995e-01,
+#        4.0006972414127207e-03, 6.7734069102554612e-02, 0., 0., 0., 1. ]
+body_T_cam0: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [ -5.3488623898724441e-02, 8.0693284298901102e-03,
+       9.9853585466527528e-01, 4.0670763471861972e-02,
+       -9.9841126925658008e-01, 1.7310003399831242e-02,
+       -5.3621835139828100e-02, 2.5796346010890835e-02,
+       -1.7717351237866219e-02, -9.9981760822711485e-01,
+       7.1306201781954348e-03, 7.0164310934631463e-02, 0., 0., 0., 1. ]
+body_T_cam1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [ -5.4140065354330247e-02, 7.9956172071784515e-03,
+       9.9850133872163904e-01, 3.6744376939515253e-02,
+       -9.9837755870300726e-01, 1.7230018418804449e-02,
+       -5.4271325241892099e-02, -2.1643195502049711e-02,
+       -1.7638129199335273e-02, -9.9981958201005661e-01,
+       7.0498104643760273e-03, 6.9666290480499299e-02, 0., 0., 0., 1. ]
+
+                                                                                                                                                                 
+multiple_thread: 1
+
+#feature traker paprameters
+max_cnt: 150            # max feature number in feature tracking
+min_dist: 10           # min distance between two features 
+freq: 10                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
+F_threshold: 1.0        # ransac threshold (pixel)
+show_track: 1           # publish tracking image as topic
+flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
+
+#optimization parameters
+max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
+max_num_iterations: 11   # max solver itrations, to guarantee real time
+keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
+
+#imu parameters       The more accurate parameters you provide, the better performance
+acc_n: 0.1          # accelerometer measurement noise standard deviation. #0.2   0.04
+gyr_n: 0.01         # gyroscope measurement noise standard deviation.     #0.05  0.004
+acc_w: 0.001         # accelerometer bias random work noise standard deviation.  #0.002
+gyr_w: 0.0001       # gyroscope bias random work noise standard deviation.     #4.0e-5
+g_norm: 9.81049835503348         # gravity magnitude
+
+#unsynchronization parameters
+estimate_td: 1                      # online estimate time offset between camera and imu
+td: -0.05                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+
+#loop closure parameters
+load_previous_pose_graph: 0        # load and reuse previous pose graph; load from 'pose_graph_save_path'
+pose_graph_save_path: "/home/nzl-star/savedfiles/output/pose_graph/" # save and load path
+save_image: 0                   # save image in pose graph for visualization prupose; you can close this function by setting 0 
+

@@ -1,0 +1,24 @@
+<launch>
+	<include file="$(find px4ctrl)/launch/include/px4_modified.launch" />
+
+	<node pkg="px4ctrl" type="px4ctrl_node" name="px4ctrl" output="screen">
+		<rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_masuav01.yaml" />	
+		
+		<remap from="~odom" to="/vins_fusion/imu_propagate" />
+		<!-- <remap from="~odom" to="/vicon_imu_ekf_odom" /> -->
+		<!-- <remap from="~odom" to="/mavros/global_position/local" /> -->
+		<!-- <remap from="~odom" to="/mine/odom" /> -->
+		<remap from="~takeoff_land" to="/px4ctrl/takeoff_land" />
+		<remap from="~cmd" to="/position_cmd" />
+		<remap from="/mavros/state" to="/mavros/state" />
+		<remap from="/mavros/extended_state" to="/mavros/extended_state" />
+		<remap from="/mavros/imu/data" to="/mavros/imu/data" />
+		<remap from="/mavros/rc/in" to="/mavros/rc/in" />
+		<remap from="/mavros/battery" to="/mavros/battery" />
+		<remap from="/mavros/setpoint_raw/attitude" to="/mavros/setpoint_raw/attitude" />
+		<remap from="/mavros/set_mode" to="/mavros/set_mode" />
+		<remap from="/mavros/cmd/arming" to="/mavros/cmd/arming" />
+		<remap from="/mavros/cmd/command" to="/mavros/cmd/command" />
+		
+	</node>
+</launch>

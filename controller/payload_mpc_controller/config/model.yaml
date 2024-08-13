@@ -1,0 +1,8 @@
+# Model parameters
+
+# !!! if the below model parameters has been changed, 
+# !!! please re-run the quadrotor_payload_mpc_with_ext_force_codegen to re-generate the MPC model code. !!!  
+gravity: 9.795
+step_N: 20  
+step_T: 0.02  
+step_Delay: 2

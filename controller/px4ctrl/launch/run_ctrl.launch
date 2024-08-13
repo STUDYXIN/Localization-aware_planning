@@ -1,0 +1,25 @@
+<launch>
+
+	<group ns="drone_$(env DRONE_ID)">
+	<node pkg="px4ctrl" type="px4ctrl_node" name="px4ctrl" output="screen">
+		<!-- <remap from="~odom" to="/vins_estimator/imu_propagate" /> -->
+		<!-- <remap from="~odom" to="/vicon_imu_ekf_odom" /> -->
+		<!-- <remap from="~odom" to="/drone_$(env DRONE_ID)/mavros/global_position/local" /> -->
+		<remap from="~odom" to="/mine/odom" />
+		<remap from="~cmd" to="/drone_$(env DRONE_ID)/position_cmd" />
+		<remap from="/mavros/state" to="/drone_$(env DRONE_ID)/mavros/state" />
+		<remap from="/mavros/extended_state" to="/drone_$(env DRONE_ID)/mavros/extended_state" />
+		<remap from="/mavros/imu/data" to="/drone_$(env DRONE_ID)/mavros/imu/data" />
+		<remap from="/mavros/rc/in" to="/drone_$(env DRONE_ID)/mavros/rc/in" />
+		<remap from="/mavros/battery" to="/drone_$(env DRONE_ID)/mavros/battery" />
+		<remap from="/mavros/setpoint_raw/attitude" to="/drone_$(env DRONE_ID)/mavros/setpoint_raw/attitude" />
+		<remap from="/mavros/set_mode" to="/drone_$(env DRONE_ID)/mavros/set_mode" />
+		<remap from="/mavros/cmd/arming" to="/drone_$(env DRONE_ID)/mavros/cmd/arming" />
+		<remap from="/mavros/cmd/command" to="/drone_$(env DRONE_ID)/mavros/cmd/command" />
+		<remap from="/mavros/global_position/raw/fix" to="/drone_$(env DRONE_ID)/mavros/global_position/raw/fix" />
+		<rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />
+	</node>
+	</group>
+        <!--node pkg="px4ctrl" type="odom_pub.py" name="odom_pub" output="screen">
+        </node-->
+</launch>

@@ -1,0 +1,25 @@
+# Basic Params
+TriggerTopic:               '/traj_start_trigger'
+OdomTopic:                  '/cable_imu/odom_payload'
+TrajectoryTopic:            '/trajectory_generator_node/trajectory'
+OdomFrame:                  'world'
+BoxMin:                     [-4.5, -3.0, 0.2]
+BoxMax:                     [ 4.5,  3.0, 1.6]
+Round:                      2
+
+# Advanced Params
+DiagWidth:                  1.0
+SideWidth:                  1.0
+
+MaxAccRate:                  10.0
+MaxVelRate:                  8.0
+WeightT:                     7000.0
+
+ChiVec:                      [10240.0, 10240.0, 10240.0]
+RelCostTol:                  1.0e-4
+C2Diffeo:                    True
+
+sample_n: 2
+ballsize: 0.15
+quadsize: 0.25
+l_length: 0.57

@@ -1,0 +1,18 @@
+sdf_map: 
+  cx: 320.0
+  cy: 240.0
+  fx: 320.0
+  fy: 320.0
+
+  Rbc: [0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0]
+  tbc: [0.3, 0.0, 0.2]
+
+
+
+    #  <arg name="cx" value="320.0"/>
+    # <arg name="cy" value="240.0"/>
+    # <arg name="fx" value="320.0"/>
+    # <arg name="fy" value="320.0"/>
+
+    # <arg name="Rbc" value="[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]"/>
+    # <arg name="tbc" value="[0.0, 0.0, 0.0]"/>

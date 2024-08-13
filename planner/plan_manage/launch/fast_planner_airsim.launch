@@ -10,6 +10,8 @@
   <arg unless="$(arg enable_vins)" name="odom_topic" value="/airsim_node/drone_1/odom_local_enu" />
   <arg if="$(arg enable_vins)" name="odom_topic" value="/vins_estimator/imu_propagate" />
 
+  <arg name="cmd_topic" value="/mav/param_identify/unique_traj"/>
+
   <arg name="enable_depth_input" default="true"/>
 
   <!-- main algorithm params -->
@@ -42,15 +44,15 @@
     
     <!-- global waypoints -->
     <!-- If flight_type is set to 2, the drone will travel these waypoints one by one -->
-    <arg name="point_num" value="4" />
+    <arg name="point_num" value="1" />
 
     <!-- <arg name="point0_x" value="-3.5" />
     <arg name="point0_y" value="18.0" />
     <arg name="point0_z" value="2.0" /> -->
 
-    <arg name="point0_x" value="-4.0" />
-    <arg name="point0_y" value="10.0" />
-    <arg name="point0_z" value="2.0" />
+    <arg name="point0_x" value="1.0" />
+    <arg name="point0_y" value="0.0" />
+    <arg name="point0_z" value="1.5" />
 
     <arg name="point1_x" value="0.0" />
     <arg name="point1_y" value="10.0" />
@@ -76,8 +78,11 @@
 
     <param name="traj_server/init_sleep_time" value="1.5" type="double"/>
 
-    <remap from="/odom_world" to="$(arg odom_topic)"/>
     <param name="traj_server/time_forward" value="1.5" type="double"/>
+
+    <remap from="/odom_world" to="$(arg odom_topic)"/>
+    <remap from="position_cmd" to="$(arg cmd_topic)"/>
+    
   </node>
 
   <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
@@ -98,11 +103,11 @@
   </node>
 
   <!-- <include file="$(find map_publisher)/launch/map_publisher_bag.launch"/> -->
-  <include file="$(find map_publisher)/launch/map_publisher.launch"/>
+  <!-- <include file="$(find map_publisher)/launch/map_publisher.launch"/>
 
   <node pkg="map_publisher" name="visual_gt_path" type="visual_gt_path.py" output="screen"/>
 
-  <include file="$(find lidar_converter)/launch/lidar_converter.launch"/>
+  <include file="$(find lidar_converter)/launch/lidar_converter.launch"/> -->
 
    <!-- <node pkg="tf" type="static_transform_publisher" name="vins2world" args="0 0 0 0 0 0 world vins 100"/> -->
 

@@ -8,7 +8,7 @@ source ./devel/setup.bash
 gnome-terminal -t "Px4Control" -x bash -c "roslaunch px4ctrl run_ctrl_real_world.launch;exec bash;"
 
 sleep 3s
-gnome-terminal -t "reasense" -x bash -c "roslaunch realsense2_camera rs_camera_aligned_depth.launch;exec bash;"
+gnome-terminal -t "realsense" -x bash -c "roslaunch realsense2_camera rs_camera_aligned_depth.launch;exec bash;"
 
 sleep 7s
 gnome-terminal -t "vins" -x bash -c "roslaunch vins fast_drone_250.launch;exec bash;"

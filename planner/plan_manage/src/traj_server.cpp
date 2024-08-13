@@ -325,54 +325,54 @@ int main(int argc, char **argv)
 
     ROS_WARN("[Traj server]: ready.");
 
-    // Start initialization
-    ROS_INFO("[Traj server] Initializing");
-    ros::Duration(1.0).sleep();
+    // // Start initialization
+    // ROS_INFO("[Traj server] Initializing");
+    // ros::Duration(1.0).sleep();
 
-    cmd.header.stamp = ros::Time::now();
-    cmd.header.frame_id = "world";
-    cmd.trajectory_flag = quadrotor_msgs::PositionCommand::TRAJECTORY_STATUS_READY;
-    cmd.trajectory_id = traj_id_;
-    cmd.position.x = 0.0;
-    cmd.position.y = 0.0;
-    cmd.position.z = 0.0;
-    cmd.velocity.x = 0.0;
-    cmd.velocity.y = 0.0;
-    cmd.velocity.z = 0.0;
-    cmd.acceleration.x = 0.0;
-    cmd.acceleration.y = 0.0;
-    cmd.acceleration.z = 0.0;
-    cmd.yaw = 0.0;
-    cmd.yaw_dot = 0.0;
+    // cmd.header.stamp = ros::Time::now();
+    // cmd.header.frame_id = "world";
+    // cmd.trajectory_flag = quadrotor_msgs::PositionCommand::TRAJECTORY_STATUS_READY;
+    // cmd.trajectory_id = traj_id_;
+    // cmd.position.x = 0.0;
+    // cmd.position.y = 0.0;
+    // cmd.position.z = 0.0;
+    // cmd.velocity.x = 0.0;
+    // cmd.velocity.y = 0.0;
+    // cmd.velocity.z = 0.0;
+    // cmd.acceleration.x = 0.0;
+    // cmd.acceleration.y = 0.0;
+    // cmd.acceleration.z = 0.0;
+    // cmd.yaw = 0.0;
+    // cmd.yaw_dot = 0.0;
 
-    // Wait for frontiers to be ready
-    ros::Duration(init_sleep_time).sleep();
+    // // Wait for frontiers to be ready
+    // ros::Duration(init_sleep_time).sleep();
 
-    // Move to init position
-    for (int i = 0; i < 100; ++i)
-    {
-        cmd.position.z += init_pos[2] / 100.0;
-        cmd.yaw = init_yaw;
-        pos_cmd_pub.publish(cmd);
-        ros::Duration(0.01).sleep();
-    }
+    // // Move to init position
+    // for (int i = 0; i < 100; ++i)
+    // {
+    //     cmd.position.z += init_pos[2] / 100.0;
+    //     cmd.yaw = init_yaw;
+    //     pos_cmd_pub.publish(cmd);
+    //     ros::Duration(0.01).sleep();
+    // }
 
-    double dist = sqrt(init_pos[0] * init_pos[0] + init_pos[1] * init_pos[1]);
-    int n = dist / 0.01;
-    Eigen::Vector2d init_pos_xy(init_pos[0], init_pos[1]);
-    Eigen::Vector2d init_unit = init_pos_xy.normalized() * 0.01;
-    for (int i = 0; i < n; ++i)
-    {
-        cmd.position.x += init_unit[0];
-        cmd.position.y += init_unit[1];
-        cmd.yaw = init_yaw;
-        pos_cmd_pub.publish(cmd);
-        ros::Duration(0.01).sleep();
-    }
-    ros::Duration(1.0).sleep();
+    // double dist = sqrt(init_pos[0] * init_pos[0] + init_pos[1] * init_pos[1]);
+    // int n = dist / 0.01;
+    // Eigen::Vector2d init_pos_xy(init_pos[0], init_pos[1]);
+    // Eigen::Vector2d init_unit = init_pos_xy.normalized() * 0.01;
+    // for (int i = 0; i < n; ++i)
+    // {
+    //     cmd.position.x += init_unit[0];
+    //     cmd.position.y += init_unit[1];
+    //     cmd.yaw = init_yaw;
+    //     pos_cmd_pub.publish(cmd);
+    //     ros::Duration(0.01).sleep();
+    // }
+    // ros::Duration(1.0).sleep();
 
-    ros::Duration(2.5).sleep();
-    ROS_INFO("[Traj server] Initilization finished");
+    // ros::Duration(2.5).sleep();
+    // ROS_INFO("[Traj server] Initilization finished");
 
     ros::spin();
 

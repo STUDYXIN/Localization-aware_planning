@@ -3,7 +3,7 @@ project(airsim_ros_pkgs)
 
 # set this to path to AirSim root folder if you want your catkin workspace in a custom directory
 # set(AIRSIM_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../)
-set(AIRSIM_ROOT /home/lzz/AirSim)
+set(AIRSIM_ROOT /home/luzong/AirSim)
 
 add_subdirectory("${AIRSIM_ROOT}/cmake/rpclib_wrapper" rpclib_wrapper)
 add_subdirectory("${AIRSIM_ROOT}/cmake/AirLib" AirLib)

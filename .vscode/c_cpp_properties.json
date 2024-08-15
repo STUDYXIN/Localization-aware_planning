@@ -1,0 +1,42 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/star/ActiveSlam/fast_planner/devel/include/**",
+        "/home/star/ActiveSlam/my_git/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/star/ActiveSlam/my_git/src/Localization-aware_planning/APACE/active_perception/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/controller/airsim_ctrl/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/controller/airsim_ros_wrapper/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/planner/bspline/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/planner/bspline_opt/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/perception/VINS-Fusion/camera_models/include/**",
+        "/home/star/ActiveSlam/my_git/src/Localization-aware_planning/APACE/utils/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/uav_utils/multi_map_server/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/planner/path_searching/include/**",
+        "/home/star/ActiveSlam/my_git/src/Localization-aware_planning/APACE/pathfinding/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/planner/plan_env/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/planner/plan_manage/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/planner/poly_traj/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/uav_utils/pose_utils/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/uav_utils/quadrotor_msgs/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/perception/DenseSurfelMapping/surfel_fusion/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/planner/traj_utils/include/**",
+        "/home/star/ActiveSlam/my_git/src/Localization-aware_planning/APACE/trajectory/include/**",
+        "/home/star/ActiveSlam/fast_planner/src/Localization-aware_planning/uav_utils/uav_utils/include/**",
+        "/home/star/ActiveSlam/my_git/src/Localization-aware_planning/APACE/voxel_mapping/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

@@ -33,7 +33,7 @@
 ros::Publisher cmd_vis_pub, pos_cmd_pub, traj_pub;
 
 nav_msgs::Odometry odom;
-
+bool have_odom;
 quadrotor_msgs::PositionCommand cmd;
 double pos_gain[3] = {5.7, 5.7, 6.2};
 double vel_gain[3] = {3.4, 3.4, 4.0};
@@ -188,11 +188,13 @@ void newCallback(std_msgs::Empty msg)
 
 void odomCallbck(const nav_msgs::Odometry &msg)
 {
+    // ROS_INFO("start");
+    
     if (msg.child_frame_id == "X" || msg.child_frame_id == "O")
         return;
 
     odom = msg;
-
+    have_odom = true;
     traj_real_.emplace_back(odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z);
 
     if (traj_real_.size() > 10000)
@@ -313,22 +315,27 @@ int main(int argc, char **argv)
 
     nh.param("traj_server/time_forward", time_forward_, -1.0);
     last_yaw_ = 0.0;
+    have_odom = false;
+    while(!have_odom)
+    {
+        ros::spinOnce();
+        ros::Duration(0.5).sleep();
+        ROS_WARN("[Traj server]: no odom!.");
+    }
 
-    ros::Duration(1.0).sleep();
-
-    ROS_WARN("[Traj server]: ready.");
+    ROS_WARN("[Traj server]: ready flying %.2f height.",init_pos[2]);
 
     // Start initialization
-    ROS_INFO("[Traj server] Initializing");
+    ROS_INFO("[Traj server] Initializing start: (%.4f %.4f %.4f)",odom.pose.pose.position.x,odom.pose.pose.position.y,odom.pose.pose.position.z);
     ros::Duration(1.0).sleep();
 
     cmd.header.stamp = ros::Time::now();
     cmd.header.frame_id = "world";
     cmd.trajectory_flag = quadrotor_msgs::PositionCommand::TRAJECTORY_STATUS_READY;
     cmd.trajectory_id = traj_id_;
-    cmd.position.x = 0.0;
-    cmd.position.y = 0.0;
-    cmd.position.z = 0.0;
+    cmd.position.x = odom.pose.pose.position.x;
+    cmd.position.y = odom.pose.pose.position.y;
+    cmd.position.z = odom.pose.pose.position.z;
     cmd.velocity.x = 0.0;
     cmd.velocity.y = 0.0;
     cmd.velocity.z = 0.0;
@@ -365,7 +372,7 @@ int main(int argc, char **argv)
     ros::Duration(1.0).sleep();
 
     ros::Duration(2.5).sleep();
-    ROS_INFO("[Traj server] Initilization finished");
+    ROS_INFO("[Traj server] Initilization finished z at %.4f odom_now: %.4f",cmd.position.z,odom.pose.pose.position.z);
 
     ros::spin();
 

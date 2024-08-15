@@ -1,0 +1,3 @@
+<launch>
+  <node name="vins_estimator" pkg="vins" type="vins_node" output="screen" args="$(find vins)/../config/airsim/airsim_unsync.yaml" />
+</launch>

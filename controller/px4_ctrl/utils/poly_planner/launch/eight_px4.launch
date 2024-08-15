@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+  	<arg name="cmd_topic" default="/position_cmd" />
+    <arg name="traj_topic" default="/trajectory_generator_node/trajectory" />
+
+    <node name="rviz" pkg="rviz" type="rviz" output="screen"
+           args="-d $(find poly_planner)/config/eight.rviz"> 
+    </node>
+
+    <node pkg="poly_planner" type="poly_planner_node" name="poly_planner" output="screen">
+        <rosparam file="$(find poly_planner)/config/poly_planner_params.yaml" command="load" />
+    </node>
+
+    
+    <include file="$(find px4ctrl)/launch/run_ctrl.launch">
+        <arg name="odom_topic" value="/odom_pub/odom" />
+        <arg name="imu_topic" value="/airsim_node/drone_1/imu/imu" />
+        <arg name="cmd_topic" value="$(arg cmd_topic)" />
+    </include>
+
+    <!-- trajectory server -->
+    <node pkg="ego_planner" name="traj_server" type="traj_server" output="screen">
+        <remap from="/position_cmd" to="$(arg cmd_topic)"/>
+        <remap from="~planning/trajectory" to="$(arg traj_topic)"/>
+        <remap from="~heartbeat" to="/traj_server/heartbeat"/>
+        <param name="traj_server/time_forward" value="1.0" type="double"/>
+    </node>
+
+</launch>

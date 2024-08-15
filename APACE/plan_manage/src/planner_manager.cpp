@@ -389,8 +389,6 @@ namespace fast_planner
     local_data_.yawdot_traj_ = local_data_.yaw_traj_.getDerivative();
     local_data_.yawdotdot_traj_ = local_data_.yawdot_traj_.getDerivative();
 
-    cout<<
-
     ROS_WARN("[Local Planner] Plan t6: %fs", t6.toc());
   }
 

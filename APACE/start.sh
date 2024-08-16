@@ -1,31 +1,48 @@
 #!/bin/bash
 
-FILEDIR=$(readlink -f ${BASH_SOURCE})
-BASEDIR=$(dirname ${FILEDIR})
+# 获取当前脚本的绝对路径
+FILEDIR=$(readlink -f "${BASH_SOURCE[0]}")
+BASEDIR=$(dirname "${FILEDIR}")
+SETUP_FILE="${BASEDIR}/../../../devel/setup.bash"
+SETUP_DIR=$(dirname "${SETUP_FILE}")
 
-echo "File directory: ${BASEDIR}"
+ENABLEVINS=false
+USEKEBOARD_SPEED=0
 
-source ${BASEDIR}/../../../devel/setup.bash
-
-gnome-terminal -t "Rviz" -x bash -c "roslaunch plan_manage rviz.launch;exec bash;"
-
-# sleep 0.5s
-# gnome-terminal -t "Simulation" -x bash -c "../../../CenterFeature/LinuxNoEditor/AirSimStreetView.sh -windowed;exec bash;"
-
-# sleep 0.5s
-# gnome-terminal -t "Simulation" -x bash -c "../../../wall_with_some_apriltag/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed;exec bash;"
+echo "setup.bash is located in: ${SETUP_DIR}"
+# 加载 ROS 环境
+source "${SETUP_FILE}"
 
 sleep 0.5s
-gnome-terminal -t "Simulation" -x bash -c "./simulation/Blocks/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed;exec bash;"
+gnome-terminal --tab -- bash -c "\
+echo Rviz; \
+roslaunch plan_manage rviz.launch; exec bash"
 
+# 启动 Simulation
+sleep 0.5s
+gnome-terminal --tab -- bash -c "\
+echo Simulation; \
+./../../../../simulator/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed; \
+exec bash"
+
+
+# 启动 Control
 sleep 2s
-gnome-terminal -t "Control" -x bash -c "roslaunch airsim_ctrl ctrl_md_exploration.launch;exec bash;"
+gnome-terminal --tab -- bash -c "\
+echo Control; \
+roslaunch airsim_ctrl ctrl_md_exploration.launch enable_vins:=${ENABLEVINS}; \
+exec bash"
 
-sleep 0.5s
-gnome-terminal -t "Planner" -x bash -c "roslaunch plan_manage agile_planner_airsim.launch;exec bash;"
+# 启动 Perception
+sleep 1s
+gnome-terminal --tab -- bash -c "\
+echo Perception; \
+roslaunch vins vins_airsim.launch; \
+exec bash"
 
-sleep 8s
-gnome-terminal -t "Perception" -x bash -c "roslaunch vins vins_airsim.launch;exec bash;"
-
-# sleep 0.5s
-# gnome-terminal -t "Checker" -x bash -c "rosrun map_publisher collision_checker.py;exec bash;"
+# 启动 Planner
+sleep 3s
+gnome-terminal --tab -- bash -c "\
+echo Planner; \
+roslaunch plan_manage agile_planner_airsim.launch enable_vins:=${ENABLEVINS} keyboard_vector:=${USEKEBOARD_SPEED}; \
+exec bash"

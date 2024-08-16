@@ -23,6 +23,7 @@
   <arg name="vbox_max_z"/>
 
   <arg name="init_x"/>
+  <arg name="keyboard_vector"/>
   <arg name="init_y"/>
   <arg name="init_z"/>
   <arg name="init_yaw"/>
@@ -172,10 +173,10 @@
     <param name="voxel_mapping/occupancy_grid/occupancy_grid_mode" value="GEN_TSDF" type="string"/>
 
     <param name="voxel_mapping/feature_map/depth_min" value="0.2" type="double"/>
-    <param name="voxel_mapping/feature_map/depth_max" value="70.0" type="double"/>
+    <param name="voxel_mapping/feature_map/depth_max" value="5.0" type="double"/>
 
     <param name="voxel_mapping/feature_grid/depth_min" value="0.2" type="double"/>
-    <param name="voxel_mapping/feature_grid/depth_max" value="70.0" type="double"/>
+    <param name="voxel_mapping/feature_grid/depth_max" value="5.0" type="double"/>
     <param name="voxel_mapping/feature_grid/TSDF_cutoff_dist" value="0.8" type="double"/>
 
     <param name="transformer/world_frame" value="$(arg world_frame)" type="string"/>
@@ -320,6 +321,7 @@
     <param name="traj_server/init_y" value="$(arg init_y)" type="double"/>
     <param name="traj_server/init_z" value="$(arg init_z)" type="double"/>
     <param name="traj_server/init_yaw" value="$(arg init_yaw)" type="double"/>
+    <param name="traj_server/keyboard_vector" value="$(arg keyboard_vector)" type="int"/>
 
     <param name="traj_server/kx_x" value="5.7" type="double"/>
     <param name="traj_server/kx_y" value="5.7" type="double"/>

@@ -21,11 +21,6 @@
 #include <eigen3/Eigen/Dense>
 #include <std_msgs/Empty.h>
 #include <std_srvs/Empty.h>
-#include <geometry_msgs/Point.h>
-#include <geometry_msgs/PointStamped.h>
-#include <geometry_msgs/Point32.h>
-#include <geometry_msgs/Polygon.h>
-#include <sensor_msgs/PointCloud.h>
 
 #include "camodocal/camera_models/CameraFactory.h"
 #include "camodocal/camera_models/CataCamera.h"
@@ -72,7 +67,6 @@ public:
     cv::Mat mask;
     cv::Mat fisheye_mask;
     cv::Mat prev_img, cur_img;
-    sensor_msgs::PointCloud pt2ros_cloud;
     vector<cv::Point2f> n_pts;
     vector<cv::Point2f> predict_pts;
     vector<cv::Point2f> predict_pts_debug;

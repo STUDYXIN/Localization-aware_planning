@@ -40,7 +40,7 @@ body_T_cam1: !!opencv-matrix
 multiple_thread: 1
 
 #feature traker paprameters
-max_cnt: 150          # max feature number in feature tracking
+max_cnt: 150            # max feature number in feature tracking
 min_dist: 30            # min distance between two features 
 freq: 10                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
 F_threshold: 1.0        # ransac threshold (pixel)
@@ -48,20 +48,26 @@ show_track: 1           # publish tracking image as topic
 flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
 
 #optimization parameters
-max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
-max_num_iterations: 8   # max solver itrations, to guarantee real time
+max_solver_time: 0.05  # max solver itration time (ms), to guarantee real time
+max_num_iterations: 10   # max solver itrations, to guarantee real time
 keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
-# imu parameters       The more accurate parameters you provide, the better performance
+#imu parameters       The more accurate parameters you provide, the better performance
 # acc_n: 0.2          # accelerometer measurement noise standard deviation. #0.2   0.04
-# gyr_n: 0.004         # gyroscope measurement noise standard deviation.     #0.05  0.004 0.0015
-# acc_w: 0.002         # accelerometer bias random work noise standard deviation.  #0.002 0.004
-# gyr_w: 4.0e-5      # gyroscope bias random work noise standard deviation.     #4.0e-5
-# g_norm: 9.80         # gravity magnitude
-acc_n: 1.4885e-02
-gyr_n: 5.5192e-04
-acc_w: 1.9736e-06
-gyr_w: 1.5769e-07
+# gyr_n: 0.01         # gyroscope measurement noise standard deviation.     #0.05  0.004
+# acc_w: 0.001         # accelerometer bias random work noise standard deviation.  #0.002
+# gyr_w: 0.0001       # gyroscope bias random work noise standard deviation.     #4.0e-5
+# g_norm: 9.805         # gravity magnitude
+# acc_n: 1.4885e-02
+# gyr_n: 5.5192e-04
+# acc_w: 1.9736e-06
+# gyr_w: 1.5769e-07
+# g_norm: 9.81007
+
+acc_n: 2.3536e-02
+gyr_n: 8.7266e-04
+acc_w: 1.2482e-06
+gyr_w: 9.9735e-08
 g_norm: 9.81007
 
 #unsynchronization parameters

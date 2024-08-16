@@ -3,6 +3,7 @@
 
 #include "voxel_mapping/map_base.h"
 #include "voxel_mapping/voxel.h"
+#include "voxel_mapping/tsdf.h"
 
 #include <fstream>
 #include <iostream>
@@ -53,6 +54,12 @@ namespace voxel_mapping
       cloud = features_cloud_.makeShared();
     }
     void getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res);
+
+    //添加处理vins已经处理过的features
+    void addGlobalFeatures(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
+    int getFeatureNumperPosYaw(const Eigen::Vector3d &pos, const double &yaw, vector<Eigen::Vector3d> &res);
+    double calcuYaw(const Eigen::Vector3d &pos_now, const Eigen::Vector3d &pos_target);
+    bool isinFovYaw(const Eigen::Vector3d &pos_now, const Eigen::Vector3d &pos_target, const double &yaw_ref);
 
   private:
     shared_ptr<TSDF> tsdf_;

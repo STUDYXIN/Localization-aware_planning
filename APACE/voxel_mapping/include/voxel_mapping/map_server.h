@@ -175,6 +175,7 @@ namespace voxel_mapping
     bool enable_add_feature_ = true;
     ros::Time init_time_;
     Eigen::Vector3d pos_;
+    double roll, pitch, yaw;
   };
 } // namespace voxel_mapping
 

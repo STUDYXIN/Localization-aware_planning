@@ -4,11 +4,14 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /occupancy_grids1
+        - /feature_map1
         - /VINS_odometry1/Shape1
         - /VINS_odometry1/Covariance1/Position1
         - /VINS_odometry1/Covariance1/Orientation1
         - /Airsim_gt1/Shape1
         - /Airsim_gt1/Covariance1
+        - /PointCloud22
       Splitter Ratio: 0.467843621969223
     Tree Height: 493
   - Class: rviz/Selection
@@ -78,7 +81,7 @@ Visualization Manager:
           Marker Topic: /planning_vis/yaw
           Name: yaw_traj
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -94,23 +97,22 @@ Visualization Manager:
           Marker Topic: /planning/position_cmd_vis
           Name: position_cmd
           Namespaces:
-            "": true
-            current_pose: true
+            {}
           Queue Size: 100
           Value: true
       Enabled: true
       Name: Planning
-    - Alpha: 0.5
+    - Alpha: 0.10000000149011612
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 4.449999809265137
+        Max Value: 4.650000095367432
         Min Value: -1.0499999523162842
         Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: AxisColor
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -148,10 +150,10 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 4
+      Size (Pixels): 10
       Size (m): 0.009999999776482582
       Style: Points
-      Topic: /voxel_mapping/feature_grid
+      Topic: /voxel_mapping/feature_map
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -266,7 +268,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -277,11 +279,11 @@ Visualization Manager:
       Size (Pixels): 6
       Size (m): 0.009999999776482582
       Style: Points
-      Topic: /vins_estimator/point_cloud
+      Topic: /vins_estimator/margin_cloud
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Class: rviz/Image
       Enabled: true
       Image Topic: /airsim_node/drone_1/front_center_custom/DepthPlanar
@@ -297,14 +299,14 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 13043.92578125
-        Min Value: -0.8501086831092834
+        Max Value: 4.650000095367432
+        Min Value: -1.0499999523162842
         Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: AxisColor
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -317,7 +319,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.009999999776482582
       Style: Flat Squares
-      Topic: /voxel_mapping/depth_pointcloud
+      Topic: /voxel_mapping/occupancy_grid
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -362,7 +364,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -377,7 +379,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: false
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -462,6 +464,14 @@ Visualization Manager:
         "": true
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /vins_estimator/camera_pose_visual
+      Name: MarkerArray
+      Namespaces:
+        CameraPoseVisualization: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 46; 52; 54
@@ -489,7 +499,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 8.549761772155762
+      Distance: 23.392292022705078
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -497,17 +507,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -1.5241529941558838
-        Y: 1.4862399101257324
-        Z: 0.6558751463890076
-      Focal Shape Fixed Size: true
+        X: 1.6821930408477783
+        Y: 1.2023862600326538
+        Z: 1.2526981830596924
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6497974991798401
+      Pitch: 0.07979676127433777
       Target Frame: <Fixed Frame>
-      Yaw: 4.387380123138428
+      Yaw: 2.228607177734375
     Saved:
       - Class: rviz/Orbit
         Distance: 19.900680541992188

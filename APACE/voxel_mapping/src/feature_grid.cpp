@@ -1,5 +1,4 @@
 #include "voxel_mapping/feature_grid.h"
-#include "voxel_mapping/tsdf.h"
 
 namespace voxel_mapping
 {
@@ -120,7 +119,6 @@ namespace voxel_mapping
 
     vector<int> pointIdxRadiusSearch;
     vector<float> pointRadiusSquaredDistance;
-
     features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
     for (const auto &index : pointIdxRadiusSearch)
@@ -131,6 +129,86 @@ namespace voxel_mapping
     }
   }
 
+  void FeatureGrid::addGlobalFeatures(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+  {
+    for (const auto &pt : cloud->points)
+    {
+      Eigen::Vector3d pt_eigen(pt.x, pt.y, pt.z);
+      // 跳过地图外和已经拓展的点
+      if (!isInMap(pt_eigen) || getVoxel(pt_eigen).value == FeatureType::HASFEATURE)
+        continue;
+      // 不加入空气中的特征点
+      // if (tsdf_->getVoxel(pt_eigen).weight < 1e-5)
+      {
+            if(abs(tsdf_->getVoxel(pt_eigen).value) < config_.TSDF_cutoff_dist_)
+              continue;
+            Position round_pos = posRounding(pt_eigen);
+            pcl::PointXYZ pt_round;
+            pt_round.x = round_pos.x();
+            pt_round.y = round_pos.y();
+            pt_round.z = round_pos.z();
+            features_cloud_.push_back(pt_round);
+            setVoxel(pt_eigen, FeatureType::HASFEATURE);
+      }
+
+      // // 特征点总不可能在空气里吧
+      // else if (abs(tsdf_->getVoxel(pt_eigen).value) < config_.TSDF_cutoff_dist_)
+      // {
+      //     Position round_pos = posRounding(pt_eigen);
+      //     pcl::PointXYZ pt_round;
+      //     pt_round.x = round_pos.x();
+      //     pt_round.y = round_pos.y();
+      //     pt_round.z = round_pos.z();
+      //     features_cloud_.push_back(pt);
+      //     setVoxel(pt_eigen, FeatureType::HASFEATURE);
+      // }
+    }
+
+    if (!features_cloud_.empty())
+      features_kdtree_.setInputCloud(features_cloud_.makeShared());
+  }
+  
+  double FeatureGrid::calcuYaw(const Eigen::Vector3d &pos_now, const Eigen::Vector3d &pos_target)
+  { 
+    // 计算 Yaw 角度，[-π, π]
+    Eigen::Vector3d delta = pos_target - pos_now;
+    return atan2(delta.y(), delta.x());
+  }
+  bool FeatureGrid::isinFovYaw(const Eigen::Vector3d &pos_now, const Eigen::Vector3d &pos_target, const double &yaw_ref)
+  {
+    double yaw = calcuYaw(pos_now,pos_target);
+    double yaw_uav = yaw_ref;
+    while (yaw_uav > M_PI) yaw_uav -= 2.0 * M_PI;
+    while (yaw_uav < -M_PI) yaw_uav += 2.0 * M_PI;
+    double yaw_diff = yaw - yaw_uav;
+    while (yaw_diff > M_PI) yaw_diff -= 2.0 * M_PI;
+    while (yaw_diff < -M_PI) yaw_diff += 2.0 * M_PI;
+    if(yaw_diff > -M_PI/4 && yaw_diff <M_PI/4 )
+      return true;
+    else
+      return false;
+  }
+
+  int FeatureGrid::getFeatureNumperPosYaw(const Eigen::Vector3d &pos, const double &yaw, vector<Eigen::Vector3d> &res)
+  {
+    if (features_cloud_.empty())
+      return 0;
+    pcl::PointXYZ searchPoint;
+    searchPoint.x = pos(0);
+    searchPoint.y = pos(1);
+    searchPoint.z = pos(2);
+    vector<int> pointIdxRadiusSearch;
+    vector<float> pointRadiusSquaredDistance;
+    features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+    res.clear();
+    for (const auto &index : pointIdxRadiusSearch)
+    {
+      Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+      if ((f - pos).norm() > config_.depth_min_ && isinFovYaw(pos,f,yaw))
+        res.push_back(f);
+    }
+    return res.size();
+  }
   // void FeatureGrid::getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res)
   // {
   //   std::cout << "pos in: " << pos.transpose() << std::endl;

@@ -166,14 +166,13 @@ int main(int argc, char** argv)
 			gps_position.position_covariance[0] = pos_accuracy;
 			//printf("pos_accuracy %f \n", pos_accuracy);
 			pubGPS.publish(gps_position);
-			Eigen::Vector3d translation;
-            Eigen::Matrix3d rotation;
-			estimator.inputImage(imgTime, imLeft,translation,rotation,imRight);
+
+			estimator.inputImage(imgTime, imLeft, imRight);
 			
 			Eigen::Matrix<double, 4, 4> pose;
 			estimator.getPoseInWorldFrame(pose);
 			if(outFile != NULL)
-				fprintf (outFile, "%f %f %f %f %f %f %f %f %f %f ca%f %f \n",pose(0,0), pose(0,1), pose(0,2),pose(0,3),
+				fprintf (outFile, "%f %f %f %f %f %f %f %f %f %f %f %f \n",pose(0,0), pose(0,1), pose(0,2),pose(0,3),
 																	       pose(1,0), pose(1,1), pose(1,2),pose(1,3),
 																	       pose(2,0), pose(2,1), pose(2,2),pose(2,3));
 			

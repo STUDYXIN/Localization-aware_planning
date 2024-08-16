@@ -11,6 +11,7 @@
 
 #include "../estimator/estimator.h"
 #include "../estimator/parameters.h"
+#include "GoodfeatureManage.h"
 #include "CameraPoseVisualization.h"
 #include <cv_bridge/cv_bridge.h>
 #include <eigen3/Eigen/Dense>
@@ -30,6 +31,7 @@
 #include <std_msgs/Header.h>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
+
 
 extern ros::Publisher pub_odometry;
 extern ros::Publisher pub_path, pub_pose;
@@ -63,8 +65,6 @@ void pubCameraPose(const Estimator &estimator, const std_msgs::Header &header);
 
 void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header);
 
-void pubtruthPointCloud(Estimator &estimator, const std_msgs::Header &header);
-
 void pubTF(const Estimator &estimator, const std_msgs::Header &header);
 
 void pubKeyframe(const Estimator &estimator);
@@ -74,6 +74,4 @@ void pubRelocalization(const Estimator &estimator);
 void pubCar(const Estimator &estimator, const std_msgs::Header &header);
 
 void airsimPoseInitCallback(const nav_msgs::OdometryConstPtr &msg);
-
-void pubcurrentpts(const sensor_msgs::PointCloud &point_cloud_msg);
 

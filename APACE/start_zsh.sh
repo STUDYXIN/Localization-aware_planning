@@ -6,6 +6,9 @@ BASEDIR=$(dirname "${FILEDIR}")
 SETUP_FILE="${BASEDIR}/../../../devel/setup.zsh"
 SETUP_DIR=$(dirname "${SETUP_FILE}")
 
+ENABLEVINS=false
+USEKEBOARD_SPEED=0
+
 echo "setup.zsh is located in: ${SETUP_DIR}"
 # 加载 ROS 环境
 source "${SETUP_FILE}"
@@ -33,7 +36,7 @@ exec zsh"
 sleep 2s
 gnome-terminal --tab -- zsh -c "\
 echo Control; \
-roslaunch airsim_ctrl ctrl_md_exploration.launch; \
+roslaunch airsim_ctrl ctrl_md_exploration.launch enable_vins:=${ENABLEVINS}; \
 exec zsh"
 
 # 启动 Perception
@@ -44,9 +47,9 @@ roslaunch vins vins_airsim.launch; \
 exec zsh"
 
 # 启动 Planner
-sleep 5s
+sleep 3s
 gnome-terminal --tab -- zsh -c "\
 echo Planner; \
-roslaunch plan_manage agile_planner_airsim.launch; \
+roslaunch plan_manage agile_planner_airsim.launch enable_vins:=${ENABLEVINS} keyboard_vector:=${USEKEBOARD_SPEED}; \
 exec zsh"
 

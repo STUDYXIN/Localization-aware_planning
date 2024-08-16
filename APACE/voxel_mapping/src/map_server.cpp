@@ -4,6 +4,8 @@ namespace voxel_mapping
 {
   MapServer::MapServer(ros::NodeHandle &nh)
   {
+    pos_.setZero();
+    yaw = M_PI/2;
     tsdf_.reset(new TSDF());
     esdf_.reset(new ESDF());
     occupancy_grid_.reset(new OccupancyGrid());
@@ -270,7 +272,8 @@ namespace voxel_mapping
     pcl::fromROSMsg(*msg, *cloud);
 
     // feature_map_->addFeatureCloud(pos_, cloud);
-    feature_grid_->addFeatureCloud(pos_, cloud);
+    feature_grid_->addGlobalFeatures(cloud);
+    // feature_grid_->addFeatureCloud(pos_, cloud);
   }
 
   void MapServer::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
@@ -278,6 +281,11 @@ namespace voxel_mapping
     pos_(0) = msg->pose.pose.position.x;
     pos_(1) = msg->pose.pose.position.y;
     pos_(2) = msg->pose.pose.position.z;
+    geometry_msgs::Quaternion quaternion = msg->pose.pose.orientation;
+
+    // 将四元数转换为 yaw、pitch、roll（Euler 角）
+    tf::Quaternion tf_quat(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+    tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw); 
 
     VoxelIndex idx;
     tsdf_->positionToIndex(pos_, idx);
@@ -333,8 +341,8 @@ namespace voxel_mapping
 
     if (config_.publish_feature_map_)
     {
-      publishFeatureGrid();
-      // publishFeatureMap();
+      // publishFeatureGrid();
+      publishFeatureMap();
     }
   }
 
@@ -520,7 +528,7 @@ namespace voxel_mapping
     occupancy_grid_pub_.publish(pointcloud_msg);
   }
 
-  void MapServer::publishFeaturePointcloud(const AlignedVector<Position> features)
+void MapServer::publishFeaturePointcloud(const AlignedVector<Position> features)
   {
     if (feature_pub_.getNumSubscribers() == 0)
       return;
@@ -547,27 +555,55 @@ namespace voxel_mapping
     pcl::toROSMsg(pointcloud, pointcloud_msg);
     feature_pub_.publish(pointcloud_msg);
   }
-
   void MapServer::publishFeatureMap()
   {
     if (feature_map_pub_.getNumSubscribers() == 0)
       return;
 
     if (config_.verbose_)
-      ROS_INFO("[MapServer] Publishing feature pointcloud...");
+      ROS_INFO_THROTTLE(1.0, "[MapServer] Publishing feature grid...");
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud;
-    feature_map_->getFeatureCloud(pointcloud);
-
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
+    vector<Eigen::Vector3d> this_features;
+    feature_grid_->getFeatureNumperPosYaw(pos_, yaw, this_features);
+    for (const Eigen::Vector3d &eigen_point : this_features)
+    {
+        pcl::PointXYZ pcl_point;
+        pcl_point.x = static_cast<float>(eigen_point.x());
+        pcl_point.y = static_cast<float>(eigen_point.y());
+        pcl_point.z = static_cast<float>(eigen_point.z());
+        pointcloud->points.push_back(pcl_point);
+    }
     pointcloud->width = pointcloud->points.size();
     pointcloud->height = 1;
     pointcloud->is_dense = true;
-    pointcloud->header.frame_id = config_.world_frame_;
-
     sensor_msgs::PointCloud2 pointcloud_msg;
     pcl::toROSMsg(*pointcloud, pointcloud_msg);
+    pointcloud_msg.header.frame_id = config_.world_frame_;
+    // ROS_WARN("[MapServer] PUBLISH featureMap %d",pointcloud->width);
     feature_map_pub_.publish(pointcloud_msg);
   }
+
+  // void MapServer::publishFeatureMap()
+  // {
+  //   if (feature_map_pub_.getNumSubscribers() == 0)
+  //     return;
+
+  //   if (config_.verbose_)
+  //     ROS_INFO("[MapServer] Publishing feature pointcloud...");
+
+  //   pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud;
+  //   feature_map_->getFeatureCloud(pointcloud);
+
+  //   pointcloud->width = pointcloud->points.size();
+  //   pointcloud->height = 1;
+  //   pointcloud->is_dense = true;
+  //   pointcloud->header.frame_id = config_.world_frame_;
+
+  //   sensor_msgs::PointCloud2 pointcloud_msg;
+  //   pcl::toROSMsg(*pointcloud, pointcloud_msg);
+  //   feature_map_pub_.publish(pointcloud_msg);
+  // }
 
   void MapServer::publishFeatureGrid()
   {

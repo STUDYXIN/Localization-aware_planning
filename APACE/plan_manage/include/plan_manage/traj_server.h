@@ -22,6 +22,9 @@
 #include <polynomial/polynomial_traj.h>
 #include <quadrotor_msgs/PositionCommand.h>
 #include <trajectory/Bspline.h>
+#include <std_msgs/String.h>
+#include <termios.h>
+#include <unistd.h>
 
 using fast_planner::NonUniformBspline;
 using fast_planner::PerceptionUtils;
@@ -88,8 +91,13 @@ namespace fast_planner
     shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> vins_sync_sub_;
     SynchronizerErrorEvaluate sync_error_evaluate_;
 
+    //keyboard_control
+    int keyboard_vector;
+
     /* -------------------------------- Functions ------------------------------- */
     // ROS callbacks
+    char getKey();
+    void keyboardCallback();
     void replanCallback(std_msgs::Empty msg);
     void newCallback(std_msgs::Empty msg);
     void odomCallbck(const nav_msgs::Odometry &msg);

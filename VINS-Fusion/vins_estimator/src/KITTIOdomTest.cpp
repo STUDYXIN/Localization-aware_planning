@@ -102,9 +102,8 @@ int main(int argc, char** argv)
 			imRightMsg->header.stamp = ros::Time(imageTimeList[i]);
 			pubRightImage.publish(imRightMsg);
 
-			Eigen::Vector3d translation;
-            Eigen::Matrix3d rotation;
-			estimator.inputImage(imageTimeList[i], imLeft,translation,rotation,imRight);
+
+			estimator.inputImage(imageTimeList[i], imLeft, imRight);
 			
 			Eigen::Matrix<double, 4, 4> pose;
 			estimator.getPoseInWorldFrame(pose);

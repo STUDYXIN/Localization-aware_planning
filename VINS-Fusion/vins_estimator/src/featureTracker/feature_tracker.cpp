@@ -253,20 +253,6 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
     if(SHOW_TRACK)
         drawTrack(cur_img, rightImg, ids, cur_pts, cur_right_pts, prevLeftPtsMap);
 
-    // 转换成cur_pt2ros发送
-    sensor_msgs::PointCloud point_cloud;
-    point_cloud.header.stamp = ros::Time(cur_time);
-    point_cloud.header.frame_id = "world";
-    for (auto &pts : cur_pts)
-    {
-            geometry_msgs::Point32 p;
-            p.x = pts.x;
-            p.y = pts.y;
-            p.z = 0;
-            point_cloud.points.push_back(p);
-    }
-    pt2ros_cloud = point_cloud;
-
     prev_img = cur_img;
     prev_pts = cur_pts;
     prev_un_pts = cur_un_pts;

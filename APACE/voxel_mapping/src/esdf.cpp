@@ -46,7 +46,8 @@ namespace voxel_mapping
                  { return tmp_buffer2_[indexToAddress(VoxelIndex(x, y, z))].value; },
                  [&](int x, double val)
                  {
-                   map_data_->data[indexToAddress(VoxelIndex(x, y, z))].value = map_config_.resolution_ * std::sqrt(val);
+                   map_data_->data[indexToAddress(VoxelIndex(x, y, z))].value =
+                       map_config_.resolution_ * std::sqrt(val);
                  },
                  idx_min[0], idx_max[0], 0);
       }

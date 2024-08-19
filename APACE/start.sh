@@ -6,7 +6,7 @@ BASEDIR=$(dirname "${FILEDIR}")
 SETUP_FILE="${BASEDIR}/../../../devel/setup.bash"
 SETUP_DIR=$(dirname "${SETUP_FILE}")
 
-ENABLEVINS=false
+ENABLEVINS=true
 USEKEBOARD_SPEED=0
 
 echo "setup.bash is located in: ${SETUP_DIR}"

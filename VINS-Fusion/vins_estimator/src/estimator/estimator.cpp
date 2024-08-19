@@ -9,6 +9,31 @@
 
 #include "estimator.h"
 #include "../utility/visualization.h"
+#include "../utility/GoodfeatureManage.h"
+GoodfeatureManage Gfmanage;
+void Estimator::startRestoreFeatures()
+{
+    stopRestoreFeaturesTime = false;
+    FeaturesRestoretimerThread = std::thread([this]() {
+        while (!stopRestoreFeaturesTime)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));  // 设置定时器间隔
+
+            mProcess.lock();  // 加锁以确保线程安全
+            Gfmanage.add_feature2list(*this);  // 调用定时器任务函数
+            mProcess.unlock();
+        }
+    });
+}
+
+void Estimator::stopRestoreFeatures()
+{
+    stopRestoreFeaturesTime = true;
+    if (FeaturesRestoretimerThread.joinable())
+    {
+        FeaturesRestoretimerThread.join();
+    }
+}
 
 Estimator::Estimator() : f_manager{Rs}
 {
@@ -22,6 +47,7 @@ Estimator::~Estimator()
   if (MULTIPLE_THREAD)
   {
     processThread.join();
+    stopRestoreFeatures();
     printf("join thread \n");
   }
 }
@@ -96,6 +122,8 @@ void Estimator::setCntService(ros::NodeHandle &nh)
       nh.advertiseService("/services/start_cnt", &Estimator::startEvalCallback, this);
   end_cnt_service_ =
       nh.advertiseService("/services/end_cnt", &Estimator::endEvalCallback, this);
+  get_fronted_features_service = 
+      nh.advertiseService("/services/get_point_cloud", &Estimator::handle_point_cloud_request,this);
 }
 
 bool Estimator::startEvalCallback(std_srvs::Empty::Request &request,
@@ -112,7 +140,33 @@ bool Estimator::endEvalCallback(std_srvs::Empty::Request &request,
   featureTracker.end_cnt_flag_ = true;
   return true;
 }
+bool Estimator::handle_point_cloud_request(vins::PointCloudService::Request &request,
+                                vins::PointCloudService::Response &response) {
+    static bool init = false; 
+    if(!init)
+    {
+        init = getAirsim2VinsTransform(R_a_v,t_a_v);
+        ROS_WARN("[VINS Estimator] Init Airsim2Vins Transform ...");
+        return false;
+    }
+    // 生成或获取点云数据
+    pcl::PointCloud<pcl::PointXYZ> fronted_cloud;
+    Gfmanage.get_fronted_pcl_pointcloud(fronted_cloud,R_a_v,t_a_v);
+    fronted_cloud.width = fronted_cloud.points.size();
+    fronted_cloud.height = 1;
+    fronted_cloud.is_dense = true;
 
+    sensor_msgs::PointCloud2 fronted_cloud_msg;
+    pcl::toROSMsg(fronted_cloud, fronted_cloud_msg);
+    std_msgs::Header header;
+    header.frame_id = "world";
+    header.stamp = ros::Time::now();
+    fronted_cloud_msg.header = header;
+    // 设置响应的点云数据
+    response.point_cloud = fronted_cloud_msg;
+    ROS_WARN("Sending point cloud data. Size:%zu", fronted_cloud.size());
+    return true;
+}
 void Estimator::setParameter()
 {
   mProcess.lock();
@@ -138,6 +192,7 @@ void Estimator::setParameter()
   {
     initThreadFlag = true;
     processThread = std::thread(&Estimator::processMeasurements, this);
+    startRestoreFeatures(); 
   }
   mProcess.unlock();
 }

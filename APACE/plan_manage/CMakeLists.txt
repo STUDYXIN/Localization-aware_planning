@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.7 REQUIRED)
+find_package(vins REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
@@ -16,12 +17,13 @@ find_package(catkin REQUIRED COMPONENTS
   plan_env
   pathfinding
   trajectory
+  vins
 )
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES plan_manage
- CATKIN_DEPENDS plan_env pathfinding trajectory)
+ CATKIN_DEPENDS plan_env pathfinding trajectory vins)
 
 include_directories(
   include

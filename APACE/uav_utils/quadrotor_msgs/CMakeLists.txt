@@ -72,8 +72,13 @@ add_message_files(
   StatusData.msg
   TRPYCommand.msg
   Odometry.msg
+  PolynomialMatrix.msg
+  PolynomialTraj.msg
   PolynomialTrajectory.msg
   LQRTrajectory.msg
+  GoalSet.msg
+  TakeoffLand.msg
+  Px4ctrlDebug.msg
 )
 
 generate_messages(

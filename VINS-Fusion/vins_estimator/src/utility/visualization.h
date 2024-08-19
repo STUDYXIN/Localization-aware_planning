@@ -75,3 +75,4 @@ void pubCar(const Estimator &estimator, const std_msgs::Header &header);
 
 void airsimPoseInitCallback(const nav_msgs::OdometryConstPtr &msg);
 
+bool getAirsim2VinsTransform(Eigen::Matrix3d &R_a_v_,Eigen::Vector3d &t_a_v_);

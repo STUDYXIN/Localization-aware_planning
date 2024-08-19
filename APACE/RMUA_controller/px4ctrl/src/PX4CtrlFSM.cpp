@@ -70,6 +70,7 @@ void PX4CtrlFSM::process()
     //     break;
     // }
     state = AUTO_TAKEOFF;
+    ros::Duration(1.0).sleep();
     controller.resetThrustMapping();
     if (param.pose_solver == 3)
     {
@@ -377,7 +378,7 @@ Desired_State_t PX4CtrlFSM::get_takeoff_land_des(const double speed)
     des.j = Eigen::Vector3d(0, 0, 0);
     des.a = Eigen::Vector3d(0, 0, 0);
     des.v = Eigen::Vector3d(0, 0, speed);
-    des.p = Eigen::Vector3d(0, 0, speed * delta_t);
+    des.p = Eigen::Vector3d(0, 0, speed * delta_t + takeoff_land.start_pose(2));
     des.yaw = takeoff_land.start_pose(3);
     des.yaw_rate = 0.0;
   }
@@ -439,6 +440,7 @@ void PX4CtrlFSM::set_start_pose_for_takeoff_land(const Odom_Data_t &odom)
   takeoff_land.start_pose(3) = get_yaw_from_quaternion(odom_data.q);
 
   takeoff_land.toggle_takeoff_land_time = ros::Time::now();
+  ROS_INFO("\033[32m[px4ctrl] SET_SUCUSESS, POS %.4f %.4f %.4f YAW %.4f.\033[32m",takeoff_land.start_pose(0),takeoff_land.start_pose(1),takeoff_land.start_pose(2),takeoff_land.start_pose(3));
 }
 
 bool PX4CtrlFSM::cmd_is_received(const ros::Time &now_time)

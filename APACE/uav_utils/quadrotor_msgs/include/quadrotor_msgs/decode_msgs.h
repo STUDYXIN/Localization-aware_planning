@@ -7,13 +7,17 @@
 #include <quadrotor_msgs/StatusData.h>
 #include <quadrotor_msgs/PPROutputData.h>
 
-namespace quadrotor_msgs {
+namespace quadrotor_msgs
+{
 
-bool decodeOutputData(const std::vector<uint8_t>& data, quadrotor_msgs::OutputData& output);
+bool decodeOutputData(const std::vector<uint8_t> &data,
+                      quadrotor_msgs::OutputData &output);
 
-bool decodeStatusData(const std::vector<uint8_t>& data, quadrotor_msgs::StatusData& status);
+bool decodeStatusData(const std::vector<uint8_t> &data,
+                      quadrotor_msgs::StatusData &status);
 
-bool decodePPROutputData(const std::vector<uint8_t>& data, quadrotor_msgs::PPROutputData& output);
+bool decodePPROutputData(const std::vector<uint8_t> &data,
+                         quadrotor_msgs::PPROutputData &output);
 }
 
 #endif

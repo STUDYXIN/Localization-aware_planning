@@ -15,6 +15,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
+#include "vins/PointCloudService.h"
 #include "tic_toc.h"
 #include "transformer/transformer.h"
 #include "voxel_mapping/esdf.h"
@@ -22,6 +23,7 @@
 #include "voxel_mapping/feature_map.h"
 #include "voxel_mapping/occupancy_grid.h"
 #include "voxel_mapping/tsdf.h"
+
 
 using std::shared_ptr;
 using std::string;
@@ -76,6 +78,7 @@ namespace voxel_mapping
     void globalMapCallback(const sensor_msgs::PointCloud2ConstPtr &msg);
     void featureCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg);
     void publishMapTimerCallback(const ros::TimerEvent &event);
+    void receiveFrontedFeaturesCallback(const ros::TimerEvent &event);
     void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
 
     void publishTSDF();
@@ -144,6 +147,9 @@ namespace voxel_mapping
     ros::Subscriber depth_sub_;
     ros::Subscriber odom_sub_;
 
+    ros::ServiceClient fronted_points_client_;
+    vins::PointCloudService fronted_points_srv;
+
     // using SyncPolicyImageOdom = message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::PoseStamped>;
     // using SynchronizerImageOdom = shared_ptr<message_filters::Synchronizer<SyncPolicyImageOdom>> SynchronizerImagePose;
 
@@ -151,7 +157,7 @@ namespace voxel_mapping
     // shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> odom_sub_;
     // SynchronizerImageOdom sync_image_odom_;
 
-    ros::Timer publish_map_timer_;
+    ros::Timer publish_map_timer_, receive_fronted_feature_timer;
 
     // Debug visualization
     ros::Publisher debug_visualization_pub_;

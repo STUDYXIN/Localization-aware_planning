@@ -15,7 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
     camera_models
     pcl_ros
-    image_transport)
+    image_transport
+    message_generation)
 
 find_package(OpenCV REQUIRED)
 
@@ -24,7 +25,15 @@ find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
 
 include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS})
-
+add_service_files(
+  FILES
+  PointCloudService.srv
+)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  sensor_msgs
+)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3)
 include_directories(

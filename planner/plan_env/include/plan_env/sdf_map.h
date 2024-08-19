@@ -188,7 +188,7 @@ public:
   ~SDFMap()
   {
     ROS_ERROR("SDFMap is destructed!");
-    saveMap();
+    // saveMap();
   }
 
   string map_path_r_, map_path_w_;

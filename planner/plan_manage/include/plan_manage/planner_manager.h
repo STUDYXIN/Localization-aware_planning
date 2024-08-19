@@ -63,6 +63,8 @@ namespace fast_planner
 
     bool checkTrajCollision(double &distance);
 
+    bool checkTrajLocalizability();
+
     PlanParameters pp_;
     LocalTrajData local_data_;
     GlobalTrajData global_data_;

@@ -84,18 +84,6 @@ void CtrlFSM::process_cmd_control(Controller_Output_t &u, SO3_Controller_Output_
   controller.update(des, odom_data, u, u_so3);
 }
 
-void CtrlFSM::align_with_imu(Controller_Output_t &u)
-{
-  double imu_yaw = get_yaw_from_quaternion(imu_data.q);
-  double odom_yaw = get_yaw_from_odom();
-  double des_yaw = u.yaw;
-  // ROS_INFO_STREAM("imu yaw: "<<imu_yaw<<" odom_yaw: "<<odom_yaw);
-  u.yaw = yaw_add(yaw_add(des_yaw, -odom_yaw), imu_yaw);
-
-  // out << "imu_yaw=" << imu_yaw << " odom_yaw=" << odom_yaw << " des_yaw=" << des_yaw << " u.yaw="
-  // << u.yaw << endl;
-};
-
 void CtrlFSM::set_hov_with_odom()
 {
   hover_pose.head<3>() = odom_data.p;

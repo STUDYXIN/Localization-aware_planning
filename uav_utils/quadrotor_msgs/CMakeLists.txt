@@ -70,10 +70,14 @@ add_message_files(
   Serial.msg
   SO3Command.msg
   StatusData.msg
+  TakeoffLand.msg
   TRPYCommand.msg
   Odometry.msg
+  PolynomialMatrix.msg
+  PolynomialTraj.msg
   PolynomialTrajectory.msg
   LQRTrajectory.msg
+  Px4ctrlDebug.msg
 )
 
 generate_messages(

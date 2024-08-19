@@ -42,6 +42,8 @@ void registerPub(ros::NodeHandle &n)
   pub_latest_odometry = n.advertise<nav_msgs::Odometry>("imu_propagate", 1000);
   pub_latest_camera_pose = n.advertise<geometry_msgs::PoseStamped>("imu_propagate_camera_pose", 1000);
   pub_path = n.advertise<nav_msgs::Path>("path", 1000);
+  // pub_path = n.advertise<nav_msgs::Path>("path_bmk", 1000);
+  // pub_path = n.advertise<nav_msgs::Path>("path_pag", 1000);
   pub_odometry = n.advertise<nav_msgs::Odometry>("odometry", 1000);
   pub_point_cloud = n.advertise<sensor_msgs::PointCloud2>("point_cloud", 1000);
   pub_margin_cloud = n.advertise<sensor_msgs::PointCloud2>("margin_cloud", 1000);
@@ -53,7 +55,8 @@ void registerPub(ros::NodeHandle &n)
   pub_extrinsic = n.advertise<nav_msgs::Odometry>("extrinsic", 1000);
   pub_image_track = n.advertise<sensor_msgs::Image>("image_track", 1000);
 
-  sub_airsim_pose_init = n.subscribe("/airsim_node/drone_1/odom_local_enu", 1000, airsimPoseInitCallback);
+  sub_airsim_pose_init =
+      n.subscribe("/airsim_node/drone_1/odom_local_enu", 1000, airsimPoseInitCallback);
 
   cameraposevisual.setScale(0.1);
   cameraposevisual.setLineWidth(0.01);
@@ -61,6 +64,7 @@ void registerPub(ros::NodeHandle &n)
 
 void airsimPoseInitCallback(const nav_msgs::OdometryConstPtr &msg)
 {
+  // std::cout << "airsimPoseInitCallback" << std::endl;
   static bool init = false;
 
   if (!init)
@@ -68,9 +72,11 @@ void airsimPoseInitCallback(const nav_msgs::OdometryConstPtr &msg)
     R_a_v = Eigen::Matrix3d::Identity();
     t_a_v = Eigen::Vector3d::Zero();
 
-    Eigen::Quaterniond q(msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
+    Eigen::Quaterniond q(msg->pose.pose.orientation.w, msg->pose.pose.orientation.x,
+                         msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
     Eigen::Matrix3d R = q.toRotationMatrix();
-    Eigen::Vector3d t(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+    Eigen::Vector3d t(msg->pose.pose.position.x, msg->pose.pose.position.y,
+                      msg->pose.pose.position.z);
 
     R_a_v = R;
     t_a_v = t;
@@ -79,7 +85,8 @@ void airsimPoseInitCallback(const nav_msgs::OdometryConstPtr &msg)
   }
 }
 
-void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, const Eigen::Vector3d &V, double t)
+void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q,
+                       const Eigen::Vector3d &V, double t)
 {
   // nav_msgs::Odometry odometry;
   // odometry.header.stamp = ros::Time(t);
@@ -114,7 +121,8 @@ void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, co
   pub_latest_odometry.publish(odometry_airsim);
 }
 
-void pubLatestCameraPose(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, const Eigen::Vector3d &V, double t)
+void pubLatestCameraPose(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q,
+                         const Eigen::Vector3d &V, double t)
 {
   geometry_msgs::PoseStamped camera_pose;
   camera_pose.header.stamp = ros::Time(t);
@@ -425,7 +433,8 @@ void pubTF(const Estimator &estimator, const std_msgs::Header &header)
   br.sendTransform(tf::StampedTransform(transform, header.stamp, "vins", "body"));
 
   // camera frame
-  transform.setOrigin(tf::Vector3(estimator.tic[0].x(), estimator.tic[0].y(), estimator.tic[0].z()));
+  transform.setOrigin(
+      tf::Vector3(estimator.tic[0].x(), estimator.tic[0].y(), estimator.tic[0].z()));
   q.setW(Quaterniond(estimator.ric[0]).w());
   q.setX(Quaterniond(estimator.ric[0]).x());
   q.setY(Quaterniond(estimator.ric[0]).y());

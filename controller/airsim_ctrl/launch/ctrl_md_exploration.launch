@@ -1,7 +1,7 @@
 <launch>
 	<arg name="uavname" default="fpv" />
 	<!-- <arg name="use_octree" value="true"/> -->
-	<arg name="enable_vins" default="false"/>
+	<arg name="enable_vins" default="true"/>
 	
 	<!-- airsim  ros -->
 	<include file="$(find airsim_ros_pkgs)/launch/airsim_node.launch"/>

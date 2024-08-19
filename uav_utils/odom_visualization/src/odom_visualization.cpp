@@ -440,8 +440,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "odom_visualization");
   ros::NodeHandle n("~");
 
-  n.param("mesh_resource", mesh_resource,
-          std::string("package://odom_visualization/meshes/hummingbird.mesh"));
+  n.param("mesh_resource", mesh_resource, std::string("package://odom_visualization/meshes/hummingbird.mesh"));
   n.param("color/r", color_r, 1.0);
   n.param("color/g", color_g, 0.0);
   n.param("color/b", color_b, 0.0);

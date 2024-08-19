@@ -17,7 +17,7 @@ image_height: 480
    
 
 # Extrinsic parameter between IMU and Camera.
-estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
 
 body_T_cam0: !!opencv-matrix
@@ -48,8 +48,8 @@ show_track: 1           # publish tracking image as topic
 flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
 
 #optimization parameters
-max_solver_time: 0.05  # max solver itration time (ms), to guarantee real time
-max_num_iterations: 10   # max solver itrations, to guarantee real time
+max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
+max_num_iterations: 8   # max solver itrations, to guarantee real time
 keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
 #imu parameters       The more accurate parameters you provide, the better performance
@@ -58,16 +58,10 @@ keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 # acc_w: 0.001         # accelerometer bias random work noise standard deviation.  #0.002
 # gyr_w: 0.0001       # gyroscope bias random work noise standard deviation.     #4.0e-5
 # g_norm: 9.805         # gravity magnitude
-# acc_n: 1.4885e-02
-# gyr_n: 5.5192e-04
-# acc_w: 1.9736e-06
-# gyr_w: 1.5769e-07
-# g_norm: 9.81007
-
-acc_n: 2.3536e-02
-gyr_n: 8.7266e-04
-acc_w: 1.2482e-06
-gyr_w: 9.9735e-08
+acc_n: 1.4885e-02
+gyr_n: 5.5192e-04
+acc_w: 1.9736e-06
+gyr_w: 1.5769e-07
 g_norm: 9.81007
 
 #unsynchronization parameters

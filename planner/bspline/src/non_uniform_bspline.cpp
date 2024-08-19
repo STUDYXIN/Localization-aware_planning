@@ -85,7 +85,6 @@ namespace fast_planner
 
   Eigen::VectorXd NonUniformBspline::evaluateDeBoor(const double &u)
   {
-
     double ub = min(max(u_(p_), u), u_(m_ - p_));
 
     // determine which [ui,ui+1] lay in

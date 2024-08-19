@@ -66,7 +66,7 @@ namespace fast_planner
 
     /* callback */
     exec_timer_ = nh.createTimer(ros::Duration(0.01), &KinoReplanFSM::execFSMCallback, this);
-    safety_timer_ = nh.createTimer(ros::Duration(0.05), &KinoReplanFSM::checkCollisionCallback, this);
+    safety_timer_ = nh.createTimer(ros::Duration(0.05), &KinoReplanFSM::checkSafetyCallback, this);
 
     waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &KinoReplanFSM::waypointCallback, this);
     odom_sub_ = nh.subscribe("/odom_world", 1, &KinoReplanFSM::odometryCallback, this);
@@ -259,7 +259,7 @@ namespace fast_planner
     }
   }
 
-  void KinoReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
+  void KinoReplanFSM::checkSafetyCallback(const ros::TimerEvent &e)
   {
     LocalTrajData *info = &planner_manager_->local_data_;
 
@@ -327,13 +327,25 @@ namespace fast_planner
     /* ---------- check trajectory ---------- */
     if (exec_state_ == FSM_EXEC_STATE::EXEC_TRAJ)
     {
+      bool collide = false;
+      bool bad_localizabiliy = false;
+
       double dist;
 
       if (!planner_manager_->checkTrajCollision(dist))
       {
         ROS_WARN("current traj in collision.");
-        changeFSMExecState(REPLAN_TRAJ, "SAFETY");
+        collide = true;
       }
+
+      if (!planner_manager_->checkTrajLocalizability())
+      {
+        ROS_WARN("current traj is not localizable.");
+        bad_localizabiliy = true;
+      }
+
+      if (collide || bad_localizabiliy)
+        changeFSMExecState(REPLAN_TRAJ, "SAFETY");
     }
   }
 

@@ -277,10 +277,8 @@ void Controller::update(const Desired_State_t &des, const Odom_Data_t &odom,
   // 	u.yaw_mode = Controller_Output_t::CTRL_YAW;
   // 	u.yaw = des.yaw;
   // }
-  const Eigen::Quaterniond desired_attitude =
-      computeDesiredAttitude(F_des / param.mass, des.yaw, odom.q);
-  const Eigen::Vector3d feedback_bodyrates =
-      computeFeedBackControlBodyrates(desired_attitude, odom.q);
+  const Eigen::Quaterniond desired_attitude = computeDesiredAttitude(F_des / param.mass, des.yaw, odom.q);
+  const Eigen::Vector3d feedback_bodyrates = computeFeedBackControlBodyrates(desired_attitude, odom.q);
   u.roll_rate = reference_inputs.roll_rate + feedback_bodyrates.x();
   u.pitch_rate = reference_inputs.pitch_rate + feedback_bodyrates.y();
   u.yaw_rate = reference_inputs.yaw_rate + feedback_bodyrates.z();

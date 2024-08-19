@@ -627,13 +627,13 @@ namespace fast_planner
     double T_sum = 0.0;
     if (is_shot_succ_)
       T_sum += t_shot_;
+
     PathNodePtr node = path_nodes_.back();
     while (node->parent != NULL)
     {
       T_sum += node->duration;
       node = node->parent;
     }
-    // cout << "duration:" << T_sum << endl;
 
     // Calculate boundary vel and acc
     Eigen::Vector3d end_vel, end_acc;

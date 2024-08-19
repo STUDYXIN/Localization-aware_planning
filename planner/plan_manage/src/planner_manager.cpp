@@ -127,6 +127,34 @@ namespace fast_planner
     return true;
   }
 
+
+
+  bool FastPlannerManager::checkTrajLocalizability()
+  {
+    double t_now = (ros::Time::now() - local_data_.start_time_).toSec();
+
+    double tm, tmp;
+    local_data_.position_traj_.getTimeSpan(tm, tmp);
+    Eigen::Vector3d cur_pt = local_data_.position_traj_.evaluateDeBoor(tm + t_now);
+
+    double radius = 0.0;
+    double fut_t = 0.02;
+
+    while (radius < 6.0 && t_now + fut_t < local_data_.duration_)
+    {
+      Eigen::Vector3d fut_pt = local_data_.position_traj_.evaluateDeBoor(tm + t_now + fut_t);
+      double yaw = local_data_.yaw_traj_.evaluateDeBoor(tm + t_now)[0];
+
+      if (edt_environment_->sdf_map_->getFeatureNumInFOV(fut_pt, yaw) < 20)
+        return false;
+
+      radius = (fut_pt - cur_pt).norm();
+      fut_t += 0.02;
+    }
+
+    return true;
+  }
+
   // !SECTION
 
   // SECTION kinodynamic replanning

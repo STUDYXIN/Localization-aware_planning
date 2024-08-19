@@ -7,7 +7,8 @@ using namespace std;
 
 HovThrKF::HovThrKF(Parameter_t &param_) : param(param_) {}
 
-void HovThrKF::init() {
+void HovThrKF::init()
+{
   double mass = param.mass;
   double max_force = param.full_thrust;
 
@@ -30,7 +31,8 @@ void HovThrKF::init() {
   R << 0.001 * 0.001;
 }
 
-void HovThrKF::process(double u) {
+void HovThrKF::process(double u)
+{
   // printf("u = %f\n", u);
   // printf("pro: x- = %10.3f %10.3f\n",x(0), x(1));
   x = F * x + B * u;
@@ -39,7 +41,8 @@ void HovThrKF::process(double u) {
   // limit_range(x(0), 0.5, 0.9);
 }
 
-void HovThrKF::update(double a) {
+void HovThrKF::update(double a)
+{
   // printf("******\na = %f\n", a);
   Matrix<double, 1, 1> z;
   z << a - 9.8;
@@ -67,7 +70,8 @@ double HovThrKF::get_hov_thr() { return x(0); }
 void HovThrKF::set_hov_thr(double hov) { x(0) = hov; }
 
 void HovThrKF::simple_update(Eigen::Quaterniond q, double u,
-                             Eigen::Vector3d acc) {
+                             Eigen::Vector3d acc)
+{
   Matrix3d bRw = q.toRotationMatrix().transpose();
   Vector3d acc_body = acc - bRw * Vector3d(0, 0, param.gra);
   static double acc_body2_filter = 0;
@@ -92,7 +96,8 @@ void HovThrKF::simple_update(Eigen::Quaterniond q, double u,
   // }
 }
 
-void HovThrKF::simple_update(Eigen::Vector3d des_v, Eigen::Vector3d odom_v) {
+void HovThrKF::simple_update(Eigen::Vector3d des_v, Eigen::Vector3d odom_v)
+{
   double compensate = (des_v(2) - odom_v(2)) * 0.001;
   x(0) = x(0) + compensate;
 
@@ -101,12 +106,13 @@ void HovThrKF::simple_update(Eigen::Vector3d des_v, Eigen::Vector3d odom_v) {
 
   // printf("x(0)=%f\n", x(0));
 
-  uav_utils::limit_range(x(0), param.hover.percent_lower_limit,
-                         param.hover.percent_higher_limit);
-  if (x(0) == param.hover.percent_lower_limit) {
+  uav_utils::limit_range(x(0), param.hover.percent_lower_limit, param.hover.percent_higher_limit);
+  if (x(0) == param.hover.percent_lower_limit)
+  {
     // ROS_WARN("[Ctrl.hover] Reach percent_lower_limit %f", x(0));
   }
-  if (x(0) == param.hover.percent_higher_limit) {
+  if (x(0) == param.hover.percent_higher_limit)
+  {
     // ROS_WARN("[Ctrl.hover] Reach percent_higher_limit %f", x(0));
   }
 }

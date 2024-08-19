@@ -354,8 +354,7 @@ namespace fast_planner
     displaySphereList(goal_vec, resolution, color, GOAL + id % 100);
   }
 
-  void PlanningVisualization::drawGeometricPath(const vector<Eigen::Vector3d> &path, double resolution,
-                                                const Eigen::Vector4d &color, int id)
+  void PlanningVisualization::drawGeometricPath(const vector<Eigen::Vector3d> &path, double resolution, const Eigen::Vector4d &color, int id)
   {
     displaySphereList(path, resolution, color, PATH + id % 100);
   }

@@ -133,6 +133,8 @@ void SDFMap::initMap(ros::NodeHandle &nh)
 
   int buffer_size = mp_.map_voxel_num_(0) * mp_.map_voxel_num_(1) * mp_.map_voxel_num_(2);
 
+  md_.feature_buffer_ = vector<FeatureVoxel>(buffer_size, FeatureVoxel::UNKNOWN);
+
   md_.occupancy_buffer_ = vector<double>(buffer_size, mp_.clamp_min_log_ - mp_.unknown_flag_);
   md_.occupancy_buffer_neg = vector<char>(buffer_size, 0);
   md_.occupancy_buffer_inflate_ = vector<char>(buffer_size, 0);
@@ -150,6 +152,8 @@ void SDFMap::initMap(ros::NodeHandle &nh)
   // md_.proj_points_.resize(640 * 480 / mp_.skip_pixel_ / mp_.skip_pixel_);
   md_.proj_points_.resize(640 * 480);
   md_.proj_points_cnt = 0;
+
+  // feature_sub_ = node_.subscribe<sensor_msgs::PointCloud2>("/sdf_map/feature", 10, &SDFMap::featureCallback, this);
 
   /* init callback */
   depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "/sdf_map/depth", 50));
@@ -192,6 +196,7 @@ void SDFMap::initMap(ros::NodeHandle &nh)
 
   unknown_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/unknown", 10);
   depth_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/depth_cloud", 10);
+  feature_grid_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/sdf_map/feature_grid", 10);
 
   md_.occ_need_update_ = false;
   md_.local_updated_ = false;
@@ -199,6 +204,34 @@ void SDFMap::initMap(ros::NodeHandle &nh)
   md_.has_first_depth_ = false;
   md_.has_odom_ = false;
   md_.has_cloud_ = false;
+
+  // camera FoV params
+  mp_.far_ = 4.5;
+  // normals of hyperplanes
+  const double top_ang = 0.56125;
+  mp_.n_top_ << 0.0, sin(M_PI_2 - top_ang), cos(M_PI_2 - top_ang);
+  mp_.n_bottom_ << 0.0, -sin(M_PI_2 - top_ang), cos(M_PI_2 - top_ang);
+
+  const double left_ang = 0.69222;
+  const double right_ang = 0.68901;
+  mp_.n_left_ << sin(M_PI_2 - left_ang), 0.0, cos(M_PI_2 - left_ang);
+  mp_.n_right_ << -sin(M_PI_2 - right_ang), 0.0, cos(M_PI_2 - right_ang);
+
+  std::cout << "top: " << mp_.n_top_ << std::endl;
+  std::cout << "bottom: " << mp_.n_bottom_ << std::endl;
+  std::cout << "left: " << mp_.n_left_ << std::endl;
+  std::cout << "right: " << mp_.n_right_ << std::endl;
+
+  // vertices of FoV assuming zero pitch
+  mp_.lefttop_ = mp_.far_ * Eigen::Vector3d(tan(left_ang), -sin(top_ang), 1);
+  mp_.leftbottom_ = mp_.far_ * Eigen::Vector3d(-sin(left_ang), sin(top_ang), 1);
+  mp_.righttop_ = mp_.far_ * Eigen::Vector3d(sin(right_ang), sin(top_ang), 1);
+  mp_.rightbottom_ = mp_.far_ * Eigen::Vector3d(sin(right_ang), sin(top_ang), 1);
+
+  std::cout << "lefttop: " << mp_.lefttop_.transpose() << std::endl;
+  std::cout << "leftbottom: " << mp_.leftbottom_.transpose() << std::endl;
+  std::cout << "righttop: " << mp_.righttop_.transpose() << std::endl;
+  std::cout << "rightbottom: " << mp_.rightbottom_.transpose() << std::endl;
 
   // loadMap();
 }
@@ -848,6 +881,8 @@ void SDFMap::visCallback(const ros::TimerEvent & /*event*/)
   // publishUnknown();
 
   publishDepth();
+
+  publishFeatureGrid();
 }
 
 void SDFMap::updateOccupancyCallback(const ros::TimerEvent & /*event*/)
@@ -876,6 +911,49 @@ void SDFMap::updateESDFCallback(const ros::TimerEvent & /*event*/)
   updateESDF3d();
 
   md_.esdf_need_update_ = false;
+}
+
+void SDFMap::featureCallback(const sensor_msgs::PointCloud2ConstPtr &feature)
+{
+  pcl::PointCloud<pcl::PointXYZ> feature_cloud;
+  pcl::fromROSMsg(*feature, feature_cloud);
+
+  md_.feature_points_cnt = 0;
+  md_.feature_buffer_.assign(md_.feature_buffer_.size(), FeatureVoxel::UNKNOWN);
+  md_.features_cloud_.clear();
+
+  for (size_t i = 0; i < feature_cloud.points.size(); ++i)
+  {
+    Eigen::Vector3d pt;
+    pt(0) = feature_cloud.points[i].x;
+    pt(1) = feature_cloud.points[i].y;
+    pt(2) = feature_cloud.points[i].z;
+
+    if (isInMap(pt))
+    {
+      Eigen::Vector3i idx;
+      posToIndex(pt, idx);
+      int addr = toAddress(idx);
+
+      if (md_.feature_buffer_[addr] != FeatureVoxel::HASFEATURE)
+      {
+        // cout<<"add point"<<endl;
+        // cout <<"pt: "<<pt.transpose()<<endl;
+
+        md_.feature_buffer_[addr] = FeatureVoxel::HASFEATURE;
+        Eigen::Vector3d round_pos = posRounding(pt);
+        pcl::PointXYZ pt_round;
+        pt_round.x = round_pos.x();
+        pt_round.y = round_pos.y();
+        pt_round.z = round_pos.z();
+        md_.features_cloud_.push_back(pt_round);
+      }
+
+      // md_.feature_points_cnt++;
+    }
+  }
+
+  md_.feature_points_cnt = feature_cloud.size();
 }
 
 void SDFMap::depthPoseCallback(const sensor_msgs::ImageConstPtr &img, const geometry_msgs::PoseStampedConstPtr &pose)
@@ -1243,6 +1321,25 @@ void SDFMap::publishESDF()
   esdf_pub_.publish(cloud_msg);
 }
 
+void SDFMap::publishFeatureGrid()
+{
+  if (feature_grid_pub_.getNumSubscribers() == 0)
+    return;
+
+  ROS_INFO_THROTTLE(1.0, "[MapServer] Publishing feature grid...");
+
+  md_.features_cloud_.width = md_.features_cloud_.points.size();
+  md_.features_cloud_.height = 1;
+  md_.features_cloud_.is_dense = true;
+  md_.features_cloud_.header.frame_id = "world";
+
+  // ROS_INFO("Visualize feature grid size: %d", static_cast<int>(pointcloud->size()));
+
+  sensor_msgs::PointCloud2 pointcloud_msg;
+  pcl::toROSMsg(md_.features_cloud_, pointcloud_msg);
+  feature_grid_pub_.publish(pointcloud_msg);
+}
+
 void SDFMap::getSliceESDF(const double height, const double res, const Eigen::Vector4d &range, vector<Eigen::Vector3d> &slice, vector<Eigen::Vector3d> &grad, int sign)
 {
   double dist;
@@ -1399,6 +1496,68 @@ void SDFMap::loadMap()
   ROS_INFO("Load occupancy map from %s!!!", fullname_occu.c_str());
 
   in_occu.close();
+}
+
+size_t SDFMap::getFeatureNumInFOV(const Eigen::Vector3d &pos, const double &yaw)
+{
+  size_t num = 0;
+
+  Eigen::Matrix3d R_wb = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  Eigen::Vector3d t_wb = pos;
+
+  Eigen::Matrix3d R_wc = R_wb * mp_.Rbc_;        // qwc=qwb*qbc
+  Eigen::Vector3d t_wc = R_wb * mp_.tbc_ + t_wb; // twc=qwb*tbc+twb
+
+  Eigen::Vector3i lbi, ubi;
+  calcFovAABB(R_wc, t_wc, lbi, ubi);
+
+  for (int x = lbi[0]; x <= ubi[0]; ++x)
+  {
+    for (int y = lbi[1]; y <= ubi[1]; ++y)
+    {
+      for (int z = lbi[2]; z <= ubi[2]; ++z)
+      {
+        if (hasFeature(Eigen::Vector3d(x, y, z)))
+          num++;
+      }
+    }
+  }
+
+  return num;
+}
+
+void SDFMap::calcFovAABB(const Eigen::Matrix3d &R_wc, const Eigen::Vector3d &t_wc, Eigen::Vector3i &lb, Eigen::Vector3i &ub)
+{
+  // axis-aligned bounding box(AABB) of camera FoV
+  vector<Eigen::Vector3d> vertice(5);
+  vertice[0] = R_wc * mp_.lefttop_ + t_wc;
+  vertice[1] = R_wc * mp_.leftbottom_ + t_wc;
+  vertice[2] = R_wc * mp_.righttop_ + t_wc;
+  vertice[3] = R_wc * mp_.rightbottom_ + t_wc;
+  vertice[4] = t_wc;
+
+  Eigen::Vector3d lbd, ubd;
+  axisAlignedBoundingBox(vertice, lbd, ubd);
+  // boundIndex(lbd, ubd);
+  //  visualizeBox(lbd, ubd);
+
+  posToIndex(lbd, lb);
+  posToIndex(ubd, ub);
+
+  boundIndex(lb);
+  boundIndex(ub);
+}
+
+void SDFMap::axisAlignedBoundingBox(const vector<Eigen::Vector3d> &points, Eigen::Vector3d &lb,
+                                    Eigen::Vector3d &ub)
+{
+  lb = points.front();
+  ub = points.front();
+  for (const auto &p : points)
+  {
+    lb = lb.array().min(p.array());
+    ub = ub.array().max(p.array());
+  }
 }
 
 // SDFMap

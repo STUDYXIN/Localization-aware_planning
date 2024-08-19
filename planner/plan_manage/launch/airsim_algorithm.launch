@@ -7,6 +7,7 @@
   <arg name="camera_pose_topic"/>
   <arg name="depth_topic"/>
   <arg name="cloud_topic"/>
+  <arg name="feature_topic"/>
 
   <arg name="cx"/>
   <arg name="cy"/>
@@ -43,6 +44,7 @@
   <node pkg="plan_manage" name="fast_planner_node" type="fast_planner_node" output="screen">
     <remap from="/odom_world" to="$(arg odometry_topic)"/>
     <remap from="/sdf_map/odom" to="$(arg odometry_topic)"/>
+    <remap from="/sdf_map/feature" to="$(arg feature_topic)"/>
     <remap from="/sdf_map/cloud" to="$(arg cloud_topic)"/>
     <remap from = "/sdf_map/pose"   to = "$(arg camera_pose_topic)"/> 
     <remap from = "/sdf_map/depth" to = "$(arg depth_topic)"/>

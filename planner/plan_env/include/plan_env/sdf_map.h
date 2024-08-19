@@ -51,6 +51,13 @@
 
 using namespace std;
 
+enum class FeatureVoxel
+{
+  UNKNOWN,
+  HASFEATURE,
+  NOFEATURE
+};
+
 // constant parameters
 
 struct MappingParameters
@@ -101,6 +108,13 @@ struct MappingParameters
 
   /* active mapping */
   double unknown_flag_;
+
+  // normals of camera FoV seperating hyperplane
+  Eigen::Vector3d n_top_, n_bottom_, n_left_, n_right_;
+  // vertices of FoV
+  Eigen::Vector3d lefttop_, righttop_, leftbottom_, rightbottom_;
+  // camera parameters
+  double tanyz_, tanxz_, near_, far_;
 };
 
 // intermediate mapping data for fusion, esdf
@@ -108,6 +122,9 @@ struct MappingParameters
 struct MappingData
 {
   // main map data, occupancy of each voxel and Euclidean distance
+  std::vector<FeatureVoxel> feature_buffer_;
+  pcl::PointCloud<pcl::PointXYZ> features_cloud_;
+
   std::vector<double> occupancy_buffer_; // 未膨胀的栅格地图，double类型是因为它存的是概率栅格
 
   /// occupancy_buffer_inflate_的反相，计算ESDF时用到
@@ -142,10 +159,13 @@ struct MappingData
   vector<Eigen::Vector3d> proj_points_;
   int proj_points_cnt;
 
+  int feature_points_cnt;
+
   // flag buffers for speeding up raycasting
 
   // count_hit记录碰撞的次数，count_hit_and_miss_不管是hit还是miss都会记录
-  vector<uint32_t> count_hit_, count_hit_and_miss_;
+  vector<uint32_t>
+      count_hit_, count_hit_and_miss_;
   queue<Eigen::Vector3i> cache_voxel_;
 
   // range of updating ESDF
@@ -177,6 +197,7 @@ public:
   void resetBuffer();
   void resetBuffer(Eigen::Vector3d min, Eigen::Vector3d max);
 
+  inline Eigen::Vector3d posRounding(const Eigen::Vector3d &pos);
   inline void posToIndex(const Eigen::Vector3d &pos, Eigen::Vector3i &id);
   inline void indexToPos(const Eigen::Vector3i &id, Eigen::Vector3d &pos);
   inline int toAddress(const Eigen::Vector3i &id);
@@ -196,6 +217,9 @@ public:
   inline bool isKnownFree(const Eigen::Vector3i &id);
   inline bool isKnownOccupied(const Eigen::Vector3i &id);
 
+  inline bool hasFeature(const Eigen::Vector3d &pos);
+  inline bool hasFeature(const Eigen::Vector3i &idx);
+
   // distance field management
   inline double getDistance(const Eigen::Vector3d &pos);
   inline double getDistance(const Eigen::Vector3i &id);
@@ -214,6 +238,7 @@ public:
   void publishUpdateRange();
   void publishUnknown();
   void publishDepth();
+  void publishFeatureGrid();
 
   bool hasDepthObservation();
   bool odomValid();
@@ -225,6 +250,13 @@ public:
   void saveMap();
 
   void loadMap();
+
+  size_t getFeatureNumInFOV(const Eigen::Vector3d &pos, const double &yaw);
+
+  void calcFovAABB(const Eigen::Matrix3d &R_wc, const Eigen::Vector3d &t_wc, Eigen::Vector3i &lb, Eigen::Vector3i &ub);
+
+  void axisAlignedBoundingBox(const vector<Eigen::Vector3d> &points, Eigen::Vector3d &lb,
+                              Eigen::Vector3d &ub);
 
   RayCaster::Ptr caster_;
 
@@ -246,6 +278,7 @@ private:
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img);
   void poseCallback(const geometry_msgs::PoseStampedConstPtr &pose);
   void odomCallback(const nav_msgs::OdometryConstPtr &odom);
+  void featureCallback(const sensor_msgs::PointCloud2ConstPtr &feature);
 
   // update occupancy by raycasting, and update ESDF
   void updateOccupancyCallback(const ros::TimerEvent & /*event*/);
@@ -274,14 +307,24 @@ private:
   SynchronizerImagePose sync_image_pose_;
   SynchronizerImageOdom sync_image_odom_;
 
-  ros::Subscriber indep_depth_sub_, indep_odom_sub_, indep_pose_sub_, indep_cloud_sub_;
+  ros::Subscriber indep_depth_sub_, indep_odom_sub_, indep_pose_sub_, indep_cloud_sub_, feature_sub_;
   ros::Publisher global_map_pub_, map_pub_, esdf_pub_, map_inf_pub_, update_range_pub_;
   ros::Publisher unknown_pub_, depth_pub_;
+  ros::Publisher feature_grid_pub_;
   ros::Timer occ_timer_, esdf_timer_, vis_timer_;
 };
 
 /* ============================== definition of inline function
  * ============================== */
+
+inline Eigen::Vector3d SDFMap::posRounding(const Eigen::Vector3d &pos)
+{
+  Eigen::Vector3i idx;
+  posToIndex(pos, idx);
+  Eigen::Vector3d rounded_pos;
+  indexToPos(idx, rounded_pos);
+  return rounded_pos;
+}
 
 inline int SDFMap::toAddress(const Eigen::Vector3i &id)
 {
@@ -350,6 +393,20 @@ inline bool SDFMap::isKnownOccupied(const Eigen::Vector3i &id)
   int adr = toAddress(id1);
 
   return md_.occupancy_buffer_inflate_[adr] == 1;
+}
+
+inline bool SDFMap::hasFeature(const Eigen::Vector3d &pos)
+{
+  Eigen::Vector3i idx;
+  posToIndex(pos, idx);
+  return isUnknown(idx);
+}
+
+inline bool SDFMap::hasFeature(const Eigen::Vector3i &idx)
+{
+  int adr = toAddress(idx);
+
+  return md_.feature_buffer_[adr] == FeatureVoxel::HASFEATURE;
 }
 
 inline double SDFMap::getDistWithGradTrilinear(Eigen::Vector3d pos, Eigen::Vector3d &grad)

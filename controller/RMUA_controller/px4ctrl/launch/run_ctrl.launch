@@ -1,0 +1,22 @@
+<launch>
+
+	<node pkg="px4ctrl" type="px4ctrl_node" name="px4ctrl" output="screen">
+		<!-- <remap from="~odom" to="/vicon_imu_ekf_odom" /> -->
+
+		<!-- <remap from="~odom" to="/vins_fusion/imu_propagate" /> -->
+
+		<!-- <remap from="~cmd" to="/position_cmd" /> -->
+
+		<rosparam command="load" file="$(find px4ctrl)/config/ctrl_param.yaml" />
+	</node>
+
+	
+	<node pkg="odom_pub" type="odom_pub_node" name="odom_pub" output="screen" >
+	</node>
+	
+	<!--node name="rviz" pkg="rviz" type="rviz" output="screen"
+		args="-d $(find odom_pub)/config/odom.rviz">
+	</node-->
+
+
+</launch>

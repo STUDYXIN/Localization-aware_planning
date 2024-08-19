@@ -45,7 +45,7 @@
     
     <!-- global waypoints -->
     <!-- If flight_type is set to 2, the drone will travel these waypoints one by one -->
-    <arg name="point_num" value="4" />
+    <arg name="point_num" value="2" />
 
     <!-- <arg name="point0_x" value="-2.0" />
     <arg name="point0_y" value="12.0" />
@@ -57,13 +57,13 @@
     <arg name="point0_y" value="18.0" />
     <arg name="point0_z" value="2.0" /> -->
 
-    <arg name="point0_x" value="8.0" />
-    <arg name="point0_y" value="8.0" />
-    <arg name="point0_z" value="0.5" />
+    <arg name="point0_x" value="-2.0" />
+    <arg name="point0_y" value="10.0" />
+    <arg name="point0_z" value="1.5" />
 
-    <arg name="point1_x" value="-8.0" />
-    <arg name="point1_y" value="8.0" />
-    <arg name="point1_z" value="0.5" />
+    <arg name="point1_x" value="-2.0" />
+    <arg name="point1_y" value="10.0" />
+    <arg name="point1_z" value="1.0" />
 
     <arg name="point2_x" value="-10.0" />
     <arg name="point2_y" value="-10.0" />
@@ -80,7 +80,7 @@
     <!-- <remap from="/position_cmd" to="planning/pos_cmd"/> -->
     <param name="traj_server/init_x" value="0.0"/>
     <param name="traj_server/init_y" value="0.0"/>
-    <param name="traj_server/init_z" value="1.0"/>
+    <param name="traj_server/init_z" value="2.0"/>
     <param name="traj_server/init_yaw" value="1.57"/>
     <!-- <param name="traj_server/init_yaw" value="3.14"/>    -->
 

@@ -1,7 +1,0 @@
-<launch>
-    <arg name="play_bag" default="true" />
-    <arg name="bag_file" default="$(find map_publisher)/data/global_pointcloud.bag"/>
-
-    <node name="player" pkg="rosbag" type="play"  args="-r 1.0 -l $(arg bag_file)" if="$(arg play_bag)"/>
-
-</launch>

@@ -33,7 +33,7 @@
 ros::Publisher cmd_vis_pub, pos_cmd_pub, traj_pub;
 
 nav_msgs::Odometry odom;
-
+bool have_odom;
 quadrotor_msgs::PositionCommand cmd;
 double pos_gain[3] = {5.7, 5.7, 6.2};
 double vel_gain[3] = {3.4, 3.4, 4.0};

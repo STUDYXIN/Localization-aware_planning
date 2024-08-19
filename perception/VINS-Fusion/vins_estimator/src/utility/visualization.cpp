@@ -36,6 +36,7 @@ static double sum_of_path = 0;
 static Vector3d last_path(0.0, 0.0, 0.0);
 
 size_t pub_counter = 0;
+GoodfeatureManage Gfmanage;
 
 void registerPub(ros::NodeHandle &n)
 {
@@ -346,7 +347,8 @@ void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header)
     Vector3d pts_i = it_per_id.feature_per_frame[0].point * it_per_id.estimated_depth;
     Vector3d w_pts_i =
         estimator.Rs[imu_i] * (estimator.ric[0] * pts_i + estimator.tic[0]) + estimator.Ps[imu_i];
-
+    // VINS to AirSim
+    w_pts_i = R_a_v * w_pts_i + t_a_v;
     pcl::PointXYZ p;
     p.x = w_pts_i(0);
     p.y = w_pts_i(1);
@@ -363,43 +365,38 @@ void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header)
   point_cloud_msg.header = header;
   pub_point_cloud.publish(point_cloud_msg);
 
-  // pub margined potin
+  // pub margined potin(替换为goog_feature)
   pcl::PointCloud<pcl::PointXYZ> margin_cloud;
+  Gfmanage.add_feature2list(estimator,header);
+  Gfmanage.get_pcl_pointcloud(margin_cloud,R_a_v,t_a_v);
+  // for (auto &it_per_id : estimator.f_manager.feature)
+  // {
+  //   int used_num;
+  //   used_num = it_per_id.feature_per_frame.size();
+  //   if (!(used_num >= 2 && it_per_id.start_frame < WINDOW_SIZE - 2))
+  //     continue;
+  //   // if (it_per_id->start_frame > WINDOW_SIZE * 3.0 / 4.0 || it_per_id->solve_flag != 1)
+  //   //        continue;
 
-  for (auto &it_per_id : estimator.f_manager.feature)
-  {
-    int used_num;
-    used_num = it_per_id.feature_per_frame.size();
-    if (!(used_num >= 2 && it_per_id.start_frame < WINDOW_SIZE - 2))
-      continue;
-    // if (it_per_id->start_frame > WINDOW_SIZE * 3.0 / 4.0 || it_per_id->solve_flag != 1)
-    //        continue;
+  //   if (it_per_id.start_frame == 0 && it_per_id.feature_per_frame.size() <= 2 &&
+  //       it_per_id.solve_flag == 1)
+  //   {
+  //     int imu_i = it_per_id.start_frame;
+  //     Vector3d pts_i = it_per_id.feature_per_frame[0].point * it_per_id.estimated_depth;
+  //     Vector3d w_pts_i =
+  //         estimator.Rs[imu_i] * (estimator.ric[0] * pts_i + estimator.tic[0]) + estimator.Ps[imu_i];
 
-    if (it_per_id.start_frame == 0 && it_per_id.feature_per_frame.size() <= 2 &&
-        it_per_id.solve_flag == 1)
-    {
-      int imu_i = it_per_id.start_frame;
-      Vector3d pts_i = it_per_id.feature_per_frame[0].point * it_per_id.estimated_depth;
-      Vector3d w_pts_i =
-          estimator.Rs[imu_i] * (estimator.ric[0] * pts_i + estimator.tic[0]) + estimator.Ps[imu_i];
+  //     // VINS to AirSim
+  //     w_pts_i = R_a_v * w_pts_i + t_a_v;
 
-      // VINS to AirSim
-      w_pts_i = R_a_v * w_pts_i + t_a_v;
+  //     pcl::PointXYZ point;
+  //     point.x = w_pts_i(0);
+  //     point.y = w_pts_i(1);
+  //     point.z = w_pts_i(2);
+  //     margin_cloud.push_back(point);
+  //   }
+  // }
 
-      pcl::PointXYZ point;
-      point.x = w_pts_i(0);
-      point.y = w_pts_i(1);
-      point.z = w_pts_i(2);
-      margin_cloud.push_back(point);
-    }
-  }
-
-  // num_margin_feature.push_back(margin_cloud.points.size());
-  // ROS_INFO("num_margin_feature: %d", margin_cloud.points.size());
-  // Print avg of num_margin_feature
-  // double sum = std::accumulate(num_margin_feature.begin(), num_margin_feature.end(), 0.0);
-  // double mean = sum / num_margin_feature.size();
-  // ROS_INFO("mean of num_margin_feature: %f", mean);
 
   margin_cloud.width = margin_cloud.points.size();
   margin_cloud.height = 1;

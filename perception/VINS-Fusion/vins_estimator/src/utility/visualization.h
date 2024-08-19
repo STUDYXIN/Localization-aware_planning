@@ -11,6 +11,7 @@
 
 #include "../estimator/estimator.h"
 #include "../estimator/parameters.h"
+#include "GoodfeatureManage.h"
 #include "CameraPoseVisualization.h"
 #include <cv_bridge/cv_bridge.h>
 #include <eigen3/Eigen/Dense>
@@ -30,6 +31,7 @@
 #include <std_msgs/Header.h>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
+
 
 extern ros::Publisher pub_odometry;
 extern ros::Publisher pub_path, pub_pose;

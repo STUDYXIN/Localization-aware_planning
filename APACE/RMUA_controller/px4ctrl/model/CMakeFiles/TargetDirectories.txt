@@ -1,0 +1,3 @@
+/home/star/Desktop/RMUAV_ws/src/Control/px4ctrl/model/CMakeFiles/rebuild_cache.dir
+/home/star/Desktop/RMUAV_ws/src/Control/px4ctrl/model/CMakeFiles/edit_cache.dir
+/home/star/Desktop/RMUAV_ws/src/Control/px4ctrl/model/CMakeFiles/nmpc_model_codegen.dir

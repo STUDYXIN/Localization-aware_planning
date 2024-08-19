@@ -38,7 +38,7 @@ namespace fast_planner
     cur_node->f_score = lambda_heu_ * estimateHeuristic(cur_node->state, end_state, time_to_goal);
     cur_node->node_state = IN_OPEN_SET;
     open_set_.push(cur_node);
-    use_node_num_ += 1;
+    use_node_num_++;
 
     if (dynamic)
     {
@@ -113,7 +113,7 @@ namespace fast_planner
       }
       open_set_.pop();
       cur_node->node_state = IN_CLOSE_SET;
-      iter_num_ += 1;
+      iter_num_++;
 
       double res = 1 / 2.0, time_res = 1 / 1.0, time_res_init = 1 / 20.0;
       Eigen::Matrix<double, 6, 1> cur_state = cur_node->state;
@@ -126,20 +126,24 @@ namespace fast_planner
       if (init_search)
       {
         inputs.push_back(start_acc_);
-        for (double tau = time_res_init * init_max_tau_; tau <= init_max_tau_ + 1e-3;
-             tau += time_res_init * init_max_tau_)
+        for (double tau = time_res_init * init_max_tau_; tau <= init_max_tau_ + 1e-3; tau += time_res_init * init_max_tau_)
           durations.push_back(tau);
         init_search = false;
       }
       else
       {
         for (double ax = -max_acc_; ax <= max_acc_ + 1e-3; ax += max_acc_ * res)
+        {
           for (double ay = -max_acc_; ay <= max_acc_ + 1e-3; ay += max_acc_ * res)
+          {
             for (double az = -max_acc_; az <= max_acc_ + 1e-3; az += max_acc_ * res)
             {
               um << ax, ay, az;
               inputs.push_back(um);
             }
+          }
+        }
+
         for (double tau = time_res * max_tau_; tau <= max_tau_; tau += time_res * max_tau_)
           durations.push_back(tau);
       }
@@ -165,8 +169,7 @@ namespace fast_planner
           // Check if in close set
           Eigen::Vector3i pro_id = posToIndex(pro_pos);
           int pro_t_id = timeToIndex(pro_t);
-          PathNodePtr pro_node =
-              dynamic ? expanded_nodes_.find(pro_id, pro_t_id) : expanded_nodes_.find(pro_id);
+          PathNodePtr pro_node = dynamic ? expanded_nodes_.find(pro_id, pro_t_id) : expanded_nodes_.find(pro_id);
           if (pro_node != NULL && pro_node->node_state == IN_CLOSE_SET)
           {
             if (init_search)
@@ -202,21 +205,20 @@ namespace fast_planner
             double dt = tau * double(k) / double(check_num_);
             stateTransit(cur_state, xt, um, dt);
             pos = xt.head(3);
-            if (edt_environment_->map_server_->getOccupancyGrid()->getVoxel(pos).value ==
-                    voxel_mapping::OccupancyType::OCCUPIED ||
+            if (edt_environment_->map_server_->getOccupancyGrid()->getVoxel(pos).value == voxel_mapping::OccupancyType::OCCUPIED ||
                 !edt_environment_->map_server_->getTSDF()->isInBox(pos))
             {
               is_occ = true;
               break;
             }
-            if (!optimistic_ &&
-                edt_environment_->map_server_->getOccupancyGrid()->getVoxel(pos).value ==
-                    voxel_mapping::OccupancyType::UNKNOWN)
+
+            if (!optimistic_ && edt_environment_->map_server_->getOccupancyGrid()->getVoxel(pos).value == voxel_mapping::OccupancyType::UNKNOWN)
             {
               is_occ = true;
               break;
             }
           }
+
           if (is_occ)
           {
             if (init_search)
@@ -226,16 +228,14 @@ namespace fast_planner
 
           double time_to_goal, tmp_g_score, tmp_f_score;
           tmp_g_score = (um.squaredNorm() + w_time_) * tau + cur_node->g_score;
-          tmp_f_score =
-              tmp_g_score + lambda_heu_ * estimateHeuristic(pro_state, end_state, time_to_goal);
+          tmp_f_score = tmp_g_score + lambda_heu_ * estimateHeuristic(pro_state, end_state, time_to_goal);
 
           // Compare nodes expanded from the same parent
           bool prune = false;
           for (int j = 0; j < (int)tmp_expand_nodes.size(); ++j)
           {
             PathNodePtr expand_node = tmp_expand_nodes[j];
-            if ((pro_id - expand_node->index).norm() == 0 &&
-                ((!dynamic) || pro_t_id == expand_node->time_idx))
+            if ((pro_id - expand_node->index).norm() == 0 && ((!dynamic) || pro_t_id == expand_node->time_idx))
             {
               prune = true;
               if (tmp_f_score < expand_node->f_score)
@@ -280,7 +280,7 @@ namespace fast_planner
 
               tmp_expand_nodes.push_back(pro_node);
 
-              use_node_num_ += 1;
+              use_node_num_++;
               if (use_node_num_ == allocate_num_)
               {
                 cout << "run out of memory." << endl;
@@ -303,17 +303,14 @@ namespace fast_planner
               }
             }
             else
-            {
               cout << "error type in searching: " << pro_node->node_state << endl;
-            }
           }
         }
-      // init_search = false;
     }
 
-    // cout << "open set empty, no path!" << endl;
-    // cout << "use node num: " << use_node_num_ << endl;
-    // cout << "iter num: " << iter_num_ << endl;
+    cout << "open set empty, no path!" << endl;
+    cout << "use node num: " << use_node_num_ << endl;
+    cout << "iter num: " << iter_num_ << endl;
     return NO_PATH;
   }
 
@@ -447,11 +444,8 @@ namespace fast_planner
         return false;
       }
 
-      if (edt_environment_->map_server_->getOccupancyGrid()->getVoxel(coord).value ==
-          voxel_mapping::OccupancyType::OCCUPIED)
-      {
+      if (edt_environment_->map_server_->getOccupancyGrid()->getVoxel(coord).value == voxel_mapping::OccupancyType::OCCUPIED)
         return false;
-      }
     }
     coef_shot_ = coef;
     t_shot_ = t_d;
@@ -542,9 +536,6 @@ namespace fast_planner
     this->inv_resolution_ = 1.0 / resolution_;
     inv_time_resolution_ = 1.0 / time_resolution_;
     edt_environment_->map_server_->getRegion(origin_, map_size_3d_);
-    // cout << "init kino astar" << endl;
-    // cout << "origin_: " << origin_.transpose() << endl;
-    // cout << "map size: " << map_size_3d_.transpose() << endl;
 
     /* ---------- pre-allocated node ---------- */
     path_node_pool_.resize(allocate_num_);
@@ -571,7 +562,7 @@ namespace fast_planner
     std::priority_queue<PathNodePtr, std::vector<PathNodePtr>, NodeComparator> empty_queue;
     open_set_.swap(empty_queue);
 
-    for (int i = 0; i < (int)use_node_num_; i++)
+    for (int i = 0; i < use_node_num_; i++)
     {
       PathNodePtr node = path_node_pool_[i];
       node->parent = NULL;
@@ -630,8 +621,7 @@ namespace fast_planner
     return state_list;
   }
 
-  void KinodynamicAstar::getSamples(double &ts, vector<Eigen::Vector3d> &point_set,
-                                    vector<Eigen::Vector3d> &start_end_derivatives)
+  void KinodynamicAstar::getSamples(double &ts, vector<Eigen::Vector3d> &point_set, vector<Eigen::Vector3d> &start_end_derivatives)
   {
     /* ---------- path duration ---------- */
     double T_sum = 0.0;

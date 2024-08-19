@@ -33,7 +33,6 @@ namespace voxel_mapping
     };
 
     TSDF() : raycast_id_(0) {};
-    ~TSDF() {};
 
     void inputPointCloud(const PointCloudType &pointcloud);
 

@@ -373,4 +373,149 @@ namespace fast_planner
     max_a = max_acc;
   }
 
+  bool NonUniformBspline::checkFeasibility(bool show)
+  {
+    bool fea = true;
+
+    Eigen::MatrixXd P = control_points_;
+    int dimension = control_points_.cols();
+
+    /* check vel feasibility and insert points */
+    for (int i = 0; i < P.rows() - 1; ++i)
+    {
+      Eigen::VectorXd vel = p_ * (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1));
+
+      if (fabs(vel(0)) > limit_vel_ + 1e-4 || fabs(vel(1)) > limit_vel_ + 1e-4 || fabs(vel(2)) > limit_vel_ + 1e-4)
+      {
+        if (show)
+          cout << "[Check]: Infeasible vel " << i << " :" << vel.transpose() << endl;
+        fea = false;
+      }
+    }
+
+    /* acc feasibility */
+    for (int i = 0; i < P.rows() - 2; ++i)
+    {
+      Eigen::VectorXd acc = p_ * (p_ - 1) *
+                            ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
+                             (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
+                            (u_(i + p_ + 1) - u_(i + 2));
+
+      if (fabs(acc(0)) > limit_acc_ + 1e-4 || fabs(acc(1)) > limit_acc_ + 1e-4 || fabs(acc(2)) > limit_acc_ + 1e-4)
+      {
+        if (show)
+          cout << "[Check]: Infeasible acc " << i << " :" << acc.transpose() << endl;
+        fea = false;
+      }
+    }
+
+    return fea;
+  }
+
+  bool NonUniformBspline::reallocateTime(bool show)
+  {
+    bool fea = true;
+
+    Eigen::MatrixXd P = control_points_;
+    int dimension = control_points_.cols();
+
+    double max_vel, max_acc;
+
+    /* check vel feasibility and insert points */
+    for (int i = 0; i < P.rows() - 1; ++i)
+    {
+      Eigen::VectorXd vel = p_ * (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1));
+
+      if (fabs(vel(0)) > limit_vel_ + 1e-4 || fabs(vel(1)) > limit_vel_ + 1e-4 || fabs(vel(2)) > limit_vel_ + 1e-4)
+      {
+        fea = false;
+        if (show)
+          cout << "[Realloc]: Infeasible vel " << i << " :" << vel.transpose() << endl;
+
+        max_vel = -1.0;
+        for (int j = 0; j < dimension; ++j)
+          max_vel = max(max_vel, fabs(vel(j)));
+
+        double ratio = max_vel / limit_vel_ + 1e-4;
+        if (ratio > limit_ratio_)
+          ratio = limit_ratio_;
+
+        double time_ori = u_(i + p_ + 1) - u_(i + 1);
+        double time_new = ratio * time_ori;
+        double delta_t = time_new - time_ori;
+        double t_inc = delta_t / p_;
+
+        for (int j = i + 2; j <= i + p_ + 1; ++j)
+          u_(j) += (j - i - 1) * t_inc;
+
+        for (int j = i + p_ + 2; j < u_.rows(); ++j)
+          u_(j) += delta_t;
+      }
+    }
+
+    /* acc feasibility */
+    for (int i = 0; i < P.rows() - 2; ++i)
+    {
+
+      Eigen::VectorXd acc = p_ * (p_ - 1) *
+                            ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
+                             (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
+                            (u_(i + p_ + 1) - u_(i + 2));
+
+      if (fabs(acc(0)) > limit_acc_ + 1e-4 || fabs(acc(1)) > limit_acc_ + 1e-4 || fabs(acc(2)) > limit_acc_ + 1e-4)
+      {
+        fea = false;
+        if (show)
+          cout << "[Realloc]: Infeasible acc " << i << " :" << acc.transpose() << endl;
+
+        max_acc = -1.0;
+        for (int j = 0; j < dimension; ++j)
+          max_acc = max(max_acc, fabs(acc(j)));
+
+        double ratio = sqrt(max_acc / limit_acc_) + 1e-4;
+        if (ratio > limit_ratio_)
+          ratio = limit_ratio_;
+        // cout << "ratio: " << ratio << endl;
+
+        double time_ori = u_(i + p_ + 1) - u_(i + 2);
+        double time_new = ratio * time_ori;
+        double delta_t = time_new - time_ori;
+        double t_inc = delta_t / double(p_ - 1);
+
+        if (i == 1 || i == 2)
+        {
+          // cout << "acc i: " << i << endl;
+          for (int j = 2; j <= 5; ++j)
+          {
+            u_(j) += double(j - 1) * t_inc;
+          }
+
+          for (int j = 6; j < u_.rows(); ++j)
+          {
+            u_(j) += 4.0 * t_inc;
+          }
+        }
+        else
+        {
+
+          for (int j = i + 3; j <= i + p_ + 1; ++j)
+          {
+            u_(j) += double(j - i - 2) * t_inc;
+            if (j <= 5 && j >= 1)
+            {
+              // cout << "acc j: " << j << endl;
+            }
+          }
+
+          for (int j = i + p_ + 2; j < u_.rows(); ++j)
+          {
+            u_(j) += delta_t;
+          }
+        }
+      }
+    }
+
+    return fea;
+  }
+
 } // namespace fast_planner

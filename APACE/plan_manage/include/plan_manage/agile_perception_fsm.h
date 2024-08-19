@@ -58,6 +58,7 @@ namespace fast_planner
     double last_arrive_time_;
 
     /* planning data */
+    bool use_yaw_prepare_;
     bool trigger_, have_target_, have_odom_;
     FSM_EXEC_STATE exec_state_;
 

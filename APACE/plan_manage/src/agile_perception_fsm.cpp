@@ -15,6 +15,8 @@ namespace fast_planner
     nh.param("fsm/thresh_replan", replan_thresh_, -1.0);
     nh.param("fsm/thresh_no_replan", no_replan_thresh_, -1.0);
 
+    nh.param("fsm/use_yaw_prepare_", use_yaw_prepare_, false);
+
     nh.param("fsm/wp_num", waypoint_num_, -1);
     for (int i = 0; i < waypoint_num_; i++)
     {
@@ -40,7 +42,7 @@ namespace fast_planner
 
     /* ROS utils */
     exec_timer_ = nh.createTimer(ros::Duration(0.01), &AgilePerceptionFSM::execFSMCallback, this);
-    // safety_timer_ = nh.createTimer(ros::Duration(0.05), &AgilePerceptionFSM::checkCollisionCallback, this);
+    safety_timer_ = nh.createTimer(ros::Duration(0.05), &AgilePerceptionFSM::checkCollisionCallback, this);
 
     waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &AgilePerceptionFSM::waypointCallback, this);
     odom_sub_ = nh.subscribe("/odom_world", 1, &AgilePerceptionFSM::odometryCallback, this);
@@ -88,7 +90,7 @@ namespace fast_planner
       if (!have_target_)
         return;
 
-      if (ros::Time::now().toSec() - last_arrive_time_ < 1.0)
+      if (ros::Time::now().toSec() - last_arrive_time_ < 1.5)
         return;
 
       changeFSMExecState(GEN_NEW_TRAJ, "FSM");
@@ -110,8 +112,10 @@ namespace fast_planner
       start_yaw_.setZero();
       start_yaw_(0) = atan2(rot_x(1), rot_x(0));
 
-      changeFSMExecState(callAgilePerceptionReplan() ? EXEC_TRAJ : GEN_NEW_TRAJ, "FSM");
-      // changeFSMExecState(callAgilePerceptionReplan() ? YAW_PREPARE : GEN_NEW_TRAJ, "FSM");
+      if (use_yaw_prepare_)
+        changeFSMExecState(callAgilePerceptionReplan() ? YAW_PREPARE : GEN_NEW_TRAJ, "FSM");
+      else
+        changeFSMExecState(callAgilePerceptionReplan() ? EXEC_TRAJ : GEN_NEW_TRAJ, "FSM");
 
       break;
     }
@@ -136,7 +140,7 @@ namespace fast_planner
       LocalTrajData *info = &planner_manager_->local_data_;
       double t_cur = (ros::Time::now() - info->start_time_).toSec();
       t_cur = min(info->duration_, t_cur);
-      if (t_cur > info->duration_ - 1e-2)
+      if (t_cur > info->duration_ - 1e-2 && (odom_pos_ - end_pt_).norm() < 0.3)
       // if ((odom_pos_ - end_pt_).norm() < 0.3)
       {
         // have_target_ = false;
@@ -197,8 +201,10 @@ namespace fast_planner
       std_msgs::Empty replan_msg;
       replan_pub_.publish(replan_msg);
 
-      changeFSMExecState(callAgilePerceptionReplan() ? EXEC_TRAJ : GEN_NEW_TRAJ, "FSM");
-      // changeFSMExecState(callAgilePerceptionReplan() ? YAW_PREPARE : GEN_NEW_TRAJ, "FSM");
+      if (use_yaw_prepare_)
+        changeFSMExecState(callAgilePerceptionReplan() ? YAW_PREPARE : GEN_NEW_TRAJ, "FSM");
+      else
+        changeFSMExecState(callAgilePerceptionReplan() ? EXEC_TRAJ : GEN_NEW_TRAJ, "FSM");
 
       break;
     }
@@ -214,6 +220,8 @@ namespace fast_planner
       auto &edt_env = planner_manager_->edt_environment_;
 
       double dist = edt_env->evaluateCoarseEDT(end_pt_, -1.0);
+
+      // ROS_INFO("Goal DIstance: %f", dist);
 
       if (dist <= 0.3)
       {
@@ -246,6 +254,8 @@ namespace fast_planner
             }
           }
         }
+
+        ROS_INFO("max dist: %f", max_dist);
 
         if (max_dist > 0.3)
         {
@@ -453,7 +463,10 @@ namespace fast_planner
 
     // Step1: 进行论文里的Position Trajectory Generation
     TicToc t_replan;
-    auto plan_success = planner_manager_->planLocalMotion(end_pt_, start_pt_, start_vel_, start_acc_, truncated, time_lb);
+    auto plan_success = planner_manager_->planLocalMotionNew(start_pt_, start_vel_, start_acc_, end_pt_, end_vel_, truncated, time_lb);
+    // auto plan_success = planner_manager_->planLocalMotion(end_pt_, start_pt_, start_vel_, start_acc_, truncated, time_lb);
+    //  auto plan_success = planner_manager_->kinodynamicReplan(start_pt_, start_vel_, start_acc_, end_pt_, end_vel_);
+
     ROS_WARN("[Local Planner] Plan local motion time: %fs", t_replan.toc());
 
     if (plan_success == LOCAL_FAIL)
@@ -462,18 +475,30 @@ namespace fast_planner
       return false;
     }
 
+    // if (!plan_success)
+    // {
+    //   ROS_ERROR("planLocalMotion fail.");
+    //   return false;
+    // }
+
     // Step2: 进行论文里的Yaw Trajectory Generation
     TicToc t_yaw;
-    planner_manager_->planYawCovisibility();
+    // planner_manager_->planYawCovisibility();
+    // planner_manager_->planYawPercepAgnostic();
+    planner_manager_->planYaw(start_yaw_);
+
     ROS_WARN("[Local Planner] Plan yaw time: %fs", t_yaw.toc());
 
     ROS_WARN("[Local Planner] Plan total time: %fs", t_total.toc());
     // ROS_BREAK();
 
-    // planner_manager_->callYawPrepare(start_pt_, start_vel_, start_acc_, start_yaw_);
-
-    // pubBspline(planner_manager_->prepare_yaw_data_);
-    pubBspline(planner_manager_->local_data_);
+    if (use_yaw_prepare_)
+    {
+      planner_manager_->callYawPrepare(start_pt_, start_vel_, start_acc_, start_yaw_);
+      pubBspline(planner_manager_->prepare_yaw_data_);
+    }
+    else
+      pubBspline(planner_manager_->local_data_);
 
     // Step4: 调用可视化接口在rviz上显示位置轨迹和B样条轨迹
     auto info = &planner_manager_->local_data_;

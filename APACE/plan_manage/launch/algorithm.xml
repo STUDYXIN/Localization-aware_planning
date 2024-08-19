@@ -193,6 +193,7 @@
     <param name="fsm/flight_type" value="2" type="int"/>
     <param name="fsm/thresh_replan" value="1.5" type="double"/>
     <param name="fsm/thresh_no_replan" value="2.0" type="double"/>
+    <param name="fsm/use_yaw_prepare_" value="false" type="bool"/>
 
     <param name="fsm/wp_num" value="$(arg point_num)" type="int"/>
 
@@ -234,7 +235,7 @@
     <param name="manager/control_points_distance" value="0.5" type="double"/>
     <param name="manager/min_time" value="true" type="bool"/>
 
-    <param name="manager/use_geometric_path" value="true" type="bool"/>
+    <param name="manager/use_geometric_path" value="false" type="bool"/>
     <param name="manager/use_optimization" value="true" type="bool"/>
     <param name="manager/use_initial_yaw" value="true" type="bool"/>
     <param name="manager/use_parallax" value="true" type="bool"/>
@@ -265,7 +266,7 @@
     <param name="search/margin" value="0.2" type="double"/>
     <param name="search/allocate_num" value="100000" type="int"/>
     <param name="search/check_num" value="10" type="int"/>
-    <param name="search/optimistic" value="false" type="bool"/>
+    <param name="search/optimistic" value="true" type="bool"/>
 
     <!-- trajectory optimization -->
     <param name="optimization/visualization" value="false" type="bool"/>

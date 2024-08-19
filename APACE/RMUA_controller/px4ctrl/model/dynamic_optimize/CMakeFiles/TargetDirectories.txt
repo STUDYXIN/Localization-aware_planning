@@ -1,0 +1,3 @@
+/home/sushuo/TrajectoryTrackingRMUAV2023/src/px4ctrl/model/dynamic_optimize/CMakeFiles/rebuild_cache.dir
+/home/sushuo/TrajectoryTrackingRMUAV2023/src/px4ctrl/model/dynamic_optimize/CMakeFiles/edit_cache.dir
+/home/sushuo/TrajectoryTrackingRMUAV2023/src/px4ctrl/model/dynamic_optimize/CMakeFiles/test_nmpc.dir

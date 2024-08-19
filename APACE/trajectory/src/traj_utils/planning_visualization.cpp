@@ -931,8 +931,7 @@ namespace fast_planner
     displayLineList(pos, pts2, 0.02, Color::Magenta(), 1, PUBLISHER::YAW_TRAJ);
   }
 
-  void PlanningVisualization::drawYawOnKnots(NonUniformBspline &pos, NonUniformBspline &acc,
-                                             NonUniformBspline &yaw)
+  void PlanningVisualization::drawYawOnKnots(NonUniformBspline &pos, NonUniformBspline &acc, NonUniformBspline &yaw)
   {
     if (pos.getControlPoint().size() == 0 || yaw.getControlPoint().size() == 0)
       return;
@@ -957,8 +956,7 @@ namespace fast_planner
     }
 
     // displayLineList(pos_knot_pts, yaw_dir, 0.02, Color::Magenta(), 1, PUBLISHER::YAW_TRAJ);
-    displayArrowList(pos_knot_pts, arrow_end_pts, 0.05, Color::Pink(), 1,
-                     PUBLISHER::YAW_TRAJ_ARRAY);
+    displayArrowList(pos_knot_pts, arrow_end_pts, 0.05, Color::Pink(), 1, PUBLISHER::YAW_TRAJ_ARRAY);
   }
 
   Eigen::Vector4d PlanningVisualization::getColor(const double &h, double alpha)

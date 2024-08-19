@@ -91,7 +91,7 @@ namespace fast_planner
     shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> vins_sync_sub_;
     SynchronizerErrorEvaluate sync_error_evaluate_;
 
-    //keyboard_control
+    // keyboard_control
     int keyboard_vector;
 
     /* -------------------------------- Functions ------------------------------- */
@@ -126,9 +126,10 @@ namespace fast_planner
     void straight_line_traj();
 
   public:
-    TrajServer() {}
-    ~TrajServer() {}
+    // TrajServer() {}
+    // ~TrajServer() {}
 
+    void auto_takeoff();
     void init(ros::NodeHandle &nh);
   };
 } // namespace fast_planner

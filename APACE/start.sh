@@ -19,18 +19,30 @@ echo Rviz; \
 roslaunch plan_manage rviz.launch; exec bash"
 
 # 启动 Simulation
+# sleep 0.5s
+# gnome-terminal --tab -- bash -c "\
+# echo Simulation; \
+# $SIMULATION_PATH/simulator/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed; \
+# exec bash"
+
 sleep 0.5s
 gnome-terminal --tab -- bash -c "\
 echo Simulation; \
-./../../../../simulator/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed; \
+$SIMULATION_PATH/Blocks/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed; \
 exec bash"
 
 
 # 启动 Control
+# sleep 2s
+# gnome-terminal --tab -- bash -c "\
+# echo Control; \
+# roslaunch airsim_ctrl ctrl_md_exploration.launch enable_vins:=${ENABLEVINS}; \
+# exec bash"
+
 sleep 2s
 gnome-terminal --tab -- bash -c "\
 echo Control; \
-roslaunch airsim_ctrl ctrl_md_exploration.launch enable_vins:=${ENABLEVINS}; \
+roslaunch px4ctrl airsim_ctrl.launch enable_vins:=${ENABLEVINS}; \
 exec bash"
 
 # 启动 Perception

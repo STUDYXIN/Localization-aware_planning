@@ -16,6 +16,8 @@ namespace fast_planner
     num_eval_ = 0;
     error_bias_ = Eigen::Vector3d::Zero();
 
+    percep_utils_.reset(new PerceptionUtils(nh));
+
     // Traj server params
     nh.param("traj_server/pub_traj_id", pub_traj_id_, -1);
     nh.param("fsm/replan_time", replan_time_, 0.1);
@@ -59,8 +61,18 @@ namespace fast_planner
     sync_error_evaluate_.reset(new message_filters::Synchronizer<SyncPolicyErrorEvaluate>(SyncPolicyErrorEvaluate(100), *airsim_sync_sub_, *vins_sync_sub_));
     sync_error_evaluate_->registerCallback(boost::bind(&TrajServer::evaluateCallback, this, _1, _2));
 
+    if (keyboard_vector != 0)
+    {
+      ROS_WARN("[Traj server] Begin keyboard controller, controller step: %d:\nj/l\tturn\tleft/right\nw/s\tmove\tforward/backward\na/d\tmove\tleft/right\ni/k\tmove\tup/down\nesc\tquit", keyboard_vector);
+    }
+
+    // startTrigger();
+  }
+
+  void TrajServer::auto_takeoff()
+  {
     // Start initialization
-    ROS_INFO("[Traj server] Initializing");
+    ROS_INFO("[Traj server] Start auto takeoff");
     ros::Duration(1.0).sleep();
 
     cmd.header.stamp = ros::Time::now();
@@ -79,8 +91,7 @@ namespace fast_planner
     cmd.yaw = 0.0;
     cmd.yaw_dot = 0.0;
 
-    percep_utils_.reset(new PerceptionUtils(nh));
-    max_vel = 0.0;
+        max_vel = 0.0;
     max_acc = 0.0;
 
     // Wait for frontiers to be ready
@@ -110,74 +121,68 @@ namespace fast_planner
     ros::Duration(1.0).sleep();
 
     ros::Duration(2.5).sleep();
-    ROS_INFO("[Traj server] Initilization finished");
-    if (keyboard_vector != 0)
-    {
-      ROS_WARN("[Traj server] Begin keyboard controller, controller step: %d:\nj/l\tturn\tleft/right\nw/s\tmove\tforward/backward\na/d\tmove\tleft/right\ni/k\tmove\tup/down\nesc\tquit",keyboard_vector);
-    }
-
-    // startTrigger();
+    ROS_INFO("[Traj server] End auto takeoff");
   }
 
   /* ------------------------------ ROS callbacks ----------------------------- */
   char TrajServer::getKey()
   {
-      struct termios oldt, newt;
-      char ch;
-      tcgetattr(STDIN_FILENO, &oldt);           // Save old terminal attributes
-      newt = oldt;
-      newt.c_lflag &= ~(ICANON | ECHO);         // Disable canonical mode and echo
-      tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Set new terminal attributes
-      ch = getchar();                           // Read one character
-      tcsetattr(STDIN_FILENO, TCSANOW, &oldt);  // Restore old terminal attributes
-      return ch;
+    struct termios oldt, newt;
+    char ch;
+    tcgetattr(STDIN_FILENO, &oldt); // Save old terminal attributes
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);        // Disable canonical mode and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt); // Set new terminal attributes
+    ch = getchar();                          // Read one character
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Restore old terminal attributes
+    return ch;
   }
 
   void TrajServer::keyboardCallback()
   {
-      char key = getKey();  // 获取按键信息
-      double step = 0.1*(double)keyboard_vector;
-      switch (key)
-      {
-      case 'd':
-          cmd.position.x += step;  // 向前移动
-          break;
-      case 'a':
-          cmd.position.x -= step;  // 向后移动
-          break;
-      case 'w':
-          cmd.position.y += step;  // 向左移动
-          break;
-      case 's':
-          cmd.position.y -= step;  // 向右移动
-          break;
-      case 'i':
-          cmd.position.z += step;  // 向上移动
-          break;
-      case 'k':
-          cmd.position.z -= step;  // 向下移动
-          break;
-      case 'j':
-          cmd.yaw += step*0.2;  // 左转
-          break;
-      case 'l':
-          cmd.yaw -= step*0.2;  // 右转
-          break;
-      case ' ':
-          cmd.position.x = 0.0;  // 停止移动
-          cmd.position.y = 0.0;
-          cmd.position.z = 0.0;
-          cmd.yaw = 0.0;
-          break;
-      case 27:  // Esc 键的 ASCII 码是 27
-        ROS_ERROR("[Traj_server] STOP KEYBOARD CONTROLLER!!");
-        keyboard_vector = 0;
-        break;
-      default:
-          break;
-      }
-      // ROS_WARN("[Traj_server] MOVE TO (%.2f %.2f %.2f %.2f) ...",cmd.position.x,cmd.position.y,cmd.position.z,cmd.yaw);
-      pos_cmd_pub.publish(cmd);  // 发布更新后的指令
+    char key = getKey(); // 获取按键信息
+    double step = 0.1 * (double)keyboard_vector;
+    switch (key)
+    {
+    case 'd':
+      cmd.position.x += step; // 向前移动
+      break;
+    case 'a':
+      cmd.position.x -= step; // 向后移动
+      break;
+    case 'w':
+      cmd.position.y += step; // 向左移动
+      break;
+    case 's':
+      cmd.position.y -= step; // 向右移动
+      break;
+    case 'i':
+      cmd.position.z += step; // 向上移动
+      break;
+    case 'k':
+      cmd.position.z -= step; // 向下移动
+      break;
+    case 'j':
+      cmd.yaw += step * 0.2; // 左转
+      break;
+    case 'l':
+      cmd.yaw -= step * 0.2; // 右转
+      break;
+    case ' ':
+      cmd.position.x = 0.0; // 停止移动
+      cmd.position.y = 0.0;
+      cmd.position.z = 0.0;
+      cmd.yaw = 0.0;
+      break;
+    case 27: // Esc 键的 ASCII 码是 27
+      ROS_ERROR("[Traj_server] STOP KEYBOARD CONTROLLER!!");
+      keyboard_vector = 0;
+      break;
+    default:
+      break;
+    }
+    // ROS_WARN("[Traj_server] MOVE TO (%.2f %.2f %.2f %.2f) ...",cmd.position.x,cmd.position.y,cmd.position.z,cmd.yaw);
+    pos_cmd_pub.publish(cmd); // 发布更新后的指令
   }
 
   void TrajServer::replanCallback(std_msgs::Empty msg)
@@ -290,13 +295,13 @@ namespace fast_planner
   void TrajServer::cmdCallback(const ros::TimerEvent &e)
   {
     // No publishing before receive traj data
-    if(keyboard_vector != 0 )
+    if (keyboard_vector != 0)
     {
       keyboardCallback();
       return;
     }
     if (!receive_traj_)
-        return;
+      return;
     ros::Time time_now = ros::Time::now();
     double t_cur = (time_now - start_time_).toSec();
 

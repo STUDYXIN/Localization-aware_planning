@@ -32,10 +32,6 @@ namespace fast_planner
     nh.param("manager/use_initial_yaw", use_initial_yaw, false);
     nh.param("manager/use_parallax", use_parallax, false);
 
-    nh.param("manager/occupancy_map_file", occupancy_map_file_, string(""));
-    nh.param("manager/esdf_map_file", esdf_map_file_, string(""));
-    nh.param("manager/feature_map_file", feature_map_file_, string(""));
-
     local_data_.traj_id_ = 0;
     map_server_.reset(new voxel_mapping::MapServer(nh));
     edt_environment_.reset(new EDTEnvironment);
@@ -51,6 +47,13 @@ namespace fast_planner
     {
       path_finder_.reset(new Astar);
       path_finder_->init(nh, edt_environment_);
+    }
+    else
+    {
+      kino_path_finder_.reset(new KinodynamicAstar);
+      kino_path_finder_->setParam(nh);
+      kino_path_finder_->setEnvironment(edt_environment_);
+      kino_path_finder_->init();
     }
 
     if (use_optimization)
@@ -102,6 +105,12 @@ namespace fast_planner
     while (radius < 6.0 && t_now + fut_t < local_data_.duration_)
     {
       fut_pt = local_data_.position_traj_.evaluateDeBoor(tm + t_now + fut_t);
+
+      if (map_server_->getOccupancy(fut_pt) == voxel_mapping::OccupancyType::OCCUPIED)
+      {
+        distance = radius;
+        return false;
+      }
 
       double dist = edt_environment_->evaluateCoarseEDT(fut_pt, -1.0);
       if (dist < 0.1)
@@ -213,6 +222,149 @@ namespace fast_planner
     ROS_WARN("[Local Planner] Plan t4: %fs", t4.toc());
   }
 
+  // int FastPlannerManager::planLocalMotion(const Vector3d &next_pos, const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, bool &truncated, const double &time_lb)
+  // {
+  //   // Start optimization
+  //   // Plan trajectory (position and yaw) to the next viewpoint
+
+  //   // Step1: 调用A*算法接口进行全局规划，并简单处理得到缩短的路径（由一堆三维路径点组成）
+  //   TicToc t1;
+  //   path_finder_->reset();
+  //   if (path_finder_->search(pos, next_pos) != Astar::REACH_END)
+  //   {
+  //     ROS_ERROR("No path to point (%f, %f, %f)", next_pos.x(), next_pos.y(), next_pos.z());
+  //     std::cout << "pos:" << pos.transpose() << std::endl;
+  //     std::cout << "next_pos:" << next_pos.transpose() << std::endl;
+  //     return LOCAL_FAIL;
+  //   }
+
+  //   vector<Vector3d> path_waypoint = path_finder_->getPath();
+  //   shortenPath(path_waypoint);
+
+  //   vector<Vector3d> truncated_path;
+
+  //   const double radius_far = 50.0;
+
+  //   // Next viewpoint is far away, truncate the far goal to an intermediate goal
+  //   if (Astar::pathLength(path_waypoint) > radius_far)
+  //   {
+  //     truncated = true;
+  //     truncated_path.push_back(path_waypoint.front());
+  //     double len2 = 0.0;
+  //     for (int i = 1; i < path_waypoint.size() && len2 < radius_far; ++i)
+  //     {
+  //       auto cur_pt = path_waypoint[i];
+  //       len2 += (cur_pt - truncated_path.back()).norm();
+  //       truncated_path.push_back(cur_pt);
+  //     }
+  //   }
+
+  //   ROS_WARN("[Local Planner] Plan t1: %fs", t1.toc());
+
+  //   // Step2: 到这里拿到了路径规划生成的waypoints，接下来用这些waypoints生成trajetory
+  //   planExploreTraj(truncated ? truncated_path : path_waypoint, vel, acc, !truncated, time_lb);
+
+  //   return LOCAL_SUCCEED;
+  // }
+
+  int FastPlannerManager::planLocalMotionNew(const Vector3d &start_pt, const Vector3d &start_vel, const Vector3d &start_acc,
+                                             const Vector3d &end_pt, const Vector3d &end_vel,
+                                             bool &truncated, const double &time_lb)
+  {
+    if ((end_pt - start_pt).norm() < 0.2)
+    {
+      cout << "Close goal" << endl;
+      return false;
+    }
+
+    local_data_.start_time_ = ros::Time::now();
+
+    Eigen::Vector3d init_pos = start_pt;
+    Eigen::Vector3d init_vel = start_vel;
+    Eigen::Vector3d init_acc = start_acc;
+
+    // kinodynamic path searching
+    kino_path_finder_->reset();
+
+    // Step1：先用较为严格的条件初始搜索
+    int status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+
+    // Step2：如果初始搜索失败，那么换用较为宽松的条件再尝试搜索一次
+    if (status == KinodynamicAstar::NO_PATH)
+    {
+      cout << "[kino replan]: kinodynamic search fail!" << endl;
+
+      // retry searching with discontinuous initial state
+      kino_path_finder_->reset();
+      status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
+
+      if (status == KinodynamicAstar::NO_PATH)
+      {
+        cout << "[kino replan]: Can't find path." << endl;
+        return LOCAL_FAIL;
+      }
+      else
+        cout << "[kino replan]: retry search success." << endl;
+    }
+    else
+      cout << "[kino replan]: kinodynamic search success." << endl;
+
+    // Step3：将混合A*得到的waypoints参数化为均匀B样条曲线
+    double ts = pp_.ctrl_pt_dist / pp_.max_vel_;
+    vector<Eigen::Vector3d> point_set, start_end_derivatives;
+    kino_path_finder_->getSamples(ts, point_set, start_end_derivatives);
+
+    Eigen::MatrixXd ctrl_pts;
+    NonUniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, 3, ctrl_pts);
+    NonUniformBspline init(ctrl_pts, 3, ts);
+
+    TicToc t4;
+
+    vector<Vector3d> start, end;
+    vector<bool> start_idx, end_idx;
+
+    if (status == KinodynamicAstar::REACH_END)
+    {
+      init.getBoundaryStates(2, 2, start, end);
+      start_idx = {true, true, true};
+      end_idx = {true, true, true};
+    }
+    else
+    {
+      init.getBoundaryStates(2, 0, start, end);
+      start_idx = {true, true, true};
+      end_idx = {true, false, false};
+    }
+
+    bspline_optimizers_[0]->setBoundaryStates(start, end, start_idx, end_idx);
+    if (time_lb > 0)
+      bspline_optimizers_[0]->setTimeLowerBound(time_lb);
+
+    // 这里使用了平滑约束、动力学可行性约束、起点约束、终点约束、避障约束、
+    // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY |
+    //                 BsplineOptimizer::START | BsplineOptimizer::END | BsplineOptimizer::MINTIME |
+    //                 BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
+    //                 BsplineOptimizer::VERTICALVISIBILITY;
+
+    int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY |
+                    BsplineOptimizer::START | BsplineOptimizer::END | BsplineOptimizer::MINTIME |
+                    BsplineOptimizer::DISTANCE;
+
+    bspline_optimizers_[0]->optimize(ctrl_pts, ts, cost_func);
+    local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, ts);
+    local_data_.velocity_traj_ = local_data_.position_traj_.getDerivative();
+    local_data_.acceleration_traj_ = local_data_.velocity_traj_.getDerivative();
+
+    local_data_.start_pos_ = local_data_.position_traj_.evaluateDeBoorT(0.0);
+    local_data_.duration_ = local_data_.position_traj_.getTimeSum();
+
+    ROS_INFO("Debug4");
+
+    ROS_WARN("[Local Planner] Plan t4: %fs", t4.toc());
+
+    return LOCAL_SUCCEED;
+  }
+
   int FastPlannerManager::planLocalMotion(const Vector3d &next_pos, const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, bool &truncated, const double &time_lb)
   {
     // Start optimization
@@ -299,6 +451,100 @@ namespace fast_planner
 
     path = short_tour;
   }
+
+  void FastPlannerManager::planYaw(const Eigen::Vector3d &start_yaw)
+  {
+    auto t1 = ros::Time::now();
+    // calculate waypoints of heading
+
+    auto &pos = local_data_.position_traj_;
+    double duration = pos.getTimeSum();
+
+    double dt_yaw = 0.3;
+    int seg_num = ceil(duration / dt_yaw);
+    dt_yaw = duration / seg_num;
+
+    const double forward_t = 1.0;
+    double last_yaw = start_yaw(0);
+    vector<Eigen::Vector3d> waypts;
+    vector<int> waypt_idx;
+
+    // seg_num -> seg_num - 1 points for constraint excluding the boundary states
+
+    for (int i = 0; i < seg_num; ++i)
+    {
+      double tc = i * dt_yaw;
+      Eigen::Vector3d pc = pos.evaluateDeBoorT(tc);
+      double tf = min(duration, tc + forward_t);
+      Eigen::Vector3d pf = pos.evaluateDeBoorT(tf);
+      Eigen::Vector3d pd = pf - pc;
+
+      Eigen::Vector3d waypt;
+      if (pd.norm() > 1e-6)
+      {
+        waypt(0) = atan2(pd(1), pd(0));
+        waypt(1) = waypt(2) = 0.0;
+        calcNextYaw(last_yaw, waypt(0));
+      }
+      else
+      {
+        waypt = waypts.back();
+      }
+      last_yaw = waypt(0);
+      waypts.push_back(waypt);
+      waypt_idx.push_back(i);
+    }
+
+    // calculate initial control points with boundary state constraints
+
+    Eigen::MatrixXd yaw(seg_num + 3, 1);
+    yaw.setZero();
+
+    Eigen::Matrix3d states2pts;
+    states2pts << 1.0, -dt_yaw, (1 / 3.0) * dt_yaw * dt_yaw, 1.0, 0.0, -(1 / 6.0) * dt_yaw * dt_yaw,
+        1.0, dt_yaw, (1 / 3.0) * dt_yaw * dt_yaw;
+    yaw.block(0, 0, 3, 1) = states2pts * start_yaw;
+
+    Eigen::Vector3d end_v = local_data_.velocity_traj_.evaluateDeBoorT(duration - 0.1);
+    Eigen::Vector3d end_yaw(atan2(end_v(1), end_v(0)), 0, 0);
+    calcNextYaw(last_yaw, end_yaw(0));
+    yaw.block(seg_num, 0, 3, 1) = states2pts * end_yaw;
+
+    // solve
+    bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
+    // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS |
+    //                 BsplineOptimizer::START | BsplineOptimizer::END;
+
+    int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS;
+
+    vector<Eigen::Vector3d> start = {Eigen::Vector3d(start_yaw[0], 0, 0),
+                                     Eigen::Vector3d(start_yaw[1], 0, 0),
+                                     Eigen::Vector3d(start_yaw[2], 0, 0)};
+    vector<Eigen::Vector3d> end = {Eigen::Vector3d(end_yaw[0], 0, 0),
+                                   Eigen::Vector3d(end_yaw[1], 0, 0),
+                                   Eigen::Vector3d(end_yaw[2], 0, 0)};
+    vector<bool> start_idx = {true, true, true};
+    vector<bool> end_idx = {true, true, true};
+
+    bspline_optimizers_[1]->setBoundaryStates(start, end, start_idx, end_idx);
+    bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func);
+
+    // update traj info
+    local_data_.yaw_traj_.setUniformBspline(yaw, pp_.bspline_degree_, dt_yaw);
+    local_data_.yawdot_traj_ = local_data_.yaw_traj_.getDerivative();
+    local_data_.yawdotdot_traj_ = local_data_.yawdot_traj_.getDerivative();
+
+    vector<double> path_yaw;
+    for (int i = 0; i < waypts.size(); ++i)
+      path_yaw.push_back(waypts[i][0]);
+  }
+
+  // void FastPlannerManager::planYawPercepAgnostic()
+  // {
+  //   // Yaw b-spline has same segment number as position b-spline
+  //   Eigen::MatrixXd position_ctrl_pts = local_data_.position_traj_.getControlPoint();
+  //   int ctrl_pts_num = position_ctrl_pts.rows();
+  //   double dt_yaw = local_data_.position_traj_.getKnotSpan();
 
   void FastPlannerManager::planYawCovisibility()
   {
@@ -390,6 +636,121 @@ namespace fast_planner
     local_data_.yawdotdot_traj_ = local_data_.yawdot_traj_.getDerivative();
 
     ROS_WARN("[Local Planner] Plan t6: %fs", t6.toc());
+  }
+
+  bool FastPlannerManager::kinodynamicReplan(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel,
+                                             Eigen::Vector3d start_acc, Eigen::Vector3d end_pt,
+                                             Eigen::Vector3d end_vel)
+  {
+
+    std::cout << "[kino replan]: -----------------------" << std::endl;
+    cout << "start: " << start_pt.transpose() << ", " << start_vel.transpose() << ", "
+         << start_acc.transpose() << "\ngoal:" << end_pt.transpose() << ", " << end_vel.transpose()
+         << endl;
+
+    if ((start_pt - end_pt).norm() < 0.2)
+    {
+      cout << "Close goal" << endl;
+      return false;
+    }
+
+    ros::Time t1, t2;
+
+    local_data_.start_time_ = ros::Time::now();
+    double t_search = 0.0, t_opt = 0.0, t_adjust = 0.0;
+
+    Eigen::Vector3d init_pos = start_pt;
+    Eigen::Vector3d init_vel = start_vel;
+    Eigen::Vector3d init_acc = start_acc;
+
+    // kinodynamic path searching
+
+    t1 = ros::Time::now();
+
+    kino_path_finder_->reset();
+
+    // Step1：先用较为严格的条件初始搜索
+    int status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+
+    // Step2：如果初始搜索失败，那么换用较为宽松的条件再尝试搜索一次
+    if (status == KinodynamicAstar::NO_PATH)
+    {
+      cout << "[kino replan]: kinodynamic search fail!" << endl;
+
+      // retry searching with discontinuous initial state
+      kino_path_finder_->reset();
+      status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
+
+      if (status == KinodynamicAstar::NO_PATH)
+      {
+        cout << "[kino replan]: Can't find path." << endl;
+        return false;
+      }
+      else
+        cout << "[kino replan]: retry search success." << endl;
+    }
+    else
+      cout << "[kino replan]: kinodynamic search success." << endl;
+
+    t_search = (ros::Time::now() - t1).toSec();
+
+    // Step3：将混合A*得到的waypoints参数化为均匀B样条曲线
+    double ts = pp_.ctrl_pt_dist / pp_.max_vel_;
+    vector<Eigen::Vector3d> point_set, start_end_derivatives;
+    kino_path_finder_->getSamples(ts, point_set, start_end_derivatives);
+
+    Eigen::MatrixXd ctrl_pts;
+    NonUniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, 3, ctrl_pts);
+    NonUniformBspline init(ctrl_pts, 3, ts);
+
+    // Step4：进行B样条曲线优化
+    t1 = ros::Time::now();
+
+    int cost_function = BsplineOptimizer::NORMAL_PHASE;
+
+    bspline_optimizers_[0]->optimize(ctrl_pts, ts, cost_function);
+
+    t_opt = (ros::Time::now() - t1).toSec();
+
+    // Step5：调整B样条曲线的时间间隔(knot span)使其满足动力学约束（其实就是vel,acc不要太大）
+    // 调整后的B样条曲线变为了非均匀B样条曲线
+    t1 = ros::Time::now();
+    NonUniformBspline pos(ctrl_pts, 3, ts);
+
+    double to = pos.getTimeSum();
+    pos.setPhysicalLimits(pp_.max_vel_, pp_.max_acc_);
+    bool feasible = pos.checkFeasibility(false);
+
+    int iter_num = 0;
+    while (!feasible && ros::ok())
+    {
+      feasible = pos.reallocateTime();
+
+      if (++iter_num >= 3)
+        break;
+    }
+
+    double tn = pos.getTimeSum();
+
+    cout << "[kino replan]: Reallocate ratio: " << tn / to << endl;
+    if (tn / to > 3.0)
+      ROS_ERROR("reallocate error.");
+
+    t_adjust = (ros::Time::now() - t1).toSec();
+
+    double t_total = t_search + t_opt + t_adjust;
+    cout << "[kino replan]: time: " << t_total << ", search: " << t_search << ", optimize: " << t_opt
+         << ", adjust time:" << t_adjust << endl;
+
+    // Step6：将规划的结果写入loca_data中并更新如vel_traj,acc_traj这些属性
+    local_data_.position_traj_ = pos;
+    local_data_.velocity_traj_ = local_data_.position_traj_.getDerivative();
+    local_data_.acceleration_traj_ = local_data_.velocity_traj_.getDerivative();
+
+    local_data_.start_pos_ = local_data_.position_traj_.evaluateDeBoorT(0.0);
+    local_data_.duration_ = local_data_.position_traj_.getTimeSum();
+
+    return true;
   }
 
   void FastPlannerManager::callYawPrepare(const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, const Vector3d &yaw)

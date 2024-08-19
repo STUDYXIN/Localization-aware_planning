@@ -5,7 +5,7 @@ namespace voxel_mapping
   MapServer::MapServer(ros::NodeHandle &nh)
   {
     pos_.setZero();
-    yaw = M_PI/2;
+    yaw = M_PI / 2;
     tsdf_.reset(new TSDF());
     esdf_.reset(new ESDF());
     occupancy_grid_.reset(new OccupancyGrid());
@@ -285,7 +285,7 @@ namespace voxel_mapping
 
     // 将四元数转换为 yaw、pitch、roll（Euler 角）
     tf::Quaternion tf_quat(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
-    tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw); 
+    tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
 
     VoxelIndex idx;
     tsdf_->positionToIndex(pos_, idx);
@@ -295,20 +295,22 @@ namespace voxel_mapping
     const VoxelIndex min_idx = idx - inflate_pixel * VoxelIndex::Ones();
     const VoxelIndex max_idx = idx + inflate_pixel * VoxelIndex::Ones();
 
-    for (int x = min_idx[0]; x <= max_idx[0]; ++x)
-    {
-      for (int y = min_idx[1]; y <= max_idx[1]; ++y)
-      {
-        for (int z = min_idx[2]; z <= max_idx[2]; ++z)
-        {
-          VoxelIndex idx(x, y, z);
-          if (!isInBox(idx))
-            continue;
-          if (getOccupancy(idx) == OccupancyType::UNKNOWN)
-            occupancy_grid_->setOccupancyVoxel(idx, OccupancyType::FREE);
-        }
-      }
-    }
+    // for (int x = min_idx[0]; x <= max_idx[0]; ++x)
+    // {
+    //   for (int y = min_idx[1]; y <= max_idx[1]; ++y)
+    //   {
+    //     for (int z = min_idx[2]; z <= max_idx[2]; ++z)
+    //     {
+    //       VoxelIndex idx(x, y, z);
+    //       if (!isInBox(idx))
+    //         continue;
+    //       if (getOccupancy(idx) == OccupancyType::UNKNOWN)
+    //       {
+    //         occupancy_grid_->setOccupancyVoxel(idx, OccupancyType::FREE);
+    //       }
+    //     }
+    //   }
+    // }
     has_odom_ = true;
   }
 
@@ -461,7 +463,8 @@ namespace voxel_mapping
       {
         VoxelIndex idx(x, y, 0);
         Position pos = esdf_->indexToPosition(idx);
-        pos.z() = config_.esdf_slice_height_;
+        // pos.z() = config_.esdf_slice_height_;
+        pos.z() = pos_.z();
         esdf_->positionToIndex(pos, idx);
 
         if (occupancy_grid_->getVoxel(idx).value == OccupancyType::UNKNOWN)
@@ -469,7 +472,8 @@ namespace voxel_mapping
 
         point.x = pos(0);
         point.y = pos(1);
-        point.z = config_.esdf_slice_visualization_height_;
+        // point.z = config_.esdf_slice_visualization_height_;
+        point.z = pos(2);
         point.intensity = esdf_->getVoxel(idx).value;
         pointcloud.points.push_back(point);
       }
@@ -528,7 +532,7 @@ namespace voxel_mapping
     occupancy_grid_pub_.publish(pointcloud_msg);
   }
 
-void MapServer::publishFeaturePointcloud(const AlignedVector<Position> features)
+  void MapServer::publishFeaturePointcloud(const AlignedVector<Position> features)
   {
     if (feature_pub_.getNumSubscribers() == 0)
       return;
@@ -568,11 +572,11 @@ void MapServer::publishFeaturePointcloud(const AlignedVector<Position> features)
     feature_grid_->getFeatureNumperPosYaw(pos_, yaw, this_features);
     for (const Eigen::Vector3d &eigen_point : this_features)
     {
-        pcl::PointXYZ pcl_point;
-        pcl_point.x = static_cast<float>(eigen_point.x());
-        pcl_point.y = static_cast<float>(eigen_point.y());
-        pcl_point.z = static_cast<float>(eigen_point.z());
-        pointcloud->points.push_back(pcl_point);
+      pcl::PointXYZ pcl_point;
+      pcl_point.x = static_cast<float>(eigen_point.x());
+      pcl_point.y = static_cast<float>(eigen_point.y());
+      pcl_point.z = static_cast<float>(eigen_point.z());
+      pointcloud->points.push_back(pcl_point);
     }
     pointcloud->width = pointcloud->points.size();
     pointcloud->height = 1;

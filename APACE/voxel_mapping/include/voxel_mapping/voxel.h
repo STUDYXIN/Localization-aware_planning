@@ -24,7 +24,8 @@ namespace voxel_mapping
 
   struct ESDFVoxel
   {
-    FloatingPoint value = 0.0;
+    //FloatingPoint value = 0.0;
+    FloatingPoint value = 10000.0;
   };
 
   enum class FeatureType

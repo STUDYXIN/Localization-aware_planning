@@ -36,8 +36,18 @@ namespace fast_planner
                          const double &time_lb = -1);
     int planLocalMotion(const Vector3d &next_pos, const Vector3d &pos, const Vector3d &vel,
                         const Vector3d &acc, bool &truncated, const double &time_lb);
+
+    int planLocalMotionNew(const Vector3d &start_pt, const Vector3d &start_vel, const Vector3d &start_acc,
+                           const Vector3d &end_pt, const Vector3d &end_vel,
+                           bool &truncated, const double &time_lb);
     void shortenPath(vector<Vector3d> &path);
 
+    bool kinodynamicReplan(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel,
+                           Eigen::Vector3d start_acc, Eigen::Vector3d end_pt,
+                           Eigen::Vector3d end_vel);
+
+    void planYaw(const Eigen::Vector3d &start_yaw);
+    void planYawPercepAgnostic();
     void planYawCovisibility();
 
     void initPlanModules(ros::NodeHandle &nh);
@@ -59,6 +69,7 @@ namespace fast_planner
 
     EDTEnvironment::Ptr edt_environment_;
     unique_ptr<Astar> path_finder_;
+    unique_ptr<KinodynamicAstar> kino_path_finder_;
     RayCaster::Ptr caster_;
 
   public:

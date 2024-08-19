@@ -1,0 +1,18 @@
+<launch>
+
+  <arg name="enable_vins" default="true"/>
+
+  <!-- airsim  ros -->
+	<include file="$(find airsim_ros_pkgs)/launch/airsim_node.launch"/>
+
+	<node pkg="px4ctrl" type="px4ctrl_node" name="px4ctrl" output="screen">
+  	<remap unless="$(arg enable_vins)" from="~odom" to="/airsim_node/drone_1/odom_local_enu" />
+		<remap if="$(arg enable_vins)" from="~odom" to="/vins_estimator/imu_propagate" />
+		<remap from="~cmd" to="/position_cmd" />
+		<remap from="~imu" to="/airsim_node/drone_1/imu/Imu" />
+
+		<rosparam command="load" file="$(find px4ctrl)/config/ctrl_param.yaml" />
+	</node>
+
+
+</launch>

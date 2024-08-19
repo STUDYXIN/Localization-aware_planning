@@ -82,6 +82,9 @@ namespace voxel_mapping
     VoxelIndex update_max_idx = positionToIndex(update_max);
     boundIndex(update_min_idx);
     boundIndex(update_max_idx);
+
+
+    
     esdf_->updateLocalESDF(update_min_idx, update_max_idx);
 
     // Bounding box for frontier update

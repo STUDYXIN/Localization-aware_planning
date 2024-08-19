@@ -60,3 +60,26 @@ target_link_libraries(traj_server
   -ldw 
   -lglog
 )
+
+# add_executable(new_planner_node
+#   src/dev/new_planner_node.cpp 
+#   src/dev/new_planner_fsm.cpp
+#   src/dev/planner_manager.cpp
+# )
+
+# target_link_libraries(new_planner_node 
+#   ${catkin_LIBRARIES}
+#   -ldw
+#   -lglog
+# )
+
+# add_executable(new_traj_server 
+#   src/dev/traj_server_node.cpp
+#   src/dev/traj_server.cpp
+# )
+
+# target_link_libraries(new_traj_server 
+#   ${catkin_LIBRARIES} 
+#   -ldw 
+#   -lglog
+# )

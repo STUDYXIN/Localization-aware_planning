@@ -38,6 +38,10 @@ namespace fast_planner
     void getBoundaryStates(const int &ks, const int &ke, vector<Eigen::Vector3d> &start,
                            vector<Eigen::Vector3d> &end);
 
+    bool checkFeasibility(bool show = false);
+
+    bool reallocateTime(bool show = false);
+
     // 3D B-spline interpolation of points in point_set, with boundary vel&acc
     // constraints
     // input : (K+2) points with boundary vel/acc; ts

@@ -1,4 +1,5 @@
 #include "voxel_mapping/feature_grid.h"
+#include <exploration_types.h>
 
 namespace voxel_mapping
 {
@@ -135,21 +136,21 @@ namespace voxel_mapping
     {
       Eigen::Vector3d pt_eigen(pt.x, pt.y, pt.z);
       // 跳过地图外和已经拓展的点
-      if (!isInMap(pt_eigen) || getVoxel(pt_eigen).value == FeatureType::HASFEATURE)
+      if (!isInMap(pt_eigen))
+        continue;
+      else if (getVoxel(pt_eigen).value == FeatureType::HASFEATURE)
         continue;
       // 不加入空气中的特征点
-      // if (tsdf_->getVoxel(pt_eigen).weight < 1e-5)
-      {
-            if(abs(tsdf_->getVoxel(pt_eigen).value) < config_.TSDF_cutoff_dist_)
-              continue;
-            Position round_pos = posRounding(pt_eigen);
-            pcl::PointXYZ pt_round;
-            pt_round.x = round_pos.x();
-            pt_round.y = round_pos.y();
-            pt_round.z = round_pos.z();
-            features_cloud_.push_back(pt_round);
-            setVoxel(pt_eigen, FeatureType::HASFEATURE);
-      }
+      else if (abs(tsdf_->getVoxel(pt_eigen).value) < config_.TSDF_cutoff_dist_)
+        continue;
+
+      Position round_pos = posRounding(pt_eigen);
+      pcl::PointXYZ pt_round;
+      pt_round.x = round_pos.x();
+      pt_round.y = round_pos.y();
+      pt_round.z = round_pos.z();
+      features_cloud_.push_back(pt_round);
+      setVoxel(pt_eigen, FeatureType::HASFEATURE);
 
       // // 特征点总不可能在空气里吧
       // else if (abs(tsdf_->getVoxel(pt_eigen).value) < config_.TSDF_cutoff_dist_)
@@ -164,8 +165,53 @@ namespace voxel_mapping
       // }
     }
 
-    if (!features_cloud_.empty())
+    if (!features_cloud_.empty()){
+      ROS_WARN("[FeatureGrid] features num: %zu",features_cloud_.size());
       features_kdtree_.setInputCloud(features_cloud_.makeShared());
+    }
+  }
+
+  void FeatureGrid::addFrontedFeatures(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+  {
+    if(cloud->points.size())
+      ROS_WARN("[FeatureGrid] features add num: %zu  feature_num %d",cloud->points.size(),feature_num);
+    for (const auto &pt : cloud->points)
+    {
+      Eigen::Vector3d pt_eigen(pt.x, pt.y, pt.z);
+      // 跳过地图外和已经拓展的点
+      if (!isInMap(pt_eigen))
+        continue;
+      else if (getVoxel(pt_eigen).value == FeatureType::HASFEATURE)
+        continue;
+      // 不加入空气中的特征点
+      else if (abs(tsdf_->getVoxel(pt_eigen).value) < config_.TSDF_cutoff_dist_)
+        continue;
+
+      Position round_pos = posRounding(pt_eigen);
+      pcl::PointXYZ pt_round;
+      pt_round.x = round_pos.x();
+      pt_round.y = round_pos.y();
+      pt_round.z = round_pos.z();
+      features_cloud_.push_back(pt_round);
+      setVoxel(pt_eigen, FeatureType::HASFEATURE,10);
+      feature_num++;
+      // // 特征点总不可能在空气里吧
+      // else if (abs(tsdf_->getVoxel(pt_eigen).value) < config_.TSDF_cutoff_dist_)
+      // {
+      //     Position round_pos = posRounding(pt_eigen);
+      //     pcl::PointXYZ pt_round;
+      //     pt_round.x = round_pos.x();
+      //     pt_round.y = round_pos.y();
+      //     pt_round.z = round_pos.z();
+      //     features_cloud_.push_back(pt);
+      //     setVoxel(pt_eigen, FeatureType::HASFEATURE);
+      // }
+    }
+
+    if (!features_cloud_.empty()){
+      // ROS_WARN("[FeatureGrid] features num: %zu",features_cloud_.size());
+      features_kdtree_.setInputCloud(features_cloud_.makeShared());
+    }
   }
   
   double FeatureGrid::calcuYaw(const Eigen::Vector3d &pos_now, const Eigen::Vector3d &pos_target)

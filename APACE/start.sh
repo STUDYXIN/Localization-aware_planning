@@ -7,7 +7,7 @@ SETUP_FILE="${BASEDIR}/../../../devel/setup.bash"
 SETUP_DIR=$(dirname "${SETUP_FILE}")
 
 ENABLEVINS=false
-USEKEBOARD_SPEED=0
+USEKEBOARD_SPEED=1
 
 echo "setup.bash is located in: ${SETUP_DIR}"
 # 加载 ROS 环境
@@ -22,7 +22,7 @@ roslaunch plan_manage rviz.launch; exec bash"
 sleep 0.5s
 gnome-terminal --tab -- bash -c "\
 echo Simulation; \
-./../../../../simulator/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed; \
+/home/star/ActiveSlam/simulator/LinuxNoEditor/Blocks.sh -ResX=640 -ResY=480 -windowed; \
 exec bash"
 
 
@@ -44,5 +44,5 @@ exec bash"
 sleep 3s
 gnome-terminal --tab -- bash -c "\
 echo Planner; \
-roslaunch plan_manage agile_planner_airsim.launch enable_vins:=${ENABLEVINS} keyboard_vector:=${USEKEBOARD_SPEED}; \
+roslaunch plan_manage agile_planner_airsim.launch enable_vins:=${ENABLEVINS} usekeyboard_and_itsspeed:=${USEKEBOARD_SPEED}; \
 exec bash"

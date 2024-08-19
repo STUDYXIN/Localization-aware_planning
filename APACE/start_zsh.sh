@@ -50,6 +50,6 @@ exec zsh"
 sleep 3s
 gnome-terminal --tab -- zsh -c "\
 echo Planner; \
-roslaunch plan_manage agile_planner_airsim.launch enable_vins:=${ENABLEVINS} keyboard_vector:=${USEKEBOARD_SPEED}; \
+roslaunch plan_manage agile_planner_airsim.launch enable_vins:=${ENABLEVINS} usekeyboard_and_itsspeed:=${USEKEBOARD_SPEED}; \
 exec zsh"
 

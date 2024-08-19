@@ -36,6 +36,8 @@
 #include "../factor/projectionOneFrameTwoCamFactor.h"
 #include "../featureTracker/feature_tracker.h"
 
+#include "vins/PointCloudService.h"
+
 
 class Estimator
 {
@@ -91,10 +93,10 @@ class Estimator
         MARGIN_OLD = 0,
         MARGIN_SECOND_NEW = 1
     };
-
     std::mutex mProcess;
     std::mutex mBuf;
     std::mutex mPropagate;
+
     queue<pair<double, Eigen::Vector3d>> accBuf;
     queue<pair<double, Eigen::Vector3d>> gyrBuf;
     queue<pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > > featureBuf;
@@ -175,8 +177,15 @@ class Estimator
     bool initFirstPoseFlag;
     bool initThreadFlag;
 
-    ros::ServiceServer start_cnt_service_, end_cnt_service_;
+    ros::ServiceServer start_cnt_service_, end_cnt_service_, get_fronted_features_service;
     bool startEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
     bool endEvalCallback(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
+    bool handle_point_cloud_request(vins::PointCloudService::Request &request,vins::PointCloudService::Response &response);
     void setCntService(ros::NodeHandle &nh);
+    Eigen::Matrix3d R_a_v;
+    Eigen::Vector3d t_a_v;
+    std::thread FeaturesRestoretimerThread;
+    std::atomic<bool> stopRestoreFeaturesTime;
+    void startRestoreFeatures();
+    void stopRestoreFeatures();
 };

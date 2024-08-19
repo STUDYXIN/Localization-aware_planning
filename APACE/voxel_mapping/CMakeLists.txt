@@ -8,6 +8,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall")
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(vins REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -17,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   eigen_conversions
   exploration_utils
+  vins
 )
 
 # Generate messages in the 'msg' folder
@@ -35,7 +37,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES voxel_mapping
-  CATKIN_DEPENDS roscpp std_msgs exploration_utils
+  CATKIN_DEPENDS roscpp std_msgs exploration_utils vins
   # DEPENDS system_lib
 )
 

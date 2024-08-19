@@ -36,7 +36,16 @@ static double sum_of_path = 0;
 static Vector3d last_path(0.0, 0.0, 0.0);
 
 size_t pub_counter = 0;
-GoodfeatureManage Gfmanage;
+bool isgetting_airsim_msg = false;
+// GoodfeatureManage Gfmanage;
+bool getAirsim2VinsTransform(Eigen::Matrix3d &R_a_v_,Eigen::Vector3d &t_a_v_)
+{
+    if(!isgetting_airsim_msg)
+      return false;
+    R_a_v_ = R_a_v;
+    t_a_v_ = t_a_v;
+    return true;
+}
 
 void registerPub(ros::NodeHandle &n)
 {
@@ -77,6 +86,7 @@ void airsimPoseInitCallback(const nav_msgs::OdometryConstPtr &msg)
     t_a_v = t;
 
     init = true;
+    isgetting_airsim_msg = true;
   }
 }
 
@@ -385,9 +395,7 @@ void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header)
   pub_point_cloud.publish(point_cloud_msg);
 
   // pub margined potin(替换为goog_feature)
-  pcl::PointCloud<pcl::PointXYZ> margin_cloud;
-  Gfmanage.add_feature2list(estimator,header);
-  Gfmanage.get_pcl_pointcloud(margin_cloud,R_a_v,t_a_v);
+
   // for (auto &it_per_id : estimator.f_manager.feature)
   // {
   //   int used_num;
@@ -416,15 +424,6 @@ void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header)
   //   }
   // }
 
-
-  margin_cloud.width = margin_cloud.points.size();
-  margin_cloud.height = 1;
-  margin_cloud.is_dense = true;
-
-  sensor_msgs::PointCloud2 margin_cloud_msg;
-  pcl::toROSMsg(margin_cloud, margin_cloud_msg);
-  margin_cloud_msg.header = header;
-  pub_margin_cloud.publish(margin_cloud_msg);
 }
 
 void pubTF(const Estimator &estimator, const std_msgs::Header &header)

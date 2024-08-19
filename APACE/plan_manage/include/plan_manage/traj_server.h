@@ -44,7 +44,6 @@ namespace fast_planner
     ros::Timer cmd_timer, vis_timer;
     nav_msgs::Odometry odom;
     quadrotor_msgs::PositionCommand cmd;
-
     // Info of generated traj
     vector<NonUniformBspline> traj_;
     double traj_duration_;

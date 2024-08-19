@@ -1,5 +1,6 @@
 <launch>
   <arg name="enable_vins" default="true"/>
+  <arg name="usekeyboard_and_itsspeed" default="1"/>
   <include file="$(find plan_manage)/launch/algorithm.xml">    
     <!-- <arg name="mode" value="airsim"/>
     <arg name="mode" value="uav_simulator"/> -->
@@ -48,21 +49,21 @@
     <arg name="vbox_max_x" value="15.0"/>
     <arg name="vbox_max_y" value="14.0"/>
     <arg name="vbox_max_z" value="14.0"/>  -->
-    <arg name="keyboard_vector" value="1"/>
+    <arg name="keyboard_vector" value="$(arg usekeyboard_and_itsspeed)"/>
     <arg name="init_x" value="0.0"/>
     <arg name="init_y" value="0.0"/>
     <arg name="init_z" value="1.0"/>
     <arg name="init_yaw" value="1.57"/>
 
-    <arg name="point_num" value="1" />
+    <arg name="point_num" value="2" />
 
-    <arg name="point0_x" value="-2.0" />
-    <arg name="point0_y" value="10.0" />
+    <arg name="point0_x" value="-4.0" />
+    <arg name="point0_y" value="0.0" />
     <arg name="point0_z" value="1.3" />
 
-    <arg name="point1_x" value="-8.0" />
-    <arg name="point1_y" value="8.0" />
-    <arg name="point1_z" value="0.0" />
+    <arg name="point1_x" value="-2.0" />
+    <arg name="point1_y" value="10.0" />
+    <arg name="point1_z" value="1.3" />
 
     <arg name="point2_x" value="-10.0" />
     <arg name="point2_y" value="-10.0" />
@@ -81,7 +82,8 @@
     <arg unless="$(arg enable_vins)" name="sensor_pose_topic" value="/airsim_node/drone_1/sensor_pose"/>
     <arg if="$(arg enable_vins)" name="sensor_pose_topic" value="/vins_estimator/imu_propagate_camera_pose"/>
     <arg name="depth_image_topic" value="/airsim_node/drone_1/front_center_custom/DepthPlanar"/>
-    <arg name="pointcloud_topic" value="/vins_estimator/margin_cloud"/>
+    <arg name="pointcloud_topic" value="/no_use"/>
+    <!-- <arg name="pointcloud_topic" value="/vins_estimator/point_cloud"/> -->
     <!-- <arg name="feature_cloud_topic" value="/vins_estimator/margin_cloud"/> -->
     <!-- <arg name="feature_cloud_topic" value="/vins_estimator/point_cloud"/> -->
     <arg name="feature_cloud_topic" value="/vins_estimator/margin_cloud"/>

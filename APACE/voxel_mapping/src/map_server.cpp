@@ -184,6 +184,9 @@ namespace voxel_mapping
     feature_cloud_sub_ = nh.subscribe("/voxel_mapping/feature_cloud", 100, &MapServer::featureCloudCallback, this);
     odom_sub_ = nh.subscribe("/odom_world", 1, &MapServer::odometryCallback, this);
 
+    // Initialize service
+    fronted_points_client_ = nh.serviceClient<vins::PointCloudService>("/services/get_point_cloud");
+
     // depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "/map_ros/depth", 50));
     // odom_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_, "/map_ros/pose", 25));
 
@@ -192,6 +195,7 @@ namespace voxel_mapping
 
     // Initialize timer
     publish_map_timer_ = nh.createTimer(ros::Duration(0.05), &MapServer::publishMapTimerCallback, this);
+    receive_fronted_feature_timer = nh.createTimer(ros::Duration(0.1), &MapServer::receiveFrontedFeaturesCallback, this);
 
     if (config_.verbose_)
     {
@@ -264,7 +268,7 @@ namespace voxel_mapping
     //   return;
     // if (!enable_add_feature_ || !has_odom_)
     //   return;
-
+    TicToc tic_feature_add;
     if (!has_odom_)
       return;
 
@@ -273,6 +277,7 @@ namespace voxel_mapping
 
     // feature_map_->addFeatureCloud(pos_, cloud);
     feature_grid_->addGlobalFeatures(cloud);
+    // ROS_WARN("[MapServer] Add feature_point callback time: %fs", tic_feature_add.toc());
     // feature_grid_->addFeatureCloud(pos_, cloud);
   }
 
@@ -285,6 +290,11 @@ namespace voxel_mapping
 
     // 将四元数转换为 yaw、pitch、roll（Euler 角）
     tf::Quaternion tf_quat(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+    // 归一化四元数
+    if (tf_quat.length() > 1.0 + 1e-5 || tf_quat.length() < 1.0 - 1e-5)
+    {
+      tf_quat.normalize();
+    }
     tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw); 
 
     VoxelIndex idx;
@@ -327,22 +337,47 @@ namespace voxel_mapping
 
   void MapServer::publishMapTimerCallback(const ros::TimerEvent &event)
   {
+    // ROS_ERROR("[MapServer] Publish_time\n \t\t\t\t\tTSDF\t\tTSDFSlice\t\tESDFSlice\t\tOccu\t\tFeature\t\tTimer:(s)");
+    TicToc pub_begin,Timer_begin;
     if (config_.publish_tsdf_)
       publishTSDF();
-
+    double publishTSDF_time = pub_begin.toc();
+    pub_begin.tic();
     if (config_.publish_tsdf_slice_)
       publishTSDFSlice();
-
+    double publishTSDFSlice_time = pub_begin.toc();
+    pub_begin.tic();
     if (config_.publish_esdf_slice_)
       publishESDFSlice();
-
+    double publishESDFSlice_time = pub_begin.toc();
+    pub_begin.tic();
     if (config_.publish_occupancy_grid_)
       publishOccupancyGrid();
-
+    double publishOccupancyGrid_time = pub_begin.toc();
+    pub_begin.tic();
     if (config_.publish_feature_map_)
     {
-      // publishFeatureGrid();
+      publishFeatureGrid();
       publishFeatureMap();
+    }
+    double publishFeatureMap_time = pub_begin.toc();
+    pub_begin.tic();
+    // ROS_WARN("\t%f\t%f\t%f\t%f\t%f\t%f", 
+    //             publishTSDF_time,publishTSDFSlice_time,publishESDFSlice_time,publishOccupancyGrid_time,publishFeatureMap_time,Timer_begin.toc());
+    
+  }
+
+  void MapServer::receiveFrontedFeaturesCallback(const ros::TimerEvent &event)
+  {
+     if (fronted_points_client_.call(fronted_points_srv)) {
+        TicToc tic_feature_add;
+        if (!has_odom_)
+          return;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::fromROSMsg(fronted_points_srv.response.point_cloud, *cloud);
+        feature_grid_->addFrontedFeatures(cloud);
+    } else {
+        ROS_ERROR("Failed to call service get_point_cloud");
     }
   }
 
@@ -562,10 +597,12 @@ void MapServer::publishFeaturePointcloud(const AlignedVector<Position> features)
 
     if (config_.verbose_)
       ROS_INFO_THROTTLE(1.0, "[MapServer] Publishing feature grid...");
-
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
     vector<Eigen::Vector3d> this_features;
+    TicToc tic_feature_get;
     feature_grid_->getFeatureNumperPosYaw(pos_, yaw, this_features);
+    // ROS_WARN("[MapServer] getFeatureNumperPosYaw callback time: %fs", tic_feature_get.toc());
+    TicToc cloud_show;
     for (const Eigen::Vector3d &eigen_point : this_features)
     {
         pcl::PointXYZ pcl_point;
@@ -582,6 +619,7 @@ void MapServer::publishFeaturePointcloud(const AlignedVector<Position> features)
     pointcloud_msg.header.frame_id = config_.world_frame_;
     // ROS_WARN("[MapServer] PUBLISH featureMap %d",pointcloud->width);
     feature_map_pub_.publish(pointcloud_msg);
+    //  ROS_WARN("[MapServer] cloud show compute time: %fs", cloud_show.toc());
   }
 
   // void MapServer::publishFeatureMap()

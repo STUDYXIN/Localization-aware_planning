@@ -106,6 +106,32 @@ namespace voxel_mapping
       map_data_->data[addr].value = voxel;
     }
 
+    template <typename VoxelValue>
+    void setVoxel(const Position &pos, const VoxelValue &voxel, int n)
+    {
+        int half_n = n / 2;
+        for (int x = -half_n; x <= half_n; ++x)
+        {
+            for (int y = -half_n; y <= half_n; ++y)
+            {
+                for (int z = -half_n; z <= half_n; ++z)
+                {
+                    Position newPos = pos + Position(x, y, z);
+                    setVoxel(newPos, voxel);
+                }
+            }
+        }
+    }
+
+    template <typename VoxelValue>
+    void setVoxel(const VoxelIndex &idx, const VoxelValue &voxel, int n)
+    {
+        Position pos = indexToPosition(idx);
+        setVoxel(pos, voxel, n);
+    }
+
+
+
     // void setVoxel(const Position &pos, const VoxelType &voxel)
     // {
     //   setVoxel(positionToAddress(pos), voxel);

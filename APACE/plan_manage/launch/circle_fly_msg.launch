@@ -1,7 +1,0 @@
-<launch>
-  <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find plan_manage)/config/test.rviz" />
-  <node name="trajectory_publisher" pkg="plan_manage" type="circle_trajectory_publisher.py" output="screen" />
-  <node name="visual_traj_pub" pkg="plan_manage" type="visual_traj_pub.py" output="screen" />
-  <node pkg="tf" type="static_transform_publisher" name="drone1_pub" args="0 0 0 0 0 0 drone_1 world 100"/>
-  <!-- <node pkg="tf" type="static_transform_publisher" name="vins" args="0 0 0 0 0 0 vins world 100"/> -->
-</launch>

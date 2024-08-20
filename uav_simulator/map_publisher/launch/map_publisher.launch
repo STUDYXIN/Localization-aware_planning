@@ -1,0 +1,11 @@
+<launch>
+  <!-- main node -->
+  <arg name="file_name" default="map_5.ply"/>
+  <node pkg="map_publisher" name="map_publisher" type="map_publisher_node" output="screen">
+    <!-- <remap from="~point_cloud" to="/voxel_mapping/occupancy_grid"/> -->
+    <remap from="~point_cloud" to="/map_generator/global_cloud"/>     
+    <!-- replanning method -->
+    <param name="map_publisher/filepath" value="$(find map_publisher)/data/$(arg file_name)" type="string"/>
+  </node>
+
+</launch>

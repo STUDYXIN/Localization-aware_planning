@@ -14,8 +14,9 @@ MapROS::MapROS() {
 MapROS::~MapROS() {
 }
 
-void MapROS::setMap(SDFMap* map) {
+void MapROS::setMap(SDFMap* map) { 
   this->map_ = map;
+  using_global_map = false;
 }
 
 void MapROS::init() {
@@ -36,7 +37,7 @@ void MapROS::init() {
   node_.param("map_ros/show_esdf_time", show_esdf_time_, false);
   node_.param("map_ros/show_all_map", show_all_map_, false);
   node_.param("map_ros/frame_id", frame_id_, string("world"));
-
+  // node_.param("feature/load_from_file", using_global_map, false);
   proj_points_.resize(640 * 480 / (skip_pixel_ * skip_pixel_));
   point_cloud_.points.resize(640 * 480 / (skip_pixel_ * skip_pixel_));
   // proj_points_.reserve(640 * 480 / map_->mp_->skip_pixel_ / map_->mp_->skip_pixel_);
@@ -68,23 +69,30 @@ void MapROS::init() {
   update_range_pub_ = node_.advertise<visualization_msgs::Marker>("/sdf_map/update_range", 10);
   depth_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/depth_cloud", 10);
 
-  depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "/map_ros/depth", 50));
-  cloud_sub_.reset(
-      new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_, "/map_ros/cloud", 50));
-  pose_sub_.reset(
-      new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_, "/map_ros/pose", 25));
+  global_cloud_sub = node_.subscribe("/map_generator/global_cloud", 10, 
+                                   &MapROS::global_cloud_subCallback, this);
+  if (!using_global_map)
+  {
+    depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "/map_ros/depth", 50));
+    cloud_sub_.reset(
+        new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_, "/map_ros/cloud", 50));
+    pose_sub_.reset(
+        new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_, "/map_ros/pose", 25));
 
-  sync_image_pose_.reset(new message_filters::Synchronizer<MapROS::SyncPolicyImagePose>(
-      MapROS::SyncPolicyImagePose(100), *depth_sub_, *pose_sub_));
-  sync_image_pose_->registerCallback(boost::bind(&MapROS::depthPoseCallback, this, _1, _2));
-  sync_cloud_pose_.reset(new message_filters::Synchronizer<MapROS::SyncPolicyCloudPose>(
-      MapROS::SyncPolicyCloudPose(100), *cloud_sub_, *pose_sub_));
-  sync_cloud_pose_->registerCallback(boost::bind(&MapROS::cloudPoseCallback, this, _1, _2));
+    sync_image_pose_.reset(new message_filters::Synchronizer<MapROS::SyncPolicyImagePose>(
+        MapROS::SyncPolicyImagePose(100), *depth_sub_, *pose_sub_));
+    sync_image_pose_->registerCallback(boost::bind(&MapROS::depthPoseCallback, this, _1, _2));
+    sync_cloud_pose_.reset(new message_filters::Synchronizer<MapROS::SyncPolicyCloudPose>(
+        MapROS::SyncPolicyCloudPose(100), *cloud_sub_, *pose_sub_));
+    sync_cloud_pose_->registerCallback(boost::bind(&MapROS::cloudPoseCallback, this, _1, _2));
+  }
 
   map_start_time_ = ros::Time::now();
 }
 
 void MapROS::visCallback(const ros::TimerEvent& e) {
+  if(using_global_map)
+    return;
   publishMapLocal();
   if (show_all_map_) {
     // Limit the frequency of all map
@@ -172,6 +180,20 @@ void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
     local_updated_ = false;
   }
 }
+
+void MapROS::global_cloud_subCallback(const sensor_msgs::PointCloud2ConstPtr& msg)
+{
+  static bool using_global_map_ = true;
+  if(!using_global_map || !using_global_map_)
+    return;
+  using_global_map_ = false; //只调用一次
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  pcl::fromROSMsg(*msg, cloud);
+  ROS_WARN("[MapROS] Subscribe global cloud!!! num: %zu",cloud.points.size());
+
+  map_->inputGlobalPointCloud(cloud);
+}
+
 
 void MapROS::proessDepthImage() {
   proj_points_cnt = 0;

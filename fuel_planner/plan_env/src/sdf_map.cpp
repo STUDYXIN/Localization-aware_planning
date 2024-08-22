@@ -4,6 +4,7 @@
 
 namespace fast_planner {
 SDFMap::SDFMap() {
+  using_global_map = false;
 }
 
 SDFMap::~SDFMap() {
@@ -86,6 +87,7 @@ void SDFMap::initMap(ros::NodeHandle& nh) {
   // Initialize ROS wrapper
   mr_->setMap(this);
   mr_->node_ = nh;
+  mr_->using_global_map = using_global_map;
   mr_->init();
 
   caster_.reset(new RayCaster);
@@ -344,6 +346,91 @@ void SDFMap::inputPointCloud(
   }
 }
 
+void SDFMap::inputGlobalPointCloud(const pcl::PointCloud<pcl::PointXYZ>& global_points) {
+  if (global_points.empty()) return;
+  md_->raycast_num_ += 1;
+  // 统计点云的最小和最大范围
+  Eigen::Vector3d min_bound = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+  Eigen::Vector3d max_bound = Eigen::Vector3d::Constant(-std::numeric_limits<double>::max());
+
+  for (const auto& pt : global_points.points) {
+    Eigen::Vector3d pt_w(pt.x, pt.y, pt.z);
+    min_bound = min_bound.cwiseMin(pt_w);
+    max_bound = max_bound.cwiseMax(pt_w);
+  }
+
+  // 计算包围盒的边界
+  Eigen::Vector3d bound_inf(mp_->local_bound_inflate_, mp_->local_bound_inflate_, 0);
+  posToIndex(min_bound - bound_inf, md_->local_bound_min_);
+  posToIndex(max_bound + bound_inf, md_->local_bound_max_);
+  boundIndex(md_->local_bound_min_);
+  boundIndex(md_->local_bound_max_);
+
+  // 清空当前缓存
+  md_->cache_voxel_ = std::queue<int>();
+  std::fill(md_->count_hit_.begin(), md_->count_hit_.end(), 0);
+  std::fill(md_->count_miss_.begin(), md_->count_miss_.end(), 0);
+
+  // double sample_x = 0.5 * std::min(std::abs(max_bound[0]), std::abs(min_bound[0]));
+  // double sample_y = 0.5 * std::min(std::abs(max_bound[1]), std::abs(min_bound[1]));
+  // double sample_z = 0.5 * std::min(std::abs(max_bound[2]), std::abs(min_bound[2]));
+  // ROS_WARN("[SDFMap] sample_x,sample_y,sample_z: (%.2f %.2f %.2f)",sample_x,sample_y,sample_z);
+  // 遍历点云，更新地图
+  for (const auto& pt : global_points.points) {
+    Eigen::Vector3d pt_w(pt.x, pt.y, pt.z);
+    Eigen::Vector3i idx;
+    posToIndex(pt_w, idx);
+    int vox_adr = toAddress(idx);
+    setCacheOccupancy(vox_adr, 1);  // 假设所有点都是障碍物
+
+    // 执行射线投射 
+    if (md_->flag_rayend_[vox_adr] != md_->raycast_num_) {
+      md_->flag_rayend_[vox_adr] = md_->raycast_num_;
+      caster_->input(pt_w, Eigen::Vector3d(0, 0, 0));  // 使用全局原点
+      caster_->nextId(idx);
+      while (caster_->nextId(idx))
+        setCacheOccupancy(toAddress(idx), 0);
+
+      // caster_->input(pt_w, Eigen::Vector3d(sample_x, sample_y, sample_z));  // 使用全局原点
+      // caster_->nextId(idx);
+      // while (caster_->nextId(idx))
+      //   setCacheOccupancy(toAddress(idx), 0);
+
+      // caster_->input(pt_w, Eigen::Vector3d(sample_x, -sample_y, sample_z));  // 使用全局原点
+      // caster_->nextId(idx);
+      // while (caster_->nextId(idx))
+      //   setCacheOccupancy(toAddress(idx), 0);
+
+      // caster_->input(pt_w, Eigen::Vector3d(-sample_x, sample_y, sample_z));  // 使用全局原点
+      // caster_->nextId(idx);
+      // while (caster_->nextId(idx))
+      //   setCacheOccupancy(toAddress(idx), 0);
+
+      // caster_->input(pt_w, Eigen::Vector3d(-sample_x, -sample_y, sample_z));  // 使用全局原点
+      // caster_->nextId(idx);
+      // while (caster_->nextId(idx))
+      //   setCacheOccupancy(toAddress(idx), 0);
+
+    }
+  }
+  while (!md_->cache_voxel_.empty()) {
+    int adr = md_->cache_voxel_.front();
+    md_->cache_voxel_.pop();
+    double log_odds_update =
+        md_->count_hit_[adr] >= md_->count_miss_[adr] ? mp_->prob_hit_log_ : mp_->prob_miss_log_;
+    md_->count_hit_[adr] = md_->count_miss_[adr] = 0;
+    if (md_->occupancy_buffer_[adr] < mp_->clamp_min_log_ - 1e-3)
+      md_->occupancy_buffer_[adr] = mp_->min_occupancy_log_;
+
+    md_->occupancy_buffer_[adr] = std::min(
+        std::max(md_->occupancy_buffer_[adr] + log_odds_update, mp_->clamp_min_log_),
+        mp_->clamp_max_log_);
+  }
+  clearAndInflateLocalMap();
+  updateESDF3d();
+}
+
+
 Eigen::Vector3d
 SDFMap::closetPointInMap(const Eigen::Vector3d& pt, const Eigen::Vector3d& camera_pt) {
   Eigen::Vector3d diff = pt - camera_pt;
@@ -362,75 +449,6 @@ SDFMap::closetPointInMap(const Eigen::Vector3d& pt, const Eigen::Vector3d& camer
 }
 
 void SDFMap::clearAndInflateLocalMap() {
-  // /*clear outside local*/
-  // const int vec_margin = 5;
-
-  // Eigen::Vector3i min_cut = md_->local_bound_min_ -
-  //     Eigen::Vector3i(mp_->local_map_margin_, mp_->local_map_margin_,
-  //     mp_->local_map_margin_);
-  // Eigen::Vector3i max_cut = md_->local_bound_max_ +
-  //     Eigen::Vector3i(mp_->local_map_margin_, mp_->local_map_margin_,
-  //     mp_->local_map_margin_);
-  // boundIndex(min_cut);
-  // boundIndex(max_cut);
-
-  // Eigen::Vector3i min_cut_m = min_cut - Eigen::Vector3i(vec_margin, vec_margin,
-  // vec_margin); Eigen::Vector3i max_cut_m = max_cut + Eigen::Vector3i(vec_margin,
-  // vec_margin, vec_margin); boundIndex(min_cut_m); boundIndex(max_cut_m);
-
-  // // clear data outside the local range
-
-  // for (int x = min_cut_m(0); x <= max_cut_m(0); ++x)
-  //   for (int y = min_cut_m(1); y <= max_cut_m(1); ++y) {
-
-  //     for (int z = min_cut_m(2); z < min_cut(2); ++z) {
-  //       int idx                       = toAddress(x, y, z);
-  //       md_->occupancy_buffer_[idx]    = mp_->clamp_min_log_ - mp_->unknown_flag_;
-  //       md_->distance_buffer_all_[idx] = 10000;
-  //     }
-
-  //     for (int z = max_cut(2) + 1; z <= max_cut_m(2); ++z) {
-  //       int idx                       = toAddress(x, y, z);
-  //       md_->occupancy_buffer_[idx]    = mp_->clamp_min_log_ - mp_->unknown_flag_;
-  //       md_->distance_buffer_all_[idx] = 10000;
-  //     }
-  //   }
-
-  // for (int z = min_cut_m(2); z <= max_cut_m(2); ++z)
-  //   for (int x = min_cut_m(0); x <= max_cut_m(0); ++x) {
-
-  //     for (int y = min_cut_m(1); y < min_cut(1); ++y) {
-  //       int idx                       = toAddress(x, y, z);
-  //       md_->occupancy_buffer_[idx]    = mp_->clamp_min_log_ - mp_->unknown_flag_;
-  //       md_->distance_buffer_all_[idx] = 10000;
-  //     }
-
-  //     for (int y = max_cut(1) + 1; y <= max_cut_m(1); ++y) {
-  //       int idx                       = toAddress(x, y, z);
-  //       md_->occupancy_buffer_[idx]    = mp_->clamp_min_log_ - mp_->unknown_flag_;
-  //       md_->distance_buffer_all_[idx] = 10000;
-  //     }
-  //   }
-
-  // for (int y = min_cut_m(1); y <= max_cut_m(1); ++y)
-  //   for (int z = min_cut_m(2); z <= max_cut_m(2); ++z) {
-
-  //     for (int x = min_cut_m(0); x < min_cut(0); ++x) {
-  //       int idx                       = toAddress(x, y, z);
-  //       md_->occupancy_buffer_[idx]    = mp_->clamp_min_log_ - mp_->unknown_flag_;
-  //       md_->distance_buffer_all_[idx] = 10000;
-  //     }
-
-  //     for (int x = max_cut(0) + 1; x <= max_cut_m(0); ++x) {
-  //       int idx                       = toAddress(x, y, z);
-  //       md_->occupancy_buffer_[idx]    = mp_->clamp_min_log_ - mp_->unknown_flag_;
-  //       md_->distance_buffer_all_[idx] = 10000;
-  //     }
-  //   }
-
-  // update inflated occupied cells
-  // clean outdated occupancy
-
   int inf_step = ceil(mp_->obstacles_inflation_ / mp_->resolution_);
   vector<Eigen::Vector3i> inf_pts(pow(2 * inf_step + 1, 3));
   // inf_pts.resize(4 * inf_step + 3);
@@ -455,6 +473,8 @@ void SDFMap::clearAndInflateLocalMap() {
                 idx_inf <
                     mp_->map_voxel_num_(0) * mp_->map_voxel_num_(1) * mp_->map_voxel_num_(2)) {
               md_->occupancy_buffer_inflate_[idx_inf] = 1;
+              // if(using_global_map)
+              //   md_->occupancy_buffer_[idx_inf] = 1;
             }
           }
         }
@@ -533,6 +553,16 @@ double SDFMap::getDistWithGrad(const Eigen::Vector3d& pos, Eigen::Vector3d& grad
   grad[0] *= mp_->resolution_inv_;
 
   return dist;
+}
+
+bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+    caster_->input(start, end);
+    Eigen::Vector3i idx;
+    while (caster_->nextId(idx)) {
+        if (getOccupancy(idx) == OCCUPIED) 
+            return true; // 检测到障碍物
+    }
+    return false; // 没有检测到障碍物
 }
 }  // namespace fast_planner
 // SDFMap

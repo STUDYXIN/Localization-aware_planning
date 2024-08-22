@@ -5,17 +5,20 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /active_perception1/frontier1
+        - /active_perception1
         - /active_perception1/frontier1/Namespaces1
         - /active_perception1/viewpoint1/Namespaces1
+        - /LocalMap1
         - /LocalMap1/occupied_local1/Autocompute Value Bounds1
         - /LocalMap1/occupied_all1/Autocompute Value Bounds1
-        - /Simulation1
+        - /LocalMap1/occupied_local_inflate1
+        - /Mapping1
         - /Simulation1/simulation_map1
-        - /Simulation1/simulation_map1/Status1
         - /debug21/Autocompute Value Bounds1
         - /processed_msg1/Namespaces1
+        - /PointCloud21
         - /PointCloud21/Autocompute Value Bounds1
+        - /PointCloud22
       Splitter Ratio: 0.5216138362884521
     Tree Height: 598
   - Class: rviz/Selection
@@ -204,7 +207,7 @@ Visualization Manager:
           Color: 116; 116; 116
           Color Transformer: AxisColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 0; 0; 0
           Min Color: 0; 0; 0
@@ -219,7 +222,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 0.30000001192092896
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -232,7 +235,7 @@ Visualization Manager:
           Color: 106; 106; 106
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 0; 0; 0
           Min Color: 0; 0; 0
@@ -243,11 +246,11 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.10000000149011612
           Style: Boxes
-          Topic: /sdf_map/occupancy_local_inflate
+          Topic: /sdf_map/occupancy_local
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 0.10000000149011612
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -629,17 +632,17 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: false
-    - Alpha: 1
+    - Alpha: 0.5
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 2.4000000953674316
-        Min Value: -0.5
+        Max Value: 4.75
+        Min Value: -0.949999988079071
         Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
       Color: 100; 100; 100
-      Color Transformer: AxisColor
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -650,9 +653,37 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.125
+      Size (m): 0.07999999821186066
       Style: Flat Squares
-      Topic: /map_generator/click_map
+      Topic: /feature/feature_map
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 3.6318700313568115
+        Min Value: 0.1039780005812645
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 5
+      Size (m): 0.15000000596046448
+      Style: Flat Squares
+      Topic: /feature/visual_feature_cloud
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -684,7 +715,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 36.022361755371094
+      Distance: 35.620792388916016
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -692,17 +723,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -2.6151132583618164
-        Y: 0.5154527425765991
-        Z: -2.5082706997636706e-05
+        X: -9.929149627685547
+        Y: -0.14499855041503906
+        Z: -2.2769458155380562e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3497955799102783
+      Pitch: 1.0797967910766602
       Target Frame: <Fixed Frame>
-      Yaw: 3.0195908546447754
+      Yaw: 3.0865042209625244
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 40.93450164794922

@@ -7,13 +7,15 @@
   <arg name="init_x" value="-13.0"/>
   <arg name="init_y" value="0.0"/>
   <arg name="init_z" value="1.0"/> 
+  <arg name="feature_filename_" default="$(find map_publisher)/data/feature_map_sample1.ply" />
+
 
   <!-- topic of your odometry such as VIO or LIO -->
   <arg name="odom_topic" value="/state_ukf/odom" />
 
   <!-- main algorithm params -->
   <include file="$(find exploration_manager)/launch/algorithm.xml">
-
+    <arg name="feature_filename" value="$(arg feature_filename_)"/>
     <arg name="map_size_x_" value="$(arg map_size_x)"/>
     <arg name="map_size_y_" value="$(arg map_size_y)"/>
     <arg name="map_size_z_" value="$(arg map_size_z)"/>

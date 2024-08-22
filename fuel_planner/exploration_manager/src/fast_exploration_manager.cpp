@@ -9,6 +9,7 @@
 #include <active_perception/perception_utils.h>
 #include <plan_env/raycast.h>
 #include <plan_env/sdf_map.h>
+#include <plan_env/feature_map.h>
 #include <plan_env/edt_environment.h>
 #include <active_perception/frontier_finder.h>
 #include <plan_manage/planner_manager.h>
@@ -38,11 +39,24 @@ void FastExplorationManager::initialize(ros::NodeHandle& nh) {
   planner_manager_->initPlanModules(nh);
   edt_environment_ = planner_manager_->edt_environment_;
   sdf_map_ = edt_environment_->sdf_map_;
-  frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
-  // view_finder_.reset(new ViewFinder(edt_environment_, nh));
 
   ed_.reset(new ExplorationData);
   ep_.reset(new ExplorationParam);
+
+  nh.param("feature/using_feature", ep_->using_feature, false);
+  if(ep_->using_feature)
+  {
+      global_sdf_map_.reset(new SDFMap);
+      global_sdf_map_->using_global_map = true;
+      global_sdf_map_->initMap(nh);
+      feature_map_.reset(new FeatureMap);
+      feature_map_->setMap(global_sdf_map_);
+      feature_map_->initMap(nh);
+  }
+  
+  frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
+  // view_finder_.reset(new ViewFinder(edt_environment_, nh));
+
 
   nh.param("exploration/refine_local", ep_->refine_local_, true);
   nh.param("exploration/refined_num", ep_->refined_num_, -1);

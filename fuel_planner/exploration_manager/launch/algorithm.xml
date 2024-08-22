@@ -22,6 +22,8 @@
 
   <arg name="max_vel"/>
   <arg name="max_acc"/>
+  <arg name="feature_filename" default=""/>
+
 
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
@@ -29,6 +31,18 @@
     <remap from ="/map_ros/pose"   to = "$(arg sensor_pose_topic)"/> 
     <remap from ="/map_ros/depth" to = "$(arg depth_topic)"/>
     <remap from ="/map_ros/cloud" to="$(arg cloud_topic)"/>
+
+    <param name="feature/using_feature"      value="true" /> 
+    <param name="feature/load_from_file"      value="true" /> 
+    <param name="feature/filename"   value="$(arg feature_filename)" />
+    <param name="feature/feature_visual_max"   value="30.0" />
+    <param name="feature/feature_visual_min"   value="0.1" />
+    <param name="feature/cam_cx"   value="$(arg cx)" />
+    <param name="feature/cam_cy"   value="$(arg cy)" />
+    <param name="feature/cam_fx"   value="$(arg fx)" />
+    <param name="feature/cam_fy"   value="$(arg fy)" />
+    <param name="feature/cam_width"   value="640" />
+    <param name="feature/cam_height"   value="480" />
 
     <param name="sdf_map/resolution"      value="0.1" /> 
     <param name="sdf_map/map_size_x"   value="$(arg map_size_x_)" /> 

@@ -14,6 +14,7 @@ using std::vector;
 namespace fast_planner {
 class EDTEnvironment;
 class SDFMap;
+class FeatureMap;
 class FastPlannerManager;
 class FrontierFinder;
 struct ExplorationParam;
@@ -43,7 +44,8 @@ public:
 
 private:
   shared_ptr<EDTEnvironment> edt_environment_;
-  shared_ptr<SDFMap> sdf_map_;
+  shared_ptr<SDFMap> sdf_map_,global_sdf_map_;
+  shared_ptr<FeatureMap> feature_map_;
 
   // Find optimal tour for coarse viewpoints of all frontiers
   void findGlobalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw,

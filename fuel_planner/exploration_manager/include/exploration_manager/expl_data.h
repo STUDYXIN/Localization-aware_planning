@@ -66,6 +66,7 @@ struct ExplorationParam {
   double max_decay_;
   string tsp_dir_;  // resource dir of tsp solver
   double relax_time_;
+  bool using_feature;
 };
 
 }  // namespace fast_planner

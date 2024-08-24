@@ -23,6 +23,7 @@ namespace fast_planner {
 struct MapParam;
 struct MapData;
 class MapROS;
+class FeatureMap;
 
 class SDFMap {
 public:
@@ -34,6 +35,7 @@ public:
   void initMap(ros::NodeHandle& nh);
   void inputPointCloud(const pcl::PointCloud<pcl::PointXYZ>& points, const int& point_num,
                        const Eigen::Vector3d& camera_pos);
+  void inputGlobalPointCloud(const pcl::PointCloud<pcl::PointXYZ>& global_points);
 
   void posToIndex(const Eigen::Vector3d& pos, Eigen::Vector3i& id);
   void indexToPos(const Eigen::Vector3i& id, Eigen::Vector3d& pos);
@@ -62,7 +64,8 @@ public:
   void getUpdatedBox(Eigen::Vector3d& bmin, Eigen::Vector3d& bmax, bool reset = false);
   double getResolution();
   int getVoxelNum();
-
+  bool checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+  bool using_global_map;
 private:
   void clearAndInflateLocalMap();
   void inflatePoint(const Eigen::Vector3i& pt, int step, vector<Eigen::Vector3i>& pts);
@@ -77,7 +80,7 @@ private:
   unique_ptr<RayCaster> caster_;
 
   friend MapROS;
-
+  friend FeatureMap;
 public:
   typedef std::shared_ptr<SDFMap> Ptr;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -29,12 +29,14 @@ public:
   ~MapROS();
   void setMap(SDFMap* map);
   void init();
+  bool using_global_map;
 
 private:
   void depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
                          const geometry_msgs::PoseStampedConstPtr& pose);
   void cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
                          const geometry_msgs::PoseStampedConstPtr& pose);
+  void global_cloud_subCallback(const sensor_msgs::PointCloud2ConstPtr& msg);                       
   void updateESDFCallback(const ros::TimerEvent& /*event*/);
   void visCallback(const ros::TimerEvent& /*event*/);
 
@@ -58,6 +60,7 @@ private:
   typedef shared_ptr<message_filters::Synchronizer<SyncPolicyCloudPose>> SynchronizerCloudPose;
 
   ros::NodeHandle node_;
+  ros::Subscriber global_cloud_sub;
   shared_ptr<message_filters::Subscriber<sensor_msgs::Image>> depth_sub_;
   shared_ptr<message_filters::Subscriber<sensor_msgs::PointCloud2>> cloud_sub_;
   shared_ptr<message_filters::Subscriber<geometry_msgs::PoseStamped>> pose_sub_;

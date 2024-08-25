@@ -1,4 +1,4 @@
-PROBLEM_FILE = /home/star/ActiveSlam/fuel_planner/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/resource/single.tsp
+PROBLEM_FILE = /home/luzong/ros_program/zhuhai_ws/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/resource/single.tsp
 GAIN23 = NO
-OUTPUT_TOUR_FILE =/home/star/ActiveSlam/fuel_planner/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/resource/single.txt
+OUTPUT_TOUR_FILE =/home/luzong/ros_program/zhuhai_ws/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/resource/single.txt
 RUNS = 1

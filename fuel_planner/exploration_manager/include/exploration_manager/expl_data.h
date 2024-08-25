@@ -19,8 +19,19 @@ struct FSMData {
   double odom_yaw_;
 
   Eigen::Vector3d start_pt_, start_vel_, start_acc_, start_yaw_;  // start state
+  Eigen::Vector3d end_pt_, end_vel_;  // start state
   vector<Eigen::Vector3d> start_poss;
   bspline::Bspline newest_traj_;
+};
+
+struct M2GData{
+  //move to goal data
+    int target_type_; // 1 mannual select, 2 hard code
+    double no_replan_thresh_, replan_thresh_;
+    double waypoints_[50][3];
+    int waypoint_num_;
+    double last_arrive_time_;
+    int current_wp_;
 };
 
 struct FSMParam {

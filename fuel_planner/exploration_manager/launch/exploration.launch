@@ -52,6 +52,24 @@
     <!-- maximum velocity and acceleration the drone will reach -->
     <arg name="max_vel" value="2.0" />
     <arg name="max_acc" value="2.0" />
+
+    <arg name="point_num" value="2" />
+
+    <arg name="point0_x" value="13.0" />
+    <arg name="point0_y" value="0.0" />
+    <arg name="point0_z" value="2.0" />
+
+    <arg name="point1_x" value="10.0" />
+    <arg name="point1_y" value="10.0" />
+    <arg name="point1_z" value="0.4" />
+
+    <arg name="point2_x" value="0.0" />
+    <arg name="point2_y" value="0.0" />
+    <arg name="point2_z" value="1.0" />
+
+    <arg name="point3_x" value="0.0" />
+    <arg name="point3_y" value="0.0" />
+    <arg name="point3_z" value="2.0" />
   </include>
 
   <!-- trajectory server -->

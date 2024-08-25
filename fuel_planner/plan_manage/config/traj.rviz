@@ -235,7 +235,7 @@ Visualization Manager:
           Color: 106; 106; 106
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 0; 0; 0
           Min Color: 0; 0; 0
@@ -250,7 +250,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 0.10000000149011612
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -663,8 +663,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 3.6318700313568115
-        Min Value: 0.1039780005812645
+        Max Value: 1.9086799621582031
+        Min Value: 1.6815999746322632
         Value: true
       Axis: Z
       Channel Name: intensity

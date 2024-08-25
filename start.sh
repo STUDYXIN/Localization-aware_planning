@@ -5,7 +5,7 @@ FILEDIR=$(readlink -f "${BASH_SOURCE[0]}")
 BASEDIR=$(dirname "${FILEDIR}")
 SETUP_FILE="${BASEDIR}/../../devel/setup.bash"
 SETUP_DIR=$(dirname "${SETUP_FILE}")
-PLY_NAME=right_corner.ply
+PLY_NAME=right_corner_with_boundary_filled.ply
 
 echo "setup.bash is located in: ${SETUP_DIR}"
 # 加载 ROS 环境
@@ -15,6 +15,7 @@ sleep 0.5s
 gnome-terminal --tab -- bash -c "\
 echo Rviz; \
 roslaunch exploration_manager rviz.launch; exec bash"
+
 # 加载点云文件
 sleep 1s
 gnome-terminal --tab -- bash -c "\
@@ -26,3 +27,5 @@ gnome-terminal --tab -- bash -c "\
 echo Planner; \
 roslaunch exploration_manager exploration.launch; \
 exec bash"
+
+

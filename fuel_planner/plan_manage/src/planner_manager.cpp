@@ -149,7 +149,12 @@ bool FastPlannerManager::kinodynamicReplan(const Eigen::Vector3d& start_pt,
     kino_path_finder_->reset();
     status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
     if (status == KinodynamicAstar::NO_PATH) {
-      cout << "[Kino replan]: Can't find path." << endl;
+      cout << "[Kino replan]: Can't find path." 
+      << " start_pt: " <<start_pt.transpose()
+      << " start_vel: " <<start_vel.transpose()
+      << " start_acc: " <<start_acc.transpose()
+      << " end_pt: " <<end_pt.transpose()
+      << " end_vel: " <<end_vel.transpose()<< endl;
       return false;
     }
   }

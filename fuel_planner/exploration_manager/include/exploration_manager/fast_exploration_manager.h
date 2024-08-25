@@ -31,7 +31,8 @@ public:
 
   int planExploreMotion(const Vector3d& pos, const Vector3d& vel, const Vector3d& acc,
                         const Vector3d& yaw);
-
+  int plantoGoalMotion(const Vector3d &start_pt, const Vector3d &start_vel, const Vector3d &start_acc, const Vector3d& start_yaw,
+                        const Vector3d &end_pt, const Vector3d &end_vel);
   // Benchmark method, classic frontier and rapid frontier
   int classicFrontier(const Vector3d& pos, const double& yaw);
   int rapidFrontier(const Vector3d& pos, const Vector3d& vel, const double& yaw, bool& classic);

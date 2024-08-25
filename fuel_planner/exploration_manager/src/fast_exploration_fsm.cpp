@@ -14,13 +14,22 @@ namespace fast_planner {
 void FastExplorationFSM::init(ros::NodeHandle& nh) {
   fp_.reset(new FSMParam);
   fd_.reset(new FSMData);
-
+  m2g_.reset(new M2GData);
+  m2g_->current_wp_ = 0;
   /*  Fsm param  */
   nh.param("fsm/thresh_replan1", fp_->replan_thresh1_, -1.0);
   nh.param("fsm/thresh_replan2", fp_->replan_thresh2_, -1.0);
   nh.param("fsm/thresh_replan3", fp_->replan_thresh3_, -1.0);
   nh.param("fsm/replan_time", fp_->replan_time_, -1.0);
-
+  nh.param("fsm/flight_type", m2g_->target_type_, -1);
+  nh.param("fsm/wp_num", m2g_->waypoint_num_, -1);
+  ROS_WARN("[FastExplorationFSM] InitSucc! MODE:%d",m2g_->target_type_);
+  for (int i = 0; i < m2g_->waypoint_num_; i++)
+  {
+      nh.param("fsm/wp" + to_string(i) + "_x", m2g_->waypoints_[i][0], -1.0);
+      nh.param("fsm/wp" + to_string(i) + "_y", m2g_->waypoints_[i][1], -1.0);
+      nh.param("fsm/wp" + to_string(i) + "_z", m2g_->waypoints_[i][2], -1.0);
+  }
   /* Initialize main modules */
   expl_manager_.reset(new FastExplorationManager);
   expl_manager_->initialize(nh);
@@ -97,7 +106,7 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
       // Inform traj_server the replanning
       replan_pub_.publish(std_msgs::Empty());
-      int res = callExplorationPlanner();
+      int res = m2g_->target_type_ ? callMovetoGoalPlanner() : callExplorationPlanner();
       if (res == SUCCEED) {
         transitState(PUB_TRAJ, "FSM");
       } else if (res == NO_FRONTIER) {
@@ -157,6 +166,50 @@ int FastExplorationFSM::callExplorationPlanner() {
 
   int res = expl_manager_->planExploreMotion(fd_->start_pt_, fd_->start_vel_, fd_->start_acc_,
                                              fd_->start_yaw_);
+  classic_ = false;
+
+  // int res = expl_manager_->classicFrontier(fd_->start_pt_, fd_->start_yaw_[0]);
+  // classic_ = true;
+
+  // int res = expl_manager_->rapidFrontier(fd_->start_pt_, fd_->start_vel_, fd_->start_yaw_[0],
+  // classic_);
+
+  if (res == SUCCEED) {
+    auto info = &planner_manager_->local_data_;
+    info->start_time_ = (ros::Time::now() - time_r).toSec() > 0 ? ros::Time::now() : time_r;
+
+    bspline::Bspline bspline;
+    bspline.order = planner_manager_->pp_.bspline_degree_;
+    bspline.start_time = info->start_time_;
+    bspline.traj_id = info->traj_id_;
+    Eigen::MatrixXd pos_pts = info->position_traj_.getControlPoint();
+    for (int i = 0; i < pos_pts.rows(); ++i) {
+      geometry_msgs::Point pt;
+      pt.x = pos_pts(i, 0);
+      pt.y = pos_pts(i, 1);
+      pt.z = pos_pts(i, 2);
+      bspline.pos_pts.push_back(pt);
+    }
+    Eigen::VectorXd knots = info->position_traj_.getKnot();
+    for (int i = 0; i < knots.rows(); ++i) {
+      bspline.knots.push_back(knots(i));
+    }
+    Eigen::MatrixXd yaw_pts = info->yaw_traj_.getControlPoint();
+    for (int i = 0; i < yaw_pts.rows(); ++i) {
+      double yaw = yaw_pts(i, 0);
+      bspline.yaw_pts.push_back(yaw);
+    }
+    bspline.yaw_dt = info->yaw_traj_.getKnotSpan();
+    fd_->newest_traj_ = bspline;
+  }
+  return res;
+}
+
+int FastExplorationFSM::callMovetoGoalPlanner() {
+  ros::Time time_r = ros::Time::now() + ros::Duration(fp_->replan_time_);
+
+  int res = expl_manager_->plantoGoalMotion(fd_->start_pt_, fd_->start_vel_, fd_->start_acc_,
+                                             fd_->start_yaw_, fd_->end_pt_, fd_->end_vel_);
   classic_ = false;
 
   // int res = expl_manager_->classicFrontier(fd_->start_pt_, fd_->start_yaw_[0]);
@@ -329,6 +382,14 @@ void FastExplorationFSM::triggerCallback(const nav_msgs::PathConstPtr& msg) {
   if (state_ != WAIT_TRIGGER) return;
   fd_->trigger_ = true;
   cout << "Triggered!" << endl;
+  if(m2g_->target_type_ == PRESET_TARGET)
+  {
+    fd_->end_pt_(0) = m2g_->waypoints_[m2g_->current_wp_][0];
+    fd_->end_pt_(1) = m2g_->waypoints_[m2g_->current_wp_][1];
+    fd_->end_pt_(2) = m2g_->waypoints_[m2g_->current_wp_][2];
+    m2g_->current_wp_ = (m2g_->current_wp_ + 1) % m2g_->waypoint_num_;
+    visualization_->drawGoal(fd_->end_pt_, 0.3, Eigen::Vector4d(1, 0, 0, 1.0));
+  }
   transitState(PLAN_TRAJ, "triggerCallback");
 }
 

@@ -28,9 +28,10 @@ class FastExplorationManager;
 class PlanningVisualization;
 struct FSMParam;
 struct FSMData;
+struct M2GData;
 
 enum EXPL_STATE { INIT, WAIT_TRIGGER, PLAN_TRAJ, PUB_TRAJ, EXEC_TRAJ, FINISH };
-
+enum TARGET_TYPE {EXPLORATION = 0,  PRESET_TARGET = 1};
 class FastExplorationFSM {
 private:
   /* planning utils */
@@ -40,6 +41,7 @@ private:
 
   shared_ptr<FSMParam> fp_;
   shared_ptr<FSMData> fd_;
+  shared_ptr<M2GData> m2g_;
   EXPL_STATE state_;
 
   bool classic_;
@@ -52,6 +54,7 @@ private:
 
   /* helper functions */
   int callExplorationPlanner();
+  int callMovetoGoalPlanner();
   void transitState(EXPL_STATE new_state, string pos_call);
 
   /* ROS functions */

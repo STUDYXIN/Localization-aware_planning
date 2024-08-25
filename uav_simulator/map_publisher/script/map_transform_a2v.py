@@ -7,8 +7,8 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 print(f"当前工作目录: {script_dir}")
 
 # 2. 设置文件路径
-input_file_path = os.path.join(script_dir, "../data/right_corner_with_boundary_filled_origin.ply")
-output_file_path = os.path.join(script_dir, "../data/right_corner_with_boundary_filled.ply")
+input_file_path = os.path.join(script_dir, "../data/right_corner_origin.ply")
+output_file_path = os.path.join(script_dir, "../data/right_corner.ply")
 
 # 3. 检查文件是否存在
 if not os.path.exists(input_file_path):

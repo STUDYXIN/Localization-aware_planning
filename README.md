@@ -15,3 +15,23 @@
 
 - **TODO**：
   - 在当前框架下生成轨迹。
+
+
+### 8月25日更新
+
+- **清理无关地图**：移除了无关地图文件，避免仓库中累积过多文件。
+
+- **新增文件**：
+  - **`right_corner_sample5.ply`**：此文件解决了看到障碍物的问题，但在某些情况下可能会导致卡顿。
+  - **`right_corner_sample10.ply`**：此文件能够防止 `fronter` 生成在地图之外，但有时特征点可能会穿透障碍物。
+
+- **规划上的改动**：
+  - 尝试增加一个到目标的状态，未完成，但可以将 `algorith.xml` 文件中的配置保持为 `<param name="fsm/flight_type" value="0" type="int"/>`就是原本的fuel。
+
+- **使用方法**：
+  - 理论上，直接运行 `start.sh` 即可。
+
+- **TODO**：
+  - 尚未添加 Clang Format 配置文件。
+  - `/home/star/ActiveSlam/fuel_planner/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/resource` 目录下存在一些中间文件，在每次上传时可能会导致冲突，需解决此问题。
+

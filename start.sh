@@ -5,7 +5,8 @@ FILEDIR=$(readlink -f "${BASH_SOURCE[0]}")
 BASEDIR=$(dirname "${FILEDIR}")
 SETUP_FILE="${BASEDIR}/../../devel/setup.bash"
 SETUP_DIR=$(dirname "${SETUP_FILE}")
-PLY_NAME=right_corner_with_boundary_filled.ply
+# PLY_NAME=right_corner_sample5.ply
+PLY_NAME=right_corner_sample10.ply
 
 echo "setup.bash is located in: ${SETUP_DIR}"
 # 加载 ROS 环境

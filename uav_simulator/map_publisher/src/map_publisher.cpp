@@ -5,11 +5,16 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <pcl/common/transforms.h> //	pcl::transformPointCloud 用到这个头文件
-
+#include <nav_msgs/Path.h>
 using namespace std;
 
 string filepath;
-
+bool stop_triggle = false;
+void triggerCallback(const nav_msgs::PathConstPtr& msg)
+{
+    stop_triggle = true;
+    cout << "Triggered!" << endl;
+}
 int main(int argc, char **argv)
 {
     // Initialize ROS
@@ -18,7 +23,7 @@ int main(int argc, char **argv)
 
     // Create a publisher for the PointCloud2 message
     ros::Publisher pub = nh.advertise<sensor_msgs::PointCloud2>("point_cloud", 1);
-
+    ros::Subscriber trigger_sub_ =  nh.subscribe("/waypoint_generator/waypoints", 1, triggerCallback);
     nh.param<string>("map_publisher/filepath", filepath, "");
 
     // Read the PCD file
@@ -64,13 +69,14 @@ int main(int argc, char **argv)
     sensor_msgs::PointCloud2 msg;
     pcl::toROSMsg(*cloud, msg);
     msg.header.frame_id = "world"; // Set the frame ID
-
     // Publish the ROS message
     while (ros::ok())
     {
         pub.publish(msg);
         ros::spinOnce();
+        if(stop_triggle)
+            break;
     }
-
+    ROS_WARN("[map_publisher] Map publisher finish!!!!!!!");
     return 0;
 }

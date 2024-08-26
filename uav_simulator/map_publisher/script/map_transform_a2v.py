@@ -8,7 +8,7 @@ print(f"当前工作目录: {script_dir}")
 
 # 2. 设置文件路径
 input_file_path = os.path.join(script_dir, "../data/right_corner_origin.ply")
-output_file_path = os.path.join(script_dir, "../data/right_corner_sample15.ply")
+output_file_path = os.path.join(script_dir, "../data/right_corner_sample5.ply")
 
 # 3. 检查文件是否存在
 if not os.path.exists(input_file_path):

@@ -35,3 +35,11 @@
   - 尚未添加 Clang Format 配置文件。
   - `/home/star/ActiveSlam/fuel_planner/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/resource` 目录下存在一些中间文件，在每次上传时可能会导致冲突，需解决此问题。
 
+### 8月26日更新
+
+- **修改地图文件**：调整了地图文件以防止特征点穿透障碍物的问题。
+
+- **接收触发器**：在地图接收到触发器时，地图发布将停止，以避免系统出现卡顿现象。
+
+- **使用方法**：
+  - 理论上，直接运行 `start.sh` 即可。

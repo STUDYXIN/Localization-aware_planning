@@ -1,15 +1,14 @@
 #ifndef _SDF_MAP_H
 #define _SDF_MAP_H
 
-#include <Eigen/Eigen>
-#include <Eigen/StdVector>
-
-#include <queue>
-#include <ros/ros.h>
-#include <tuple>
-
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <ros/ros.h>
+
+#include <Eigen/Eigen>
+#include <Eigen/StdVector>
+#include <queue>
+#include <tuple>
 
 using namespace std;
 
@@ -26,7 +25,7 @@ class MapROS;
 class FeatureMap;
 
 class SDFMap {
-public:
+ public:
   SDFMap();
   ~SDFMap();
 
@@ -66,7 +65,8 @@ public:
   int getVoxelNum();
   bool checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
   bool using_global_map;
-private:
+
+ private:
   void clearAndInflateLocalMap();
   void inflatePoint(const Eigen::Vector3i& pt, int step, vector<Eigen::Vector3i>& pts);
   void setCacheOccupancy(const int& adr, const int& occ);
@@ -81,7 +81,8 @@ private:
 
   friend MapROS;
   friend FeatureMap;
-public:
+
+ public:
   typedef std::shared_ptr<SDFMap> Ptr;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -128,13 +129,11 @@ struct MapData {
 };
 
 inline void SDFMap::posToIndex(const Eigen::Vector3d& pos, Eigen::Vector3i& id) {
-  for (int i = 0; i < 3; ++i)
-    id(i) = floor((pos(i) - mp_->map_origin_(i)) * mp_->resolution_inv_);
+  for (int i = 0; i < 3; ++i) id(i) = floor((pos(i) - mp_->map_origin_(i)) * mp_->resolution_inv_);
 }
 
 inline void SDFMap::indexToPos(const Eigen::Vector3i& id, Eigen::Vector3d& pos) {
-  for (int i = 0; i < 3; ++i)
-    pos(i) = (id(i) + 0.5) * mp_->resolution_ + mp_->map_origin_(i);
+  for (int i = 0; i < 3; ++i) pos(i) = (id(i) + 0.5) * mp_->resolution_ + mp_->map_origin_(i);
 }
 
 inline void SDFMap::boundIndex(Eigen::Vector3i& id) {
@@ -149,9 +148,7 @@ inline int SDFMap::toAddress(const int& x, const int& y, const int& z) {
   return x * mp_->map_voxel_num_(1) * mp_->map_voxel_num_(2) + y * mp_->map_voxel_num_(2) + z;
 }
 
-inline int SDFMap::toAddress(const Eigen::Vector3i& id) {
-  return toAddress(id[0], id[1], id[2]);
-}
+inline int SDFMap::toAddress(const Eigen::Vector3i& id) { return toAddress(id[0], id[1], id[2]); }
 
 inline bool SDFMap::isInMap(const Eigen::Vector3d& pos) {
   if (pos(0) < mp_->map_min_boundary_(0) + 1e-4 || pos(1) < mp_->map_min_boundary_(1) + 1e-4 ||
@@ -267,5 +264,5 @@ inline void SDFMap::inflatePoint(const Eigen::Vector3i& pt, int step, vector<Eig
         pts[num++] = Eigen::Vector3i(pt(0) + x, pt(1) + y, pt(2) + z);
       }
 }
-}
+}  // namespace fast_planner
 #endif

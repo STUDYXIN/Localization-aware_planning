@@ -1,7 +1,7 @@
-#include <ros/ros.h>
-
-#include <visualization_msgs/Marker.h>
 #include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
+#include <visualization_msgs/Marker.h>
+
 #include <Eigen/Eigen>
 
 using namespace std;

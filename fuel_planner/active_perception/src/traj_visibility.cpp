@@ -3,8 +3,7 @@
 #include <plan_env/sdf_map.h>
 
 namespace fast_planner {
-VisibilityUtil::VisibilityUtil() {
-}
+VisibilityUtil::VisibilityUtil() {}
 
 VisibilityUtil::VisibilityUtil(const ros::NodeHandle& nh) {
   // set parameters
@@ -18,8 +17,7 @@ VisibilityUtil::VisibilityUtil(const ros::NodeHandle& nh) {
   caster_.reset(new RayCaster);
 }
 
-VisibilityUtil::~VisibilityUtil() {
-}
+VisibilityUtil::~VisibilityUtil() {}
 
 void VisibilityUtil::setEDTEnvironment(const EDTEnvironment::Ptr& edt) {
   edt_env_ = edt;
@@ -55,8 +53,7 @@ Eigen::Vector3d VisibilityUtil::getMinDistVoxel(const Eigen::Vector3d& q1, const
   return min_pt;
 }
 
-Eigen::Vector3d VisibilityUtil::getMinDistVoxelOnLine(const Eigen::Vector3d& q1,
-                                                      const Eigen::Vector3d& q2,
+Eigen::Vector3d VisibilityUtil::getMinDistVoxelOnLine(const Eigen::Vector3d& q1, const Eigen::Vector3d& q2,
                                                       const Eigen::Vector3d& offset, const double& res,
                                                       int& state, Eigen::Vector3d& block) {
   Eigen::Vector3d tmp;
@@ -99,8 +96,7 @@ Eigen::Vector3d VisibilityUtil::getMinDistVoxelOnLine(const Eigen::Vector3d& q1,
   return min_pt;
 }
 
-bool VisibilityUtil::lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2,
-                               Eigen::Vector3d& pc) {
+bool VisibilityUtil::lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, Eigen::Vector3d& pc) {
   Eigen::Vector3d ray_pt, grad, pt;
   Eigen::Vector3i pt_id;
   double dist;
@@ -222,9 +218,8 @@ bool VisibilityUtil::findCriticalPoint(NonUniformBspline& traj, const Eigen::Vec
   return true;
 }
 
-bool VisibilityUtil::findDirAndIdx(NonUniformBspline& traj, const double& unknown_t,
-                                   const double& crit_t, Eigen::Vector3d& dir, int& idx,
-                                   Eigen::Vector3d& min_pt) {
+bool VisibilityUtil::findDirAndIdx(NonUniformBspline& traj, const double& unknown_t, const double& crit_t,
+                                   Eigen::Vector3d& dir, int& idx, Eigen::Vector3d& min_pt) {
   // max speed to unknown pt
   // double mean_v = 0.0;
   // int num_v = 0;

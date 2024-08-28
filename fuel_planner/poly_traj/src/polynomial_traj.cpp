@@ -1,5 +1,6 @@
-#include <iostream>
 #include <poly_traj/polynomial_traj.h>
+
+#include <iostream>
 
 namespace fast_planner {
 void PolynomialTraj::waypointsTraj(const Eigen::MatrixXd& positions, const Eigen::Vector3d& start_vel,
@@ -11,8 +12,7 @@ void PolynomialTraj::waypointsTraj(const Eigen::MatrixXd& positions, const Eigen
   // Helper to construct the mapping matrix
   const static auto Factorial = [](int x) {
     int fac = 1;
-    for (int i = x; i > 0; i--)
-      fac = fac * i;
+    for (int i = x; i > 0; i--) fac = fac * i;
     return fac;
   };
 
@@ -57,8 +57,7 @@ void PolynomialTraj::waypointsTraj(const Eigen::MatrixXd& positions, const Eigen
     Ab = Eigen::MatrixXd::Zero(6, 6);
     for (int i = 0; i < 3; i++) {
       Ab(2 * i, i) = Factorial(i);
-      for (int j = i; j < 6; j++)
-        Ab(2 * i + 1, j) = Factorial(j) / Factorial(j - i) * pow(times(k), j - i);
+      for (int j = i; j < 6; j++) Ab(2 * i + 1, j) = Factorial(j) / Factorial(j - i) * pow(times(k), j - i);
     }
     A.block(k * 6, k * 6, 6, 6) = Ab;
   }
@@ -475,4 +474,4 @@ void PolynomialTraj::waypointsTraj(const Eigen::MatrixXd& positions, const Eigen
 
 //   return poly_traj;
 // }
-}
+}  // namespace fast_planner

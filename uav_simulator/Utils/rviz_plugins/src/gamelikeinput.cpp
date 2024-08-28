@@ -13,30 +13,24 @@
 
 // #include "gamelikeinput.hpp"
 
-#include "rviz/default_plugin/tools/move_tool.h"
-#include "rviz/display_context.h"
-#include "rviz/render_panel.h"
-#include "rviz/tool_manager.h"
-
-#include "boost/unordered_map.hpp"
-
 #include <OGRE/OgrePlane.h>
 #include <OGRE/OgreRay.h>
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreViewport.h>
-
-#include "rviz/geometry.h"
-#include "rviz/load_resource.h"
-#include "rviz/ogre_helpers/arrow.h"
-#include "rviz/render_panel.h"
-#include "rviz/viewport_mouse_event.h"
-
 #include <geometry_msgs/PoseStamped.h>
 #include <tf/transform_listener.h>
 
-#include "rviz/properties/string_property.h"
-
+#include "boost/unordered_map.hpp"
 #include "nav_msgs/Path.h"
+#include "rviz/default_plugin/tools/move_tool.h"
+#include "rviz/display_context.h"
+#include "rviz/geometry.h"
+#include "rviz/load_resource.h"
+#include "rviz/ogre_helpers/arrow.h"
+#include "rviz/properties/string_property.h"
+#include "rviz/render_panel.h"
+#include "rviz/tool_manager.h"
+#include "rviz/viewport_mouse_event.h"
 // #include "quadrotor_msgs/SwarmCommand.h"
 #include "std_msgs/Int32MultiArray.h"
 
@@ -58,22 +52,22 @@ void GameLikeInput::updateTopic() {
 }
 
 GameLikeInput::GameLikeInput()
-  : rviz::SelectionTool()
-  , move_tool_(new rviz::InteractionTool())
-  , selecting_(false)
-  , sel_start_x_(0)
-  , sel_start_y_(0)
-  , moving_(false) {
+    : rviz::SelectionTool(),
+      move_tool_(new rviz::InteractionTool()),
+      selecting_(false),
+      sel_start_x_(0),
+      sel_start_y_(0),
+      moving_(false) {
   shortcut_key_ = 'z';
   access_all_keys_ = true;
 
-  topic_property_wp_ = new rviz::StringProperty("TopicPoint", "point_list",
-                                                "The topic on which to publish navigation goals.",
-                                                getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_wp_ =
+      new rviz::StringProperty("TopicPoint", "point_list", "The topic on which to publish navigation goals.",
+                               getPropertyContainer(), SLOT(updateTopic()), this);
 
-  topic_property_drone_ = new rviz::StringProperty("TopicSelect", "select_list",
-                                                   "The topic on which to publish select drone id.",
-                                                   getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_drone_ =
+      new rviz::StringProperty("TopicSelect", "select_list", "The topic on which to publish select drone id.",
+                               getPropertyContainer(), SLOT(updateTopic()), this);
 
   topic_property_swarm_ =
       new rviz::StringProperty("TopicSwarm", "swarm", "The topic on which to publish swarm command.",
@@ -210,15 +204,15 @@ void GameLikeInput::onPoseSet(double x, double y, double z, double theta) {
       tf::Stamped<tf::Pose>(tf::Pose(quat, tf::Point(x, y, z)), ros::Time::now(), fixed_frame);
   geometry_msgs::PoseStamped goal;
   tf::poseStampedTFToMsg(p, goal);
-  ROS_INFO("Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), "
-           "Orientation(%.3f, %.3f, %.3f, %.3f) = Angle: %.3f\n",
-           fixed_frame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
-           goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z,
-           goal.pose.orientation.w, theta);
+  ROS_INFO(
+      "Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), "
+      "Orientation(%.3f, %.3f, %.3f, %.3f) = Angle: %.3f\n",
+      fixed_frame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
+      goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w,
+      theta);
 }
 
 int GameLikeInput::processMouseEvent(rviz::ViewportMouseEvent& event) {
-
   rviz::SelectionManager* sel_manager = context_->getSelectionManager();
 
   int flags = 0;
@@ -259,8 +253,7 @@ int GameLikeInput::processMouseEvent(rviz::ViewportMouseEvent& event) {
       }
 
       //      boost::recursive_mutex::scoped_lock lock(global_mutex_);
-      sel_manager->select(event.viewport, this->sel_start_x_, this->sel_start_y_, event.x, event.y,
-                          type);
+      sel_manager->select(event.viewport, this->sel_start_x_, this->sel_start_y_, event.x, event.y, type);
       selection = sel_manager->getSelection();
 
       rviz::MarkerSelectionHandler* cmp =
@@ -305,13 +298,11 @@ int GameLikeInput::processMouseEvent(rviz::ViewportMouseEvent& event) {
       moving_ = false;
     }
   } else {
-
     if (event.rightDown()) {
       if (state_ == None) {
         Ogre::Vector3 intersection;
         Ogre::Plane ground_plane(Ogre::Vector3::UNIT_Z, 0.0f);
-        if (rviz::getPointOnPlaneFromWindowXY(event.viewport, ground_plane, event.x, event.y,
-                                              intersection)) {
+        if (rviz::getPointOnPlaneFromWindowXY(event.viewport, ground_plane, event.x, event.y, intersection)) {
           pos_ = intersection;
           arrow_->setPosition(pos_);
           arrow_->setOrientation(Ogre::Quaternion(Ogre::Radian(0.0), Ogre::Vector3::UNIT_Z) * orient_x);

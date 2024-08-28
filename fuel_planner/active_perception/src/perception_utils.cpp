@@ -1,5 +1,4 @@
 #include <active_perception/perception_utils.h>
-
 #include <pcl/filters/voxel_grid.h>
 
 namespace fast_planner {
@@ -61,9 +60,8 @@ void PerceptionUtils::setPose(const Vector3d& pos, const double& yaw) {
   Eigen::Matrix4d T_wc = T_wb * T_bc_;
   Eigen::Matrix3d R_wc = T_wc.block<3, 3>(0, 0);
   // Vector3d t_wc = T_wc.block<3, 1>(0, 3);
-  normals_ = { n_top_, n_bottom_, n_left_, n_right_ };
-  for (auto& n : normals_)
-    n = R_wc * n;
+  normals_ = {n_top_, n_bottom_, n_left_, n_right_};
+  for (auto& n : normals_) n = R_wc * n;
 }
 
 void PerceptionUtils::getFOV(vector<Vector3d>& list1, vector<Vector3d>& list2) {
@@ -97,7 +95,7 @@ void PerceptionUtils::getFOVBoundingBox(Vector3d& bmin, Vector3d& bmax) {
   double right = yaw_ - right_angle_;
   Vector3d left_pt = pos_ + max_dist_ * Vector3d(cos(left), sin(left), 0);
   Vector3d right_pt = pos_ + max_dist_ * Vector3d(cos(right), sin(right), 0);
-  vector<Vector3d> points = { left_pt, right_pt };
+  vector<Vector3d> points = {left_pt, right_pt};
   if (left > 0 && right < 0)
     points.push_back(pos_ + max_dist_ * Vector3d(1, 0, 0));
   else if (left > M_PI_2 && right < M_PI_2)

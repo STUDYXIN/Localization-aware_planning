@@ -1,7 +1,8 @@
-#include <plan_manage/planner_manager.h>
-#include <plan_env/sdf_map.h>
-#include <future>
 #include <pcl_conversions/pcl_conversions.h>
+#include <plan_env/sdf_map.h>
+#include <plan_manage/planner_manager.h>
+
+#include <future>
 
 namespace fast_planner {
 void FastPlannerManager::planYawActMap(const Eigen::Vector3d& start_yaw) {
@@ -15,14 +16,12 @@ void FastPlannerManager::planYawActMap(const Eigen::Vector3d& start_yaw) {
   double dt_yaw = local_data_.duration_ / seg_num;  // time of B-spline segment
   const int subsp = 2;                              // subsampling factor to create yaw path
   double dt_path = dt_yaw * subsp;                  // time of yaw path segment
-  std::cout << "duration: " << local_data_.duration_ << ", seg_num: " << seg_num
-            << ", dt_yaw: " << dt_yaw << ", dt_path: " << dt_path << std::endl;
+  std::cout << "duration: " << local_data_.duration_ << ", seg_num: " << seg_num << ", dt_yaw: " << dt_yaw
+            << ", dt_path: " << dt_path << std::endl;
 
   Eigen::Vector3d start_yaw3d = start_yaw;
-  while (start_yaw3d[0] < -M_PI)
-    start_yaw3d[0] += 2 * M_PI;
-  while (start_yaw3d[0] > M_PI)
-    start_yaw3d[0] -= 2 * M_PI;
+  while (start_yaw3d[0] < -M_PI) start_yaw3d[0] += 2 * M_PI;
+  while (start_yaw3d[0] > M_PI) start_yaw3d[0] -= 2 * M_PI;
   double last_yaw = start_yaw3d[0];
 
   const double forward_t = 4.0 / pp_.max_vel_;
@@ -60,8 +59,7 @@ void FastPlannerManager::planYawActMap(const Eigen::Vector3d& start_yaw) {
 
   t2 = ros::Time::now();
   vector<double> path;
-  heading_planner_->searchPathOfYaw(pts, spyaw, dt_path, local_data_.position_traj_.getControlPoint(),
-                                    path);
+  heading_planner_->searchPathOfYaw(pts, spyaw, dt_path, local_data_.position_traj_.getControlPoint(), path);
   for (int i = 0; i < path.size(); ++i) {
     waypts[i][0] = path[i];
   }
@@ -82,13 +80,13 @@ void FastPlannerManager::planYawActMap(const Eigen::Vector3d& start_yaw) {
 
   // call B-spline optimization solver
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
-  vector<Eigen::Vector3d> start = { Eigen::Vector3d(start_yaw3d[0], 0, 0),
-                                    Eigen::Vector3d(start_yaw3d[1], 0, 0),
-                                    Eigen::Vector3d(start_yaw3d[2], 0, 0) };
-  vector<Eigen::Vector3d> end = { Eigen::Vector3d(end_yaw[0], 0, 0), Eigen::Vector3d(0, 0, 0) };
+  vector<Eigen::Vector3d> start = {Eigen::Vector3d(start_yaw3d[0], 0, 0),
+                                   Eigen::Vector3d(start_yaw3d[1], 0, 0),
+                                   Eigen::Vector3d(start_yaw3d[2], 0, 0)};
+  vector<Eigen::Vector3d> end = {Eigen::Vector3d(end_yaw[0], 0, 0), Eigen::Vector3d(0, 0, 0)};
   bspline_optimizers_[1]->setBoundaryStates(start, end);
   int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START |
-      BsplineOptimizer::END;
+                  BsplineOptimizer::END;
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
 
   // update traj info
@@ -152,8 +150,8 @@ bool FastPlannerManager::localExplore(Eigen::Vector3d start, Eigen::Vector3d sta
       pt[1] = radius2 * rand_u(eng);
 
       // inside disc and in forward direction [-45,45]
-      if (pt.head(2).norm() > radius1 && pt.head(2).norm() < radius2 &&
-          atan2(pt[1], pt[0]) < M_PI / 3.0 && atan2(pt[1], pt[0]) > -M_PI / 3.0) {
+      if (pt.head(2).norm() > radius1 && pt.head(2).norm() < radius2 && atan2(pt[1], pt[0]) < M_PI / 3.0 &&
+          atan2(pt[1], pt[0]) > -M_PI / 3.0) {
         pt += start;
         pt[2] = 0.5 * rand_u(eng) + 1;
 
@@ -266,8 +264,7 @@ bool FastPlannerManager::localExplore(Eigen::Vector3d start, Eigen::Vector3d sta
 
   // construct initial value
   Eigen::Matrix3d states2pts;
-  states2pts << 1.0, -dt, (1 / 3.0) * dt * dt, 1.0, 0.0, -(1 / 6.0) * dt * dt, 1.0, dt,
-      (1 / 3.0) * dt * dt;
+  states2pts << 1.0, -dt, (1 / 3.0) * dt * dt, 1.0, 0.0, -(1 / 6.0) * dt * dt, 1.0, dt, (1 / 3.0) * dt * dt;
 
   Eigen::Matrix3d state_xyz;  // set start value
   state_xyz.row(0) = start;
@@ -312,15 +309,13 @@ bool FastPlannerManager::localExplore(Eigen::Vector3d start, Eigen::Vector3d sta
     std::cout << "ratio: " << ratio << std::endl;
 
     dt = ratio * dt;
-    states2pts << 1.0, -dt, (1 / 3.0) * dt * dt, 1.0, 0.0, -(1 / 6.0) * dt * dt, 1.0, dt,
-        (1 / 3.0) * dt * dt;
+    states2pts << 1.0, -dt, (1 / 3.0) * dt * dt, 1.0, 0.0, -(1 / 6.0) * dt * dt, 1.0, dt, (1 / 3.0) * dt * dt;
     p_tmp = states2pts * state_xyz;
     ctrl_pts.block<3, 3>(0, 0) = p_tmp;
     bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
   }
 
-  std::cout << "Local explore time: " << (ros::Time::now() - local_data_.start_time_).toSec()
-            << std::endl;
+  std::cout << "Local explore time: " << (ros::Time::now() - local_data_.start_time_).toSec() << std::endl;
 
   local_data_.position_traj_.setUniformBspline(ctrl_pts, 3, dt);
   updateTrajInfo();

@@ -1,16 +1,18 @@
-#include <iostream>
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Vector3.h>
+#include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
-#include "sample_waypoints.h"
-#include <vector>
-#include <deque>
+#include <ros/ros.h>
+
 #include <boost/format.hpp>
+#include <deque>
 #include <eigen3/Eigen/Dense>
+#include <iostream>
+#include <vector>
+
+#include "sample_waypoints.h"
 
 using namespace std;
 using bfmt = boost::format;
@@ -128,9 +130,9 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr& msg) {
       ss << bfmt("Series send %.3f from start:\n") % trigged_time.toSec();
       for (auto& pose_stamped : waypoints.poses) {
         ss << bfmt("P[%.2f, %.2f, %.2f] q(%.2f,%.2f,%.2f,%.2f)") % pose_stamped.pose.position.x %
-                pose_stamped.pose.position.y % pose_stamped.pose.position.z %
-                pose_stamped.pose.orientation.w % pose_stamped.pose.orientation.x %
-                pose_stamped.pose.orientation.y % pose_stamped.pose.orientation.z
+                  pose_stamped.pose.position.y % pose_stamped.pose.position.z %
+                  pose_stamped.pose.orientation.w % pose_stamped.pose.orientation.x %
+                  pose_stamped.pose.orientation.y % pose_stamped.pose.orientation.z
            << std::endl;
       }
       ROS_INFO_STREAM(ss.str());

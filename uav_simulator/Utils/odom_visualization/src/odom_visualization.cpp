@@ -1,16 +1,18 @@
-#include <iostream>
 #include <string.h>
-#include "ros/ros.h"
-#include "tf/transform_broadcaster.h"
-#include "nav_msgs/Odometry.h"
-#include "geometry_msgs/PoseWithCovarianceStamped.h"
-#include "geometry_msgs/PoseStamped.h"
-#include "nav_msgs/Path.h"
-#include "sensor_msgs/Range.h"
-#include "visualization_msgs/Marker.h"
+
+#include <iostream>
+
 #include "armadillo"
+#include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.h"
+#include "nav_msgs/Odometry.h"
+#include "nav_msgs/Path.h"
 #include "pose_utils.h"
 #include "quadrotor_msgs/PositionCommand.h"
+#include "ros/ros.h"
+#include "sensor_msgs/Range.h"
+#include "tf/transform_broadcaster.h"
+#include "visualization_msgs/Marker.h"
 
 using namespace arma;
 using namespace std;
@@ -142,8 +144,7 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr& msg) {
   if (cov_pos) {
     mat P(6, 6);
     for (int j = 0; j < 6; j++)
-      for (int i = 0; i < 6; i++)
-        P(i, j) = msg->pose.covariance[i + j * 6];
+      for (int i = 0; i < 6; i++) P(i, j) = msg->pose.covariance[i + j * 6];
     colvec eigVal;
     mat eigVec;
     eig_sym(eigVal, eigVec, P.submat(0, 0, 2, 2));
@@ -185,8 +186,7 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr& msg) {
   if (cov_vel) {
     mat P(3, 3);
     for (int j = 0; j < 3; j++)
-      for (int i = 0; i < 3; i++)
-        P(i, j) = msg->twist.covariance[i + j * 6];
+      for (int i = 0; i < 3; i++) P(i, j) = msg->twist.covariance[i + j * 6];
     mat R = ypr_to_R(pose.rows(3, 5));
     P = R * P * trans(R);
     colvec eigVal;

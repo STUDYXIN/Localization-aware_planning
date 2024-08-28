@@ -2,18 +2,19 @@
 #define _FRONTIER_FINDER_H_
 
 #include <ros/ros.h>
+
 #include <Eigen/Eigen>
-#include <memory>
-#include <vector>
 #include <list>
+#include <memory>
 #include <utility>
+#include <vector>
 
 using Eigen::Vector3d;
+using std::list;
+using std::pair;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
-using std::list;
-using std::pair;
 
 class RayCaster;
 
@@ -51,63 +52,61 @@ struct Frontier {
 };
 
 class FrontierFinder {
-public:
-  FrontierFinder(const shared_ptr<EDTEnvironment>& edt, ros::NodeHandle& nh);
-  ~FrontierFinder();
+ public:
+  FrontierFinder(const shared_ptr<EDTEnvironment> &edt, ros::NodeHandle &nh);
 
   void searchFrontiers();
   void computeFrontiersToVisit();
 
-  void getFrontiers(vector<vector<Vector3d>>& clusters);
-  void getDormantFrontiers(vector<vector<Vector3d>>& clusters);
-  void getFrontierBoxes(vector<pair<Vector3d, Vector3d>>& boxes);
+  void getFrontiers(vector<vector<Vector3d>> &clusters);
+  void getDormantFrontiers(vector<vector<Vector3d>> &clusters);
+  void getFrontierBoxes(vector<pair<Vector3d, Vector3d>> &boxes);
   // Get viewpoint with highest coverage for each frontier
-  void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws,
-                            vector<Vector3d>& averages);
+  void getTopViewpointsInfo(const Vector3d &cur_pos, vector<Vector3d> &points, vector<double> &yaws,
+                            vector<Vector3d> &averages, vector<size_t> &visb_num);
   // Get several viewpoints for a subset of frontiers
-  void getViewpointsInfo(const Vector3d& cur_pos, const vector<int>& ids, const int& view_num,
-                         const double& max_decay, vector<vector<Vector3d>>& points,
-                         vector<vector<double>>& yaws);
+  void getViewpointsInfo(const Vector3d &cur_pos, const vector<int> &ids, const int &view_num,
+                         const double &max_decay, vector<vector<Vector3d>> &points,
+                         vector<vector<double>> &yaws);
   void updateFrontierCostMatrix();
-  void getFullCostMatrix(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw,
-                         Eigen::MatrixXd& mat);
-  void getPathForTour(const Vector3d& pos, const vector<int>& frontier_ids, vector<Vector3d>& path);
+  void getFullCostMatrix(const Vector3d &cur_pos, const Vector3d &cur_vel, const Vector3d cur_yaw,
+                         Eigen::MatrixXd &mat);
+  void getPathForTour(const Vector3d &pos, const vector<int> &frontier_ids, vector<Vector3d> &path);
 
-  void setNextFrontier(const int& id);
+  void setNextFrontier(const int &id);
   bool isFrontierCovered();
-  void wrapYaw(double& yaw);
+  void wrapYaw(double &yaw);
 
   shared_ptr<PerceptionUtils> percep_utils_;
 
-private:
-  void splitLargeFrontiers(list<Frontier>& frontiers);
-  bool splitHorizontally(const Frontier& frontier, list<Frontier>& splits);
-  void mergeFrontiers(Frontier& ftr1, const Frontier& ftr2);
-  bool isFrontierChanged(const Frontier& ft);
-  bool haveOverlap(const Vector3d& min1, const Vector3d& max1, const Vector3d& min2,
-                   const Vector3d& max2);
-  void computeFrontierInfo(Frontier& frontier);
-  void downsample(const vector<Vector3d>& cluster_in, vector<Vector3d>& cluster_out);
-  void sampleViewpoints(Frontier& frontier);
+ private:
+  void splitLargeFrontiers(list<Frontier> &frontiers);
+  bool splitHorizontally(const Frontier &frontier, list<Frontier> &splits);
+  void mergeFrontiers(Frontier &ftr1, const Frontier &ftr2);
+  bool isFrontierChanged(const Frontier &ft);
+  bool haveOverlap(const Vector3d &min1, const Vector3d &max1, const Vector3d &min2, const Vector3d &max2);
+  void computeFrontierInfo(Frontier &frontier);
+  void downsample(const vector<Vector3d> &cluster_in, vector<Vector3d> &cluster_out);
+  void sampleViewpoints(Frontier &frontier);
 
-  int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
-  bool isNearUnknown(const Vector3d& pos);
-  vector<Eigen::Vector3i> sixNeighbors(const Eigen::Vector3i& voxel);
-  vector<Eigen::Vector3i> tenNeighbors(const Eigen::Vector3i& voxel);
-  vector<Eigen::Vector3i> allNeighbors(const Eigen::Vector3i& voxel);
-  bool isNeighborUnknown(const Eigen::Vector3i& voxel);
-  void expandFrontier(const Eigen::Vector3i& first /* , const int& depth, const int& parent_id */);
+  int countVisibleCells(const Vector3d &pos, const double &yaw, const vector<Vector3d> &cluster);
+  bool isNearUnknown(const Vector3d &pos);
+  vector<Eigen::Vector3i> sixNeighbors(const Eigen::Vector3i &voxel);
+  vector<Eigen::Vector3i> tenNeighbors(const Eigen::Vector3i &voxel);
+  vector<Eigen::Vector3i> allNeighbors(const Eigen::Vector3i &voxel);
+  bool isNeighborUnknown(const Eigen::Vector3i &voxel);
+  void expandFrontier(const Eigen::Vector3i &first /* , const int& depth, const int& parent_id */);
 
   // Wrapper of sdf map
-  int toadr(const Eigen::Vector3i& idx);
-  bool knownfree(const Eigen::Vector3i& idx);
-  bool inmap(const Eigen::Vector3i& idx);
+  int toadr(const Eigen::Vector3i &idx);
+  bool knownfree(const Eigen::Vector3i &idx);
+  bool inmap(const Eigen::Vector3i &idx);
 
   // Deprecated
-  Eigen::Vector3i searchClearVoxel(const Eigen::Vector3i& pt);
-  bool isInBoxes(const vector<pair<Vector3d, Vector3d>>& boxes, const Eigen::Vector3i& idx);
-  bool canBeMerged(const Frontier& ftr1, const Frontier& ftr2);
-  void findViewpoints(const Vector3d& sample, const Vector3d& ftr_avg, vector<Viewpoint>& vps);
+  Eigen::Vector3i searchClearVoxel(const Eigen::Vector3i &pt);
+  bool isInBoxes(const vector<pair<Vector3d, Vector3d>> &boxes, const Eigen::Vector3i &idx);
+  bool canBeMerged(const Frontier &ftr1, const Frontier &ftr2);
+  void findViewpoints(const Vector3d &sample, const Vector3d &ftr_avg, vector<Viewpoint> &vps);
 
   // Data
   vector<char> frontier_flag_;
@@ -119,8 +118,7 @@ private:
   // Params
   int cluster_min_;
   double cluster_size_xy_, cluster_size_z_;
-  double candidate_rmax_, candidate_rmin_, candidate_dphi_, min_candidate_dist_,
-      min_candidate_clearance_;
+  double candidate_rmax_, candidate_rmin_, candidate_dphi_, min_candidate_dist_, min_candidate_clearance_;
   int down_sample_;
   double min_view_finish_fraction_, resolution_;
   int min_visib_num_, candidate_rnum_;

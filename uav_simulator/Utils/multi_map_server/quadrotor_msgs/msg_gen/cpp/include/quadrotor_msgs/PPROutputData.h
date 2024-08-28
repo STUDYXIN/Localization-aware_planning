@@ -2,19 +2,17 @@
  */
 #ifndef QUADROTOR_MSGS_MESSAGE_PPROUTPUTDATA_H
 #define QUADROTOR_MSGS_MESSAGE_PPROUTPUTDATA_H
-#include <string>
-#include <vector>
 #include <map>
 #include <ostream>
-#include "ros/serialization.h"
-#include "ros/builtin_message_traits.h"
-#include "ros/message_operations.h"
-#include "ros/time.h"
-
-#include "ros/macros.h"
+#include <string>
+#include <vector>
 
 #include "ros/assert.h"
-
+#include "ros/builtin_message_traits.h"
+#include "ros/macros.h"
+#include "ros/message_operations.h"
+#include "ros/serialization.h"
+#include "ros/time.h"
 #include "std_msgs/Header.h"
 
 namespace quadrotor_msgs {
@@ -23,42 +21,42 @@ struct PPROutputData_ {
   typedef PPROutputData_<ContainerAllocator> Type;
 
   PPROutputData_()
-    : header()
-    , quad_time(0)
-    , des_thrust(0.0)
-    , des_roll(0.0)
-    , des_pitch(0.0)
-    , des_yaw(0.0)
-    , est_roll(0.0)
-    , est_pitch(0.0)
-    , est_yaw(0.0)
-    , est_angvel_x(0.0)
-    , est_angvel_y(0.0)
-    , est_angvel_z(0.0)
-    , est_acc_x(0.0)
-    , est_acc_y(0.0)
-    , est_acc_z(0.0)
-    , pwm() {
+      : header(),
+        quad_time(0),
+        des_thrust(0.0),
+        des_roll(0.0),
+        des_pitch(0.0),
+        des_yaw(0.0),
+        est_roll(0.0),
+        est_pitch(0.0),
+        est_yaw(0.0),
+        est_angvel_x(0.0),
+        est_angvel_y(0.0),
+        est_angvel_z(0.0),
+        est_acc_x(0.0),
+        est_acc_y(0.0),
+        est_acc_z(0.0),
+        pwm() {
     pwm.assign(0);
   }
 
   PPROutputData_(const ContainerAllocator& _alloc)
-    : header(_alloc)
-    , quad_time(0)
-    , des_thrust(0.0)
-    , des_roll(0.0)
-    , des_pitch(0.0)
-    , des_yaw(0.0)
-    , est_roll(0.0)
-    , est_pitch(0.0)
-    , est_yaw(0.0)
-    , est_angvel_x(0.0)
-    , est_angvel_y(0.0)
-    , est_angvel_z(0.0)
-    , est_acc_x(0.0)
-    , est_acc_y(0.0)
-    , est_acc_z(0.0)
-    , pwm() {
+      : header(_alloc),
+        quad_time(0),
+        des_thrust(0.0),
+        des_roll(0.0),
+        des_pitch(0.0),
+        des_yaw(0.0),
+        est_roll(0.0),
+        est_pitch(0.0),
+        est_yaw(0.0),
+        est_angvel_x(0.0),
+        est_angvel_y(0.0),
+        est_angvel_z(0.0),
+        est_acc_x(0.0),
+        est_acc_y(0.0),
+        est_acc_z(0.0),
+        pwm() {
     pwm.assign(0);
   }
 
@@ -119,10 +117,8 @@ typedef boost::shared_ptr< ::quadrotor_msgs::PPROutputData> PPROutputDataPtr;
 typedef boost::shared_ptr< ::quadrotor_msgs::PPROutputData const> PPROutputDataConstPtr;
 
 template <typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s,
-                         const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::quadrotor_msgs::PPROutputData_<ContainerAllocator> >::stream(s, "",
-                                                                                                   v);
+std::ostream& operator<<(std::ostream& s, const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>& v) {
+  ros::message_operations::Printer< ::quadrotor_msgs::PPROutputData_<ContainerAllocator> >::stream(s, "", v);
   return s;
 }
 
@@ -136,26 +132,18 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::PPROutputData_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::PPROutputData_<ContainerAllocator> > {
-  static const char* value() {
-    return "732c0e3ca36f241464f8c445e78a0d0a";
-  }
+  static const char* value() { return "732c0e3ca36f241464f8c445e78a0d0a"; }
 
-  static const char* value(const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>&) { return value(); }
   static const uint64_t static_value1 = 0x732c0e3ca36f2414ULL;
   static const uint64_t static_value2 = 0x64f8c445e78a0d0aULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::PPROutputData_<ContainerAllocator> > {
-  static const char* value() {
-    return "quadrotor_msgs/PPROutputData";
-  }
+  static const char* value() { return "quadrotor_msgs/PPROutputData"; }
 
-  static const char* value(const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>&) { return value(); }
 };
 
 template <class ContainerAllocator>
@@ -199,9 +187,7 @@ string frame_id\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::quadrotor_msgs::PPROutputData_<ContainerAllocator>&) { return value(); }
 };
 
 template <class ContainerAllocator>

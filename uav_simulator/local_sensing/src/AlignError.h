@@ -1,5 +1,6 @@
-#include <Eigen/Eigen>
 #include <ceres/ceres.h>
+
+#include <Eigen/Eigen>
 
 struct AlignError {
   AlignError(const Eigen::Quaterniond camera_pose, const Eigen::Vector3d camera_trans,
@@ -22,8 +23,7 @@ struct AlignError {
   }
 
   // Factory to hide the construction of the CostFunction object from the client code.
-  static ceres::CostFunction* Create(const Eigen::Quaterniond camera_pose,
-                                     const Eigen::Vector3d camera_trans,
+  static ceres::CostFunction* Create(const Eigen::Quaterniond camera_pose, const Eigen::Vector3d camera_trans,
                                      const Eigen::Quaterniond velodyne_pose,
                                      const Eigen::Vector3d velodyne_trans) {
     return (new ceres::AutoDiffCostFunction<AlignError, 6, 4, 3, 4, 3>(

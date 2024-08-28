@@ -1,6 +1,8 @@
 #ifndef _MATRIX_HASH_H
 #define _MATRIX_HASH_H
 
+#include <functional>
+
 template <typename T>
 struct matrix_hash : std::unary_function<T, size_t> {
   std::size_t operator()(T const& matrix) const {

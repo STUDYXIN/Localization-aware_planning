@@ -10,9 +10,10 @@
 #ifndef CERES_EXTENSIONS_H
 #define CERES_EXTENSIONS_H
 
-#include <Eigen/Core>
 #include <ceres/local_parameterization.h>
 #include <ceres/rotation.h>
+
+#include <Eigen/Core>
 
 namespace ceres_ext {
 
@@ -21,9 +22,8 @@ namespace ceres_ext {
 // that the first element of the quaternion vector is the real (cos
 // theta) part.
 class EigenQuaternionParameterization : public ceres::LocalParameterization {
-public:
-  virtual ~EigenQuaternionParameterization() {
-  }
+ public:
+  virtual ~EigenQuaternionParameterization() {}
 
   virtual bool Plus(const double* x_raw, const double* delta_raw, double* x_plus_delta_raw) const {
     const Eigen::Map<const Eigen::Quaterniond> x(x_raw);
@@ -34,8 +34,8 @@ public:
     const double delta_norm = delta.norm();
     if (delta_norm > 0.0) {
       const double sin_delta_by_delta = sin(delta_norm) / delta_norm;
-      Eigen::Quaterniond tmp(cos(delta_norm), sin_delta_by_delta * delta[0],
-                             sin_delta_by_delta * delta[1], sin_delta_by_delta * delta[2]);
+      Eigen::Quaterniond tmp(cos(delta_norm), sin_delta_by_delta * delta[0], sin_delta_by_delta * delta[1],
+                             sin_delta_by_delta * delta[2]);
 
       x_plus_delta = tmp * x;
     } else {
@@ -60,12 +60,8 @@ public:
     return true;
   }
 
-  virtual int GlobalSize() const {
-    return 4;
-  }
-  virtual int LocalSize() const {
-    return 3;
-  }
+  virtual int GlobalSize() const { return 4; }
+  virtual int LocalSize() const { return 3; }
 };
 
 template <typename T>
@@ -149,7 +145,10 @@ inline void EigenQuaternionRotatePoint(const T q[4], const T pt[3], T result[3])
 
   // Make unit-norm version of q.
   const T unit[4] = {
-    scale * q[0], scale * q[1], scale * q[2], scale * q[3],
+      scale * q[0],
+      scale * q[1],
+      scale * q[2],
+      scale * q[3],
   };
 
   EigenUnitQuaternionRotatePoint(unit, pt, result);
@@ -162,6 +161,6 @@ inline void EigenQuaternionProduct(const T z[4], const T w[4], T zw[4]) {
   zw[2] = z[0] * w[1] - z[1] * w[0] + z[2] * w[3] + z[3] * w[2];
   zw[3] = -z[0] * w[0] - z[1] * w[1] - z[2] * w[2] + z[3] * w[3];
 }
-}
+}  // namespace ceres_ext
 
 #endif

@@ -1,20 +1,17 @@
-#include <plan_env/sdf_map.h>
-#include <plan_env/map_ros.h>
-
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <plan_env/map_ros.h>
+#include <plan_env/sdf_map.h>
 #include <visualization_msgs/Marker.h>
 
 #include <fstream>
 
 namespace fast_planner {
-MapROS::MapROS() {
-}
+MapROS::MapROS() {}
 
-MapROS::~MapROS() {
-}
+MapROS::~MapROS() {}
 
-void MapROS::setMap(SDFMap* map) { 
+void MapROS::setMap(SDFMap* map) {
   this->map_ = map;
   using_global_map = false;
 }
@@ -40,7 +37,8 @@ void MapROS::init() {
   // node_.param("feature/load_from_file", using_global_map, false);
   proj_points_.resize(640 * 480 / (skip_pixel_ * skip_pixel_));
   point_cloud_.points.resize(640 * 480 / (skip_pixel_ * skip_pixel_));
-  // proj_points_.reserve(640 * 480 / map_->mp_->skip_pixel_ / map_->mp_->skip_pixel_);
+  // proj_points_.reserve(640 * 480 / map_->mp_->skip_pixel_ /
+  // map_->mp_->skip_pixel_);
   proj_points_cnt = 0;
 
   local_updated_ = false;
@@ -62,22 +60,18 @@ void MapROS::init() {
 
   map_all_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/occupancy_all", 10);
   map_local_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/occupancy_local", 10);
-  map_local_inflate_pub_ =
-      node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/occupancy_local_inflate", 10);
+  map_local_inflate_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/occupancy_local_inflate", 10);
   unknown_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/unknown", 10);
   esdf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/esdf", 10);
   update_range_pub_ = node_.advertise<visualization_msgs::Marker>("/sdf_map/update_range", 10);
   depth_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/depth_cloud", 10);
 
-  global_cloud_sub = node_.subscribe("/map_generator/global_cloud", 10, 
-                                   &MapROS::global_cloud_subCallback, this);
-  if (!using_global_map)
-  {
+  global_cloud_sub =
+      node_.subscribe("/map_generator/global_cloud", 10, &MapROS::global_cloud_subCallback, this);
+  if (!using_global_map) {
     depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "/map_ros/depth", 50));
-    cloud_sub_.reset(
-        new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_, "/map_ros/cloud", 50));
-    pose_sub_.reset(
-        new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_, "/map_ros/pose", 25));
+    cloud_sub_.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_, "/map_ros/cloud", 50));
+    pose_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(node_, "/map_ros/pose", 25));
 
     sync_image_pose_.reset(new message_filters::Synchronizer<MapROS::SyncPolicyImagePose>(
         MapROS::SyncPolicyImagePose(100), *depth_sub_, *pose_sub_));
@@ -91,8 +85,7 @@ void MapROS::init() {
 }
 
 void MapROS::visCallback(const ros::TimerEvent& e) {
-  if(using_global_map)
-    return;
+  if (using_global_map) return;
   publishMapLocal();
   if (show_all_map_) {
     // Limit the frequency of all map
@@ -134,8 +127,8 @@ void MapROS::depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
   if (!map_->isInMap(camera_pos_))  // exceed mapped region
     return;
 
-  camera_q_ = Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x,
-                                 pose->pose.orientation.y, pose->pose.orientation.z);
+  camera_q_ = Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y,
+                                 pose->pose.orientation.z);
   cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, img->encoding);
   if (img->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
     (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, k_depth_scaling_factor_);
@@ -166,8 +159,8 @@ void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
   camera_pos_(0) = pose->pose.position.x;
   camera_pos_(1) = pose->pose.position.y;
   camera_pos_(2) = pose->pose.position.z;
-  camera_q_ = Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x,
-                                 pose->pose.orientation.y, pose->pose.orientation.z);
+  camera_q_ = Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y,
+                                 pose->pose.orientation.z);
   pcl::PointCloud<pcl::PointXYZ> cloud;
   pcl::fromROSMsg(*msg, cloud);
   int num = cloud.points.size();
@@ -181,19 +174,16 @@ void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
   }
 }
 
-void MapROS::global_cloud_subCallback(const sensor_msgs::PointCloud2ConstPtr& msg)
-{
+void MapROS::global_cloud_subCallback(const sensor_msgs::PointCloud2ConstPtr& msg) {
   static bool using_global_map_ = true;
-  if(!using_global_map || !using_global_map_)
-    return;
-  using_global_map_ = false; //只调用一次
+  if (!using_global_map || !using_global_map_) return;
+  using_global_map_ = false;  // 只调用一次
   pcl::PointCloud<pcl::PointXYZ> cloud;
   pcl::fromROSMsg(*msg, cloud);
-  ROS_WARN("[MapROS] Subscribe global cloud!!! num: %zu",cloud.points.size());
+  ROS_WARN("[MapROS] Subscribe global cloud!!! num: %zu", cloud.points.size());
 
   map_->inputGlobalPointCloud(cloud);
 }
-
 
 void MapROS::proessDepthImage() {
   proj_points_cnt = 0;
@@ -272,9 +262,11 @@ void MapROS::publishMapAll() {
           known_volumn += 0.1 * 0.1 * 0.1;
       }
 
-  ofstream file("/home/boboyu/workspaces/plan_ws/src/fast_planner/exploration_manager/resource/"
-                "curve1.txt",
-                ios::app);
+  ofstream file(
+      "/home/boboyu/workspaces/plan_ws/src/fast_planner/exploration_manager/"
+      "resource/"
+      "curve1.txt",
+      ios::app);
   file << "time:" << time_now << ",vol:" << known_volumn << std::endl;
 }
 
@@ -303,7 +295,8 @@ void MapROS::publishMapLocal() {
           pt.z = pos(2);
           cloud.push_back(pt);
         }
-        // else if (map_->md_->occupancy_buffer_inflate_[map_->toAddress(x, y, z)] == 1)
+        // else if (map_->md_->occupancy_buffer_inflate_[map_->toAddress(x, y,
+        // z)] == 1)
         // {
         //   // Inflated occupied cells
         //   Eigen::Vector3d pos;
@@ -456,4 +449,4 @@ void MapROS::publishESDF() {
 
   // ROS_INFO("pub esdf");
 }
-}
+}  // namespace fast_planner

@@ -6,9 +6,9 @@
 #include <iostream>
 
 class LinearObjModel {
-private:
+ private:
   /* data */
-public:
+ public:
   LinearObjModel(/* args */);
   ~LinearObjModel();
 
@@ -22,41 +22,23 @@ public:
   static bool collide(LinearObjModel& obj1, LinearObjModel& obj2);
 
   // void setInput(Eigen::Vector3d acc) { acc_ = acc; }
-  void setInput(Eigen::Vector3d vel) {
-    vel_ = vel;
-  }
+  void setInput(Eigen::Vector3d vel) { vel_ = vel; }
 
-  void setYawDot(double yaw_dot) {
-    yaw_dot_ = yaw_dot;
-  }
+  void setYawDot(double yaw_dot) { yaw_dot_ = yaw_dot; }
 
-  Eigen::Vector3d getPosition() {
-    return pos_;
-  }
-  void setPosition(Eigen::Vector3d pos) {
-    pos_ = pos;
-  }
+  Eigen::Vector3d getPosition() { return pos_; }
+  void setPosition(Eigen::Vector3d pos) { pos_ = pos; }
 
-  Eigen::Vector3d getVelocity() {
-    return vel_;
-  }
+  Eigen::Vector3d getVelocity() { return vel_; }
 
-  void setVelocity(double x, double y, double z) {
-    vel_ = Eigen::Vector3d(x, y, z);
-  }
+  void setVelocity(double x, double y, double z) { vel_ = Eigen::Vector3d(x, y, z); }
 
-  Eigen::Vector3d getColor() {
-    return color_;
-  }
-  Eigen::Vector3d getScale() {
-    return scale_;
-  }
+  Eigen::Vector3d getColor() { return color_; }
+  Eigen::Vector3d getScale() { return scale_; }
 
-  double getYaw() {
-    return yaw_;
-  }
+  double getYaw() { return yaw_; }
 
-private:
+ private:
   Eigen::Vector3d pos_, vel_, acc_;
   Eigen::Vector3d color_, scale_;
   double yaw_, yaw_dot_;
@@ -65,11 +47,9 @@ private:
   Eigen::Vector2d limit_v_, limit_a_;
 };
 
-LinearObjModel::LinearObjModel(/* args */) {
-}
+LinearObjModel::LinearObjModel(/* args */) {}
 
-LinearObjModel::~LinearObjModel() {
-}
+LinearObjModel::~LinearObjModel() {}
 
 void LinearObjModel::initialize(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d a, double yaw,
                                 double yaw_dot, Eigen::Vector3d color, Eigen::Vector3d scale) {
@@ -168,8 +148,8 @@ bool LinearObjModel::collide(LinearObjModel& obj1, LinearObjModel& obj2) {
 
   /* ---------- collide ---------- */
   bool collide = fabs(pos1(0) - pos2(0)) < 0.5 * (scale1(0) + scale2(0)) &&
-      fabs(pos1(1) - pos2(1)) < 0.5 * (scale1(1) + scale2(1)) &&
-      fabs(pos1(2) - pos2(2)) < 0.5 * (scale1(2) + scale2(2));
+                 fabs(pos1(1) - pos2(1)) < 0.5 * (scale1(1) + scale2(1)) &&
+                 fabs(pos1(2) - pos2(2)) < 0.5 * (scale1(2) + scale2(2));
 
   if (collide) {
     double tol[3];

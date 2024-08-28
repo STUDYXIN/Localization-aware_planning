@@ -1,15 +1,12 @@
+#include <plan_env/raycast.h>
+
 #include <Eigen/Eigen>
 #include <cmath>
 #include <iostream>
-#include <plan_env/raycast.h>
 
-int signum(int x) {
-  return x == 0 ? 0 : x < 0 ? -1 : 1;
-}
+int signum(int x) { return x == 0 ? 0 : x < 0 ? -1 : 1; }
 
-double mod(double value, double modulus) {
-  return fmod(fmod(value, modulus) + modulus, modulus);
-}
+double mod(double value, double modulus) { return fmod(fmod(value, modulus) + modulus, modulus); }
 
 double intbound(double s, double ds) {
   // Find the smallest positive t such that s+t*ds is an integer.

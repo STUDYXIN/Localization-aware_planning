@@ -1,18 +1,18 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 // #include <pcl/search/kdtree.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <iostream>
-
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Vector3.h>
 #include <math.h>
 #include <nav_msgs/Odometry.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+
 #include <Eigen/Eigen>
+#include <iostream>
 #include <random>
 
 using namespace std;
@@ -70,8 +70,7 @@ int main(int argc, char** argv) {
 
   n.param("map/len2", len2_, 0.15);
 
-  all_map_pub_ =
-      n.advertise<sensor_msgs::PointCloud2>("/map_generator/click_map", 1);
+  all_map_pub_ = n.advertise<sensor_msgs::PointCloud2>("/map_generator/click_map", 1);
 
   click_sub_ = n.subscribe("/move_base_simple/goal", 10, clickCallback);
 

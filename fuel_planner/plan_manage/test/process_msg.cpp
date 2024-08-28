@@ -2,17 +2,18 @@
  * used for benchmark
  * -------------------------------------------------------------------------- */
 
-#include <ros/ros.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <Eigen/Eigen>
-#include <iostream>
-#include <quadrotor_msgs/PositionCommand.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl/filters/voxel_grid.h>
+#include <quadrotor_msgs/PositionCommand.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+
+#include <Eigen/Eigen>
+#include <iostream>
 
 using namespace std;
 
@@ -67,8 +68,7 @@ void displayLineList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::V
   ros::Duration(0.001).sleep();
 }
 
-void displayTrajWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen::Vector4d color,
-                          int id) {
+void displayTrajWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen::Vector4d color, int id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();

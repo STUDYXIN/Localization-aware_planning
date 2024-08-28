@@ -1,13 +1,14 @@
 #ifndef _OBJ_PREDICTOR_H_
 #define _OBJ_PREDICTOR_H_
 
-#include <Eigen/Eigen>
-#include <algorithm>
 #include <geometry_msgs/PoseStamped.h>
-#include <iostream>
-#include <list>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
+
+#include <Eigen/Eigen>
+#include <algorithm>
+#include <iostream>
+#include <list>
 
 using std::cout;
 using std::endl;
@@ -23,27 +24,21 @@ typedef shared_ptr<vector<Eigen::Vector3d>> ObjScale;
 
 /* ========== prediction polynomial ========== */
 class PolynomialPrediction {
-private:
+ private:
   vector<Eigen::Matrix<double, 6, 1>> polys;
   double t1, t2;  // start / end
 
-public:
-  PolynomialPrediction(/* args */) {
-  }
-  ~PolynomialPrediction() {
-  }
+ public:
+  PolynomialPrediction(/* args */) {}
+  ~PolynomialPrediction() {}
 
-  void setPolynomial(vector<Eigen::Matrix<double, 6, 1>>& pls) {
-    polys = pls;
-  }
+  void setPolynomial(vector<Eigen::Matrix<double, 6, 1>>& pls) { polys = pls; }
   void setTime(double t1, double t2) {
     this->t1 = t1;
     this->t2 = t2;
   }
 
-  bool valid() {
-    return polys.size() == 3;
-  }
+  bool valid() { return polys.size() == 3; }
 
   /* note that t should be in [t1, t2] */
   Eigen::Vector3d evaluate(double t) {
@@ -69,29 +64,23 @@ public:
 
 /* ========== subscribe and record object history ========== */
 class ObjHistory {
-public:
+ public:
   static int skip_num_;
   static int queue_size_;
   static ros::Time global_start_time_;
 
-  ObjHistory() {
-  }
-  ~ObjHistory() {
-  }
+  ObjHistory() {}
+  ~ObjHistory() {}
 
   void init(int id);
 
   void poseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
 
-  void clear() {
-    history_.clear();
-  }
+  void clear() { history_.clear(); }
 
-  void getHistory(list<Eigen::Vector4d>& his) {
-    his = history_;
-  }
+  void getHistory(list<Eigen::Vector4d>& his) { his = history_; }
 
-private:
+ private:
   list<Eigen::Vector4d> history_;  // x,y,z;t
   int skip_;
   int obj_idx_;
@@ -100,7 +89,7 @@ private:
 
 /* ========== predict future trajectory using history ========== */
 class ObjPredictor {
-private:
+ private:
   ros::NodeHandle node_handle_;
 
   int obj_num_;
@@ -123,7 +112,7 @@ private:
   void predictPolyFit();
   void predictConstVel();
 
-public:
+ public:
   ObjPredictor(/* args */);
   ObjPredictor(ros::NodeHandle& node);
   ~ObjPredictor();

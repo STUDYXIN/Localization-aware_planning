@@ -1,20 +1,19 @@
 #include <path_searching/astar2.h>
-#include <sstream>
 #include <plan_env/sdf_map.h>
+
+#include <sstream>
 
 using namespace std;
 using namespace Eigen;
 
 namespace fast_planner {
-Astar::Astar() {
-}
+Astar::Astar() {}
 
 Astar::~Astar() {
-  for (int i = 0; i < allocate_num_; i++)
-    delete path_node_pool_[i];
+  for (int i = 0; i < allocate_num_; i++) delete path_node_pool_[i];
 }
 
-void Astar::init(ros::NodeHandle& nh, const EDTEnvironment::Ptr& env) {
+void Astar::init(ros::NodeHandle &nh, const EDTEnvironment::Ptr &env) {
   nh.param("astar/resolution_astar", resolution_, -1.0);
   nh.param("astar/lambda_heu", lambda_heu_, -1.0);
   nh.param("astar/max_search_time", max_search_time_, -1.0);
@@ -39,12 +38,12 @@ void Astar::init(ros::NodeHandle& nh, const EDTEnvironment::Ptr& env) {
   early_terminate_cost_ = 0.0;
 }
 
-void Astar::setResolution(const double& res) {
+void Astar::setResolution(const double &res) {
   resolution_ = res;
   this->inv_resolution_ = 1.0 / resolution_;
 }
 
-int Astar::search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt) {
+int Astar::search(const Eigen::Vector3d &start_pt, const Eigen::Vector3d &end_pt) {
   NodePtr cur_node = path_node_pool_[0];
   cur_node->parent = NULL;
   cur_node->position = start_pt;
@@ -65,7 +64,8 @@ int Astar::search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt
   while (!open_set_.empty()) {
     cur_node = open_set_.top();
     bool reach_end = abs(cur_node->index(0) - end_index(0)) <= 1 &&
-        abs(cur_node->index(1) - end_index(1)) <= 1 && abs(cur_node->index(2) - end_index(2)) <= 1;
+                     abs(cur_node->index(1) - end_index(1)) <= 1 &&
+                     abs(cur_node->index(2) - end_index(2)) <= 1;
     if (reach_end) {
       backtrack(cur_node, end_pt);
       return REACH_END;
@@ -148,9 +148,7 @@ int Astar::search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt
   return NO_PATH;
 }
 
-double Astar::getEarlyTerminateCost() {
-  return early_terminate_cost_;
-}
+double Astar::getEarlyTerminateCost() { return early_terminate_cost_; }
 
 void Astar::reset() {
   open_set_map_.clear();
@@ -166,15 +164,14 @@ void Astar::reset() {
   iter_num_ = 0;
 }
 
-double Astar::pathLength(const vector<Eigen::Vector3d>& path) {
+double Astar::pathLength(const vector<Eigen::Vector3d> &path) {
   double length = 0.0;
   if (path.size() < 2) return length;
-  for (int i = 0; i < path.size() - 1; ++i)
-    length += (path[i + 1] - path[i]).norm();
+  for (int i = 0; i < path.size() - 1; ++i) length += (path[i + 1] - path[i]).norm();
   return length;
 }
 
-void Astar::backtrack(const NodePtr& end_node, const Eigen::Vector3d& end) {
+void Astar::backtrack(const NodePtr &end_node, const Eigen::Vector3d &end) {
   path_nodes_.push_back(end);
   path_nodes_.push_back(end_node->position);
   NodePtr cur_node = end_node;
@@ -185,11 +182,9 @@ void Astar::backtrack(const NodePtr& end_node, const Eigen::Vector3d& end) {
   reverse(path_nodes_.begin(), path_nodes_.end());
 }
 
-std::vector<Eigen::Vector3d> Astar::getPath() {
-  return path_nodes_;
-}
+std::vector<Eigen::Vector3d> Astar::getPath() { return path_nodes_; }
 
-double Astar::getDiagHeu(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2) {
+double Astar::getDiagHeu(const Eigen::Vector3d &x1, const Eigen::Vector3d &x2) {
   double dx = fabs(x1(0) - x2(0));
   double dy = fabs(x1(1) - x2(1));
   double dz = fabs(x1(2) - x2(2));
@@ -211,25 +206,24 @@ double Astar::getDiagHeu(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2) {
   return tie_breaker_ * h;
 }
 
-double Astar::getManhHeu(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2) {
+double Astar::getManhHeu(const Eigen::Vector3d &x1, const Eigen::Vector3d &x2) {
   double dx = fabs(x1(0) - x2(0));
   double dy = fabs(x1(1) - x2(1));
   double dz = fabs(x1(2) - x2(2));
   return tie_breaker_ * (dx + dy + dz);
 }
 
-double Astar::getEuclHeu(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2) {
+double Astar::getEuclHeu(const Eigen::Vector3d &x1, const Eigen::Vector3d &x2) {
   return tie_breaker_ * (x2 - x1).norm();
 }
 
 std::vector<Eigen::Vector3d> Astar::getVisited() {
   vector<Eigen::Vector3d> visited;
-  for (int i = 0; i < use_node_num_; ++i)
-    visited.push_back(path_node_pool_[i]->position);
+  for (int i = 0; i < use_node_num_; ++i) visited.push_back(path_node_pool_[i]->position);
   return visited;
 }
 
-void Astar::posToIndex(const Eigen::Vector3d& pt, Eigen::Vector3i& idx) {
+void Astar::posToIndex(const Eigen::Vector3d &pt, Eigen::Vector3i &idx) {
   idx = ((pt - origin_) * inv_resolution_).array().floor().cast<int>();
 }
 

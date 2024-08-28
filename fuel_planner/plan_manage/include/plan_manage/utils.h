@@ -1,5 +1,4 @@
 #include <Eigen/Eigen>
-
 #include <vector>
 
 Eigen::Vector3d getFarPoint(const std::vector<Eigen::Vector3d>& path, Eigen::Vector3d x1,

@@ -1,7 +1,5 @@
-#include <ros/ros.h>
-
 #include <dyn_planner/non_uniform_bspline.h>
-
+#include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 
 using namespace fast_planner;
@@ -95,16 +93,13 @@ int main(int argc, char** argv) {
   NonUniformBspline acc = vel.getDerivative();
 
   pub_id = 0;
-  drawBspline(pos, 0.1, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true, 0.12, Eigen::Vector4d(0, 1, 0, 1), 0,
-              1);
+  drawBspline(pos, 0.1, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true, 0.12, Eigen::Vector4d(0, 1, 0, 1), 0, 1);
 
   pub_id = 1;
-  drawBspline(vel, 0.1, Eigen::Vector4d(1.0, 0.0, 0.0, 1), true, 0.12, Eigen::Vector4d(0, 0, 1, 1), 0,
-              1);
+  drawBspline(vel, 0.1, Eigen::Vector4d(1.0, 0.0, 0.0, 1), true, 0.12, Eigen::Vector4d(0, 0, 1, 1), 0, 1);
 
   pub_id = 2;
-  drawBspline(acc, 0.1, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true, 0.12, Eigen::Vector4d(0, 1, 0, 1), 0,
-              1);
+  drawBspline(acc, 0.1, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true, 0.12, Eigen::Vector4d(0, 1, 0, 1), 0, 1);
 
   ros::spin();
 

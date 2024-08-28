@@ -1,13 +1,13 @@
-#include "visualization_msgs/Marker.h"
-#include <sensor_msgs/PointCloud2.h>
-#include <ros/ros.h>
-
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 
 #include <iostream>
 #include <vector>
+
+#include "visualization_msgs/Marker.h"
 
 using namespace std;
 ros::Publisher cloud_pub;
@@ -41,10 +41,8 @@ void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg) {
     pt(0) = pts[i].x;
     pt(1) = pts[i].y;
     pt(2) = pts[i].z;
-    for (int i = 0; i < 3; ++i)
-      pt(i) = floor((pt(i) - map_origin_(i)) * 10);
-    for (int i = 0; i < 3; ++i)
-      pt(i) = (pt(i) + 0.5) * 0.1 + map_origin_(i);
+    for (int i = 0; i < 3; ++i) pt(i) = floor((pt(i) - map_origin_(i)) * 10);
+    for (int i = 0; i < 3; ++i) pt(i) = (pt(i) + 0.5) * 0.1 + map_origin_(i);
     inflatePoint(pt, 1, inf_pts);
     for (auto pi : inf_pts) {
       pcl::PointXYZ pj;

@@ -1,11 +1,12 @@
 #ifndef MAP3D_H
 #define MAP3D_H
 
-#include <iostream>
+#include <multi_map_server/SparseMap3D.h>
 #include <ros/ros.h>
 #include <tf/tf.h>
+
 #include <armadillo>
-#include <multi_map_server/SparseMap3D.h>
+#include <iostream>
 
 using namespace std;
 
@@ -46,13 +47,10 @@ struct OccupancyGrid {
 
 // Occupancy Grids List  --------------------------------
 class OccupancyGridList {
-public:
-  OccupancyGridList() {
-    updateCounter = 0;
-  }
+ public:
+  OccupancyGridList() { updateCounter = 0; }
 
-  ~OccupancyGridList() {
-  }
+  ~OccupancyGridList() {}
 
   void PackMsg(multi_map_server::VerticalOccupancyGridList& msg) {
     msg.x = x;
@@ -80,13 +78,10 @@ public:
 
   void GetOccupancyGrids(vector<OccupancyGrid>& _grids) {
     _grids.clear();
-    for (list<OccupancyGrid>::iterator k = grids.begin(); k != grids.end(); k++)
-      _grids.push_back((*k));
+    for (list<OccupancyGrid>::iterator k = grids.begin(); k != grids.end(); k++) _grids.push_back((*k));
   }
 
-  inline int GetUpdateCounter() {
-    return updateCounter;
-  }
+  inline int GetUpdateCounter() { return updateCounter; }
 
   inline void SetUpdateCounterXY(int _updateCounter, double _x, double _y) {
     updateCounter = _updateCounter;
@@ -232,7 +227,7 @@ public:
     }
   }
 
-private:
+ private:
   struct ComparePair {
     bool operator()(pair<int, int> p1, pair<int, int> p2) {
       if (p1.first != p2.first)
@@ -253,7 +248,7 @@ private:
 
 // 3D Map Object  ---------------------------------
 class Map3D {
-public:
+ public:
   Map3D() {
     resolution = 0.1;
     decayInterval = -1;
@@ -271,8 +266,7 @@ public:
     logOddOccupied = log(PROB_OCCUPIED / (1.0 - PROB_OCCUPIED)) * LOG_ODD_SCALE_FACTOR;
     logOddFree = log(PROB_FREE / (1.0 - PROB_FREE)) * LOG_ODD_SCALE_FACTOR;
     logOddOccupiedThr = log(1.0 / (1.0 - PROB_OCCUPIED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
-    logOddOccupiedFixedThr =
-        log(1.0 / (1.0 - PROB_OCCUPIED_FIXED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
+    logOddOccupiedFixedThr = log(1.0 / (1.0 - PROB_OCCUPIED_FIXED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
     logOddFreeThr = log(1.0 / (1.0 - PROB_FREE_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
     logOddFreeFixedThr = log(1.0 / (1.0 - PROB_FREE_FIXED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
   }
@@ -299,8 +293,7 @@ public:
     logOddOccupied = log(PROB_OCCUPIED / (1.0 - PROB_OCCUPIED)) * LOG_ODD_SCALE_FACTOR;
     logOddFree = log(PROB_FREE / (1.0 - PROB_FREE)) * LOG_ODD_SCALE_FACTOR;
     logOddOccupiedThr = log(1.0 / (1.0 - PROB_OCCUPIED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
-    logOddOccupiedFixedThr =
-        log(1.0 / (1.0 - PROB_OCCUPIED_FIXED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
+    logOddOccupiedFixedThr = log(1.0 / (1.0 - PROB_OCCUPIED_FIXED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
     logOddFreeThr = log(1.0 / (1.0 - PROB_FREE_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
     logOddFreeFixedThr = log(1.0 / (1.0 - PROB_FREE_FIXED_THRESHOLD) - 1.0) * LOG_ODD_SCALE_FACTOR;
   }
@@ -407,8 +400,7 @@ public:
           for (unsigned int k = 0; k < grids.size(); k++) {
             if ((grids[k].mass / (grids[k].upper - grids[k].lower + 1) > logOddOccupiedThr &&
                  type == OCCUPIED) ||
-                (grids[k].mass / (grids[k].upper - grids[k].lower + 1) < logOddFreeThr &&
-                 type == FREE)) {
+                (grids[k].mass / (grids[k].upper - grids[k].lower + 1) < logOddFreeThr && type == FREE)) {
               for (int mz = grids[k].lower; mz <= grids[k].upper; mz++) {
                 double x, y, z;
                 MapFrameToWorldFrame(mx, my, mz, x, y, z);
@@ -435,26 +427,14 @@ public:
     if (!updated && _decayInterval > 0) decayInterval = _decayInterval;
   }
 
-  inline double GetResolution() {
-    return resolution;
-  }
-  inline double GetMaxX() {
-    return originX + mapX * resolution;
-  }
-  inline double GetMinX() {
-    return originX;
-  }
-  inline double GetMaxY() {
-    return originY + mapY * resolution;
-  }
-  inline double GetMinY() {
-    return originY;
-  }
-  inline bool Updated() {
-    return updated;
-  }
+  inline double GetResolution() { return resolution; }
+  inline double GetMaxX() { return originX + mapX * resolution; }
+  inline double GetMinX() { return originX; }
+  inline double GetMaxY() { return originY + mapY * resolution; }
+  inline double GetMinY() { return originY; }
+  inline bool Updated() { return updated; }
 
-private:
+ private:
   inline void WorldFrameToMapFrame(double x, double y, double z, int& mx, int& my, int& mz) {
     mx = (x - originX) / resolution;
     my = (y - originY) / resolution;

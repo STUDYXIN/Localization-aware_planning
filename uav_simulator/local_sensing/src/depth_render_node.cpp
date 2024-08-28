@@ -1,22 +1,22 @@
-#include <fstream>
-#include <iostream>
-#include <vector>
+#include <cv_bridge/cv_bridge.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <image_transport/image_transport.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Bool.h>
 
-#include <pcl_conversions/pcl_conversions.h>
-#include "opencv2/highgui/highgui.hpp"
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/eigen.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <image_transport/image_transport.h>
 #include <Eigen/Eigen>
-
 #include <backward.hpp>
+#include <fstream>
+#include <iostream>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
+#include <vector>
+
+#include "opencv2/highgui/highgui.hpp"
 namespace backward {
 backward::SignalHandling sh;
 }
@@ -136,8 +136,7 @@ void renderDepth() {
     float projected_x, projected_y;
     projected_x = pc[0] / pc[2] * fx + cx;
     projected_y = pc[1] / pc[2] * fy + cy;
-    if (projected_x < 0 || projected_x >= width || projected_y < 0 || projected_y >= height)
-      continue;
+    if (projected_x < 0 || projected_x >= width || projected_y < 0 || projected_y >= height) continue;
 
     // std::cout << "(u,v): " << projected_x << ", " << projected_y << endl;
     float dist = pc[2];

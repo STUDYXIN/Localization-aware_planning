@@ -1,27 +1,17 @@
-#include <iostream>
+#include <ros/ros.h>
 #include <so3_control/SO3Control.h>
 
-#include <ros/ros.h>
+#include <iostream>
 
-SO3Control::SO3Control() : mass_(0.5), g_(9.81) {
-  acc_.setZero();
-}
+SO3Control::SO3Control() : mass_(0.5), g_(9.81) { acc_.setZero(); }
 
-void SO3Control::setMass(const double mass) {
-  mass_ = mass;
-}
+void SO3Control::setMass(const double mass) { mass_ = mass; }
 
-void SO3Control::setGravity(const double g) {
-  g_ = g;
-}
+void SO3Control::setGravity(const double g) { g_ = g; }
 
-void SO3Control::setPosition(const Eigen::Vector3d& position) {
-  pos_ = position;
-}
+void SO3Control::setPosition(const Eigen::Vector3d& position) { pos_ = position; }
 
-void SO3Control::setVelocity(const Eigen::Vector3d& velocity) {
-  vel_ = velocity;
-}
+void SO3Control::setVelocity(const Eigen::Vector3d& velocity) { vel_ = velocity; }
 
 void SO3Control::calculateControl(const Eigen::Vector3d& des_pos, const Eigen::Vector3d& des_vel,
                                   const Eigen::Vector3d& des_acc, const double des_yaw,
@@ -37,16 +27,16 @@ void SO3Control::calculateControl(const Eigen::Vector3d& des_pos, const Eigen::V
                      fabs(totalError[2]) > 3 ? 0 : (fabs(totalError[2]) * 0.2));
 
   force_.noalias() = kx.asDiagonal() * (des_pos - pos_) + kv.asDiagonal() * (des_vel - vel_) +
-      mass_ * /*(Eigen::Vector3d(1, 1, 1) - ka).asDiagonal() **/ (des_acc) +
-      mass_ * ka.asDiagonal() * (des_acc - acc_) + mass_ * g_ * Eigen::Vector3d(0, 0, 1);
+                     mass_ * /*(Eigen::Vector3d(1, 1, 1) - ka).asDiagonal() **/ (des_acc) +
+                     mass_ * ka.asDiagonal() * (des_acc - acc_) + mass_ * g_ * Eigen::Vector3d(0, 0, 1);
 
   // Limit control angle to 45 degree
   double theta = M_PI / 2;
   double c = cos(theta);
   Eigen::Vector3d f;
   f.noalias() = kx.asDiagonal() * (des_pos - pos_) + kv.asDiagonal() * (des_vel - vel_) +  //
-      mass_ * des_acc +                                                                    //
-      mass_ * ka.asDiagonal() * (des_acc - acc_);
+                mass_ * des_acc +                                                          //
+                mass_ * ka.asDiagonal() * (des_acc - acc_);
   if (Eigen::Vector3d(0, 0, 1).dot(force_ / force_.norm()) < c) {
     double nf = f.norm();
     double A = c * c * nf * nf - f(2) * f(2);
@@ -74,14 +64,8 @@ void SO3Control::calculateControl(const Eigen::Vector3d& des_pos, const Eigen::V
   orientation_ = Eigen::Quaterniond(R);
 }
 
-const Eigen::Vector3d& SO3Control::getComputedForce(void) {
-  return force_;
-}
+const Eigen::Vector3d& SO3Control::getComputedForce(void) { return force_; }
 
-const Eigen::Quaterniond& SO3Control::getComputedOrientation(void) {
-  return orientation_;
-}
+const Eigen::Quaterniond& SO3Control::getComputedOrientation(void) { return orientation_; }
 
-void SO3Control::setAcc(const Eigen::Vector3d& acc) {
-  acc_ = acc;
-}
+void SO3Control::setAcc(const Eigen::Vector3d& acc) { acc_ = acc; }

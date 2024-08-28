@@ -1,11 +1,12 @@
+#include <ros/ros.h>
+#include <swarmtal_msgs/drone_onboard_command.h>
+
+#include <Eigen/Eigen>
+#include <traj_generator/polynomial_traj.hpp>
+
 #include "nav_msgs/Odometry.h"
 #include "std_msgs/Empty.h"
 #include "visualization_msgs/Marker.h"
-#include <Eigen/Eigen>
-#include <ros/ros.h>
-
-#include <swarmtal_msgs/drone_onboard_command.h>
-#include <traj_generator/polynomial_traj.hpp>
 
 using namespace std;
 
@@ -14,8 +15,7 @@ ros::Publisher state_pub, pos_cmd_pub, traj_pub;
 nav_msgs::Odometry odom;
 bool have_odom;
 
-void displayPathWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen::Vector4d color,
-                          int id) {
+void displayPathWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen::Vector4d color, int id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
@@ -99,8 +99,7 @@ int main(int argc, char** argv) {
   // node.advertise<quadrotor_msgs::PositionCommand>("/traj_generator/position_cmd",
   // 50);
 
-  pos_cmd_pub =
-      node.advertise<swarmtal_msgs::drone_onboard_command>("/drone_commander/onboard_command", 10);
+  pos_cmd_pub = node.advertise<swarmtal_msgs::drone_onboard_command>("/drone_commander/onboard_command", 10);
 
   ros::Duration(1.0).sleep();
 

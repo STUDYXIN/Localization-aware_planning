@@ -1,17 +1,16 @@
 
-#include <plan_manage/planner_manager.h>
-#include <exploration_manager/fast_exploration_manager.h>
-#include <traj_utils/planning_visualization.h>
-
-#include <exploration_manager/fast_exploration_fsm.h>
 #include <exploration_manager/expl_data.h>
+#include <exploration_manager/fast_exploration_fsm.h>
+#include <exploration_manager/fast_exploration_manager.h>
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
+#include <plan_manage/planner_manager.h>
+#include <traj_utils/planning_visualization.h>
 
 using Eigen::Vector4d;
 
 namespace fast_planner {
-void FastExplorationFSM::init(ros::NodeHandle& nh) {
+void FastExplorationFSM::init(ros::NodeHandle &nh) {
   fp_.reset(new FSMParam);
   fd_.reset(new FSMData);
   m2g_.reset(new M2GData);
@@ -23,12 +22,11 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/replan_time", fp_->replan_time_, -1.0);
   nh.param("fsm/flight_type", m2g_->target_type_, -1);
   nh.param("fsm/wp_num", m2g_->waypoint_num_, -1);
-  ROS_WARN("[FastExplorationFSM] InitSucc! MODE:%d",m2g_->target_type_);
-  for (int i = 0; i < m2g_->waypoint_num_; i++)
-  {
-      nh.param("fsm/wp" + to_string(i) + "_x", m2g_->waypoints_[i][0], -1.0);
-      nh.param("fsm/wp" + to_string(i) + "_y", m2g_->waypoints_[i][1], -1.0);
-      nh.param("fsm/wp" + to_string(i) + "_z", m2g_->waypoints_[i][2], -1.0);
+  ROS_WARN("[FastExplorationFSM] InitSucc! MODE:%d", m2g_->target_type_);
+  for (int i = 0; i < m2g_->waypoint_num_; i++) {
+    nh.param("fsm/wp" + to_string(i) + "_x", m2g_->waypoints_[i][0], -1.0);
+    nh.param("fsm/wp" + to_string(i) + "_y", m2g_->waypoints_[i][1], -1.0);
+    nh.param("fsm/wp" + to_string(i) + "_z", m2g_->waypoints_[i][2], -1.0);
   }
   /* Initialize main modules */
   expl_manager_.reset(new FastExplorationManager);
@@ -38,7 +36,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   planner_manager_ = expl_manager_->planner_manager_;
   state_ = EXPL_STATE::INIT;
   fd_->have_odom_ = false;
-  fd_->state_str_ = { "INIT", "WAIT_TRIGGER", "PLAN_TRAJ", "PUB_TRAJ", "EXEC_TRAJ", "FINISH" };
+  fd_->state_str_ = {"INIT", "WAIT_TRIGGER", "PLAN_TRAJ", "PUB_TRAJ", "EXEC_TRAJ", "FINISH"};
   fd_->static_state_ = true;
   fd_->trigger_ = false;
 
@@ -47,8 +45,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   safety_timer_ = nh.createTimer(ros::Duration(0.05), &FastExplorationFSM::safetyCallback, this);
   frontier_timer_ = nh.createTimer(ros::Duration(0.5), &FastExplorationFSM::frontierCallback, this);
 
-  trigger_sub_ =
-      nh.subscribe("/waypoint_generator/waypoints", 1, &FastExplorationFSM::triggerCallback, this);
+  trigger_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &FastExplorationFSM::triggerCallback, this);
   odom_sub_ = nh.subscribe("/odom_world", 1, &FastExplorationFSM::odometryCallback, this);
 
   replan_pub_ = nh.advertise<std_msgs::Empty>("/planning/replan", 10);
@@ -56,7 +53,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   bspline_pub_ = nh.advertise<bspline::Bspline>("/planning/bspline", 10);
 }
 
-void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
+void FastExplorationFSM::FSMCallback(const ros::TimerEvent &e) {
   ROS_INFO_STREAM_THROTTLE(1.0, "[FSM]: state: " << fd_->state_str_[int(state_)]);
 
   switch (state_) {
@@ -93,7 +90,7 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         fd_->start_yaw_(1) = fd_->start_yaw_(2) = 0.0;
       } else {
         // Replan from non-static state, starting from 'replan_time' seconds later
-        LocalTrajData* info = &planner_manager_->local_data_;
+        LocalTrajData *info = &planner_manager_->local_data_;
         double t_r = (ros::Time::now() - info->start_time_).toSec() + fp_->replan_time_;
 
         fd_->start_pt_ = info->position_traj_.evaluateDeBoorT(t_r);
@@ -135,7 +132,7 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     }
 
     case EXEC_TRAJ: {
-      LocalTrajData* info = &planner_manager_->local_data_;
+      LocalTrajData *info = &planner_manager_->local_data_;
       double t_cur = (ros::Time::now() - info->start_time_).toSec();
 
       // Replan if traj is almost fully executed
@@ -164,8 +161,8 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 int FastExplorationFSM::callExplorationPlanner() {
   ros::Time time_r = ros::Time::now() + ros::Duration(fp_->replan_time_);
 
-  int res = expl_manager_->planExploreMotion(fd_->start_pt_, fd_->start_vel_, fd_->start_acc_,
-                                             fd_->start_yaw_);
+  int res =
+      expl_manager_->planExploreMotion(fd_->start_pt_, fd_->start_vel_, fd_->start_acc_, fd_->start_yaw_);
   classic_ = false;
 
   // int res = expl_manager_->classicFrontier(fd_->start_pt_, fd_->start_yaw_[0]);
@@ -208,15 +205,9 @@ int FastExplorationFSM::callExplorationPlanner() {
 int FastExplorationFSM::callMovetoGoalPlanner() {
   ros::Time time_r = ros::Time::now() + ros::Duration(fp_->replan_time_);
 
-  int res = expl_manager_->plantoGoalMotion(fd_->start_pt_, fd_->start_vel_, fd_->start_acc_,
-                                             fd_->start_yaw_, fd_->end_pt_, fd_->end_vel_);
+  int res = expl_manager_->plantoGoalMotion(fd_->start_pt_, fd_->start_vel_, fd_->start_acc_, fd_->start_yaw_,
+                                            fd_->end_pt_, fd_->end_vel_);
   classic_ = false;
-
-  // int res = expl_manager_->classicFrontier(fd_->start_pt_, fd_->start_yaw_[0]);
-  // classic_ = true;
-
-  // int res = expl_manager_->rapidFrontier(fd_->start_pt_, fd_->start_vel_, fd_->start_yaw_[0],
-  // classic_);
 
   if (res == SUCCEED) {
     auto info = &planner_manager_->local_data_;
@@ -326,7 +317,7 @@ void FastExplorationFSM::clearVisMarker() {
   // visualization_->drawLines({}, {}, 0.03, Vector4d(1, 0, 0, 1), "current_pose", 0, 6);
 }
 
-void FastExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
+void FastExplorationFSM::frontierCallback(const ros::TimerEvent &e) {
   static int delay = 0;
   if (++delay < 5) return;
 
@@ -343,8 +334,8 @@ void FastExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
     // Draw frontier and bounding box
     for (int i = 0; i < ed->frontiers_.size(); ++i) {
       visualization_->drawCubes(ed->frontiers_[i], 0.1,
-                                visualization_->getColor(double(i) / ed->frontiers_.size(), 0.4),
-                                "frontier", i, 4);
+                                visualization_->getColor(double(i) / ed->frontiers_.size(), 0.4), "frontier",
+                                i, 4);
       // visualization_->drawBox(ed->frontier_boxes_[i].first, ed->frontier_boxes_[i].second,
       // Vector4d(0.5, 0, 1, 0.3),
       //                         "frontier_boxes", i, 4);
@@ -377,13 +368,12 @@ void FastExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   // }
 }
 
-void FastExplorationFSM::triggerCallback(const nav_msgs::PathConstPtr& msg) {
+void FastExplorationFSM::triggerCallback(const nav_msgs::PathConstPtr &msg) {
   if (msg->poses[0].pose.position.z < -0.1) return;
   if (state_ != WAIT_TRIGGER) return;
   fd_->trigger_ = true;
   cout << "Triggered!" << endl;
-  if(m2g_->target_type_ == PRESET_TARGET)
-  {
+  if (m2g_->target_type_ == PRESET_TARGET) {
     fd_->end_pt_(0) = m2g_->waypoints_[m2g_->current_wp_][0];
     fd_->end_pt_(1) = m2g_->waypoints_[m2g_->current_wp_][1];
     fd_->end_pt_(2) = m2g_->waypoints_[m2g_->current_wp_][2];
@@ -393,7 +383,7 @@ void FastExplorationFSM::triggerCallback(const nav_msgs::PathConstPtr& msg) {
   transitState(PLAN_TRAJ, "triggerCallback");
 }
 
-void FastExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
+void FastExplorationFSM::safetyCallback(const ros::TimerEvent &e) {
   if (state_ == EXPL_STATE::EXEC_TRAJ) {
     // Check safety and trigger replan if necessary
     double dist;
@@ -405,7 +395,7 @@ void FastExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
   }
 }
 
-void FastExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
+void FastExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg) {
   fd_->odom_pos_(0) = msg->pose.pose.position.x;
   fd_->odom_pos_(1) = msg->pose.pose.position.y;
   fd_->odom_pos_(2) = msg->pose.pose.position.z;

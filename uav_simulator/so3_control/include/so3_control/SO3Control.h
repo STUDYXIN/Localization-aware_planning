@@ -4,7 +4,7 @@
 #include <Eigen/Geometry>
 
 class SO3Control {
-public:
+ public:
   SO3Control();
 
   void setMass(const double mass);
@@ -22,7 +22,7 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-private:
+ private:
   // Inputs for the controller
   double mass_;
   double g_;

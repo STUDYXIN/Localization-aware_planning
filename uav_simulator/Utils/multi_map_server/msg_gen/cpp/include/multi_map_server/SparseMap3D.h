@@ -2,33 +2,29 @@
  */
 #ifndef MULTI_MAP_SERVER_MESSAGE_SPARSEMAP3D_H
 #define MULTI_MAP_SERVER_MESSAGE_SPARSEMAP3D_H
-#include <string>
-#include <vector>
 #include <map>
 #include <ostream>
-#include "ros/serialization.h"
-#include "ros/builtin_message_traits.h"
-#include "ros/message_operations.h"
-#include "ros/time.h"
+#include <string>
+#include <vector>
 
-#include "ros/macros.h"
-
-#include "ros/assert.h"
-
-#include "std_msgs/Header.h"
-#include "nav_msgs/MapMetaData.h"
 #include "multi_map_server/VerticalOccupancyGridList.h"
+#include "nav_msgs/MapMetaData.h"
+#include "ros/assert.h"
+#include "ros/builtin_message_traits.h"
+#include "ros/macros.h"
+#include "ros/message_operations.h"
+#include "ros/serialization.h"
+#include "ros/time.h"
+#include "std_msgs/Header.h"
 
 namespace multi_map_server {
 template <class ContainerAllocator>
 struct SparseMap3D_ {
   typedef SparseMap3D_<ContainerAllocator> Type;
 
-  SparseMap3D_() : header(), info(), lists() {
-  }
+  SparseMap3D_() : header(), info(), lists() {}
 
-  SparseMap3D_(const ContainerAllocator& _alloc) : header(_alloc), info(_alloc), lists(_alloc) {
-  }
+  SparseMap3D_(const ContainerAllocator& _alloc) : header(_alloc), info(_alloc), lists(_alloc) {}
 
   typedef ::std_msgs::Header_<ContainerAllocator> _header_type;
   ::std_msgs::Header_<ContainerAllocator> header;
@@ -54,10 +50,8 @@ typedef boost::shared_ptr< ::multi_map_server::SparseMap3D> SparseMap3DPtr;
 typedef boost::shared_ptr< ::multi_map_server::SparseMap3D const> SparseMap3DConstPtr;
 
 template <typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s,
-                         const ::multi_map_server::SparseMap3D_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::multi_map_server::SparseMap3D_<ContainerAllocator> >::stream(s, "",
-                                                                                                   v);
+std::ostream& operator<<(std::ostream& s, const ::multi_map_server::SparseMap3D_<ContainerAllocator>& v) {
+  ros::message_operations::Printer< ::multi_map_server::SparseMap3D_<ContainerAllocator> >::stream(s, "", v);
   return s;
 }
 
@@ -71,26 +65,18 @@ template <class ContainerAllocator>
 struct IsMessage< ::multi_map_server::SparseMap3D_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::multi_map_server::SparseMap3D_<ContainerAllocator> > {
-  static const char* value() {
-    return "a20102f0b3a02e95070dab4140b78fb5";
-  }
+  static const char* value() { return "a20102f0b3a02e95070dab4140b78fb5"; }
 
-  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) { return value(); }
   static const uint64_t static_value1 = 0xa20102f0b3a02e95ULL;
   static const uint64_t static_value2 = 0x070dab4140b78fb5ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::multi_map_server::SparseMap3D_<ContainerAllocator> > {
-  static const char* value() {
-    return "multi_map_server/SparseMap3D";
-  }
+  static const char* value() { return "multi_map_server/SparseMap3D"; }
 
-  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) { return value(); }
 };
 
 template <class ContainerAllocator>
@@ -168,9 +154,7 @@ int32[] mass\n\
 ";
   }
 
-  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) { return value(); }
 };
 
 template <class ContainerAllocator>

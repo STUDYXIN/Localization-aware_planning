@@ -1,11 +1,11 @@
 #ifndef _EDT_ENVIRONMENT_H_
 #define _EDT_ENVIRONMENT_H_
 
+#include <plan_env/obj_predictor.h>
+
 #include <Eigen/Eigen>
 #include <iostream>
 #include <utility>
-
-#include <plan_env/obj_predictor.h>
 
 using std::cout;
 using std::endl;
@@ -19,7 +19,7 @@ namespace fast_planner {
 class SDFMap;
 
 class EDTEnvironment {
-private:
+ private:
   /* data */
   ObjPrediction obj_prediction_;
   ObjScale obj_scale_;
@@ -27,11 +27,9 @@ private:
   double distToBox(int idx, const Eigen::Vector3d& pos, const double& time);
   double minDistToAllBox(const Eigen::Vector3d& pos, const double& time);
 
-public:
-  EDTEnvironment(/* args */) {
-  }
-  ~EDTEnvironment() {
-  }
+ public:
+  EDTEnvironment(/* args */) {}
+  ~EDTEnvironment() {}
 
   shared_ptr<SDFMap> sdf_map_;
 

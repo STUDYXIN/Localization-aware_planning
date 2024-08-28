@@ -1,4 +1,3 @@
-#include <Eigen/Geometry>
 #include <nav_msgs/Odometry.h>
 #include <nodelet/nodelet.h>
 #include <quadrotor_msgs/Corrections.h>
@@ -10,24 +9,24 @@
 #include <std_msgs/Bool.h>
 #include <tf/transform_datatypes.h>
 
+#include <Eigen/Geometry>
+
 class SO3ControlNodelet : public nodelet::Nodelet {
-public:
+ public:
   SO3ControlNodelet()
-    : position_cmd_updated_(false)
-    , position_cmd_init_(false)
-    , des_yaw_(0)
-    , des_yaw_dot_(0)
-    , current_yaw_(0)
-    , enable_motors_(true)
-    ,  // FIXME
-    use_external_yaw_(false) {
-  }
+      : position_cmd_updated_(false),
+        position_cmd_init_(false),
+        des_yaw_(0),
+        des_yaw_dot_(0),
+        current_yaw_(0),
+        enable_motors_(true),  // FIXME
+        use_external_yaw_(false) {}
 
   void onInit(void);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-private:
+ private:
   void publishSO3Command(void);
   void position_cmd_callback(const quadrotor_msgs::PositionCommand::ConstPtr& cmd);
   void odom_callback(const nav_msgs::Odometry::ConstPtr& odom);
@@ -137,8 +136,7 @@ void SO3ControlNodelet::corrections_callback(const quadrotor_msgs::Corrections::
 }
 
 void SO3ControlNodelet::imu_callback(const sensor_msgs::Imu& imu) {
-  const Eigen::Vector3d acc(imu.linear_acceleration.x, imu.linear_acceleration.y,
-                            imu.linear_acceleration.z);
+  const Eigen::Vector3d acc(imu.linear_acceleration.x, imu.linear_acceleration.y, imu.linear_acceleration.z);
   controller_.setAcc(acc);
 }
 
@@ -168,8 +166,8 @@ void SO3ControlNodelet::onInit(void) {
 
   so3_command_pub_ = n.advertise<quadrotor_msgs::SO3Command>("so3_cmd", 10);
 
-  odom_sub_ = n.subscribe("odom", 10, &SO3ControlNodelet::odom_callback, this,
-                          ros::TransportHints().tcpNoDelay());
+  odom_sub_ =
+      n.subscribe("odom", 10, &SO3ControlNodelet::odom_callback, this, ros::TransportHints().tcpNoDelay());
   position_cmd_sub_ = n.subscribe("position_cmd", 10, &SO3ControlNodelet::position_cmd_callback, this,
                                   ros::TransportHints().tcpNoDelay());
 

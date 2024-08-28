@@ -7,7 +7,7 @@
 using std::vector;
 
 class PolynomialTraj {
-private:
+ private:
   vector<double> times;        // time of each segment
   vector<vector<double>> cxs;  // coefficient of x of each segment, from high order to low
   vector<vector<double>> cys;  // coefficient of y of each segment
@@ -20,11 +20,9 @@ private:
   vector<Eigen::Vector3d> traj_vec3d;
   double length;
 
-public:
-  PolynomialTraj(/* args */) {
-  }
-  ~PolynomialTraj() {
-  }
+ public:
+  PolynomialTraj(/* args */) {}
+  ~PolynomialTraj() {}
 
   void reset() {
     times.clear(), cxs.clear(), cys.clear(), czs.clear();
@@ -84,8 +82,7 @@ public:
     }
     double ts = t;
     Eigen::VectorXd tv(order - 1);
-    for (int i = 0; i < order - 1; ++i)
-      tv(i) = pow(ts, i);
+    for (int i = 0; i < order - 1; ++i) tv(i) = pow(ts, i);
 
     Eigen::Vector3d vel;
     vel(0) = tv.dot(vx), vel(1) = tv.dot(vy), vel(2) = tv.dot(vz);
@@ -112,8 +109,7 @@ public:
     }
     double ts = t;
     Eigen::VectorXd tv(order - 2);
-    for (int i = 0; i < order - 2; ++i)
-      tv(i) = pow(ts, i);
+    for (int i = 0; i < order - 2; ++i) tv(i) = pow(ts, i);
 
     Eigen::Vector3d acc;
     acc(0) = tv.dot(ax), acc(1) = tv.dot(ay), acc(2) = tv.dot(az);
@@ -121,9 +117,7 @@ public:
   }
 
   /* for evaluating traj, should be called in sequence!!! */
-  double getTimeSum() {
-    return this->time_sum;
-  }
+  double getTimeSum() { return this->time_sum; }
 
   vector<Eigen::Vector3d> getTraj() {
     double eval_t = 0.0;
@@ -148,9 +142,7 @@ public:
     return length;
   }
 
-  double getMeanVel() {
-    double mean_vel = length / time_sum;
-  }
+  double getMeanVel() { double mean_vel = length / time_sum; }
 
   double getAccCost() {
     double cost = 0.0;
@@ -183,8 +175,7 @@ public:
       mat_jerk.setZero();
       for (double i = 3; i < order; i += 1)
         for (double j = 3; j < order; j += 1) {
-          mat_jerk(i, j) =
-              i * (i - 1) * (i - 2) * j * (j - 1) * (j - 2) * pow(ts, i + j - 5) / (i + j - 5);
+          mat_jerk(i, j) = i * (i - 1) * (i - 2) * j * (j - 1) * (j - 2) * pow(ts, i + j - 5) / (i + j - 5);
         }
 
       jerk += (cxv.transpose() * mat_jerk * cxv)(0, 0);
@@ -213,8 +204,7 @@ public:
       double eval_t = 0.0;
       while (eval_t < ts) {
         Eigen::VectorXd tv(order - 1);
-        for (int i = 0; i < order - 1; ++i)
-          tv(i) = pow(ts, i);
+        for (int i = 0; i < order - 1; ++i) tv(i) = pow(ts, i);
         Eigen::Vector3d vel;
         vel(0) = tv.dot(vx), vel(1) = tv.dot(vy), vel(2) = tv.dot(vz);
         double vn = vel.norm();
@@ -247,8 +237,7 @@ public:
       double eval_t = 0.0;
       while (eval_t < ts) {
         Eigen::VectorXd tv(order - 2);
-        for (int i = 0; i < order - 2; ++i)
-          tv(i) = pow(ts, i);
+        for (int i = 0; i < order - 2; ++i) tv(i) = pow(ts, i);
         Eigen::Vector3d acc;
         acc(0) = tv.dot(ax), acc(1) = tv.dot(ay), acc(2) = tv.dot(az);
         double an = acc.norm();

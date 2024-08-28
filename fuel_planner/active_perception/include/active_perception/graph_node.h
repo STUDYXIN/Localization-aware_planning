@@ -1,42 +1,40 @@
 #ifndef _GRAPH_NODE_H_
 #define _GRAPH_NODE_H_
-#include <vector>
-#include <unordered_map>
-#include <queue>
+#include <math.h>
+
+#include <Eigen/Eigen>
+#include <algorithm>
+#include <iostream>
 #include <list>
 #include <memory>
-#include <iostream>
-#include <math.h>
-#include <algorithm>
-#include <Eigen/Eigen>
+#include <queue>
+#include <unordered_map>
+#include <vector>
 
+using Eigen::Vector3d;
+using Eigen::Vector3i;
+using std::cout;
 using std::list;
 using std::queue;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
-using std::cout;
-using Eigen::Vector3d;
-using Eigen::Vector3i;
 
 class RayCaster;
 
 namespace fast_planner {
 // Basic noded type containing only general artributes required by graph search
 class BaseNode {
-public:
+ public:
   typedef shared_ptr<BaseNode> Ptr;
   BaseNode() {
     g_value_ = 1000000;
     closed_ = false;
   }
-  ~BaseNode() {
-  }
+  ~BaseNode() {}
 
-  virtual void print() {
-    std::cout << "Base node" << std::endl;
-  }
+  virtual void print() { std::cout << "Base node" << std::endl; }
 
   int id_;
   bool closed_;
@@ -47,21 +45,16 @@ public:
 class Astar;
 class SDFMap;
 class ViewNode : public BaseNode {
-public:
+ public:
   typedef shared_ptr<ViewNode> Ptr;
   ViewNode(const Vector3d& p, const double& y);
-  ViewNode() {
-  }
-  ~ViewNode() {
-  }
+  ViewNode() {}
+  ~ViewNode() {}
 
-  virtual void print() {
-    std::cout << "View node" << yaw_ << std::endl;
-  }
+  virtual void print() { std::cout << "View node" << yaw_ << std::endl; }
 
   void printNeighbors() {
-    for (auto v : neighbors_)
-      v->print();
+    for (auto v : neighbors_) v->print();
   }
 
   double costTo(const ViewNode::Ptr& node);
@@ -82,5 +75,5 @@ public:
   static shared_ptr<RayCaster> caster_;
   static shared_ptr<SDFMap> map_;
 };
-}
+}  // namespace fast_planner
 #endif

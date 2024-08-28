@@ -2,32 +2,28 @@
  * /home/jchen/workspace/src/multi_map_server/msg/MultiSparseMap3D.msg */
 #ifndef MULTI_MAP_SERVER_MESSAGE_MULTISPARSEMAP3D_H
 #define MULTI_MAP_SERVER_MESSAGE_MULTISPARSEMAP3D_H
-#include <string>
-#include <vector>
 #include <map>
 #include <ostream>
-#include "ros/serialization.h"
-#include "ros/builtin_message_traits.h"
-#include "ros/message_operations.h"
-#include "ros/time.h"
+#include <string>
+#include <vector>
 
-#include "ros/macros.h"
-
-#include "ros/assert.h"
-
-#include "multi_map_server/SparseMap3D.h"
 #include "geometry_msgs/Pose.h"
+#include "multi_map_server/SparseMap3D.h"
+#include "ros/assert.h"
+#include "ros/builtin_message_traits.h"
+#include "ros/macros.h"
+#include "ros/message_operations.h"
+#include "ros/serialization.h"
+#include "ros/time.h"
 
 namespace multi_map_server {
 template <class ContainerAllocator>
 struct MultiSparseMap3D_ {
   typedef MultiSparseMap3D_<ContainerAllocator> Type;
 
-  MultiSparseMap3D_() : maps(), origins() {
-  }
+  MultiSparseMap3D_() : maps(), origins() {}
 
-  MultiSparseMap3D_(const ContainerAllocator& _alloc) : maps(_alloc), origins(_alloc) {
-  }
+  MultiSparseMap3D_(const ContainerAllocator& _alloc) : maps(_alloc), origins(_alloc) {}
 
   typedef std::vector< ::multi_map_server::SparseMap3D_<ContainerAllocator>,
                        typename ContainerAllocator::template rebind<
@@ -58,8 +54,8 @@ typedef boost::shared_ptr< ::multi_map_server::MultiSparseMap3D const> MultiSpar
 template <typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s,
                          const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> >::stream(
-      s, "", v);
+  ros::message_operations::Printer< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> >::stream(s, "",
+                                                                                                        v);
   return s;
 }
 
@@ -73,9 +69,7 @@ template <class ContainerAllocator>
 struct IsMessage< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
-  static const char* value() {
-    return "2e3d76c98ee3e2b23a422f64965f6418";
-  }
+  static const char* value() { return "2e3d76c98ee3e2b23a422f64965f6418"; }
 
   static const char* value(const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>&) {
     return value();
@@ -86,9 +80,7 @@ struct MD5Sum< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
 
 template <class ContainerAllocator>
 struct DataType< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
-  static const char* value() {
-    return "multi_map_server/MultiSparseMap3D";
-  }
+  static const char* value() { return "multi_map_server/MultiSparseMap3D"; }
 
   static const char* value(const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>&) {
     return value();
@@ -212,8 +204,7 @@ struct Printer< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
       s << indent << "  maps[" << i << "]: ";
       s << std::endl;
       s << indent;
-      Printer< ::multi_map_server::SparseMap3D_<ContainerAllocator> >::stream(s, indent + "    ",
-                                                                              v.maps[i]);
+      Printer< ::multi_map_server::SparseMap3D_<ContainerAllocator> >::stream(s, indent + "    ", v.maps[i]);
     }
     s << indent << "origins[]" << std::endl;
     for (size_t i = 0; i < v.origins.size(); ++i) {

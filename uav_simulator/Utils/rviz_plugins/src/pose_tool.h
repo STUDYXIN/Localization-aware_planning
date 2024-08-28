@@ -31,10 +31,9 @@
 #define RVIZ_POSE_TOOL_H
 
 #include <OGRE/OgreVector3.h>
+#include <ros/ros.h>
 
 #include <QCursor>
-
-#include <ros/ros.h>
 
 #include "rviz/tool.h"
 
@@ -43,7 +42,7 @@ class Arrow;
 class DisplayContext;
 
 class Pose3DTool : public Tool {
-public:
+ public:
   Pose3DTool();
   virtual ~Pose3DTool();
 
@@ -54,7 +53,7 @@ public:
 
   virtual int processMouseEvent(ViewportMouseEvent& event);
 
-protected:
+ protected:
   virtual void onPoseSet(double x, double y, double z, double theta) = 0;
 
   Arrow* arrow_;
@@ -65,6 +64,6 @@ protected:
 
   Ogre::Vector3 pos_;
 };
-}
+}  // namespace rviz
 
 #endif

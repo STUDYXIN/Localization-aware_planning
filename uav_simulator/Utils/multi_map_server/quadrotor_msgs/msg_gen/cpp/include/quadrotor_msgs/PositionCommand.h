@@ -2,44 +2,40 @@
  */
 #ifndef QUADROTOR_MSGS_MESSAGE_POSITIONCOMMAND_H
 #define QUADROTOR_MSGS_MESSAGE_POSITIONCOMMAND_H
-#include <string>
-#include <vector>
 #include <map>
 #include <ostream>
-#include "ros/serialization.h"
-#include "ros/builtin_message_traits.h"
-#include "ros/message_operations.h"
-#include "ros/time.h"
+#include <string>
+#include <vector>
 
-#include "ros/macros.h"
-
-#include "ros/assert.h"
-
-#include "std_msgs/Header.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Vector3.h"
-#include "geometry_msgs/Vector3.h"
+#include "ros/assert.h"
+#include "ros/builtin_message_traits.h"
+#include "ros/macros.h"
+#include "ros/message_operations.h"
+#include "ros/serialization.h"
+#include "ros/time.h"
+#include "std_msgs/Header.h"
 
 namespace quadrotor_msgs {
 template <class ContainerAllocator>
 struct PositionCommand_ {
   typedef PositionCommand_<ContainerAllocator> Type;
 
-  PositionCommand_()
-    : header(), position(), velocity(), acceleration(), yaw(0.0), yaw_dot(0.0), kx(), kv() {
+  PositionCommand_() : header(), position(), velocity(), acceleration(), yaw(0.0), yaw_dot(0.0), kx(), kv() {
     kx.assign(0.0);
     kv.assign(0.0);
   }
 
   PositionCommand_(const ContainerAllocator& _alloc)
-    : header(_alloc)
-    , position(_alloc)
-    , velocity(_alloc)
-    , acceleration(_alloc)
-    , yaw(0.0)
-    , yaw_dot(0.0)
-    , kx()
-    , kv() {
+      : header(_alloc),
+        position(_alloc),
+        velocity(_alloc),
+        acceleration(_alloc),
+        yaw(0.0),
+        yaw_dot(0.0),
+        kx(),
+        kv() {
     kx.assign(0.0);
     kv.assign(0.0);
   }
@@ -77,10 +73,9 @@ typedef boost::shared_ptr< ::quadrotor_msgs::PositionCommand> PositionCommandPtr
 typedef boost::shared_ptr< ::quadrotor_msgs::PositionCommand const> PositionCommandConstPtr;
 
 template <typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s,
-                         const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> >::stream(
-      s, "", v);
+std::ostream& operator<<(std::ostream& s, const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>& v) {
+  ros::message_operations::Printer< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> >::stream(s, "",
+                                                                                                     v);
   return s;
 }
 
@@ -94,26 +89,18 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> > {
-  static const char* value() {
-    return "835935bcd6f18632d9e26a3093237902";
-  }
+  static const char* value() { return "835935bcd6f18632d9e26a3093237902"; }
 
-  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) { return value(); }
   static const uint64_t static_value1 = 0x835935bcd6f18632ULL;
   static const uint64_t static_value2 = 0xd9e26a3093237902ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> > {
-  static const char* value() {
-    return "quadrotor_msgs/PositionCommand";
-  }
+  static const char* value() { return "quadrotor_msgs/PositionCommand"; }
 
-  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) { return value(); }
 };
 
 template <class ContainerAllocator>
@@ -163,9 +150,7 @@ float64 z\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) {
-    return value();
-  }
+  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) { return value(); }
 };
 
 template <class ContainerAllocator>

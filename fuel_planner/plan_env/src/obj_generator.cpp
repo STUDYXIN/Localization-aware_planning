@@ -1,16 +1,16 @@
-#include "visualization_msgs/Marker.h"
-#include <ros/ros.h>
-
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <random>
+#include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <string>
 
 #include <plan_env/linear_obj_model.hpp>
+#include <random>
+#include <string>
+
+#include "visualization_msgs/Marker.h"
 using namespace std;
 
 int obj_num;
@@ -57,8 +57,7 @@ int main(int argc, char** argv) {
 
   obj_pub = node.advertise<visualization_msgs::Marker>("/dynamic/obj", 10);
   for (int i = 0; i < obj_num; ++i) {
-    ros::Publisher pose_pub =
-        node.advertise<geometry_msgs::PoseStamped>("/dynamic/pose_" + to_string(i), 10);
+    ros::Publisher pose_pub = node.advertise<geometry_msgs::PoseStamped>("/dynamic/pose_" + to_string(i), 10);
     pose_pubs.push_back(pose_pub);
   }
 

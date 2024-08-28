@@ -27,17 +27,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/bind.hpp>
+#include "aerialmap_display.h"
 
 #include <OGRE/OgreManualObject.h>
 #include <OGRE/OgreMaterialManager.h>
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreTextureManager.h>
-
 #include <ros/ros.h>
-
 #include <tf/transform_listener.h>
+
+#include <boost/bind.hpp>
 
 #include "rviz/display_context.h"
 #include "rviz/frame_manager.h"
@@ -50,21 +50,20 @@
 #include "rviz/properties/vector_property.h"
 #include "rviz/validate_floats.h"
 
-#include "aerialmap_display.h"
-
 namespace rviz {
 
 AerialMapDisplay::AerialMapDisplay()
-  : Display()
-  , manual_object_(NULL)
-  //! @bug cannot compile @gcc-5 or later, material_(0)
-  , loaded_(false)
-  , resolution_(0.0f)
-  , width_(0)
-  , height_(0)
-  , position_(Ogre::Vector3::ZERO)
-  , orientation_(Ogre::Quaternion::IDENTITY)
-  , new_map_(false) {
+    : Display(),
+      manual_object_(NULL)
+      //! @bug cannot compile @gcc-5 or later, material_(0)
+      ,
+      loaded_(false),
+      resolution_(0.0f),
+      width_(0),
+      height_(0),
+      position_(Ogre::Vector3::ZERO),
+      orientation_(Ogre::Quaternion::IDENTITY),
+      new_map_(false) {
   topic_property_ = new RosTopicProperty(
       "Topic", "", QString::fromStdString(ros::message_traits::datatype<nav_msgs::OccupancyGrid>()),
       "nav_msgs::OccupancyGrid topic to subscribe to.", this, SLOT(updateTopic()));
@@ -74,13 +73,12 @@ AerialMapDisplay::AerialMapDisplay()
   alpha_property_->setMin(0);
   alpha_property_->setMax(1);
 
-  draw_under_property_ =
-      new Property("Draw Behind", false, "Rendering option, controls whether or not the map is always"
-                                         " drawn behind everything else.",
-                   this, SLOT(updateDrawUnder()));
+  draw_under_property_ = new Property("Draw Behind", false,
+                                      "Rendering option, controls whether or not the map is always"
+                                      " drawn behind everything else.",
+                                      this, SLOT(updateDrawUnder()));
 
-  resolution_property_ =
-      new FloatProperty("Resolution", 0, "Resolution of the map. (not editable)", this);
+  resolution_property_ = new FloatProperty("Resolution", 0, "Resolution of the map. (not editable)", this);
   resolution_property_->setReadOnly(true);
 
   width_property_ = new IntProperty("Width", 0, "Width of the map, in meters. (not editable)", this);
@@ -89,9 +87,9 @@ AerialMapDisplay::AerialMapDisplay()
   height_property_ = new IntProperty("Height", 0, "Height of the map, in meters. (not editable)", this);
   height_property_->setReadOnly(true);
 
-  position_property_ = new VectorProperty(
-      "Position", Ogre::Vector3::ZERO,
-      "Position of the bottom left corner of the map, in meters. (not editable)", this);
+  position_property_ =
+      new VectorProperty("Position", Ogre::Vector3::ZERO,
+                         "Position of the bottom left corner of the map, in meters. (not editable)", this);
   position_property_->setReadOnly(true);
 
   orientation_property_ = new QuaternionProperty("Orientation", Ogre::Quaternion::IDENTITY,
@@ -119,9 +117,7 @@ void AerialMapDisplay::onInitialize() {
   updateAlpha();
 }
 
-void AerialMapDisplay::onEnable() {
-  subscribe();
-}
+void AerialMapDisplay::onEnable() { subscribe(); }
 
 void AerialMapDisplay::onDisable() {
   unsubscribe();
@@ -135,8 +131,8 @@ void AerialMapDisplay::subscribe() {
 
   if (!topic_property_->getTopic().isEmpty()) {
     try {
-      map_sub_ = update_nh_.subscribe(topic_property_->getTopicStd(), 1,
-                                      &AerialMapDisplay::incomingAerialMap, this);
+      map_sub_ =
+          update_nh_.subscribe(topic_property_->getTopicStd(), 1, &AerialMapDisplay::incomingAerialMap, this);
       setStatus(StatusProperty::Ok, "Topic", "OK");
     } catch (ros::Exception& e) {
       setStatus(StatusProperty::Error, "Topic", QString("Error subscribing: ") + e.what());
@@ -144,9 +140,7 @@ void AerialMapDisplay::subscribe() {
   }
 }
 
-void AerialMapDisplay::unsubscribe() {
-  map_sub_.shutdown();
-}
+void AerialMapDisplay::unsubscribe() { map_sub_.shutdown(); }
 
 void AerialMapDisplay::updateAlpha() {
   float alpha = alpha_property_->getFloat();
@@ -243,8 +237,7 @@ void AerialMapDisplay::update(float wall_dt, float ros_dt) {
   */
   if (current_map_->info.width * current_map_->info.height == 0) {
     std::stringstream ss;
-    ss << "AerialMap is zero-sized (" << current_map_->info.width << "x" << current_map_->info.height
-       << ")";
+    ss << "AerialMap is zero-sized (" << current_map_->info.width << "x" << current_map_->info.height << ")";
     setStatus(StatusProperty::Error, "AerialMap", QString::fromStdString(ss.str()));
     return;
   }
@@ -345,10 +338,11 @@ void AerialMapDisplay::update(float wall_dt, float ros_dt) {
       setStatus(StatusProperty::Ok, "AerialMap", QString::fromStdString(ss.str()));
     }
 
-    ROS_WARN("Failed to create full-size map texture, likely because your "
-             "graphics card does not support textures of size > 2048.  "
-             "Downsampling to [%d x %d]...",
-             (int)fwidth, (int)fheight);
+    ROS_WARN(
+        "Failed to create full-size map texture, likely because your "
+        "graphics card does not support textures of size > 2048.  "
+        "Downsampling to [%d x %d]...",
+        (int)fwidth, (int)fheight);
     // ROS_INFO("Stream size [%d], width [%f], height [%f], w * h [%f]",
     // pixel_stream->size(), width, height, width * height);
     image.loadRawData(pixel_stream, width, height, Ogre::PF_R8G8B8);
@@ -435,7 +429,6 @@ void AerialMapDisplay::update(float wall_dt, float ros_dt) {
 }
 
 void AerialMapDisplay::incomingAerialMap(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
-
   updated_map_ = msg;
   boost::mutex::scoped_lock lock(mutex_);
   new_map_ = true;
@@ -463,9 +456,7 @@ void AerialMapDisplay::transformAerialMap() {
   scene_node_->setOrientation(orientation);
 }
 
-void AerialMapDisplay::fixedFrameChanged() {
-  transformAerialMap();
-}
+void AerialMapDisplay::fixedFrameChanged() { transformAerialMap(); }
 
 void AerialMapDisplay::reset() {
   Display::reset();

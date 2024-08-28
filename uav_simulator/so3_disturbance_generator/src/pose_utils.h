@@ -2,6 +2,7 @@
 #define POSE_UTILS_H
 
 #include <iostream>
+
 #include "armadillo"
 
 #define PI 3.14159265359

@@ -2,30 +2,27 @@
  * /home/jchen/workspace/src/multi_map_server/msg/VerticalOccupancyGridList.msg */
 #ifndef MULTI_MAP_SERVER_MESSAGE_VERTICALOCCUPANCYGRIDLIST_H
 #define MULTI_MAP_SERVER_MESSAGE_VERTICALOCCUPANCYGRIDLIST_H
-#include <string>
-#include <vector>
 #include <map>
 #include <ostream>
-#include "ros/serialization.h"
-#include "ros/builtin_message_traits.h"
-#include "ros/message_operations.h"
-#include "ros/time.h"
-
-#include "ros/macros.h"
+#include <string>
+#include <vector>
 
 #include "ros/assert.h"
+#include "ros/builtin_message_traits.h"
+#include "ros/macros.h"
+#include "ros/message_operations.h"
+#include "ros/serialization.h"
+#include "ros/time.h"
 
 namespace multi_map_server {
 template <class ContainerAllocator>
 struct VerticalOccupancyGridList_ {
   typedef VerticalOccupancyGridList_<ContainerAllocator> Type;
 
-  VerticalOccupancyGridList_() : x(0.0), y(0.0), upper(), lower(), mass() {
-  }
+  VerticalOccupancyGridList_() : x(0.0), y(0.0), upper(), lower(), mass() {}
 
   VerticalOccupancyGridList_(const ContainerAllocator& _alloc)
-    : x(0.0), y(0.0), upper(_alloc), lower(_alloc), mass(_alloc) {
-  }
+      : x(0.0), y(0.0), upper(_alloc), lower(_alloc), mass(_alloc) {}
 
   typedef float _x_type;
   float x;
@@ -65,16 +62,13 @@ std::ostream& operator<<(std::ostream& s,
 namespace ros {
 namespace message_traits {
 template <class ContainerAllocator>
-struct IsMessage< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >
-    : public TrueType {};
+struct IsMessage< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > : public TrueType {};
 template <class ContainerAllocator>
 struct IsMessage< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> const>
     : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > {
-  static const char* value() {
-    return "7ef85cc95b82747f51eb01a16bd7c795";
-  }
+  static const char* value() { return "7ef85cc95b82747f51eb01a16bd7c795"; }
 
   static const char* value(const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>&) {
     return value();
@@ -85,9 +79,7 @@ struct MD5Sum< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator
 
 template <class ContainerAllocator>
 struct DataType< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > {
-  static const char* value() {
-    return "multi_map_server/VerticalOccupancyGridList";
-  }
+  static const char* value() { return "multi_map_server/VerticalOccupancyGridList"; }
 
   static const char* value(const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>&) {
     return value();

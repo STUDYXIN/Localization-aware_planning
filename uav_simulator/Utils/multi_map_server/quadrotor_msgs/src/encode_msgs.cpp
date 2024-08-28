@@ -1,4 +1,5 @@
 #include "quadrotor_msgs/encode_msgs.h"
+
 #include <quadrotor_msgs/comm_types.h>
 
 namespace quadrotor_msgs {
@@ -62,4 +63,4 @@ void encodePPRGains(const quadrotor_msgs::Gains& gains, std::vector<uint8_t>& ou
   output.resize(sizeof(ppr_gains));
   memcpy(&output[0], &ppr_gains, sizeof(ppr_gains));
 }
-}
+}  // namespace quadrotor_msgs

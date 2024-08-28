@@ -30,8 +30,7 @@ void TopoReplanFSM::init(ros::NodeHandle& nh) {
   safety_timer_ = nh.createTimer(ros::Duration(0.05), &TopoReplanFSM::checkCollisionCallback, this);
   // frontier_timer_ = nh.createTimer(ros::Duration(0.1), &TopoReplanFSM::frontierCallback, this);
 
-  waypoint_sub_ =
-      nh.subscribe("/waypoint_generator/waypoints", 1, &TopoReplanFSM::waypointCallback, this);
+  waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &TopoReplanFSM::waypointCallback, this);
   odom_sub_ = nh.subscribe("/odom_world", 1, &TopoReplanFSM::odometryCallback, this);
 
   replan_pub_ = nh.advertise<std_msgs::Empty>("/planning/replan", 20);
@@ -99,16 +98,26 @@ void TopoReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
 }
 
 void TopoReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call) {
-  string state_str[6] = { "INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "REPLAN_"
-                                                                                             "NEW" };
+  string state_str[6] = {"INIT",
+                         "WAIT_TARGET",
+                         "GEN_NEW_TRAJ",
+                         "REPLAN_TRAJ",
+                         "EXEC_TRAJ",
+                         "REPLAN_"
+                         "NEW"};
   int pre_s = int(exec_state_);
   exec_state_ = new_state;
   cout << "[" + pos_call + "]: from " + state_str[pre_s] + " to " + state_str[int(new_state)] << endl;
 }
 
 void TopoReplanFSM::printFSMExecState() {
-  string state_str[6] = { "INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "REPLAN_"
-                                                                                             "NEW" };
+  string state_str[6] = {"INIT",
+                         "WAIT_TARGET",
+                         "GEN_NEW_TRAJ",
+                         "REPLAN_TRAJ",
+                         "EXEC_TRAJ",
+                         "REPLAN_"
+                         "NEW"};
   cout << "state: " + state_str[int(exec_state_)] << endl;
 }
 
@@ -247,9 +256,9 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent& e) {
   if (false) {
     auto edt_env = planner_manager_->edt_environment_;
 
-    double dist = planner_manager_->pp_.dynamic_ ?
-        edt_env->evaluateCoarseEDT(target_point_, /* time to program start */ info->duration_) :
-        edt_env->evaluateCoarseEDT(target_point_, -1.0);
+    double dist = planner_manager_->pp_.dynamic_
+                      ? edt_env->evaluateCoarseEDT(target_point_, /* time to program start */ info->duration_)
+                      : edt_env->evaluateCoarseEDT(target_point_, -1.0);
 
     if (dist <= 0.3) {
       /* try to find a max distance goal around */
@@ -267,10 +276,10 @@ void TopoReplanFSM::checkCollisionCallback(const ros::TimerEvent& e) {
             new_z = target_point_(2) + nz;
             Eigen::Vector3d new_pt(new_x, new_y, new_z);
 
-            dist = planner_manager_->pp_.dynamic_ ?
-                edt_env->evaluateCoarseEDT(new_pt,
-                                           /* time to program start */ info->duration_) :
-                edt_env->evaluateCoarseEDT(new_pt, -1.0);
+            dist = planner_manager_->pp_.dynamic_
+                       ? edt_env->evaluateCoarseEDT(new_pt,
+                                                    /* time to program start */ info->duration_)
+                       : edt_env->evaluateCoarseEDT(new_pt, -1.0);
 
             if (dist > max_dist) {
               /* reset target_point_ */
@@ -332,8 +341,7 @@ void TopoReplanFSM::frontierCallback(const ros::TimerEvent& e) {
   visualization_->drawFrontier(planner_manager_->plan_data_.frontiers_);
 }
 
-bool TopoReplanFSM::callSearchAndOptimization() {
-}
+bool TopoReplanFSM::callSearchAndOptimization() {}
 
 bool TopoReplanFSM::callTopologicalTraj(int step) {
   bool plan_success;
@@ -395,8 +403,8 @@ bool TopoReplanFSM::callTopologicalTraj(int step) {
 
     visualization_->drawPolynomialTraj(planner_manager_->global_data_.global_traj_, 0.05,
                                        Eigen::Vector4d(0, 0, 0, 1), 0);
-    visualization_->drawBspline(locdat->position_traj_, 0.08, Eigen::Vector4d(1.0, 0.0, 0.0, 1), true,
-                                0.15, Eigen::Vector4d(1, 1, 0, 1), 99);
+    visualization_->drawBspline(locdat->position_traj_, 0.08, Eigen::Vector4d(1.0, 0.0, 0.0, 1), true, 0.15,
+                                Eigen::Vector4d(1, 1, 0, 1), 99);
     visualization_->drawBsplinesPhase2(plan_data->topo_traj_pos1_, 0.08);
 
     // visualization_->drawBspline(locdat->position_traj_, 0.08, Eigen::Vector4d(1.0, 0.0, 0.0, 1),

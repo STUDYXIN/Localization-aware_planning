@@ -1,9 +1,10 @@
 #include "bspline_opt/bspline_optimizer.h"
+
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
-#include <thread>
 
 #include <nlopt.hpp>
+#include <thread>
 // using namespace std;
 
 namespace fast_planner {
@@ -17,10 +18,11 @@ const int BsplineOptimizer::WAYPOINTS = (1 << 6);
 const int BsplineOptimizer::VIEWCONS = (1 << 7);
 const int BsplineOptimizer::MINTIME = (1 << 8);
 
-const int BsplineOptimizer::GUIDE_PHASE = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::GUIDE |
-    BsplineOptimizer::START | BsplineOptimizer::END;
+const int BsplineOptimizer::GUIDE_PHASE =
+    BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::GUIDE | BsplineOptimizer::START | BsplineOptimizer::END;
 const int BsplineOptimizer::NORMAL_PHASE = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::DISTANCE |
-    BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END;
+                                           BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
+                                           BsplineOptimizer::END;
 
 void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   nh.param("optimization/ld_smooth", ld_smooth_, -1.0);
@@ -78,19 +80,14 @@ void BsplineOptimizer::setCostFunction(const int& cost_code) {
   // ROS_INFO_STREAM("cost func: " << cost_str);
 }
 
-void BsplineOptimizer::setGuidePath(const vector<Eigen::Vector3d>& guide_pt) {
-  guide_pts_ = guide_pt;
-}
+void BsplineOptimizer::setGuidePath(const vector<Eigen::Vector3d>& guide_pt) { guide_pts_ = guide_pt; }
 
-void BsplineOptimizer::setWaypoints(const vector<Eigen::Vector3d>& waypts,
-                                    const vector<int>& waypt_idx) {
+void BsplineOptimizer::setWaypoints(const vector<Eigen::Vector3d>& waypts, const vector<int>& waypt_idx) {
   waypoints_ = waypts;
   waypt_idx_ = waypt_idx;
 }
 
-void BsplineOptimizer::setViewConstraint(const ViewConstraint& vc) {
-  view_cons_ = vc;
-}
+void BsplineOptimizer::setViewConstraint(const ViewConstraint& vc) { view_cons_ = vc; }
 
 void BsplineOptimizer::enableDynamic(double time_start) {
   dynamic_ = true;
@@ -103,9 +100,7 @@ void BsplineOptimizer::setBoundaryStates(const vector<Eigen::Vector3d>& start,
   end_state_ = end;
 }
 
-void BsplineOptimizer::setTimeLowerBound(const double& lb) {
-  time_lb_ = lb;
-}
+void BsplineOptimizer::setTimeLowerBound(const double& lb) { time_lb_ = lb; }
 
 void BsplineOptimizer::optimize(Eigen::MatrixXd& points, double& dt, const int& cost_function,
                                 const int& max_num_id, const int& max_time_id) {
@@ -228,8 +223,7 @@ void BsplineOptimizer::optimize() {
     cout << e.what() << endl;
   }
   for (int i = 0; i < point_num_; ++i)
-    for (int j = 0; j < dim_; ++j)
-      control_points_(i, j) = best_variable_[dim_ * i + j];
+    for (int j = 0; j < dim_; ++j) control_points_(i, j) = best_variable_[dim_ * i + j];
   if (optimize_time_) knot_span_ = best_variable_[variable_num_ - 1];
 
   if (cost_function_ & MINTIME) {
@@ -252,9 +246,8 @@ void BsplineOptimizer::optimize() {
   //   ROS_INFO_STREAM("iter num: " << iter_num_);
 }
 
-void BsplineOptimizer::calcSmoothnessCost(const vector<Eigen::Vector3d>& q, const double& dt,
-                                          double& cost, vector<Eigen::Vector3d>& gradient_q,
-                                          double& gt) {
+void BsplineOptimizer::calcSmoothnessCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
+                                          vector<Eigen::Vector3d>& gradient_q, double& gt) {
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
@@ -305,9 +298,8 @@ void BsplineOptimizer::calcDistanceCost(const vector<Eigen::Vector3d>& q, double
   }
 }
 
-void BsplineOptimizer::calcFeasibilityCost(const vector<Eigen::Vector3d>& q, const double& dt,
-                                           double& cost, vector<Eigen::Vector3d>& gradient_q,
-                                           double& gt) {
+void BsplineOptimizer::calcFeasibilityCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
+                                           vector<Eigen::Vector3d>& gradient_q, double& gt) {
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
@@ -357,8 +349,7 @@ void BsplineOptimizer::calcStartCost(const vector<Eigen::Vector3d>& q, const dou
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   // std::fill(gradient_q.begin(), gradient_q.end(), zero);
-  for (int i = 0; i < 3; ++i)
-    gradient_q[i] = zero;
+  for (int i = 0; i < 3; ++i) gradient_q[i] = zero;
   gt = 0.0;
 
   Eigen::Vector3d q1, q2, q3, dq;
@@ -395,8 +386,7 @@ void BsplineOptimizer::calcEndCost(const vector<Eigen::Vector3d>& q, const doubl
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   // std::fill(gradient_q.begin(), gradient_q.end(), zero);
-  for (int i = q.size() - 3; i < q.size(); ++i)
-    gradient_q[i] = zero;
+  for (int i = q.size() - 3; i < q.size(); ++i) gradient_q[i] = zero;
   gt = 0.0;
 
   Eigen::Vector3d q_3, q_2, q_1, dq;
@@ -557,10 +547,8 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
   ros::Time t1 = ros::Time::now();
 
   for (int i = 0; i < point_num_; ++i) {
-    for (int j = 0; j < dim_; ++j)
-      g_q_[i][j] = x[dim_ * i + j];
-    for (int j = dim_; j < 3; ++j)
-      g_q_[i][j] = 0.0;
+    for (int j = 0; j < dim_; ++j) g_q_[i][j] = x[dim_ * i + j];
+    for (int j = dim_; j < 3; ++j) g_q_[i][j] = 0.0;
   }
   const double dt = optimize_time_ ? x[variable_num_ - 1] : knot_span_;
 
@@ -573,8 +561,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
     calcSmoothnessCost(g_q_, dt, f_smoothness, g_smoothness_, gt_smoothness);
     f_combine += ld_smooth_ * f_smoothness;
     for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_smooth_ * g_smoothness_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_smooth_ * g_smoothness_[i](j);
     if (optimize_time_) grad[variable_num_ - 1] += ld_smooth_ * gt_smoothness;
   }
   if (cost_function_ & DISTANCE) {
@@ -582,16 +569,14 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
     calcDistanceCost(g_q_, f_distance, g_distance_);
     f_combine += ld_dist_ * f_distance;
     for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_dist_ * g_distance_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_dist_ * g_distance_[i](j);
   }
   if (cost_function_ & FEASIBILITY) {
     double f_feasibility = 0.0, gt_feasibility = 0.0;
     calcFeasibilityCost(g_q_, dt, f_feasibility, g_feasibility_, gt_feasibility);
     f_combine += ld_feasi_ * f_feasibility;
     for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_feasi_ * g_feasibility_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_feasi_ * g_feasibility_[i](j);
     if (optimize_time_) grad[variable_num_ - 1] += ld_feasi_ * gt_feasibility;
   }
   if (cost_function_ & START) {
@@ -599,8 +584,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
     calcStartCost(g_q_, dt, f_start, g_start_, gt_start);
     f_combine += ld_start_ * f_start;
     for (int i = 0; i < 3; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_start_ * g_start_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_start_ * g_start_[i](j);
     if (optimize_time_) grad[variable_num_ - 1] += ld_start_ * gt_start;
   }
   if (cost_function_ & END) {
@@ -608,8 +592,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
     calcEndCost(g_q_, dt, f_end, g_end_, gt_end);
     f_combine += ld_end_ * f_end;
     for (int i = point_num_ - 3; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_end_ * g_end_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_end_ * g_end_[i](j);
     if (optimize_time_) grad[variable_num_ - 1] += ld_end_ * gt_end;
   }
   if (cost_function_ & GUIDE) {
@@ -617,24 +600,21 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
     calcGuideCost(g_q_, f_guide, g_guide_);
     f_combine += ld_guide_ * f_guide;
     for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_guide_ * g_guide_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_guide_ * g_guide_[i](j);
   }
   if (cost_function_ & WAYPOINTS) {
     double f_waypoints = 0.0;
     calcWaypointsCost(g_q_, f_waypoints, g_waypoints_);
     f_combine += ld_waypt_ * f_waypoints;
     for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_waypt_ * g_waypoints_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_waypt_ * g_waypoints_[i](j);
   }
   if (cost_function_ & VIEWCONS) {
     double f_view = 0.0;
     calcViewCost(g_q_, f_view, g_view_);
     f_combine += ld_view_ * f_view;
     for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++)
-        grad[dim_ * i + j] += ld_view_ * g_view_[i](j);
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_view_ * g_view_[i](j);
   }
   if (cost_function_ & MINTIME) {
     double f_time = 0.0, gt_time = 0.0;
@@ -731,9 +711,7 @@ vector<Eigen::Vector3d> BsplineOptimizer::matrixToVectors(const Eigen::MatrixXd&
   return ctrl_q;
 }
 
-Eigen::MatrixXd BsplineOptimizer::getControlPoints() {
-  return this->control_points_;
-}
+Eigen::MatrixXd BsplineOptimizer::getControlPoints() { return this->control_points_; }
 
 bool BsplineOptimizer::isQuadratic() {
   if (cost_function_ == GUIDE_PHASE) {

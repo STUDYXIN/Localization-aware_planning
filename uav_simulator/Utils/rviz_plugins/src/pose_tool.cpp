@@ -27,6 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "pose_tool.h"
+
 #include <OGRE/OgrePlane.h>
 #include <OGRE/OgreRay.h>
 #include <OGRE/OgreSceneNode.h>
@@ -38,16 +40,11 @@
 #include "rviz/render_panel.h"
 #include "rviz/viewport_mouse_event.h"
 
-#include "pose_tool.h"
-
 namespace rviz {
 
-Pose3DTool::Pose3DTool() : Tool(), arrow_(NULL) {
-}
+Pose3DTool::Pose3DTool() : Tool(), arrow_(NULL) {}
 
-Pose3DTool::~Pose3DTool() {
-  delete arrow_;
-}
+Pose3DTool::~Pose3DTool() { delete arrow_; }
 
 void Pose3DTool::onInitialize() {
   arrow_ = new Arrow(scene_manager_, NULL, 2.0f, 0.2f, 0.5f, 0.35f);
@@ -60,9 +57,7 @@ void Pose3DTool::activate() {
   state_ = Position;
 }
 
-void Pose3DTool::deactivate() {
-  arrow_->getSceneNode()->setVisible(false);
-}
+void Pose3DTool::deactivate() { arrow_->getSceneNode()->setVisible(false); }
 
 int Pose3DTool::processMouseEvent(ViewportMouseEvent& event) {
   int flags = 0;
@@ -107,8 +102,7 @@ int Pose3DTool::processMouseEvent(ViewportMouseEvent& event) {
       pos_.z -= dz / z_scale;
       arrow_->setPosition(pos_);
       // Create a list of arrows
-      for (int k = 0; k < arrow_array.size(); k++)
-        delete arrow_array[k];
+      for (int k = 0; k < arrow_array.size(); k++) delete arrow_array[k];
       arrow_array.clear();
       int cnt = ceil(fabs(initz - pos_.z) / z_interval);
       for (int k = 0; k < cnt; k++) {
@@ -119,8 +113,7 @@ int Pose3DTool::processMouseEvent(ViewportMouseEvent& event) {
         Ogre::Vector3 arr_pos = pos_;
         arr_pos.z = initz - ((initz - pos_.z > 0) ? 1 : -1) * k * z_interval;
         arrow__->setPosition(arr_pos);
-        arrow__->setOrientation(Ogre::Quaternion(Ogre::Radian(prevangle), Ogre::Vector3::UNIT_Z) *
-                                orient_x);
+        arrow__->setOrientation(Ogre::Quaternion(Ogre::Radian(prevangle), Ogre::Vector3::UNIT_Z) * orient_x);
         arrow_array.push_back(arrow__);
       }
       flags |= Render;
@@ -128,8 +121,7 @@ int Pose3DTool::processMouseEvent(ViewportMouseEvent& event) {
   } else if (event.leftUp()) {
     if (state_ == Orientation || state_ == Height) {
       // Create a list of arrows
-      for (int k = 0; k < arrow_array.size(); k++)
-        delete arrow_array[k];
+      for (int k = 0; k < arrow_array.size(); k++) delete arrow_array[k];
       arrow_array.clear();
       onPoseSet(pos_.x, pos_.y, pos_.z, prevangle);
       flags |= (Finished | Render);
@@ -138,4 +130,4 @@ int Pose3DTool::processMouseEvent(ViewportMouseEvent& event) {
 
   return flags;
 }
-}
+}  // namespace rviz

@@ -1,6 +1,7 @@
 #include <path_searching/kinodynamic_astar.h>
-#include <sstream>
 #include <plan_env/sdf_map.h>
+
+#include <sstream>
 
 using namespace std;
 using namespace Eigen;
@@ -57,8 +58,8 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
     // Terminate?
     bool reach_horizon = (cur_node->state.head(3) - start_pt).norm() >= horizon_;
     bool near_end = abs(cur_node->index(0) - end_index(0)) <= tolerance &&
-        abs(cur_node->index(1) - end_index(1)) <= tolerance &&
-        abs(cur_node->index(2) - end_index(2)) <= tolerance;
+                    abs(cur_node->index(1) - end_index(1)) <= tolerance &&
+                    abs(cur_node->index(2) - end_index(2)) <= tolerance;
 
     if (reach_horizon || near_end) {
       terminate_node = cur_node;
@@ -293,8 +294,7 @@ void KinodynamicAstar::retrievePath(PathNodePtr end_node) {
 
   reverse(path_nodes_.begin(), path_nodes_.end());
 }
-double KinodynamicAstar::estimateHeuristic(Eigen::VectorXd x1, Eigen::VectorXd x2,
-                                           double& optimal_time) {
+double KinodynamicAstar::estimateHeuristic(Eigen::VectorXd x1, Eigen::VectorXd x2, double& optimal_time) {
   const Vector3d dp = x2.head(3) - x1.head(3);
   const Vector3d v0 = x1.segment(3, 3);
   const Vector3d v1 = x2.segment(3, 3);
@@ -328,8 +328,7 @@ double KinodynamicAstar::estimateHeuristic(Eigen::VectorXd x1, Eigen::VectorXd x
   return 1.0 * (1 + tie_breaker_) * cost;
 }
 
-bool KinodynamicAstar::computeShotTraj(Eigen::VectorXd state1, Eigen::VectorXd state2,
-                                       double time_to_goal) {
+bool KinodynamicAstar::computeShotTraj(Eigen::VectorXd state1, Eigen::VectorXd state2, double time_to_goal) {
   /* ---------- get coefficient ---------- */
   const Vector3d p0 = state1.head(3);
   const Vector3d dp = state2.head(3) - p0;
@@ -360,8 +359,7 @@ bool KinodynamicAstar::computeShotTraj(Eigen::VectorXd state1, Eigen::VectorXd s
   double t_delta = t_d / 10;
   for (double time = t_delta; time <= t_d; time += t_delta) {
     t = VectorXd::Zero(4);
-    for (int j = 0; j < 4; j++)
-      t(j) = pow(time, j);
+    for (int j = 0; j < 4; j++) t(j) = pow(time, j);
 
     for (int dim = 0; dim < 3; dim++) {
       poly1d = coef.row(dim);
@@ -477,9 +475,7 @@ void KinodynamicAstar::init() {
   iter_num_ = 0;
 }
 
-void KinodynamicAstar::setEnvironment(const EDTEnvironment::Ptr& env) {
-  this->edt_environment_ = env;
-}
+void KinodynamicAstar::setEnvironment(const EDTEnvironment::Ptr& env) { this->edt_environment_ = env; }
 
 void KinodynamicAstar::reset() {
   expanded_nodes_.clear();
@@ -526,8 +522,7 @@ std::vector<Eigen::Vector3d> KinodynamicAstar::getKinoTraj(double delta_t) {
     VectorXd poly1d, time(4);
 
     for (double t = delta_t; t <= t_shot_; t += delta_t) {
-      for (int j = 0; j < 4; j++)
-        time(j) = pow(t, j);
+      for (int j = 0; j < 4; j++) time(j) = pow(t, j);
 
       for (int dim = 0; dim < 3; dim++) {
         poly1d = coef_shot_.row(dim);
@@ -581,8 +576,7 @@ void KinodynamicAstar::getSamples(double& ts, vector<Eigen::Vector3d>& point_set
       Vector3d coord;
       Vector4d poly1d, time;
 
-      for (int j = 0; j < 4; j++)
-        time(j) = pow(t, j);
+      for (int j = 0; j < 4; j++) time(j) = pow(t, j);
 
       for (int dim = 0; dim < 3; dim++) {
         poly1d = coef_shot_.row(dim);
@@ -654,11 +648,9 @@ int KinodynamicAstar::timeToIndex(double time) {
   return idx;
 }
 
-void KinodynamicAstar::stateTransit(Eigen::Matrix<double, 6, 1>& state0,
-                                    Eigen::Matrix<double, 6, 1>& state1, Eigen::Vector3d um,
-                                    double tau) {
-  for (int i = 0; i < 3; ++i)
-    phi_(i, i + 3) = tau;
+void KinodynamicAstar::stateTransit(Eigen::Matrix<double, 6, 1>& state0, Eigen::Matrix<double, 6, 1>& state1,
+                                    Eigen::Vector3d um, double tau) {
+  for (int i = 0; i < 3; ++i) phi_(i, i + 3) = tau;
 
   Eigen::Matrix<double, 6, 1> integral;
   integral.head(3) = 0.5 * pow(tau, 2) * um;

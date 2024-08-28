@@ -2,17 +2,16 @@
 #define GAMELIKEINPUT_HPP
 
 #ifndef Q_MOC_RUN
+#include <ros/ros.h>
+
 #include <QObject>
 
+#include "rviz/default_plugin/tools/interaction_tool.h"
 #include "rviz/default_plugin/tools/selection_tool.h"
 #include "rviz/properties/float_property.h"
 #include "rviz/selection/forwards.h"
 #include "rviz/selection/selection_manager.h"
 #include "rviz/tool.h"
-
-#include "rviz/default_plugin/tools/interaction_tool.h"
-
-#include <ros/ros.h>
 
 #endif
 
@@ -24,10 +23,10 @@ class StringProperty;
 class GameLikeInput : public rviz::SelectionTool {
   Q_OBJECT
 
-protected Q_SLOTS:
+ protected Q_SLOTS:
   void updateTopic();
 
-public:
+ public:
   GameLikeInput();
   virtual ~GameLikeInput();
 
@@ -38,10 +37,10 @@ public:
 
   void sendMessage();
 
-protected:
+ protected:
   virtual void onPoseSet(double x, double y, double z_vector, double theta);
 
-private:
+ private:
   rviz::InteractionTool* move_tool_;
 
   bool selecting_;
@@ -75,7 +74,7 @@ private:
   rviz::StringProperty* topic_property_drone_;
   rviz::StringProperty* topic_property_swarm_;
 
-private:
+ private:
   rviz::Arrow* arrow_;
   std::vector<rviz::Arrow*> arrow_array;
   std::vector<double> z_vector;

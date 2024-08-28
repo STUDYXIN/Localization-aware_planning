@@ -211,7 +211,7 @@
     <param name="astar/lambda_heu" value="10000.0" type="double"/>
     <param name="astar/resolution_astar" value="0.2" type="double"/>
     <param name="astar/allocate_num" value="1000000" type="int"/>
-    <param name="astar/max_search_time" value="0.001" type="double"/>
+    <param name="astar/max_search_time" value="0.01" type="double"/>
 
   <!-- trajectory optimization -->
     <param name="optimization/ld_smooth" value="20.0" type="double"/>

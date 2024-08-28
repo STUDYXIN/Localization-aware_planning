@@ -11,7 +11,7 @@ namespace fast_planner {
 // An implementation of non-uniform B-spline with different dimensions
 // It also represents uniform B-spline which is a special case of non-uniform
 class NonUniformBspline {
-public:
+ public:
   NonUniformBspline();
   NonUniformBspline(const Eigen::MatrixXd& points, const int& order, const double& interval);
   ~NonUniformBspline();
@@ -41,8 +41,8 @@ public:
   // input : (K+2) points with boundary vel/acc; ts
   // output: (K+6) control_pts
   static void parameterizeToBspline(const double& ts, const vector<Eigen::Vector3d>& point_set,
-                                    const vector<Eigen::Vector3d>& start_end_derivative,
-                                    const int& degree, Eigen::MatrixXd& ctrl_pts);
+                                    const vector<Eigen::Vector3d>& start_end_derivative, const int& degree,
+                                    Eigen::MatrixXd& ctrl_pts);
 
   // Check feasibility, adjust time
   void setPhysicalLimits(const double& vel, const double& acc);
@@ -61,7 +61,7 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-private:
+ private:
   // control points for B-spline with different dimensions.
   // Each row represents one single control point
   // The dimension is determined by column number

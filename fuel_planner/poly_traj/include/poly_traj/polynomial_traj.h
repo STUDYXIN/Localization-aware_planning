@@ -9,13 +9,11 @@ using std::vector;
 namespace fast_planner {
 // A segment of polynomial trajectory
 class Polynomial {
-public:
+ public:
   typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
-  Polynomial() {
-  }
-  ~Polynomial() {
-  }
+  Polynomial() {}
+  ~Polynomial() {}
 
   Polynomial(const Vector6d& cx, const Vector6d& cy, const Vector6d& cz, const double& time) {
     cx_ = cx;
@@ -27,16 +25,14 @@ public:
   // Get the k-th order derivative of t^n, n*(n-1)...(n-k+1)* t^(n-k)
   double getTBasis(const double& t, const int& n, const int& k) {
     int coeff = 1;
-    for (int i = n; i >= n - k + 1; --i)
-      coeff *= i;
+    for (int i = n; i >= n - k + 1; --i) coeff *= i;
     return coeff * pow(t, n - k);
   }
 
   // Evaluate pos, vel, acc..., k=0 for pos, 1 for vel...
   Eigen::Vector3d evaluate(const double& t, const int& k) {
     Vector6d tv = Vector6d::Zero();
-    for (int i = k; i < 6; ++i)
-      tv[i] = getTBasis(t, i, k);
+    for (int i = k; i < 6; ++i) tv[i] = getTBasis(t, i, k);
 
     Eigen::Vector3d pt;
     pt[0] = tv.dot(cx_);
@@ -46,11 +42,9 @@ public:
   }
 
   // Get the duration of the polynomial
-  double getTime() const {
-    return time_;
-  }
+  double getTime() const { return time_; }
 
-private:
+ private:
   // Time of the polynomial segment
   double time_;
 
@@ -60,11 +54,9 @@ private:
 };
 
 class PolynomialTraj {
-public:
-  PolynomialTraj(/* args */) {
-  }
-  ~PolynomialTraj() {
-  }
+ public:
+  PolynomialTraj(/* args */) {}
+  ~PolynomialTraj() {}
 
   void reset() {
     segments_.clear();
@@ -83,16 +75,14 @@ public:
     // Find which segment t belong to
     int idx = 0;
     double ts = t;
-    while (times_[idx] + 1e-4 < ts)
-      ts -= times_[idx++];
+    while (times_[idx] + 1e-4 < ts) ts -= times_[idx++];
 
     return segments_[idx].evaluate(ts, k);
   }
 
   double getTotalTime() {
     time_sum_ = 0.0;
-    for (auto t : times_)
-      time_sum_ += t;
+    for (auto t : times_) time_sum_ += t;
     return time_sum_;
   }
 
@@ -161,7 +151,7 @@ public:
                             const Eigen::Vector3d& end_acc, const Eigen::VectorXd& times,
                             PolynomialTraj& poly_traj);
 
-private:
+ private:
   vector<Polynomial> segments_;
   vector<double> times_;  // Time duration of each segment
 
@@ -174,6 +164,6 @@ private:
 PolynomialTraj fastLine4deg(Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc,
                             double max_jerk);
 PolynomialTraj fastLine3deg(Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc);
-}
+}  // namespace fast_planner
 
 #endif

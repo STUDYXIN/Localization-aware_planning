@@ -2,40 +2,36 @@
  * /home/jchen/workspace/src/multi_map_server/msg/MultiOccupancyGrid.msg */
 #ifndef MULTI_MAP_SERVER_MESSAGE_MULTIOCCUPANCYGRID_H
 #define MULTI_MAP_SERVER_MESSAGE_MULTIOCCUPANCYGRID_H
-#include <string>
-#include <vector>
 #include <map>
 #include <ostream>
-#include "ros/serialization.h"
-#include "ros/builtin_message_traits.h"
-#include "ros/message_operations.h"
-#include "ros/time.h"
+#include <string>
+#include <vector>
 
-#include "ros/macros.h"
-
-#include "ros/assert.h"
-
-#include "nav_msgs/OccupancyGrid.h"
 #include "geometry_msgs/Pose.h"
+#include "nav_msgs/OccupancyGrid.h"
+#include "ros/assert.h"
+#include "ros/builtin_message_traits.h"
+#include "ros/macros.h"
+#include "ros/message_operations.h"
+#include "ros/serialization.h"
+#include "ros/time.h"
 
 namespace multi_map_server {
 template <class ContainerAllocator>
 struct MultiOccupancyGrid_ {
   typedef MultiOccupancyGrid_<ContainerAllocator> Type;
 
-  MultiOccupancyGrid_() : maps(), origins() {
-  }
+  MultiOccupancyGrid_() : maps(), origins() {}
 
-  MultiOccupancyGrid_(const ContainerAllocator& _alloc) : maps(_alloc), origins(_alloc) {
-  }
+  MultiOccupancyGrid_(const ContainerAllocator& _alloc) : maps(_alloc), origins(_alloc) {}
 
-  typedef std::vector< ::nav_msgs::OccupancyGrid_<ContainerAllocator>,
-                       typename ContainerAllocator::template rebind<
-                           ::nav_msgs::OccupancyGrid_<ContainerAllocator> >::other>
+  typedef std::vector<
+      ::nav_msgs::OccupancyGrid_<ContainerAllocator>,
+      typename ContainerAllocator::template rebind< ::nav_msgs::OccupancyGrid_<ContainerAllocator> >::other>
       _maps_type;
-  std::vector< ::nav_msgs::OccupancyGrid_<ContainerAllocator>,
-               typename ContainerAllocator::template rebind<
-                   ::nav_msgs::OccupancyGrid_<ContainerAllocator> >::other>
+  std::vector<
+      ::nav_msgs::OccupancyGrid_<ContainerAllocator>,
+      typename ContainerAllocator::template rebind< ::nav_msgs::OccupancyGrid_<ContainerAllocator> >::other>
       maps;
 
   typedef std::vector<
@@ -58,8 +54,8 @@ typedef boost::shared_ptr< ::multi_map_server::MultiOccupancyGrid const> MultiOc
 template <typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s,
                          const ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>& v) {
-  ros::message_operations::Printer<
-      ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> >::stream(s, "", v);
+  ros::message_operations::Printer< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> >::stream(
+      s, "", v);
   return s;
 }
 
@@ -70,13 +66,10 @@ namespace message_traits {
 template <class ContainerAllocator>
 struct IsMessage< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > : public TrueType {};
 template <class ContainerAllocator>
-struct IsMessage< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> const> : public TrueType {
-};
+struct IsMessage< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
-  static const char* value() {
-    return "61e63a291f11a6b1796a1edf79f34f72";
-  }
+  static const char* value() { return "61e63a291f11a6b1796a1edf79f34f72"; }
 
   static const char* value(const ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>&) {
     return value();
@@ -87,9 +80,7 @@ struct MD5Sum< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
 
 template <class ContainerAllocator>
 struct DataType< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
-  static const char* value() {
-    return "multi_map_server/MultiOccupancyGrid";
-  }
+  static const char* value() { return "multi_map_server/MultiOccupancyGrid"; }
 
   static const char* value(const ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>&) {
     return value();

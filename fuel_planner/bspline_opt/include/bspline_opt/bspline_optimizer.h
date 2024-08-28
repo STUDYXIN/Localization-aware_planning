@@ -1,9 +1,10 @@
 #ifndef _BSPLINE_OPTIMIZER_H_
 #define _BSPLINE_OPTIMIZER_H_
 
-#include <Eigen/Eigen>
 #include <active_perception/traj_visibility.h>
 #include <ros/ros.h>
+
+#include <Eigen/Eigen>
 
 // Gradient and elasitc band optimization
 
@@ -14,7 +15,7 @@ namespace fast_planner {
 class EDTEnvironment;
 
 class BsplineOptimizer {
-public:
+ public:
   static const int SMOOTHNESS;
   static const int DISTANCE;
   static const int FEASIBILITY;
@@ -28,10 +29,8 @@ public:
   static const int GUIDE_PHASE;
   static const int NORMAL_PHASE;
 
-  BsplineOptimizer() {
-  }
-  ~BsplineOptimizer() {
-  }
+  BsplineOptimizer() {}
+  ~BsplineOptimizer() {}
 
   /* main API */
   void setEnvironment(const shared_ptr<EDTEnvironment>& env);
@@ -58,7 +57,7 @@ public:
   Eigen::MatrixXd getControlPoints();
   vector<Eigen::Vector3d> matrixToVectors(const Eigen::MatrixXd& ctrl_pts);
 
-private:
+ private:
   // Wrapper of cost function
   static double costFunction(const std::vector<double>& x, std::vector<double>& grad, void* func_data);
   void combineCost(const std::vector<double>& x, vector<double>& grad, double& cost);
@@ -66,18 +65,15 @@ private:
   // Cost functions, q: control points, dt: knot span
   void calcSmoothnessCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
                           vector<Eigen::Vector3d>& gradient_q, double& gt);
-  void calcDistanceCost(const vector<Eigen::Vector3d>& q, double& cost,
-                        vector<Eigen::Vector3d>& gradient_q);
+  void calcDistanceCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcFeasibilityCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
                            vector<Eigen::Vector3d>& gradient_q, double& gt);
   void calcStartCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
                      vector<Eigen::Vector3d>& gradient_q, double& gt);
   void calcEndCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
                    vector<Eigen::Vector3d>& gradient_q, double& gt);
-  void calcGuideCost(const vector<Eigen::Vector3d>& q, double& cost,
-                     vector<Eigen::Vector3d>& gradient_q);
-  void calcWaypointsCost(const vector<Eigen::Vector3d>& q, double& cost,
-                         vector<Eigen::Vector3d>& gradient_q);
+  void calcGuideCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
+  void calcWaypointsCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcViewCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcTimeCost(const double& dt, double& cost, double& gt);
   bool isQuadratic();
@@ -126,7 +122,7 @@ private:
   double pt_dist_;
 
   /* for benckmark evaluation only */
-public:
+ public:
   vector<double> vec_cost_;
   vector<double> vec_time_;
   ros::Time time_start_;

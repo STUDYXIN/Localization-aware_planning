@@ -40,22 +40,25 @@ include_directories(
 )
 
 
+# add_executable(exploration_node
+#   src/exploration_node.cpp 
+#   src/fast_exploration_fsm.cpp
+#   src/fast_exploration_manager.cpp
+#   )
+# target_link_libraries(exploration_node 
+#   ${catkin_LIBRARIES}
+#   # -ldw
+#   )
+
 add_executable(exploration_node
   src/exploration_node.cpp 
-  src/fast_exploration_fsm.cpp
-  src/fast_exploration_manager.cpp
+  src/perception_aware_exploration_fsm.cpp
+  src/perception_aware_exploration_manager.cpp
   )
 target_link_libraries(exploration_node 
   ${catkin_LIBRARIES}
   # -ldw
   )
-
-# add_library(exploration_manager
-#   src/fast_exploration_manager.cpp
-# )
-# target_link_libraries(exploration_manager
-#   ${catkin_LIBRARIES}
-# )
 
 add_executable(write_tsp test/write_tsp.cpp)
 target_link_libraries(write_tsp

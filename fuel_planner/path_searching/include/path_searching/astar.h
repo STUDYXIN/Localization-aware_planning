@@ -1,18 +1,21 @@
 #ifndef _ASTAR_H
 #define _ASTAR_H
 
+#include <ros/console.h>
+#include <ros/ros.h>
+
 #include <Eigen/Eigen>
 #include <iostream>
 #include <map>
-#include <ros/console.h>
-#include <ros/ros.h>
 #include <string>
 #include <unordered_map>
 // #include "grad_spline/sdf_map.h"
-#include "plan_env/edt_environment.h"
+#include <path_searching/matrix_hash.h>
+
 #include <boost/functional/hash.hpp>
 #include <queue>
-#include <path_searching/matrix_hash.h>
+
+#include "plan_env/edt_environment.h"
 namespace fast_planner {
 // #define REACH_HORIZON 1
 // #define REACH_END 2
@@ -23,7 +26,7 @@ namespace fast_planner {
 #define inf 1 >> 30
 
 class Node {
-public:
+ public:
   /* -------------------- */
   Eigen::Vector3i index;
   Eigen::Vector3d position;
@@ -44,26 +47,20 @@ public:
 typedef Node* NodePtr;
 
 class NodeComparator0 {
-public:
-  bool operator()(NodePtr node1, NodePtr node2) {
-    return node1->f_score > node2->f_score;
-  }
+ public:
+  bool operator()(NodePtr node1, NodePtr node2) { return node1->f_score > node2->f_score; }
 };
 
 class NodeHashTable0 {
-private:
+ private:
   /* data */
   std::unordered_map<Eigen::Vector3i, NodePtr, matrix_hash0<Eigen::Vector3i>> data_3d_;
   std::unordered_map<Eigen::Vector4i, NodePtr, matrix_hash0<Eigen::Vector4i>> data_4d_;
 
-public:
-  NodeHashTable0(/* args */) {
-  }
-  ~NodeHashTable0() {
-  }
-  void insert(Eigen::Vector3i idx, NodePtr node) {
-    data_3d_.insert(make_pair(idx, node));
-  }
+ public:
+  NodeHashTable0(/* args */) {}
+  ~NodeHashTable0() {}
+  void insert(Eigen::Vector3i idx, NodePtr node) { data_3d_.insert(make_pair(idx, node)); }
   void insert(Eigen::Vector3i idx, int time_idx, NodePtr node) {
     data_4d_.insert(make_pair(Eigen::Vector4i(idx(0), idx(1), idx(2), time_idx), node));
   }
@@ -84,7 +81,7 @@ public:
 };
 
 class Astar {
-private:
+ private:
   /* ---------- main data structure ---------- */
   vector<NodePtr> path_node_pool_;
   int use_node_num_, iter_num_;
@@ -117,7 +114,7 @@ private:
   double getManhHeu(Eigen::Vector3d x1, Eigen::Vector3d x2);
   double getEuclHeu(Eigen::Vector3d x1, Eigen::Vector3d x2);
 
-public:
+ public:
   Astar(){};
   ~Astar();
 

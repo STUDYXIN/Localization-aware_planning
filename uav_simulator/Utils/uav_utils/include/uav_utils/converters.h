@@ -1,10 +1,10 @@
 #ifndef __UAVUTILS_CONVERTERS_H
 #define __UAVUTILS_CONVERTERS_H
 
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/Vector3.h>
+#include <nav_msgs/Odometry.h>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -45,10 +45,8 @@ Eigen::Matrix<Scalar_t, 3, 1> from_vector3_msg(const geometry_msgs::Vector3& msg
 template <typename Derived>
 geometry_msgs::Vector3 to_vector3_msg(const Eigen::DenseBase<Derived>& v) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
-  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 3,
-                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
-  EIGEN_STATIC_ASSERT(Derived::ColsAtCompileTime == 1,
-                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 3, THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+  EIGEN_STATIC_ASSERT(Derived::ColsAtCompileTime == 1, THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   geometry_msgs::Vector3 msg;
   msg.x = v.x();
@@ -65,10 +63,8 @@ Eigen::Matrix<Scalar_t, 3, 1> from_point_msg(const geometry_msgs::Point& msg) {
 template <typename Derived>
 geometry_msgs::Point to_point_msg(const Eigen::DenseBase<Derived>& v) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
-  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 3,
-                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
-  EIGEN_STATIC_ASSERT(Derived::ColsAtCompileTime == 1,
-                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 3, THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+  EIGEN_STATIC_ASSERT(Derived::ColsAtCompileTime == 1, THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   geometry_msgs::Point msg;
   msg.x = v.x();
@@ -91,6 +87,6 @@ geometry_msgs::Quaternion to_quaternion_msg(const Eigen::Quaternion<Scalar_t>& q
   msg.w = q.w();
   return msg;
 }
-}
+}  // namespace uav_utils
 
 #endif

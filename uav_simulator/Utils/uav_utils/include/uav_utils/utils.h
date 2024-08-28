@@ -2,7 +2,6 @@
 #define __UAV_UTILS_H
 
 #include <ros/ros.h>
-
 #include <uav_utils/converters.h>
 #include <uav_utils/geometry_utils.h>
 

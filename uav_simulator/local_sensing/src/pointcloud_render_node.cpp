@@ -8,6 +8,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+
 #include <Eigen/Dense>
 #include <fstream>
 #include <iostream>
@@ -42,8 +43,7 @@ int GLX_SIZE, GLY_SIZE, GLZ_SIZE;
 
 ros::Time last_odom_stamp = ros::TIME_MAX;
 
-inline Eigen::Vector3d gridIndex2coord(const Eigen::Vector3i& index)
-{
+inline Eigen::Vector3d gridIndex2coord(const Eigen::Vector3i& index) {
   Eigen::Vector3d pt;
   pt(0) = ((double)index(0) + 0.5) * resolution + gl_xl;
   pt(1) = ((double)index(1) + 0.5) * resolution + gl_yl;
@@ -52,8 +52,7 @@ inline Eigen::Vector3d gridIndex2coord(const Eigen::Vector3i& index)
   return pt;
 };
 
-inline Eigen::Vector3i coord2gridIndex(const Eigen::Vector3d& pt)
-{
+inline Eigen::Vector3i coord2gridIndex(const Eigen::Vector3d& pt) {
   Eigen::Vector3i idx;
   idx(0) = std::min(std::max(int((pt(0) - gl_xl) * inv_resolution), 0), GLX_SIZE - 1);
   idx(1) = std::min(std::max(int((pt(1) - gl_yl) * inv_resolution), 0), GLY_SIZE - 1);
@@ -62,8 +61,7 @@ inline Eigen::Vector3i coord2gridIndex(const Eigen::Vector3d& pt)
   return idx;
 };
 
-void rcvOdometryCallbck(const nav_msgs::Odometry& odom)
-{
+void rcvOdometryCallbck(const nav_msgs::Odometry& odom) {
   /*if(!has_global_map)
     return;*/
   has_odom = true;
@@ -94,10 +92,8 @@ pcl::search::KdTree<pcl::PointXYZ> _kdtreeLocalMap;
 vector<int> pointIdxRadiusSearch;
 vector<float> pointRadiusSquaredDistance;
 
-void rcvGlobalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
-{
-  if (has_global_map)
-    return;
+void rcvGlobalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map) {
+  if (has_global_map) return;
 
   ROS_WARN("Global Pointcloud received..");
 
@@ -113,10 +109,8 @@ void rcvGlobalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
   has_global_map = true;
 }
 
-void renderSensedPoints(const ros::TimerEvent& event)
-{
-  if (!has_global_map || !has_odom)
-    return;
+void renderSensedPoints(const ros::TimerEvent& event) {
+  if (!has_global_map || !has_odom) return;
 
   Eigen::Quaterniond q;
   q.x() = odom_.pose.pose.orientation.x;
@@ -132,14 +126,14 @@ void renderSensedPoints(const ros::TimerEvent& event)
   Eigen::Vector3d yaw_vec = rot.col(0);
 
   local_map.points.clear();
-  pcl::PointXYZ searchPoint(odom_.pose.pose.position.x, odom_.pose.pose.position.y, odom_.pose.pose.position.z);
+  pcl::PointXYZ searchPoint(odom_.pose.pose.position.x, odom_.pose.pose.position.y,
+                            odom_.pose.pose.position.z);
   pointIdxRadiusSearch.clear();
   pointRadiusSquaredDistance.clear();
 
-  if (_kdtreeLocalMap.radiusSearch(searchPoint, sensing_horizon, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0)
-  {
-    for (size_t i = 0; i < pointIdxRadiusSearch.size(); ++i)
-    {
+  if (_kdtreeLocalMap.radiusSearch(searchPoint, sensing_horizon, pointIdxRadiusSearch,
+                                   pointRadiusSquaredDistance) > 0) {
+    for (size_t i = 0; i < pointIdxRadiusSearch.size(); ++i) {
       auto pt = cloud_all_map.points[pointIdxRadiusSearch[i]];
       Eigen::Vector3d pt3;
       pt3[0] = pt.x;
@@ -147,11 +141,9 @@ void renderSensedPoints(const ros::TimerEvent& event)
       pt3[2] = pt.z;
       auto dir = pt3 - pos;
 
-      if (fabs(dir[2]) > dir.head<2>().norm() * tan(M_PI / 6.0))
-        continue;
+      if (fabs(dir[2]) > dir.head<2>().norm() * tan(M_PI / 6.0)) continue;
 
-      if (dir.dot(yaw_vec) < 0)
-        continue;
+      if (dir.dot(yaw_vec) < 0) continue;
 
       local_map.points.push_back(pt);
     }
@@ -165,8 +157,7 @@ void renderSensedPoints(const ros::TimerEvent& event)
   }
 }
 
-void pubSensorPose(const ros::TimerEvent& e)
-{
+void pubSensorPose(const ros::TimerEvent& e) {
   Eigen::Quaterniond q;
   q = sensor2world.block<3, 3>(0, 0);
 
@@ -183,8 +174,7 @@ void pubSensorPose(const ros::TimerEvent& e)
   pub_pose.publish(sensor_pose);
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   ros::init(argc, argv, "pcl_render");
   ros::NodeHandle nh("~");
 
@@ -220,8 +210,7 @@ int main(int argc, char** argv)
 
   ros::Rate rate(100);
   bool status = ros::ok();
-  while (status)
-  {
+  while (status) {
     ros::spinOnce();
     status = ros::ok();
     rate.sleep();

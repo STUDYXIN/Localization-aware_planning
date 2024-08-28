@@ -1,27 +1,27 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <vector>
 // include ros dep.
-#include <ros/ros.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/sync_policies/exact_time.h>
-#include <message_filters/sync_policies/approximate_time.h>
+#include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <image_transport/image_transport.h>
-#include <dynamic_reconfigure/server.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <message_filters/synchronizer.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
+#include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Bool.h>
-
-#include "tf/tf.h"
-#include "tf/transform_datatypes.h"
 #include <tf/transform_broadcaster.h>
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_ros/transform_listener.h>
+
+#include "tf/tf.h"
+#include "tf/transform_datatypes.h"
 // include pcl dep
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
@@ -30,11 +30,13 @@
 #include <pcl_conversions/pcl_conversions.h>
 // include opencv and eigen
 // #include <eigen3/Eigen/Dense>
-#include <Eigen/Eigen>
-#include "opencv2/highgui/highgui.hpp"
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/eigen.hpp>
 #include <cv_bridge/cv_bridge.h>
+
+#include <Eigen/Eigen>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
+
+#include "opencv2/highgui/highgui.hpp"
 
 //#include <cloud_banchmark/cloud_banchmarkConfig.h>
 #include "depth_render.cuh"
@@ -89,8 +91,7 @@ void render_pcl_world();
 std::unique_ptr<tf2_ros::TransformListener> tf_listener_ptr_;
 tf2_ros::Buffer tf_buffer_;
 
-inline Eigen::Vector3d gridIndex2coord(const Eigen::Vector3i& index)
-{
+inline Eigen::Vector3d gridIndex2coord(const Eigen::Vector3i& index) {
   Eigen::Vector3d pt;
   pt(0) = ((double)index(0) + 0.5) * _resolution + _gl_xl;
   pt(1) = ((double)index(1) + 0.5) * _resolution + _gl_yl;
@@ -99,8 +100,7 @@ inline Eigen::Vector3d gridIndex2coord(const Eigen::Vector3i& index)
   return pt;
 };
 
-inline Eigen::Vector3i coord2gridIndex(const Eigen::Vector3d& pt)
-{
+inline Eigen::Vector3i coord2gridIndex(const Eigen::Vector3d& pt) {
   Eigen::Vector3i idx;
   idx(0) = std::min(std::max(int((pt(0) - _gl_xl) * _inv_resolution), 0), _GLX_SIZE - 1);
   idx(1) = std::min(std::max(int((pt(1) - _gl_yl) * _inv_resolution), 0), _GLY_SIZE - 1);
@@ -109,8 +109,7 @@ inline Eigen::Vector3i coord2gridIndex(const Eigen::Vector3d& pt)
   return idx;
 };
 
-void rcvOdometryCallbck(const nav_msgs::Odometry& odom)
-{
+void rcvOdometryCallbck(const nav_msgs::Odometry& odom) {
   /*if(!has_global_map)
     return;*/
   has_odom = true;
@@ -151,8 +150,7 @@ void rcvOdometryCallbck(const nav_msgs::Odometry& odom)
   transform from world frame to quadrotor frame.*/
 }
 
-void pubCameraPose(const ros::TimerEvent& event)
-{
+void pubCameraPose(const ros::TimerEvent& event) {
   // cout<<"pub cam pose"
   geometry_msgs::PoseStamped camera_pose;
   camera_pose.header = _odom.header;
@@ -167,20 +165,16 @@ void pubCameraPose(const ros::TimerEvent& event)
   pub_pose.publish(camera_pose);
 }
 
-void renderSensedPoints(const ros::TimerEvent& event)
-{
-  if (!has_global_map && !has_local_map)
-    return;
+void renderSensedPoints(const ros::TimerEvent& event) {
+  if (!has_global_map && !has_local_map) return;
 
   render_currentpose();
   render_pcl_world();
 }
 
 vector<float> cloud_data;
-void rcvGlobalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
-{
-  if (has_global_map)
-    return;
+void rcvGlobalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map) {
+  if (has_global_map) return;
 
   ROS_WARN("Global Pointcloud received..");
   // load global map
@@ -188,8 +182,7 @@ void rcvGlobalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
   pcl::PointXYZ pt_in;
   // transform map to point cloud format
   pcl::fromROSMsg(pointcloud_map, cloudIn);
-  for (int i = 0; i < int(cloudIn.points.size()); i++)
-  {
+  for (int i = 0; i < int(cloudIn.points.size()); i++) {
     pt_in = cloudIn.points[i];
     cloud_data.push_back(pt_in.x);
     cloud_data.push_back(pt_in.y);
@@ -203,8 +196,7 @@ void rcvGlobalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
   has_global_map = true;
 }
 
-void rcvLocalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
-{
+void rcvLocalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map) {
   // ROS_WARN("Local Pointcloud received..");
   // load local map
   pcl::PointCloud<pcl::PointXYZ> cloudIn;
@@ -212,10 +204,8 @@ void rcvLocalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
   // transform map to point cloud format
   pcl::fromROSMsg(pointcloud_map, cloudIn);
 
-  if (cloudIn.points.size() == 0)
-    return;
-  for (int i = 0; i < int(cloudIn.points.size()); i++)
-  {
+  if (cloudIn.points.size() == 0) return;
+  for (int i = 0; i < int(cloudIn.points.size()); i++) {
     pt_in = cloudIn.points[i];
     Eigen::Vector3d pose_pt(pt_in.x, pt_in.y, pt_in.z);
     // pose_pt = gridIndex2coord(coord2gridIndex(pose_pt));
@@ -231,8 +221,7 @@ void rcvLocalPointCloudCallBack(const sensor_msgs::PointCloud2& pointcloud_map)
   has_local_map = true;
 }
 
-void render_pcl_world()
-{
+void render_pcl_world() {
   // for debug purpose
   pcl::PointCloud<pcl::PointXYZ> localMap;
   pcl::PointXYZ pt_in;
@@ -242,12 +231,10 @@ void render_pcl_world()
   Eigen::Vector3d pose_pt;
 
   for (int u = 0; u < width; u++)
-    for (int v = 0; v < height; v++)
-    {
+    for (int v = 0; v < height; v++) {
       float depth = depth_mat.at<float>(v, u);
 
-      if (depth == 0.0)
-        continue;
+      if (depth == 0.0) continue;
 
       pose_in_camera(0) = (u - cx) * depth / fx;
       pose_in_camera(1) = (v - cy) * depth / fy;
@@ -256,8 +243,7 @@ void render_pcl_world()
 
       pose_in_world = cam2world * pose_in_camera;
 
-      if ((pose_in_world.segment(0, 3) - last_pose_world).norm() > sensing_horizon)
-        continue;
+      if ((pose_in_world.segment(0, 3) - last_pose_world).norm() > sensing_horizon) continue;
 
       pose_pt = pose_in_world.head(3);
       // pose_pt = gridIndex2coord(coord2gridIndex(pose_pt));
@@ -279,8 +265,7 @@ void render_pcl_world()
   pub_pcl_wolrd.publish(local_map_pcl);
 }
 
-void render_currentpose()
-{
+void render_currentpose() {
   double this_time = ros::Time::now().toSec();
 
   Matrix4d cam_pose = cam2world.inverse();
@@ -288,8 +273,7 @@ void render_currentpose()
   double pose[4 * 4];
 
   for (int i = 0; i < 4; i++)
-    for (int j = 0; j < 4; j++)
-    {
+    for (int j = 0; j < 4; j++) {
       // pose[j + 4 * i] = cam_pose(i, j);
       pose[j + 4 * i] = cam_pose(i, j);
     }
@@ -301,8 +285,7 @@ void render_currentpose()
   double min = 0.5;
   double max = 1.0f;
   for (int i = 0; i < height; i++)
-    for (int j = 0; j < width; j++)
-    {
+    for (int j = 0; j < width; j++) {
       float depth = (float)depth_hostptr[i * width + j] / 1000.0f;
       depth = depth < 500.0f ? depth : 0;
       max = depth > max ? depth : max;
@@ -354,8 +337,7 @@ void render_currentpose()
   // br.sendTransform(tf::StampedTransform(transform, last_odom_stamp, "world", "SQ01s/camera"));
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   ros::init(argc, argv, "pcl_render");
   ros::NodeHandle nh("~");
 
@@ -417,8 +399,7 @@ int main(int argc, char** argv)
 
   ros::Rate rate(100);
   bool status = ros::ok();
-  while (status)
-  {
+  while (status) {
     ros::spinOnce();
     status = ros::ok();
     rate.sleep();

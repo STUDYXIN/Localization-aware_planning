@@ -1,9 +1,8 @@
+#include <plan_manage/kino_replan_fsm.h>
+#include <plan_manage/local_explore_fsm.h>
+#include <plan_manage/topo_replan_fsm.h>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
-
-#include <plan_manage/kino_replan_fsm.h>
-#include <plan_manage/topo_replan_fsm.h>
-#include <plan_manage/local_explore_fsm.h>
 
 #include <plan_manage/backward.hpp>
 namespace backward {

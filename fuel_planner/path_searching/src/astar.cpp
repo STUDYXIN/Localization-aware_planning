@@ -1,4 +1,5 @@
 #include <path_searching/astar.h>
+
 #include <sstream>
 
 using namespace std;
@@ -39,8 +40,8 @@ int Astar::search(Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, bool dynamic
 
     const int end_range = 2;
     bool reach_end = abs(cur_node->index(0) - end_index(0)) <= end_range &&
-        abs(cur_node->index(1) - end_index(1)) <= end_range &&
-        abs(cur_node->index(2) - end_index(2)) <= end_range;
+                     abs(cur_node->index(1) - end_index(1)) <= end_range &&
+                     abs(cur_node->index(2) - end_index(2)) <= end_range;
     if (reach_end) {
       terminate_node = cur_node;
       retrievePath(terminate_node);
@@ -65,8 +66,7 @@ int Astar::search(Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, bool dynamic
           pro_pos = cur_pos + d_pos;
           /* ---------- check if in feasible space ---------- */
           if (pro_pos(0) <= origin_(0) || pro_pos(0) >= map_size_3d_(0) || pro_pos(1) <= origin_(1) ||
-              pro_pos(1) >= map_size_3d_(1) || pro_pos(2) <= origin_(2) ||
-              pro_pos(2) >= map_size_3d_(2)) {
+              pro_pos(1) >= map_size_3d_(1) || pro_pos(2) <= origin_(2) || pro_pos(2) >= map_size_3d_(2)) {
             continue;
           }
           /* not in close set */
@@ -123,7 +123,7 @@ int Astar::search(Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, bool dynamic
   return NO_PATH;
 }
 
-void Astar::setParam(ros::NodeHandle& nh) {
+void Astar::setParam(ros::NodeHandle &nh) {
   nh.param("astar/resolution_astar", resolution_, -1.0);
   nh.param("astar/time_resolution", time_resolution_, -1.0);
   nh.param("astar/lambda_heu", lambda_heu_, -1.0);
@@ -180,9 +180,7 @@ double Astar::getManhHeu(Eigen::Vector3d x1, Eigen::Vector3d x2) {
   return tie_breaker_ * (dx + dy + dz);
 }
 
-double Astar::getEuclHeu(Eigen::Vector3d x1, Eigen::Vector3d x2) {
-  return tie_breaker_ * (x2 - x1).norm();
-}
+double Astar::getEuclHeu(Eigen::Vector3d x1, Eigen::Vector3d x2) { return tie_breaker_ * (x2 - x1).norm(); }
 
 void Astar::init() {
   /* ---------- map params ---------- */
@@ -200,9 +198,7 @@ void Astar::init() {
   iter_num_ = 0;
 }
 
-void Astar::setEnvironment(const EDTEnvironment::Ptr& env) {
-  this->edt_environment_ = env;
-}
+void Astar::setEnvironment(const EDTEnvironment::Ptr &env) { this->edt_environment_ = env; }
 
 void Astar::reset() {
   expanded_nodes_.clear();
@@ -221,8 +217,7 @@ void Astar::reset() {
 
 std::vector<Eigen::Vector3d> Astar::getVisited() {
   vector<Eigen::Vector3d> visited;
-  for (int i = 0; i < use_node_num_; ++i)
-    visited.push_back(path_node_pool_[i]->position);
+  for (int i = 0; i < use_node_num_; ++i) visited.push_back(path_node_pool_[i]->position);
   return visited;
 }
 
@@ -231,8 +226,6 @@ Eigen::Vector3i Astar::posToIndex(Eigen::Vector3d pt) {
   return idx;
 }
 
-int Astar::timeToIndex(double time) {
-  int idx = floor((time - time_origin_) * inv_time_resolution_);
-}
+int Astar::timeToIndex(double time) { int idx = floor((time - time_origin_) * inv_time_resolution_); }
 
 }  // namespace fast_planner

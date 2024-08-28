@@ -17,7 +17,7 @@ void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eig
              const Eigen::Vector3d& max, std::vector<Eigen::Vector3d>* output);
 
 class RayCaster {
-private:
+ private:
   /* data */
   Eigen::Vector3d start_;
   Eigen::Vector3d end_;
@@ -51,11 +51,9 @@ private:
   Eigen::Vector3d offset_;
   Eigen::Vector3d half_;
 
-public:
-  RayCaster(/* args */) {
-  }
-  ~RayCaster() {
-  }
+ public:
+  RayCaster(/* args */) {}
+  ~RayCaster() {}
 
   void setParams(const double& res, const Eigen::Vector3d& origin);
   bool input(const Eigen::Vector3d& start, const Eigen::Vector3d& end);

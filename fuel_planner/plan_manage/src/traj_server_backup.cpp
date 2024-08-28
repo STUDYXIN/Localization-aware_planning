@@ -1,12 +1,14 @@
+#include <ros/ros.h>
+
+#include <memory>
+#include <plan_manage/plan_container.hpp>
+
+#include "bspline/Bspline.h"
 #include "bspline/non_uniform_bspline.h"
 #include "nav_msgs/Odometry.h"
-#include "bspline/Bspline.h"
 #include "quadrotor_msgs/PositionCommand.h"
 #include "std_msgs/Empty.h"
 #include "visualization_msgs/Marker.h"
-#include <ros/ros.h>
-#include <plan_manage/plan_container.hpp>
-#include <memory>
 
 using fast_planner::LocalTrajData;
 using fast_planner::LocalTrajServer;
@@ -16,8 +18,8 @@ using fast_planner::NonUniformBspline;
 ros::Publisher cmd_vis_pub, pos_cmd_pub, traj_pub;
 
 quadrotor_msgs::PositionCommand cmd;
-double pos_gain[3] = { 5.7, 5.7, 6.2 };
-double vel_gain[3] = { 3.4, 3.4, 4.0 };
+double pos_gain[3] = {5.7, 5.7, 6.2};
+double vel_gain[3] = {3.4, 3.4, 4.0};
 int pub_traj_id_;
 
 std::shared_ptr<LocalTrajServer> local_traj_;
@@ -29,8 +31,7 @@ std::shared_ptr<LocalTrajServer> local_traj_;
 
 vector<Eigen::Vector3d> executed_cmd_;
 
-void displayTrajWithColor(vector<Eigen::Vector3d> traj, double resolution, Eigen::Vector4d color,
-                          int id) {
+void displayTrajWithColor(vector<Eigen::Vector3d> traj, double resolution, Eigen::Vector4d color, int id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
@@ -96,9 +97,7 @@ void drawCmd(const Eigen::Vector3d& pos, const Eigen::Vector3d& vec, const int& 
   cmd_vis_pub.publish(mk_state);
 }
 
-void pauseCallback(std_msgs::Empty msg) {
-  local_traj_->resetDuration();
-}
+void pauseCallback(std_msgs::Empty msg) { local_traj_->resetDuration(); }
 
 void visCallback(const ros::TimerEvent& e) {
   displayTrajWithColor(executed_cmd_, 0.05, Eigen::Vector4d(0, 1, 0, 1), pub_traj_id_);

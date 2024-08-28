@@ -27,18 +27,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/bind.hpp>
+#include "multi_probmap_display.h"
 
 #include <OGRE/OgreManualObject.h>
 #include <OGRE/OgreMaterialManager.h>
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreTextureManager.h>
-
 #include <ros/ros.h>
-
 #include <tf/transform_listener.h>
 
+#include <boost/bind.hpp>
+
+#include "rviz/display_context.h"
 #include "rviz/frame_manager.h"
 #include "rviz/ogre_helpers/grid.h"
 #include "rviz/properties/float_property.h"
@@ -48,9 +49,6 @@
 #include "rviz/properties/ros_topic_property.h"
 #include "rviz/properties/vector_property.h"
 #include "rviz/validate_floats.h"
-#include "rviz/display_context.h"
-
-#include "multi_probmap_display.h"
 
 namespace rviz {
 
@@ -60,10 +58,10 @@ MultiProbMapDisplay::MultiProbMapDisplay() : Display(), loaded_(false), new_map_
       QString::fromStdString(ros::message_traits::datatype<multi_map_server::MultiOccupancyGrid>()),
       "multi_map_server::MultiOccupancyGrid topic to subscribe to.", this, SLOT(updateTopic()));
 
-  draw_under_property_ =
-      new Property("Draw Behind", false, "Rendering option, controls whether or not the map is always"
-                                         " drawn behind everything else.",
-                   this, SLOT(updateDrawUnder()));
+  draw_under_property_ = new Property("Draw Behind", false,
+                                      "Rendering option, controls whether or not the map is always"
+                                      " drawn behind everything else.",
+                                      this, SLOT(updateDrawUnder()));
 }
 
 MultiProbMapDisplay::~MultiProbMapDisplay() {
@@ -71,12 +69,9 @@ MultiProbMapDisplay::~MultiProbMapDisplay() {
   clear();
 }
 
-void MultiProbMapDisplay::onInitialize() {
-}
+void MultiProbMapDisplay::onInitialize() {}
 
-void MultiProbMapDisplay::onEnable() {
-  subscribe();
-}
+void MultiProbMapDisplay::onEnable() { subscribe(); }
 
 void MultiProbMapDisplay::onDisable() {
   unsubscribe();
@@ -90,8 +85,8 @@ void MultiProbMapDisplay::subscribe() {
 
   if (!topic_property_->getTopic().isEmpty()) {
     try {
-      map_sub_ = update_nh_.subscribe(topic_property_->getTopicStd(), 1,
-                                      &MultiProbMapDisplay::incomingMap, this);
+      map_sub_ =
+          update_nh_.subscribe(topic_property_->getTopicStd(), 1, &MultiProbMapDisplay::incomingMap, this);
       setStatus(StatusProperty::Ok, "Topic", "OK");
     } catch (ros::Exception& e) {
       setStatus(StatusProperty::Error, "Topic", QString("Error subscribing: ") + e.what());
@@ -99,15 +94,12 @@ void MultiProbMapDisplay::subscribe() {
   }
 }
 
-void MultiProbMapDisplay::unsubscribe() {
-  map_sub_.shutdown();
-}
+void MultiProbMapDisplay::unsubscribe() { map_sub_.shutdown(); }
 
 void MultiProbMapDisplay::updateDrawUnder() {
   bool draw_under = draw_under_property_->getValue().toBool();
 
-  for (unsigned int k = 0; k < material_.size(); k++)
-    material_[k]->setDepthWriteEnabled(!draw_under);
+  for (unsigned int k = 0; k < material_.size(); k++) material_[k]->setDepthWriteEnabled(!draw_under);
 
   for (unsigned int k = 0; k < manual_object_.size(); k++) {
     if (draw_under)

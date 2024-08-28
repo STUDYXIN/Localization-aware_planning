@@ -1,42 +1,43 @@
 #ifndef _MAP_ROS_H
 #define _MAP_ROS_H
 
+#include <cv_bridge/cv_bridge.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/time_synchronizer.h>
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <ros/ros.h>
-
-#include <cv_bridge/cv_bridge.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <ros/ros.h>
 
 #include <memory>
 #include <random>
 
-using std::shared_ptr;
-using std::normal_distribution;
 using std::default_random_engine;
+using std::normal_distribution;
+using std::shared_ptr;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 
 namespace fast_planner {
 class SDFMap;
 
 class MapROS {
-public:
+ public:
   MapROS();
   ~MapROS();
   void setMap(SDFMap* map);
   void init();
   bool using_global_map;
 
-private:
+ private:
   void depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
                          const geometry_msgs::PoseStampedConstPtr& pose);
   void cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
                          const geometry_msgs::PoseStampedConstPtr& pose);
-  void global_cloud_subCallback(const sensor_msgs::PointCloud2ConstPtr& msg);                       
+  void global_cloud_subCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
   void updateESDFCallback(const ros::TimerEvent& /*event*/);
   void visCallback(const ros::TimerEvent& /*event*/);
 
@@ -104,6 +105,6 @@ private:
 
   friend SDFMap;
 };
-}
+}  // namespace fast_planner
 
 #endif

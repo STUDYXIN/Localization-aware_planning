@@ -1,11 +1,13 @@
-#include <iostream>
-#include <string.h>
-#include <ros/ros.h>
+#include <dynamic_reconfigure/server.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Vector3.h>
 #include <nav_msgs/Odometry.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <dynamic_reconfigure/server.h>
+#include <ros/ros.h>
 #include <so3_disturbance_generator/DisturbanceUIConfig.h>
+#include <string.h>
+
+#include <iostream>
+
 #include "pose_utils.h"
 
 using namespace arma;

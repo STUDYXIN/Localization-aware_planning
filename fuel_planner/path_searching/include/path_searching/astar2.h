@@ -1,42 +1,40 @@
 #ifndef _ASTAR2_H
 #define _ASTAR2_H
 
-#include <Eigen/Eigen>
-#include <iostream>
-#include <map>
+#include <path_searching/matrix_hash.h>
 #include <ros/console.h>
 #include <ros/ros.h>
+
+#include <Eigen/Eigen>
+#include <boost/functional/hash.hpp>
+#include <iostream>
+#include <map>
+#include <queue>
 #include <string>
 #include <unordered_map>
+
 #include "plan_env/edt_environment.h"
-#include <boost/functional/hash.hpp>
-#include <queue>
-#include <path_searching/matrix_hash.h>
 namespace fast_planner {
 class Node {
-public:
+ public:
   Eigen::Vector3i index;
   Eigen::Vector3d position;
   double g_score, f_score;
   Node* parent;
 
   /* -------------------- */
-  Node() {
-    parent = NULL;
-  }
-  ~Node(){};
+  Node() { parent = NULL; }
+  ~Node() {};
 };
 typedef Node* NodePtr;
 
 class NodeComparator0 {
-public:
-  bool operator()(NodePtr node1, NodePtr node2) {
-    return node1->f_score > node2->f_score;
-  }
+ public:
+  bool operator()(NodePtr node1, NodePtr node2) { return node1->f_score > node2->f_score; }
 };
 
 class Astar {
-public:
+ public:
   Astar();
   ~Astar();
   enum { REACH_END = 1, NO_PATH = 2 };
@@ -54,7 +52,7 @@ public:
   double lambda_heu_;
   double max_search_time_;
 
-private:
+ private:
   void backtrack(const NodePtr& end_node, const Eigen::Vector3d& end);
   void posToIndex(const Eigen::Vector3d& pt, Eigen::Vector3i& idx);
   double getDiagHeu(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2);

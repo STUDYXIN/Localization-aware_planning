@@ -1,7 +1,7 @@
 #include <active_perception/graph_node.h>
 #include <path_searching/astar2.h>
-#include <plan_env/sdf_map.h>
 #include <plan_env/raycast.h>
+#include <plan_env/sdf_map.h>
 
 namespace fast_planner {
 // Static data
@@ -42,11 +42,11 @@ double ViewNode::searchPath(const Vector3d& p1, const Vector3d& p2, vector<Vecto
     }
   }
   if (safe) {
-    path = { p1, p2 };
+    path = {p1, p2};
     return (p1 - p2).norm();
   }
   // Search a path using decreasing resolution
-  vector<double> res = { 0.4 };
+  vector<double> res = {0.4};
   for (int k = 0; k < res.size(); ++k) {
     astar_->reset();
     astar_->setResolution(res[k]);
@@ -56,7 +56,7 @@ double ViewNode::searchPath(const Vector3d& p1, const Vector3d& p2, vector<Vecto
     }
   }
   // Use Astar early termination cost as an estimate
-  path = { p1, p2 };
+  path = {p1, p2};
   return 1000;
 }
 
@@ -97,4 +97,4 @@ double ViewNode::computeCost(const Vector3d& p1, const Vector3d& p2, const doubl
   // {
   // }
 }
-}
+}  // namespace fast_planner

@@ -1,6 +1,7 @@
-#ifndef _EXPLORATION_MANAGER_H_
-#define _EXPLORATION_MANAGER_H_
+#ifndef _PA_EXPLORATION_MANAGER_H_
+#define _PA_EXPLORATION_MANAGER_H_
 
+#include <exploration_manager/perception_aware_exploration_fsm.h>
 #include <ros/ros.h>
 
 #include <Eigen/Eigen>
@@ -11,37 +12,35 @@ using Eigen::Vector3d;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
+using std::weak_ptr;
 
 namespace fast_planner {
 class EDTEnvironment;
 class SDFMap;
 class FeatureMap;
 class FastPlannerManager;
+class PAExplorationFSM;
 class FrontierFinder;
 struct ExplorationParam;
 struct ExplorationData;
 
-enum EXPL_RESULT { NO_FRONTIER, FAIL, SUCCEED };
+enum NEXT_GOAL_TYPE { REACH_END, SEARCH_FRONTIER, NO_FRONTIER, NO_AVAILABLE_FRONTIER };
 
-class FastExplorationManager {
+class PAExplorationManager {
  public:
-  FastExplorationManager();
-  ~FastExplorationManager();
+  PAExplorationManager(shared_ptr<PAExplorationFSM> expl_fsm);
 
   void initialize(ros::NodeHandle &nh);
 
-  int planExploreMotion(const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, const Vector3d &yaw);
-  int plantoGoalMotion(const Vector3d &start_pt, const Vector3d &start_vel, const Vector3d &start_acc,
-                       const Vector3d &start_yaw, const Vector3d &end_pt, const Vector3d &end_vel);
-  // Benchmark method, classic frontier and rapid frontier
-  int classicFrontier(const Vector3d &pos, const double &yaw);
-  int rapidFrontier(const Vector3d &pos, const Vector3d &vel, const double &yaw, bool &classic);
+  NEXT_GOAL_TYPE selectNextGoal(Vector3d &next_pos, double &next_yaw);
+  bool planToNextGoal(const Vector3d &next_pos, const double &next_yaw);
+
+  weak_ptr<PAExplorationFSM> expl_fsm_;
 
   shared_ptr<ExplorationData> ed_;
   shared_ptr<ExplorationParam> ep_;
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FrontierFinder> frontier_finder_;
-  // unique_ptr<ViewFinder> view_finder_;
 
  private:
   shared_ptr<EDTEnvironment> edt_environment_;
@@ -60,7 +59,7 @@ class FastExplorationManager {
   void shortenPath(vector<Vector3d> &path);
 
  public:
-  typedef shared_ptr<FastExplorationManager> Ptr;
+  typedef shared_ptr<PAExplorationManager> Ptr;
 };
 
 }  // namespace fast_planner

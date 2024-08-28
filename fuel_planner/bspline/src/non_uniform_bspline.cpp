@@ -1,4 +1,5 @@
 #include "bspline/non_uniform_bspline.h"
+
 #include <ros/ros.h>
 
 namespace fast_planner {
@@ -7,11 +8,9 @@ NonUniformBspline::NonUniformBspline(const Eigen::MatrixXd& points, const int& o
   setUniformBspline(points, order, interval);
 }
 
-NonUniformBspline::NonUniformBspline() {
-}
+NonUniformBspline::NonUniformBspline() {}
 
-NonUniformBspline::~NonUniformBspline() {
-}
+NonUniformBspline::~NonUniformBspline() {}
 
 void NonUniformBspline::setUniformBspline(const Eigen::MatrixXd& points, const int& order,
                                           const double& interval) {
@@ -31,36 +30,28 @@ void NonUniformBspline::setUniformBspline(const Eigen::MatrixXd& points, const i
   }
 }
 
-void NonUniformBspline::setKnot(const Eigen::VectorXd& knot) {
-  this->u_ = knot;
-}
+void NonUniformBspline::setKnot(const Eigen::VectorXd& knot) { this->u_ = knot; }
 
-Eigen::VectorXd NonUniformBspline::getKnot() {
-  return this->u_;
-}
+Eigen::VectorXd NonUniformBspline::getKnot() { return this->u_; }
 
 void NonUniformBspline::getTimeSpan(double& um, double& um_p) {
   um = u_(p_);
   um_p = u_(m_ - p_);
 }
 
-Eigen::MatrixXd NonUniformBspline::getControlPoint() {
-  return control_points_;
-}
+Eigen::MatrixXd NonUniformBspline::getControlPoint() { return control_points_; }
 
 Eigen::VectorXd NonUniformBspline::evaluateDeBoor(const double& u) {
   double ub = min(max(u_(p_), u), u_(m_ - p_));
 
   // Determine which [uk,uk+1] does u lay in
   int k = p_;
-  while (u_(k + 1) < ub)
-    ++k;
+  while (u_(k + 1) < ub) ++k;
 
   /* deBoor's algorithm */
   // [uk,uk+1] is controlled by q[k-p]...q[k], retrieve the associated points
   vector<Eigen::VectorXd> d;
-  for (int i = 0; i <= p_; ++i)
-    d.push_back(control_points_.row(k - p_ + i));
+  for (int i = 0; i <= p_; ++i) d.push_back(control_points_.row(k - p_ + i));
 
   for (int r = 1; r <= p_; ++r)
     for (int i = p_; i >= r; --i) {
@@ -70,9 +61,7 @@ Eigen::VectorXd NonUniformBspline::evaluateDeBoor(const double& u) {
   return d[p_];
 }
 
-Eigen::VectorXd NonUniformBspline::evaluateDeBoorT(const double& t) {
-  return evaluateDeBoor(t + u_(p_));
-}
+Eigen::VectorXd NonUniformBspline::evaluateDeBoorT(const double& t) { return evaluateDeBoor(t + u_(p_)); }
 
 Eigen::MatrixXd NonUniformBspline::getDerivativeControlPoints() {
   // The derivative of a b-spline is also a b-spline, its degree become p_-1
@@ -80,8 +69,7 @@ Eigen::MatrixXd NonUniformBspline::getDerivativeControlPoints() {
 
   // Control point Qi = p_*(Pi+1-Pi)/(ui+p_+1-ui+1)
   for (int i = 0; i < ctp.rows(); ++i)
-    ctp.row(i) =
-        p_ * (control_points_.row(i + 1) - control_points_.row(i)) / (u_(i + p_ + 1) - u_(i + 1));
+    ctp.row(i) = p_ * (control_points_.row(i + 1) - control_points_.row(i)) / (u_(i + p_ + 1) - u_(i + 1));
   return ctp;
 }
 
@@ -90,8 +78,7 @@ void NonUniformBspline::computeDerivatives(const int& k, vector<NonUniformBsplin
   ders.clear();
   ders.push_back(getDerivative());
 
-  for (int i = 2; i <= k; ++i)
-    ders.push_back(ders.back().getDerivative());
+  for (int i = 2; i <= k; ++i) ders.push_back(ders.back().getDerivative());
 }
 
 NonUniformBspline NonUniformBspline::getDerivative() {
@@ -114,17 +101,13 @@ void NonUniformBspline::getBoundaryStates(const int& ks, const int& ke, vector<E
   start.clear();
   end.clear();
   start.push_back(evaluateDeBoorT(0));
-  for (int i = 0; i < ks; ++i)
-    start.push_back(ders[i].evaluateDeBoorT(0));
+  for (int i = 0; i < ks; ++i) start.push_back(ders[i].evaluateDeBoorT(0));
 
   end.push_back(evaluateDeBoorT(duration));
-  for (int i = 0; i < ke; ++i)
-    end.push_back(ders[i].evaluateDeBoorT(duration));
+  for (int i = 0; i < ke; ++i) end.push_back(ders[i].evaluateDeBoorT(duration));
 }
 
-double NonUniformBspline::getKnotSpan() {
-  return knot_span_;
-}
+double NonUniformBspline::getKnotSpan() { return knot_span_; }
 
 void NonUniformBspline::setPhysicalLimits(const double& vel, const double& acc) {
   limit_vel_ = vel;
@@ -140,17 +123,16 @@ double NonUniformBspline::checkRatio() {
   double max_vel = -1.0;
   for (int i = 0; i < P.rows() - 1; ++i) {
     Eigen::VectorXd vel = p_ * (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1));
-    for (int j = 0; j < dimension; ++j)
-      max_vel = max(max_vel, fabs(vel(j)));
+    for (int j = 0; j < dimension; ++j) max_vel = max(max_vel, fabs(vel(j)));
   }
   // Find max acc
   double max_acc = -1.0;
   for (int i = 0; i < P.rows() - 2; ++i) {
-    Eigen::VectorXd acc = p_ * (p_ - 1) * ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
-                                           (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
-        (u_(i + p_ + 1) - u_(i + 2));
-    for (int j = 0; j < dimension; ++j)
-      max_acc = max(max_acc, fabs(acc(j)));
+    Eigen::VectorXd acc = p_ * (p_ - 1) *
+                          ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
+                           (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
+                          (u_(i + p_ + 1) - u_(i + 2));
+    for (int j = 0; j < dimension; ++j) max_acc = max(max_acc, fabs(acc(j)));
   }
   double ratio = max(max_vel / limit_vel_, sqrt(fabs(max_acc) / limit_acc_));
   ROS_INFO("max vel: %lf, max acc: %lf, ratio: %lf", max_vel, max_acc, ratio);
@@ -169,10 +151,8 @@ void NonUniformBspline::lengthenTime(const double& ratio) {
 
   double delta_t = (ratio - 1.0) * (u_(num2) - u_(num1));
   double t_inc = delta_t / double(num2 - num1);
-  for (int i = num1 + 1; i <= num2; ++i)
-    u_(i) += double(i - num1) * t_inc;
-  for (int i = num2 + 1; i < u_.rows(); ++i)
-    u_(i) += delta_t;
+  for (int i = num1 + 1; i <= num2; ++i) u_(i) += double(i - num1) * t_inc;
+  for (int i = num2 + 1; i < u_.rows(); ++i) u_(i) += delta_t;
 }
 
 void NonUniformBspline::parameterizeToBspline(const double& ts, const vector<Eigen::Vector3d>& point_set,
@@ -206,8 +186,7 @@ void NonUniformBspline::parameterizeToBspline(const double& ts, const vector<Eig
     Eigen::Vector3d pt_to_vel = 1 / (2 * ts) * Eigen::Vector3d(-1, 0, 1);
     Eigen::Vector3d pt_to_acc = 1 / (ts * ts) * Eigen::Vector3d(1, -2, 1);
 
-    for (int i = 0; i < K; ++i)
-      A.block<1, 3>(i, i) = pt_to_pos.transpose();
+    for (int i = 0; i < K; ++i) A.block<1, 3>(i, i) = pt_to_pos.transpose();
     A.block<1, 3>(K, 0) = pt_to_vel.transpose();
     A.block<1, 3>(K + 1, K - 1) = pt_to_vel.transpose();
     A.block<1, 3>(K + 2, 0) = pt_to_acc.transpose();
@@ -218,8 +197,7 @@ void NonUniformBspline::parameterizeToBspline(const double& ts, const vector<Eig
     Eigen::Vector4d pt_to_vel = 1 / (6 * ts) * Eigen::Vector4d(-1, -3, 3, 1);
     Eigen::Vector4d pt_to_acc = 1 / (2 * ts * ts) * Eigen::Vector4d(1, -1, -1, 1);
 
-    for (int i = 0; i < K; ++i)
-      A.block<1, 4>(i, i) = pt_to_pos.transpose();
+    for (int i = 0; i < K; ++i) A.block<1, 4>(i, i) = pt_to_pos.transpose();
     A.block<1, 4>(K, 0) = pt_to_vel.transpose();
     A.block<1, 4>(K + 1, K - 1) = pt_to_vel.transpose();
     A.block<1, 4>(K + 2, 0) = pt_to_acc.transpose();
@@ -233,8 +211,7 @@ void NonUniformBspline::parameterizeToBspline(const double& ts, const vector<Eig
     pt_to_acc << 1, 2, -6, 2, 1;
     pt_to_acc /= (6 * ts * ts);
 
-    for (int i = 0; i < K; ++i)
-      A.block<1, 5>(i, i) = pt_to_pos.transpose();
+    for (int i = 0; i < K; ++i) A.block<1, 5>(i, i) = pt_to_pos.transpose();
     A.block<1, 5>(K, 0) = pt_to_vel.transpose();
     A.block<1, 5>(K + 1, K - 1) = pt_to_vel.transpose();
     A.block<1, 5>(K + 2, 0) = pt_to_acc.transpose();
@@ -264,9 +241,7 @@ void NonUniformBspline::parameterizeToBspline(const double& ts, const vector<Eig
   // cout << "[B-spline]: parameterization ok." << endl;
 }
 
-double NonUniformBspline::getTimeSum() {
-  return u_(m_ - p_) - u_(p_);
-}
+double NonUniformBspline::getTimeSum() { return u_(m_ - p_) - u_(p_); }
 
 double NonUniformBspline::getLength(const double& res) {
   double length = 0.0;
@@ -390,9 +365,10 @@ bool NonUniformBspline::reallocateTime(bool show) {
 
   /* acc feasibility */
   for (int i = 0; i < P.rows() - 2; ++i) {
-    Eigen::VectorXd acc = p_ * (p_ - 1) * ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
-                                           (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
-        (u_(i + p_ + 1) - u_(i + 2));
+    Eigen::VectorXd acc = p_ * (p_ - 1) *
+                          ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
+                           (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
+                          (u_(i + p_ + 1) - u_(i + 2));
 
     if (fabs(acc(0)) > limit_acc_ + 1e-4 || fabs(acc(1)) > limit_acc_ + 1e-4 ||
         fabs(acc(2)) > limit_acc_ + 1e-4) {
@@ -466,9 +442,10 @@ bool NonUniformBspline::checkFeasibility(bool show) {
   /* acc feasibility */
   double max_acc = -1.0;
   for (int i = 0; i < P.rows() - 2; ++i) {
-    Eigen::VectorXd acc = p_ * (p_ - 1) * ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
-                                           (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
-        (u_(i + p_ + 1) - u_(i + 2));
+    Eigen::VectorXd acc = p_ * (p_ - 1) *
+                          ((P.row(i + 2) - P.row(i + 1)) / (u_(i + p_ + 2) - u_(i + 2)) -
+                           (P.row(i + 1) - P.row(i)) / (u_(i + p_ + 1) - u_(i + 1))) /
+                          (u_(i + p_ + 1) - u_(i + 2));
 
     if (fabs(acc(0)) > limit_acc_ + 1e-4 || fabs(acc(1)) > limit_acc_ + 1e-4 ||
         fabs(acc(2)) > limit_acc_ + 1e-4) {

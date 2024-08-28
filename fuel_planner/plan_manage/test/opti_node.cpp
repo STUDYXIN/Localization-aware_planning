@@ -1,25 +1,23 @@
-#include "std_msgs/Empty.h"
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
-
-#include <fstream>
-#include <stdlib.h>
-
-#include "sensor_msgs/PointCloud.h"
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <stdlib.h>
+
+#include <fstream>
+#include <grad_traj_optimization/polynomial_traj.hpp>
 
 #include "grad_traj_optimization/display.h"
 #include "grad_traj_optimization/grad_traj_optimizer.h"
-#include <grad_traj_optimization/polynomial_traj.hpp>
+#include "sensor_msgs/PointCloud.h"
+#include "std_msgs/Empty.h"
 
 using namespace std;
 
 ros::Publisher poly_traj_pub;
 
-void displayPathWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen::Vector4d color,
-                          int id) {
+void displayPathWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen::Vector4d color, int id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();

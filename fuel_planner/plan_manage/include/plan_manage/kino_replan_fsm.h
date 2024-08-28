@@ -1,50 +1,43 @@
 #ifndef _KINO_REPLAN_FSM_H_
 #define _KINO_REPLAN_FSM_H_
 
-#include <Eigen/Eigen>
-#include <algorithm>
-#include <iostream>
-#include <nav_msgs/Path.h>
-#include <ros/ros.h>
-#include <std_msgs/Empty.h>
-#include <nav_msgs/Odometry.h>
-#include <vector>
-#include <visualization_msgs/Marker.h>
-
+#include <bspline/Bspline.h>
 #include <bspline_opt/bspline_optimizer.h>
+#include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 #include <path_searching/kinodynamic_astar.h>
 #include <plan_env/edt_environment.h>
 #include <plan_env/obj_predictor.h>
-#include <bspline/Bspline.h>
 #include <plan_manage/planner_manager.h>
+#include <ros/ros.h>
+#include <std_msgs/Empty.h>
 #include <traj_utils/planning_visualization.h>
+#include <visualization_msgs/Marker.h>
+
+#include <Eigen/Eigen>
+#include <algorithm>
+#include <iostream>
+#include <vector>
 
 using std::vector;
 
 namespace fast_planner {
 class Test {
-private:
+ private:
   /* data */
   int test_;
   std::vector<int> test_vec_;
   ros::NodeHandle nh_;
 
-public:
-  Test(const int& v) {
-    test_ = v;
-  }
-  Test(ros::NodeHandle& node) {
-    nh_ = node;
-  }
-  ~Test() {
-  }
-  void print() {
-    std::cout << "test: " << test_ << std::endl;
-  }
+ public:
+  Test(const int& v) { test_ = v; }
+  Test(ros::NodeHandle& node) { nh_ = node; }
+  ~Test() {}
+  void print() { std::cout << "test: " << test_ << std::endl; }
 };
 
 class KinoReplanFSM {
-private:
+ private:
   /* ---------- flag ---------- */
   enum FSM_EXEC_STATE { INIT, WAIT_TARGET, GEN_NEW_TRAJ, REPLAN_TRAJ, EXEC_TRAJ, REPLAN_NEW };
   enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2, REFENCE_PATH = 3 };
@@ -89,11 +82,9 @@ private:
   void waypointCallback(const nav_msgs::PathConstPtr& msg);
   void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
 
-public:
-  KinoReplanFSM(/* args */) {
-  }
-  ~KinoReplanFSM() {
-  }
+ public:
+  KinoReplanFSM(/* args */) {}
+  ~KinoReplanFSM() {}
 
   void init(ros::NodeHandle& nh);
 

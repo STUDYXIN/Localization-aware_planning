@@ -27,17 +27,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/bind.hpp>
+#include "probmap_display.h"
 
 #include <OGRE/OgreManualObject.h>
 #include <OGRE/OgreMaterialManager.h>
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreTextureManager.h>
-
 #include <ros/ros.h>
-
 #include <tf/transform_listener.h>
+
+#include <boost/bind.hpp>
 
 #include "rviz/display_context.h"
 #include "rviz/frame_manager.h"
@@ -50,21 +50,20 @@
 #include "rviz/properties/vector_property.h"
 #include "rviz/validate_floats.h"
 
-#include "probmap_display.h"
-
 namespace rviz {
 
 ProbMapDisplay::ProbMapDisplay()
-  : Display()
-  , manual_object_(NULL)
-  //! @bug cannot compile @gcc-5 or later, material_(0)
-  , loaded_(false)
-  , resolution_(0.0f)
-  , width_(0)
-  , height_(0)
-  , position_(Ogre::Vector3::ZERO)
-  , orientation_(Ogre::Quaternion::IDENTITY)
-  , new_map_(false) {
+    : Display(),
+      manual_object_(NULL)
+      //! @bug cannot compile @gcc-5 or later, material_(0)
+      ,
+      loaded_(false),
+      resolution_(0.0f),
+      width_(0),
+      height_(0),
+      position_(Ogre::Vector3::ZERO),
+      orientation_(Ogre::Quaternion::IDENTITY),
+      new_map_(false) {
   topic_property_ = new RosTopicProperty(
       "Topic", "", QString::fromStdString(ros::message_traits::datatype<nav_msgs::OccupancyGrid>()),
       "nav_msgs::OccupancyGrid topic to subscribe to.", this, SLOT(updateTopic()));
@@ -74,13 +73,12 @@ ProbMapDisplay::ProbMapDisplay()
   alpha_property_->setMin(0);
   alpha_property_->setMax(1);
 
-  draw_under_property_ =
-      new Property("Draw Behind", false, "Rendering option, controls whether or not the map is always"
-                                         " drawn behind everything else.",
-                   this, SLOT(updateDrawUnder()));
+  draw_under_property_ = new Property("Draw Behind", false,
+                                      "Rendering option, controls whether or not the map is always"
+                                      " drawn behind everything else.",
+                                      this, SLOT(updateDrawUnder()));
 
-  resolution_property_ =
-      new FloatProperty("Resolution", 0, "Resolution of the map. (not editable)", this);
+  resolution_property_ = new FloatProperty("Resolution", 0, "Resolution of the map. (not editable)", this);
   resolution_property_->setReadOnly(true);
 
   width_property_ = new IntProperty("Width", 0, "Width of the map, in meters. (not editable)", this);
@@ -89,9 +87,9 @@ ProbMapDisplay::ProbMapDisplay()
   height_property_ = new IntProperty("Height", 0, "Height of the map, in meters. (not editable)", this);
   height_property_->setReadOnly(true);
 
-  position_property_ = new VectorProperty(
-      "Position", Ogre::Vector3::ZERO,
-      "Position of the bottom left corner of the map, in meters. (not editable)", this);
+  position_property_ =
+      new VectorProperty("Position", Ogre::Vector3::ZERO,
+                         "Position of the bottom left corner of the map, in meters. (not editable)", this);
   position_property_->setReadOnly(true);
 
   orientation_property_ = new QuaternionProperty("Orientation", Ogre::Quaternion::IDENTITY,
@@ -119,9 +117,7 @@ void ProbMapDisplay::onInitialize() {
   updateAlpha();
 }
 
-void ProbMapDisplay::onEnable() {
-  subscribe();
-}
+void ProbMapDisplay::onEnable() { subscribe(); }
 
 void ProbMapDisplay::onDisable() {
   unsubscribe();
@@ -135,8 +131,7 @@ void ProbMapDisplay::subscribe() {
 
   if (!topic_property_->getTopic().isEmpty()) {
     try {
-      map_sub_ =
-          update_nh_.subscribe(topic_property_->getTopicStd(), 1, &ProbMapDisplay::incomingMap, this);
+      map_sub_ = update_nh_.subscribe(topic_property_->getTopicStd(), 1, &ProbMapDisplay::incomingMap, this);
       setStatus(StatusProperty::Ok, "Topic", "OK");
     } catch (ros::Exception& e) {
       setStatus(StatusProperty::Error, "Topic", QString("Error subscribing: ") + e.what());
@@ -144,9 +139,7 @@ void ProbMapDisplay::subscribe() {
   }
 }
 
-void ProbMapDisplay::unsubscribe() {
-  map_sub_.shutdown();
-}
+void ProbMapDisplay::unsubscribe() { map_sub_.shutdown(); }
 
 void ProbMapDisplay::updateAlpha() {
   float alpha = alpha_property_->getFloat();
@@ -234,8 +227,9 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
   new_map_ = false;
 
   if (!validateFloats(*current_map_)) {
-    setStatus(StatusProperty::Error, "Map", "Message contained invalid floating point values (nans or "
-                                            "infs)");
+    setStatus(StatusProperty::Error, "Map",
+              "Message contained invalid floating point values (nans or "
+              "infs)");
     return;
   }
 
@@ -333,15 +327,16 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
 
     {
       std::stringstream ss;
-      ss << "Map is larger than your graphics card supports.  Downsampled from [" << width << "x"
-         << height << "] to [" << fwidth << "x" << fheight << "]";
+      ss << "Map is larger than your graphics card supports.  Downsampled from [" << width << "x" << height
+         << "] to [" << fwidth << "x" << fheight << "]";
       setStatus(StatusProperty::Ok, "Map", QString::fromStdString(ss.str()));
     }
 
-    ROS_WARN("Failed to create full-size map texture, likely because your "
-             "graphics card does not support textures of size > 2048.  "
-             "Downsampling to [%d x %d]...",
-             (int)fwidth, (int)fheight);
+    ROS_WARN(
+        "Failed to create full-size map texture, likely because your "
+        "graphics card does not support textures of size > 2048.  "
+        "Downsampling to [%d x %d]...",
+        (int)fwidth, (int)fheight);
     // ROS_INFO("Stream size [%d], width [%f], height [%f], w * h [%f]",
     // pixel_stream->size(), width, height, width * height);
     image.loadRawData(pixel_stream, width, height, Ogre::PF_L8);
@@ -428,7 +423,6 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
 }
 
 void ProbMapDisplay::incomingMap(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
-
   updated_map_ = msg;
   boost::mutex::scoped_lock lock(mutex_);
   new_map_ = true;
@@ -456,9 +450,7 @@ void ProbMapDisplay::transformMap() {
   scene_node_->setOrientation(orientation);
 }
 
-void ProbMapDisplay::fixedFrameChanged() {
-  transformMap();
-}
+void ProbMapDisplay::fixedFrameChanged() { transformMap(); }
 
 void ProbMapDisplay::reset() {
   Display::reset();

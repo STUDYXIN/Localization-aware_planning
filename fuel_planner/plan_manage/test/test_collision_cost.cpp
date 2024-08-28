@@ -1,15 +1,14 @@
-#include <Eigen/Eigen>
+#include <bspline/non_uniform_bspline.h>
+#include <bspline_opt/bspline_optimizer.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-
+#include <traj_utils/planning_visualization.h>
 #include <visualization_msgs/Marker.h>
 
-#include <bspline_opt/bspline_optimizer.h>
-#include <bspline/non_uniform_bspline.h>
-#include <traj_utils/planning_visualization.h>
+#include <Eigen/Eigen>
 
 using namespace std;
 using namespace fast_planner;

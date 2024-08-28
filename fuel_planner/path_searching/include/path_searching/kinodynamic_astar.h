@@ -1,18 +1,20 @@
 #ifndef _KINODYNAMIC_ASTAR_H
 #define _KINODYNAMIC_ASTAR_H
 
-#include <Eigen/Eigen>
-#include <iostream>
-#include <map>
+#include <path_searching/matrix_hash.h>
 #include <ros/console.h>
 #include <ros/ros.h>
-#include <utility>
+
+#include <Eigen/Eigen>
+#include <boost/functional/hash.hpp>
+#include <iostream>
+#include <map>
+#include <queue>
 #include <string>
 #include <unordered_map>
+#include <utility>
+
 #include "plan_env/edt_environment.h"
-#include <boost/functional/hash.hpp>
-#include <queue>
-#include <path_searching/matrix_hash.h>
 
 namespace fast_planner {
 // #define REACH_HORIZON 1
@@ -24,7 +26,7 @@ namespace fast_planner {
 #define inf 1 >> 30
 
 class PathNode {
-public:
+ public:
   /* -------------------- */
   Eigen::Vector3i index;
   Eigen::Matrix<double, 6, 1> state;
@@ -47,26 +49,20 @@ public:
 typedef PathNode* PathNodePtr;
 
 class NodeComparator {
-public:
-  bool operator()(PathNodePtr node1, PathNodePtr node2) {
-    return node1->f_score > node2->f_score;
-  }
+ public:
+  bool operator()(PathNodePtr node1, PathNodePtr node2) { return node1->f_score > node2->f_score; }
 };
 
 class NodeHashTable {
-private:
+ private:
   /* data */
   std::unordered_map<Eigen::Vector3i, PathNodePtr, matrix_hash<Eigen::Vector3i>> data_3d_;
   std::unordered_map<Eigen::Vector4i, PathNodePtr, matrix_hash<Eigen::Vector4i>> data_4d_;
 
-public:
-  NodeHashTable(/* args */) {
-  }
-  ~NodeHashTable() {
-  }
-  void insert(Eigen::Vector3i idx, PathNodePtr node) {
-    data_3d_.insert(std::make_pair(idx, node));
-  }
+ public:
+  NodeHashTable(/* args */) {}
+  ~NodeHashTable() {}
+  void insert(Eigen::Vector3i idx, PathNodePtr node) { data_3d_.insert(std::make_pair(idx, node)); }
   void insert(Eigen::Vector3i idx, int time_idx, PathNodePtr node) {
     data_4d_.insert(std::make_pair(Eigen::Vector4i(idx(0), idx(1), idx(2), time_idx), node));
   }
@@ -87,7 +83,7 @@ public:
 };
 
 class KinodynamicAstar {
-private:
+ private:
   /* ---------- main data structure ---------- */
   vector<PathNodePtr> path_node_pool_;
   int use_node_num_, iter_num_;
@@ -134,7 +130,7 @@ private:
   void stateTransit(Eigen::Matrix<double, 6, 1>& state0, Eigen::Matrix<double, 6, 1>& state1,
                     Eigen::Vector3d um, double tau);
 
-public:
+ public:
   KinodynamicAstar(){};
   ~KinodynamicAstar();
 

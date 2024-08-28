@@ -29,8 +29,7 @@ void KinoReplanFSM::init(ros::NodeHandle& nh) {
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &KinoReplanFSM::execFSMCallback, this);
   safety_timer_ = nh.createTimer(ros::Duration(0.05), &KinoReplanFSM::checkCollisionCallback, this);
 
-  waypoint_sub_ =
-      nh.subscribe("/waypoint_generator/waypoints", 1, &KinoReplanFSM::waypointCallback, this);
+  waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &KinoReplanFSM::waypointCallback, this);
   odom_sub_ = nh.subscribe("/odom_world", 1, &KinoReplanFSM::odometryCallback, this);
 
   replan_pub_ = nh.advertise<std_msgs::Empty>("/planning/replan", 10);
@@ -81,16 +80,18 @@ void KinoReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
 }
 
 void KinoReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call) {
-  string state_str[5] = { "INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_"
-                                                                                "TRAJ" };
+  string state_str[5] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ",
+                         "EXEC_"
+                         "TRAJ"};
   int pre_s = int(exec_state_);
   exec_state_ = new_state;
   cout << "[" + pos_call + "]: from " + state_str[pre_s] + " to " + state_str[int(new_state)] << endl;
 }
 
 void KinoReplanFSM::printFSMExecState() {
-  string state_str[5] = { "INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_"
-                                                                                "TRAJ" };
+  string state_str[5] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ",
+                         "EXEC_"
+                         "TRAJ"};
 
   cout << "[FSM]: state: " + state_str[int(exec_state_)] << endl;
 }
@@ -205,9 +206,9 @@ void KinoReplanFSM::checkCollisionCallback(const ros::TimerEvent& e) {
   if (have_target_) {
     auto edt_env = planner_manager_->edt_environment_;
 
-    double dist = planner_manager_->pp_.dynamic_ ?
-        edt_env->evaluateCoarseEDT(end_pt_, /* time to program start + */ info->duration_) :
-        edt_env->evaluateCoarseEDT(end_pt_, -1.0);
+    double dist = planner_manager_->pp_.dynamic_
+                      ? edt_env->evaluateCoarseEDT(end_pt_, /* time to program start + */ info->duration_)
+                      : edt_env->evaluateCoarseEDT(end_pt_, -1.0);
 
     if (dist <= 0.3) {
       /* try to find a max distance goal around */
@@ -224,10 +225,10 @@ void KinoReplanFSM::checkCollisionCallback(const ros::TimerEvent& e) {
             new_z = end_pt_(2) + nz;
 
             Eigen::Vector3d new_pt(new_x, new_y, new_z);
-            dist = planner_manager_->pp_.dynamic_ ?
-                edt_env->evaluateCoarseEDT(new_pt,
-                                           /* time to program start+ */ info->duration_) :
-                edt_env->evaluateCoarseEDT(new_pt, -1.0);
+            dist = planner_manager_->pp_.dynamic_
+                       ? edt_env->evaluateCoarseEDT(new_pt,
+                                                    /* time to program start+ */ info->duration_)
+                       : edt_env->evaluateCoarseEDT(new_pt, -1.0);
 
             if (dist > max_dist) {
               /* reset end_pt_ */
@@ -287,8 +288,7 @@ bool KinoReplanFSM::callKinodynamicReplan() {
   if (plan_success) {
     replan_time_.push_back((t2 - t1).toSec());
     double mean1 = 0.0;
-    for (auto t : replan_time_)
-      mean1 += t;
+    for (auto t : replan_time_) mean1 += t;
     mean1 /= replan_time_.size();
     ROS_WARN("Replan number: %d, mean traj: %lf", replan_time_.size(), mean1);
   }
@@ -333,8 +333,8 @@ bool KinoReplanFSM::callKinodynamicReplan() {
     auto plan_data = &planner_manager_->plan_data_;
 
     visualization_->drawGeometricPath(plan_data->kino_path_, 0.05, Eigen::Vector4d(1, 0, 1, 1));
-    visualization_->drawBspline(info->position_traj_, 0.08, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true,
-                                0.15, Eigen::Vector4d(1, 0, 0, 1));
+    visualization_->drawBspline(info->position_traj_, 0.08, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true, 0.15,
+                                Eigen::Vector4d(1, 0, 0, 1));
 
     return true;
   } else {

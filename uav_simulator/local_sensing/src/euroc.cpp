@@ -1,36 +1,32 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-
-#include <ros/ros.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/sync_policies/exact_time.h>
-#include <message_filters/sync_policies/approximate_time.h>
+#include <cloud_banchmark/cloud_banchmarkConfig.h>
+#include <cv_bridge/cv_bridge.h>
+#include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-
-#include <dynamic_reconfigure/server.h>
-#include <cloud_banchmark/cloud_banchmarkConfig.h>
-
+#include <message_filters/subscriber.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <message_filters/synchronizer.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
+#include <ros/ros.h>
 
 #include <eigen3/Eigen/Dense>
-#include "opencv2/highgui/highgui.hpp"
-#include <opencv2/opencv.hpp>
+#include <fstream>
+#include <iostream>
 #include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
+#include <vector>
 
 #include "depth_render.cuh"
+#include "opencv2/highgui/highgui.hpp"
 
 using namespace cv;
 using namespace std;
 using namespace Eigen;
 
-typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,
-                                                        geometry_msgs::TransformStamped>
+typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::TransformStamped>
     approx_policy;
 
 int* depth_hostptr;
@@ -289,8 +285,8 @@ int main(int argc, char** argv) {
   vicon2body << 0.33638, -0.01749, 0.94156, 0.06901, -0.02078, -0.99972, -0.01114, -0.02781, 0.94150,
       -0.01582, -0.33665, -0.12395, 0.0, 0.0, 0.0, 1.0;
   cam02body << 0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975, 0.999557249008,
-      0.0149672133247, 0.025715529948, -0.064676986768, -0.0257744366974, 0.00375618835797,
-      0.999660727178, 0.00981073058949, 0.0, 0.0, 0.0, 1.0;
+      0.0149672133247, 0.025715529948, -0.064676986768, -0.0257744366974, 0.00375618835797, 0.999660727178,
+      0.00981073058949, 0.0, 0.0, 0.0, 1.0;
   cam2world = Matrix4d::Identity();
 
   string cloud_path;
@@ -319,8 +315,8 @@ int main(int argc, char** argv) {
   depth_hostptr = (int*)malloc(width * height * sizeof(int));
 
   message_filters::Subscriber<sensor_msgs::Image> image_sub(nh, "/cam0/image_raw", 30);
-  message_filters::Subscriber<geometry_msgs::TransformStamped> pose_sub(
-      nh, "/vicon/firefly_sbx/firefly_sbx", 30);
+  message_filters::Subscriber<geometry_msgs::TransformStamped> pose_sub(nh, "/vicon/firefly_sbx/firefly_sbx",
+                                                                        30);
   message_filters::Synchronizer<approx_policy> sync2(approx_policy(100), image_sub, pose_sub);
   sync2.registerCallback(boost::bind(image_pose_callback, _1, _2));
 

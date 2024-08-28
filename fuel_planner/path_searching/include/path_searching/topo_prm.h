@@ -10,7 +10,7 @@ class RayCaster;
 namespace fast_planner {
 /* ---------- used for iterating all topo combination ---------- */
 class TopoIterator {
-private:
+ private:
   /* data */
   vector<int> path_nums_;
   vector<int> cur_index_;
@@ -25,7 +25,7 @@ private:
     }
   }
 
-public:
+ public:
   TopoIterator(vector<int> pn) {
     path_nums_ = pn;
     cur_index_.resize(path_nums_.size());
@@ -38,10 +38,8 @@ public:
     }
     std::cout << "[Topo]: merged path num: " << combine_num_ << std::endl;
   }
-  TopoIterator() {
-  }
-  ~TopoIterator() {
-  }
+  TopoIterator() {}
+  ~TopoIterator() {}
 
   bool nextIndex(vector<int>& index) {
     index = cur_index_;
@@ -57,24 +55,22 @@ public:
 
 /* ---------- node of topo graph ---------- */
 class GraphNode {
-private:
+ private:
   /* data */
 
-public:
+ public:
   enum NODE_TYPE { Guard = 1, Connector = 2 };
 
   enum NODE_STATE { NEW = 1, CLOSE = 2, OPEN = 3 };
 
-  GraphNode(/* args */) {
-  }
+  GraphNode(/* args */) {}
   GraphNode(Eigen::Vector3d pos, NODE_TYPE type, int id) {
     pos_ = pos;
     type_ = type;
     state_ = NEW;
     id_ = id;
   }
-  ~GraphNode() {
-  }
+  ~GraphNode() {}
 
   vector<shared_ptr<GraphNode>> neighbors_;
   Eigen::Vector3d pos_;
@@ -86,7 +82,7 @@ public:
 };
 
 class TopologyPRM {
-private:
+ private:
   /* data */
   EDTEnvironment::Ptr edt_environment_;  // environment representation
 
@@ -138,8 +134,8 @@ private:
   bool needConnection(GraphNode::Ptr g1, GraphNode::Ptr g2,
                       Eigen::Vector3d pt);  // test redundancy with existing
                                             // connection between two guard
-  bool lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, double thresh,
-                 Eigen::Vector3d& pc, int caster_id = 0);
+  bool lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, double thresh, Eigen::Vector3d& pc,
+                 int caster_id = 0);
   bool triangleVisib(Eigen::Vector3d pt, Eigen::Vector3d p1, Eigen::Vector3d p2);
   void pruneGraph();
 
@@ -158,7 +154,7 @@ private:
 
   int shortestPath(vector<vector<Eigen::Vector3d>>& paths);
 
-public:
+ public:
   double clearance_;
 
   TopologyPRM(/* args */);

@@ -1,5 +1,7 @@
 #include "quadrotor_msgs/decode_msgs.h"
+
 #include <quadrotor_msgs/comm_types.h>
+
 #include <Eigen/Geometry>
 
 namespace quadrotor_msgs {
@@ -17,8 +19,8 @@ bool decodeOutputData(const std::vector<uint8_t>& data, quadrotor_msgs::OutputDa
   const double yaw = output_data.yaw / 1e2 * M_PI / 180;
   // Asctec (2012 firmware) uses  Z-Y-X convention
   Eigen::Quaterniond q = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
-      Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
-      Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+                         Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+                         Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
   output.orientation.w = q.w();
   output.orientation.x = q.x();
   output.orientation.y = q.y();
@@ -88,4 +90,4 @@ bool decodePPROutputData(const std::vector<uint8_t>& data, quadrotor_msgs::PPROu
 
   return true;
 }
-}
+}  // namespace quadrotor_msgs

@@ -33,12 +33,10 @@
 #include <OGRE/OgreMaterial.h>
 #include <OGRE/OgreTexture.h>
 #include <OGRE/OgreVector3.h>
-
-#include <nav_msgs/MapMetaData.h>
-#include <ros/time.h>
-
 #include <multi_map_server/MultiOccupancyGrid.h>
+#include <nav_msgs/MapMetaData.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <ros/time.h>
 
 #include "rviz/display.h"
 
@@ -61,7 +59,7 @@ class VectorProperty;
  */
 class MultiProbMapDisplay : public Display {
   Q_OBJECT
-public:
+ public:
   MultiProbMapDisplay();
   virtual ~MultiProbMapDisplay();
 
@@ -70,11 +68,11 @@ public:
   virtual void reset();
   virtual void update(float wall_dt, float ros_dt);
 
-protected Q_SLOTS:
+ protected Q_SLOTS:
   void updateTopic();
   void updateDrawUnder();
 
-protected:
+ protected:
   // overrides from Display
   virtual void onEnable();
   virtual void onDisable();

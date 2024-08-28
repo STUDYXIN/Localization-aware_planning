@@ -1,10 +1,11 @@
 #ifndef _TRAJ_VISIBILITY_H_
 #define _TRAJ_VISIBILITY_H_
 
+#include <bspline/non_uniform_bspline.h>
 #include <plan_env/edt_environment.h>
+
 #include <unordered_map>
 #include <utility>
-#include <bspline/non_uniform_bspline.h>
 
 class RayCaster;
 
@@ -24,7 +25,7 @@ struct ViewConstraint {
 };
 
 class VisibilityUtil {
-private:
+ private:
   /* data */
   int visible_num_;  // initial idx difference between visible pairs
   double min_visib_;
@@ -35,7 +36,7 @@ private:
   double max_safe_dist_, safe_margin_;
   double max_acc_, r0_, wnl_, forward_;
 
-public:
+ public:
   VisibilityUtil();
   VisibilityUtil(const ros::NodeHandle& nh);
   ~VisibilityUtil();
@@ -46,7 +47,7 @@ public:
   void findVisibPairs(const vector<Eigen::Vector3d>& pts, vector<VisiblePair>& pairs);
   void calcViewConstraint(NonUniformBspline& traj, ViewConstraint& cons);
 
-private:
+ private:
   Eigen::Vector3d getMinDistVoxel(const Eigen::Vector3d& q1, const Eigen::Vector3d& q2,
                                   const Eigen::Vector3d& offset, const double& res);
   Eigen::Vector3d getMinDistVoxelOnLine(const Eigen::Vector3d& q1, const Eigen::Vector3d& q2,
@@ -56,8 +57,8 @@ private:
                                     const Eigen::Vector3d& min_pt);
   bool lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, Eigen::Vector3d& pc);
   bool findUnknownPoint(NonUniformBspline& traj, Eigen::Vector3d& point, double& time);
-  bool findCriticalPoint(NonUniformBspline& traj, const Eigen::Vector3d& unknown_pt,
-                         const double& unknown_t, Eigen::Vector3d& pc, double& tc);
+  bool findCriticalPoint(NonUniformBspline& traj, const Eigen::Vector3d& unknown_pt, const double& unknown_t,
+                         Eigen::Vector3d& pc, double& tc);
   bool findDirAndIdx(NonUniformBspline& traj, const double& unknown_t, const double& crit_t,
                      Eigen::Vector3d& dir, int& idx, Eigen::Vector3d& min_pt);
 };

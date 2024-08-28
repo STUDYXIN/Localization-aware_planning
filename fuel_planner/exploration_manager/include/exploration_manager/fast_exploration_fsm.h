@@ -1,26 +1,25 @@
 #ifndef _FAST_EXPLORATION_FSM_H_
 #define _FAST_EXPLORATION_FSM_H_
 
-#include <Eigen/Eigen>
-
-#include <ros/ros.h>
-#include <nav_msgs/Path.h>
-#include <std_msgs/Empty.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <ros/ros.h>
+#include <std_msgs/Empty.h>
 #include <visualization_msgs/Marker.h>
 
+#include <Eigen/Eigen>
 #include <algorithm>
 #include <iostream>
-#include <vector>
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 using Eigen::Vector3d;
-using std::vector;
 using std::shared_ptr;
-using std::unique_ptr;
 using std::string;
+using std::unique_ptr;
+using std::vector;
 
 namespace fast_planner {
 class FastPlannerManager;
@@ -31,9 +30,9 @@ struct FSMData;
 struct M2GData;
 
 enum EXPL_STATE { INIT, WAIT_TRIGGER, PLAN_TRAJ, PUB_TRAJ, EXEC_TRAJ, FINISH };
-enum TARGET_TYPE {EXPLORATION = 0,  PRESET_TARGET = 1};
+enum TARGET_TYPE { EXPLORATION = 0, PRESET_TARGET = 1 };
 class FastExplorationFSM {
-private:
+ private:
   /* planning utils */
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FastExplorationManager> expl_manager_;
@@ -66,11 +65,9 @@ private:
   void visualize();
   void clearVisMarker();
 
-public:
-  FastExplorationFSM(/* args */) {
-  }
-  ~FastExplorationFSM() {
-  }
+ public:
+  FastExplorationFSM(/* args */) {}
+  ~FastExplorationFSM() {}
 
   void init(ros::NodeHandle& nh);
 

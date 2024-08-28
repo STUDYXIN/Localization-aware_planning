@@ -1,4 +1,5 @@
 #include <plan_env/obj_predictor.h>
+
 #include <string>
 
 namespace fast_planner {
@@ -33,15 +34,11 @@ void ObjHistory::poseCallback(const geometry_msgs::PoseStampedConstPtr& msg) {
 // ObjHistory::
 /* ============================== obj predictor ==============================
  */
-ObjPredictor::ObjPredictor(/* args */) {
-}
+ObjPredictor::ObjPredictor(/* args */) {}
 
-ObjPredictor::ObjPredictor(ros::NodeHandle& node) {
-  this->node_handle_ = node;
-}
+ObjPredictor::ObjPredictor(ros::NodeHandle& node) { this->node_handle_ = node; }
 
-ObjPredictor::~ObjPredictor() {
-}
+ObjPredictor::~ObjPredictor() {}
 
 void ObjPredictor::init() {
   /* get param */
@@ -55,8 +52,7 @@ void ObjPredictor::init() {
   obj_scale_.reset(new vector<Eigen::Vector3d>);
   obj_scale_->resize(obj_num_);
   scale_init_.resize(obj_num_);
-  for (int i = 0; i < obj_num_; i++)
-    scale_init_[i] = false;
+  for (int i = 0; i < obj_num_; i++) scale_init_[i] = false;
 
   /* subscribe to pose */
   for (int i = 0; i < obj_num_; i++) {
@@ -79,13 +75,9 @@ void ObjPredictor::init() {
       node_handle_.createTimer(ros::Duration(1 / predict_rate_), &ObjPredictor::predictCallback, this);
 }
 
-ObjPrediction ObjPredictor::getPredictionTraj() {
-  return this->predict_trajs_;
-}
+ObjPrediction ObjPredictor::getPredictionTraj() { return this->predict_trajs_; }
 
-ObjScale ObjPredictor::getObjScale() {
-  return this->obj_scale_;
-}
+ObjScale ObjPredictor::getObjScale() { return this->obj_scale_; }
 
 void ObjPredictor::predictPolyFit() {
   /* iterate all obj */
@@ -97,8 +89,7 @@ void ObjPredictor::predictPolyFit() {
     vector<Eigen::Matrix<double, 6, 1>> pm(3);
 
     A.setZero();
-    for (int i = 0; i < 3; ++i)
-      bm[i].setZero();
+    for (int i = 0; i < 3; ++i) bm[i].setZero();
 
     /* ---------- estimation error ---------- */
     list<Eigen::Vector4d> his;
@@ -109,12 +100,10 @@ void ObjPredictor::predictPolyFit() {
 
       /* A */
       temp << 1.0, ti, pow(ti, 2), pow(ti, 3), pow(ti, 4), pow(ti, 5);
-      for (int j = 0; j < 6; ++j)
-        A.row(j) += 2.0 * pow(ti, j) * temp.transpose();
+      for (int j = 0; j < 6; ++j) A.row(j) += 2.0 * pow(ti, j) * temp.transpose();
 
       /* b */
-      for (int dim = 0; dim < 3; ++dim)
-        bm[dim] += 2.0 * qi(dim) * temp;
+      for (int dim = 0; dim < 3; ++dim) bm[dim] += 2.0 * qi(dim) * temp;
     }
 
     /* ---------- acceleration regulator ---------- */

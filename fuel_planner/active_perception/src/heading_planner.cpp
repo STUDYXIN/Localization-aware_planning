@@ -1,17 +1,15 @@
 #include <active_perception/heading_planner.h>
-#include <plan_env/sdf_map.h>
-#include <plan_env/raycast.h>
-
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <plan_env/raycast.h>
+#include <plan_env/sdf_map.h>
 #include <visualization_msgs/Marker.h>
 
-#include <iostream>
 #include <future>
-
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/extract_indices.h>
+#include <iostream>
 
 namespace fast_planner {
 // template <typename VERTEX>
@@ -23,14 +21,10 @@ void Graph::print() {
 }
 
 // template <typename VERTEX>
-void Graph::addVertex(const YawVertex::Ptr& vertex) {
-  vertice_.push_back(vertex);
-}
+void Graph::addVertex(const YawVertex::Ptr& vertex) { vertice_.push_back(vertex); }
 
 // template <typename VERTEX>
-void Graph::addEdge(const int& from, const int& to) {
-  vertice_[from]->neighbors_.push_back(vertice_[to]);
-}
+void Graph::addEdge(const int& from, const int& to) { vertice_[from]->neighbors_.push_back(vertice_[to]); }
 
 // template <typename VERTEX>
 void Graph::setParams(const double& w, const double& my, const double& dt) {
@@ -160,12 +154,9 @@ HeadingPlanner::HeadingPlanner(ros::NodeHandle& nh) {
   }
 }
 
-HeadingPlanner::~HeadingPlanner() {
-}
+HeadingPlanner::~HeadingPlanner() {}
 
-void HeadingPlanner::setMap(const shared_ptr<SDFMap>& map) {
-  sdf_map_ = map;
-}
+void HeadingPlanner::setMap(const shared_ptr<SDFMap>& map) { sdf_map_ = map; }
 
 void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const vector<double>& yaws,
                                      const double& dt, const Eigen::MatrixXd& ctrl_pts,
@@ -248,9 +239,8 @@ double HeadingPlanner::calcInformationGain(const Eigen::Vector3d& pt, const doub
   Eigen::Vector3d t_wc = T_wc.block(0, 3, 3, 1);
 
   // rotate camera seperating plane normals
-  vector<Eigen::Vector3d> normals = { n_top_, n_bottom_, n_left_, n_right_ };
-  for (auto& n : normals)
-    n = R_wc * n;
+  vector<Eigen::Vector3d> normals = {n_top_, n_bottom_, n_left_, n_right_};
+  for (auto& n : normals) n = R_wc * n;
   Eigen::Vector3i lbi, ubi;
   calcFovAABB(R_wc, t_wc, lbi, ubi);
 
@@ -335,9 +325,8 @@ double HeadingPlanner::calcInfoGain(const Eigen::Vector3d& pt, const double& yaw
   Eigen::Vector3d t_wc = T_wc.block(0, 3, 3, 1);
 
   // rotate camera seperating plane normals
-  vector<Eigen::Vector3d> normals = { n_top_, n_bottom_, n_left_, n_right_ };
-  for (auto& n : normals)
-    n = R_wc * n;
+  vector<Eigen::Vector3d> normals = {n_top_, n_bottom_, n_left_, n_right_};
+  for (auto& n : normals) n = R_wc * n;
   Eigen::Vector3i lbi, ubi;
   calcFovAABB(R_wc, t_wc, lbi, ubi);
 
@@ -449,9 +438,8 @@ void HeadingPlanner::visualizeBox(const Eigen::Vector3d& lb, const Eigen::Vector
   box_pub_.publish(mk);
 }
 
-void HeadingPlanner::distToPathAndCurPos(const Eigen::Vector3d& check_pt,
-                                         const Eigen::MatrixXd& ctrl_pts, pair<double, double>& dists,
-                                         bool debug) {
+void HeadingPlanner::distToPathAndCurPos(const Eigen::Vector3d& check_pt, const Eigen::MatrixXd& ctrl_pts,
+                                         pair<double, double>& dists, bool debug) {
   double min_squ = numeric_limits<double>::max();
   int idx = -1;
   for (int i = 0; i < ctrl_pts.rows(); ++i) {
@@ -491,8 +479,7 @@ void HeadingPlanner::setFrontier(const vector<vector<Eigen::Vector3d>>& frontier
   frontier_.reset(new pcl::PointCloud<pcl::PointXYZ>);
 
   for (const auto& ft : frontier) {
-    for (const auto& p : ft)
-      raw_input->push_back(pcl::PointXYZ(p[0], p[1], p[2]));
+    for (const auto& p : ft) raw_input->push_back(pcl::PointXYZ(p[0], p[1], p[2]));
   }
 
   // downsample use voxel grid filter

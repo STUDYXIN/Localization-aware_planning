@@ -4,7 +4,7 @@
 
 - **新增特征点地图**：现在支持特征点地图，数量限制在250个左右。
 - **增加交互接口**：
-  - 函数 
+  - 函数
   `int FeatureMap::get_NumCloud_using_PosOrient(const Eigen::Vector3d &pos, const Eigen::Quaterniond &orient, vector<Eigen::Vector3d> &res)`：
     - **功能**：输入任意位姿，导出可见的特征点云及数量。
     - **用法**：可以参考 `void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose)` 函数，此函数实时发布当前里程计可见的特征点云。
@@ -15,7 +15,6 @@
 
 - **TODO**：
   - 在当前框架下生成轨迹。
-
 
 ### 8月25日更新
 
@@ -46,8 +45,8 @@
 
 ### 8月29日更新
 
-- **安装 clang-format**： `sudo apt install clang-format`
+- **安装 clang-format**： `sudo apt install clang-format` 在vscode插件中搜索安装clang-format
 
 - **手动进行clang-format** 在`ClangFormat.py`的目录打开终端，运行 `python3 ClangFormat.py`,弹出一系列被格式化的文件，则格式化成功，注：目前只格式化`.cpp` 和 `.h`文件
 
-- **自动进行clang-format** 增加`.git/hooks/pre-commit`,每次运行 `git commit` 命令时，`pre-commit` 钩子会被触发。
+- **自动进行clang-format** 保存的时候自动格式化，注意可以在使用 `Ctrl+Shift+I` 确保编辑器中的代码文件，选择 "Format Document"。

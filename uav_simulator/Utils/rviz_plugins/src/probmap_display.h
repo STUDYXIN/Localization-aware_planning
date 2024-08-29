@@ -58,7 +58,7 @@ class VectorProperty;
  */
 class ProbMapDisplay : public Display {
   Q_OBJECT
- public:
+public:
   ProbMapDisplay();
   virtual ~ProbMapDisplay();
 
@@ -68,18 +68,28 @@ class ProbMapDisplay : public Display {
   virtual void reset();
   virtual void update(float wall_dt, float ros_dt);
 
-  float getResolution() { return resolution_; }
-  int getWidth() { return width_; }
-  int getHeight() { return height_; }
-  Ogre::Vector3 getPosition() { return position_; }
-  Ogre::Quaternion getOrientation() { return orientation_; }
+  float getResolution() {
+    return resolution_;
+  }
+  int getWidth() {
+    return width_;
+  }
+  int getHeight() {
+    return height_;
+  }
+  Ogre::Vector3 getPosition() {
+    return position_;
+  }
+  Ogre::Quaternion getOrientation() {
+    return orientation_;
+  }
 
- protected Q_SLOTS:
+protected Q_SLOTS:
   void updateAlpha();
   void updateTopic();
   void updateDrawUnder();
 
- protected:
+protected:
   // overrides from Display
   virtual void onEnable();
   virtual void onDisable();

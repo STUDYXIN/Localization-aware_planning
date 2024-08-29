@@ -66,22 +66,20 @@ struct vector_space_reduce<state_type> {
     return init;
   }
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 
 void constant_system(const state_type& x, state_type& dxdt, value_type t) {
   dxdt = value_type(1.0, precision);
 }
 
 /* check runge kutta stepers */
-typedef mpl::vector<
-    euler<state_type, value_type, state_type, value_type, vector_space_algebra>,
+typedef mpl::vector<euler<state_type, value_type, state_type, value_type, vector_space_algebra>,
     modified_midpoint<state_type, value_type, state_type, value_type, vector_space_algebra>,
     runge_kutta4<state_type, value_type, state_type, value_type, vector_space_algebra>,
     runge_kutta4_classic<state_type, value_type, state_type, value_type, vector_space_algebra>,
-    runge_kutta_cash_karp54_classic<state_type, value_type, state_type, value_type,
-                                    vector_space_algebra>,
+    runge_kutta_cash_karp54_classic<state_type, value_type, state_type, value_type, vector_space_algebra>,
     runge_kutta_cash_karp54<state_type, value_type, state_type, value_type, vector_space_algebra>,
     runge_kutta_dopri5<state_type, value_type, state_type, value_type, vector_space_algebra>,
     runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra> >
@@ -119,11 +117,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(runge_kutta_stepper_test, Stepper, stepper_types) 
 }
 
 /* check controlled steppers */
-typedef mpl::vector<
-    controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, state_type,
-                                                           value_type, vector_space_algebra> >,
-    controlled_runge_kutta<
-        runge_kutta_dopri5<state_type, value_type, state_type, value_type, vector_space_algebra> >,
+typedef mpl::vector<controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, state_type,
+                        value_type, vector_space_algebra> >,
+    controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, state_type, value_type, vector_space_algebra> >,
     controlled_runge_kutta<
         runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra> >,
     bulirsch_stoer<state_type, value_type, state_type, value_type, vector_space_algebra> >

@@ -156,10 +156,10 @@ int main(int argc, char** argv) {
       // retrieve and visualize
       planner_manager->updateTrajectoryInfo();
 
-      visualization->drawPolynomialTraj(planner_manager->traj_manager_.global_traj_, 0.05,
-                                        Eigen::Vector4d(0, 0, 0, 1), 0);
-      visualization->drawBspline(planner_manager->position_traj_, 0.1, Eigen::Vector4d(1.0, 0.0, 0.0, 1),
-                                 false, 0.1, Eigen::Vector4d(1.0, 1.0, 1.0, 1), 99);
+      visualization->drawPolynomialTraj(
+          planner_manager->traj_manager_.global_traj_, 0.05, Eigen::Vector4d(0, 0, 0, 1), 0);
+      visualization->drawBspline(planner_manager->position_traj_, 0.1, Eigen::Vector4d(1.0, 0.0, 0.0, 1), false, 0.1,
+          Eigen::Vector4d(1.0, 1.0, 1.0, 1), 99);
       visualization->drawTopoPathsPhase2(planner_manager->topo_select_paths_, 0.05);
       visualization->drawBsplinesPhase2(planner_manager->topo_traj_pos2_, 0.08);
 

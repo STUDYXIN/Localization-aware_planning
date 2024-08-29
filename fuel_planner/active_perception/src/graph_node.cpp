@@ -35,18 +35,17 @@ double ViewNode::searchPath(const Vector3d& p1, const Vector3d& p2, vector<Vecto
   Vector3i idx;
   caster_->input(p1, p2);
   while (caster_->nextId(idx)) {
-    if (map_->getInflateOccupancy(idx) == 1 || map_->getOccupancy(idx) == SDFMap::UNKNOWN ||
-        !map_->isInBox(idx)) {
+    if (map_->getInflateOccupancy(idx) == 1 || map_->getOccupancy(idx) == SDFMap::UNKNOWN || !map_->isInBox(idx)) {
       safe = false;
       break;
     }
   }
   if (safe) {
-    path = {p1, p2};
+    path = { p1, p2 };
     return (p1 - p2).norm();
   }
   // Search a path using decreasing resolution
-  vector<double> res = {0.4};
+  vector<double> res = { 0.4 };
   for (int k = 0; k < res.size(); ++k) {
     astar_->reset();
     astar_->setResolution(res[k]);
@@ -56,12 +55,12 @@ double ViewNode::searchPath(const Vector3d& p1, const Vector3d& p2, vector<Vecto
     }
   }
   // Use Astar early termination cost as an estimate
-  path = {p1, p2};
+  path = { p1, p2 };
   return 1000;
 }
 
 double ViewNode::computeCost(const Vector3d& p1, const Vector3d& p2, const double& y1, const double& y2,
-                             const Vector3d& v1, const double& yd1, vector<Vector3d>& path) {
+    const Vector3d& v1, const double& yd1, vector<Vector3d>& path) {
   // Cost of position change
   double pos_cost = ViewNode::searchPath(p1, p2, path) / vm_;
 

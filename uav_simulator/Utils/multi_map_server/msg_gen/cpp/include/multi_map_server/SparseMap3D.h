@@ -22,9 +22,11 @@ template <class ContainerAllocator>
 struct SparseMap3D_ {
   typedef SparseMap3D_<ContainerAllocator> Type;
 
-  SparseMap3D_() : header(), info(), lists() {}
+  SparseMap3D_() : header(), info(), lists() {
+  }
 
-  SparseMap3D_(const ContainerAllocator& _alloc) : header(_alloc), info(_alloc), lists(_alloc) {}
+  SparseMap3D_(const ContainerAllocator& _alloc) : header(_alloc), info(_alloc), lists(_alloc) {
+  }
 
   typedef ::std_msgs::Header_<ContainerAllocator> _header_type;
   ::std_msgs::Header_<ContainerAllocator> header;
@@ -33,12 +35,12 @@ struct SparseMap3D_ {
   ::nav_msgs::MapMetaData_<ContainerAllocator> info;
 
   typedef std::vector< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>,
-                       typename ContainerAllocator::template rebind<
-                           ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
+      typename ContainerAllocator::template rebind<
+          ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
       _lists_type;
   std::vector< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>,
-               typename ContainerAllocator::template rebind<
-                   ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
+      typename ContainerAllocator::template rebind<
+          ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
       lists;
 
   typedef boost::shared_ptr< ::multi_map_server::SparseMap3D_<ContainerAllocator> > Ptr;
@@ -65,18 +67,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::multi_map_server::SparseMap3D_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::multi_map_server::SparseMap3D_<ContainerAllocator> > {
-  static const char* value() { return "a20102f0b3a02e95070dab4140b78fb5"; }
+  static const char* value() {
+    return "a20102f0b3a02e95070dab4140b78fb5";
+  }
 
-  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0xa20102f0b3a02e95ULL;
   static const uint64_t static_value2 = 0x070dab4140b78fb5ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::multi_map_server::SparseMap3D_<ContainerAllocator> > {
-  static const char* value() { return "multi_map_server/SparseMap3D"; }
+  static const char* value() {
+    return "multi_map_server/SparseMap3D";
+  }
 
-  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -154,7 +164,9 @@ int32[] mass\n\
 ";
   }
 
-  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::multi_map_server::SparseMap3D_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -187,8 +199,8 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::multi_map_server::SparseMap3D_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::multi_map_server::SparseMap3D_<ContainerAllocator>& v) {
+  static void stream(
+      Stream& s, const std::string& indent, const ::multi_map_server::SparseMap3D_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

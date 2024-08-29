@@ -25,15 +25,15 @@ class MapROS;
 class FeatureMap;
 
 class SDFMap {
- public:
+public:
   SDFMap();
   ~SDFMap();
 
   enum OCCUPANCY { UNKNOWN, FREE, OCCUPIED };
 
   void initMap(ros::NodeHandle& nh);
-  void inputPointCloud(const pcl::PointCloud<pcl::PointXYZ>& points, const int& point_num,
-                       const Eigen::Vector3d& camera_pos);
+  void inputPointCloud(
+      const pcl::PointCloud<pcl::PointXYZ>& points, const int& point_num, const Eigen::Vector3d& camera_pos);
   void inputGlobalPointCloud(const pcl::PointCloud<pcl::PointXYZ>& global_points);
 
   void posToIndex(const Eigen::Vector3d& pos, Eigen::Vector3i& id);
@@ -66,7 +66,7 @@ class SDFMap {
   bool checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
   bool using_global_map;
 
- private:
+private:
   void clearAndInflateLocalMap();
   void inflatePoint(const Eigen::Vector3i& pt, int step, vector<Eigen::Vector3i>& pts);
   void setCacheOccupancy(const int& adr, const int& occ);
@@ -82,7 +82,7 @@ class SDFMap {
   friend MapROS;
   friend FeatureMap;
 
- public:
+public:
   typedef std::shared_ptr<SDFMap> Ptr;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -100,7 +100,7 @@ struct MapParam {
   double default_dist_;
   bool optimistic_, signed_dist_;
   // map fusion
-  double p_hit_, p_miss_, p_min_, p_max_, p_occ_;  // occupancy probability
+  double p_hit_, p_miss_, p_min_, p_max_, p_occ_;                                            // occupancy probability
   double prob_hit_log_, prob_miss_log_, clamp_min_log_, clamp_max_log_, min_occupancy_log_;  // logit
   double max_ray_length_;
   double local_bound_inflate_;
@@ -148,7 +148,9 @@ inline int SDFMap::toAddress(const int& x, const int& y, const int& z) {
   return x * mp_->map_voxel_num_(1) * mp_->map_voxel_num_(2) + y * mp_->map_voxel_num_(2) + z;
 }
 
-inline int SDFMap::toAddress(const Eigen::Vector3i& id) { return toAddress(id[0], id[1], id[2]); }
+inline int SDFMap::toAddress(const Eigen::Vector3i& id) {
+  return toAddress(id[0], id[1], id[2]);
+}
 
 inline bool SDFMap::isInMap(const Eigen::Vector3d& pos) {
   if (pos(0) < mp_->map_min_boundary_(0) + 1e-4 || pos(1) < mp_->map_min_boundary_(1) + 1e-4 ||
@@ -162,8 +164,7 @@ inline bool SDFMap::isInMap(const Eigen::Vector3d& pos) {
 
 inline bool SDFMap::isInMap(const Eigen::Vector3i& idx) {
   if (idx(0) < 0 || idx(1) < 0 || idx(2) < 0) return false;
-  if (idx(0) > mp_->map_voxel_num_(0) - 1 || idx(1) > mp_->map_voxel_num_(1) - 1 ||
-      idx(2) > mp_->map_voxel_num_(2) - 1)
+  if (idx(0) > mp_->map_voxel_num_(0) - 1 || idx(1) > mp_->map_voxel_num_(1) - 1 || idx(2) > mp_->map_voxel_num_(2) - 1)
     return false;
   return true;
 }

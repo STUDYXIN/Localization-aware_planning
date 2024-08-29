@@ -59,8 +59,7 @@ int solveTSPLKH(const char* input_file) {
         Cost = MergeTourWithIndividual(i);
         if (TraceLevel >= 1 && Cost < OldCost) {
           printff("  Merged with %d: Cost = " GainFormat, i + 1, Cost);
-          if (Optimum != MINUS_INFINITY && Optimum != 0)
-            printff(", Gap = %0.4f%%", 100.0 * (Cost - Optimum) / Optimum);
+          if (Optimum != MINUS_INFINITY && Optimum != 0) printff(", Gap = %0.4f%%", 100.0 * (Cost - Optimum) / Optimum);
           printff("\n");
         }
       }
@@ -106,8 +105,7 @@ int solveTSPLKH(const char* input_file) {
       Runs = Run;
       break;
     }
-    if (PopulationSize >= 2 && (PopulationSize == MaxPopulationSize || Run >= 2 * MaxPopulationSize) &&
-        Run < Runs) {
+    if (PopulationSize >= 2 && (PopulationSize == MaxPopulationSize || Run >= 2 * MaxPopulationSize) && Run < Runs) {
       Node* N;
       int Parent1, Parent2;
       Parent1 = LinearSelection(PopulationSize, 1.25);

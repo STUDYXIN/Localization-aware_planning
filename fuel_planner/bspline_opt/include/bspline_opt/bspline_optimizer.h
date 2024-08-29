@@ -15,7 +15,7 @@ namespace fast_planner {
 class EDTEnvironment;
 
 class BsplineOptimizer {
- public:
+public:
   static const int SMOOTHNESS;
   static const int DISTANCE;
   static const int FEASIBILITY;
@@ -29,14 +29,16 @@ class BsplineOptimizer {
   static const int GUIDE_PHASE;
   static const int NORMAL_PHASE;
 
-  BsplineOptimizer() {}
-  ~BsplineOptimizer() {}
+  BsplineOptimizer() {
+  }
+  ~BsplineOptimizer() {
+  }
 
   /* main API */
   void setEnvironment(const shared_ptr<EDTEnvironment>& env);
   void setParam(ros::NodeHandle& nh);
-  void optimize(Eigen::MatrixXd& points, double& dt, const int& cost_function, const int& max_num_id,
-                const int& max_time_id);
+  void optimize(
+      Eigen::MatrixXd& points, double& dt, const int& cost_function, const int& max_num_id, const int& max_time_id);
 
   /* helper function */
 
@@ -48,7 +50,7 @@ class BsplineOptimizer {
   // optional inputs
   void setGuidePath(const vector<Eigen::Vector3d>& guide_pt);
   void setWaypoints(const vector<Eigen::Vector3d>& waypts,
-                    const vector<int>& waypt_idx);  // N-2 constraints at most
+      const vector<int>& waypt_idx);  // N-2 constraints at most
   void setViewConstraint(const ViewConstraint& vc);
   void enableDynamic(double time_start);
 
@@ -57,21 +59,21 @@ class BsplineOptimizer {
   Eigen::MatrixXd getControlPoints();
   vector<Eigen::Vector3d> matrixToVectors(const Eigen::MatrixXd& ctrl_pts);
 
- private:
+private:
   // Wrapper of cost function
   static double costFunction(const std::vector<double>& x, std::vector<double>& grad, void* func_data);
   void combineCost(const std::vector<double>& x, vector<double>& grad, double& cost);
 
   // Cost functions, q: control points, dt: knot span
   void calcSmoothnessCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-                          vector<Eigen::Vector3d>& gradient_q, double& gt);
+      vector<Eigen::Vector3d>& gradient_q, double& gt);
   void calcDistanceCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcFeasibilityCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-                           vector<Eigen::Vector3d>& gradient_q, double& gt);
+      vector<Eigen::Vector3d>& gradient_q, double& gt);
   void calcStartCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-                     vector<Eigen::Vector3d>& gradient_q, double& gt);
+      vector<Eigen::Vector3d>& gradient_q, double& gt);
   void calcEndCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-                   vector<Eigen::Vector3d>& gradient_q, double& gt);
+      vector<Eigen::Vector3d>& gradient_q, double& gt);
   void calcGuideCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcWaypointsCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcViewCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
@@ -109,8 +111,8 @@ class BsplineOptimizer {
   double max_iteration_time_[4];  // stopping criteria that can be used
 
   // Data of opt
-  vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_start_, g_end_, g_guide_,
-      g_waypoints_, g_view_, g_time_;
+  vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_start_, g_end_, g_guide_, g_waypoints_,
+      g_view_, g_time_;
 
   int variable_num_;  // optimization variables
   int point_num_;
@@ -122,7 +124,7 @@ class BsplineOptimizer {
   double pt_dist_;
 
   /* for benckmark evaluation only */
- public:
+public:
   vector<double> vec_cost_;
   vector<double> vec_time_;
   ros::Time time_start_;

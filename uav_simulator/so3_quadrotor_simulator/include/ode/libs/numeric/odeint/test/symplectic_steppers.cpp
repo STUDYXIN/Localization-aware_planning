@@ -66,71 +66,66 @@ class custom_range_algebra : public range_algebra {};
 class custom_default_operations : public default_operations {};
 
 template <class Coor, class Mom, class Value, class CoorDeriv, class MomDeriv, class Time, class Algebra,
-          class Operations, class Resizer>
+    class Operations, class Resizer>
 class complete_steppers
-    : public mpl::vector<
-          symplectic_euler<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer>,
-          symplectic_rkn_sb3a_mclachlan<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations,
-                                        Resizer>,
-          symplectic_rkn_sb3a_m4_mclachlan<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra,
-                                           Operations, Resizer> > {};
+  : public mpl::vector<symplectic_euler<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer>,
+        symplectic_rkn_sb3a_mclachlan<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer>,
+        symplectic_rkn_sb3a_m4_mclachlan<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer> > {
+};
 
 template <class Resizer>
 class vector_steppers
-    : public complete_steppers<diagnostic_state_type, diagnostic_state_type2, double,
-                               diagnostic_deriv_type, diagnostic_deriv_type2, double,
-                               custom_range_algebra, custom_default_operations, Resizer> {};
+  : public complete_steppers<diagnostic_state_type, diagnostic_state_type2, double, diagnostic_deriv_type,
+        diagnostic_deriv_type2, double, custom_range_algebra, custom_default_operations, Resizer> {};
 
 typedef mpl::vector<initially_resizer, always_resizer, never_resizer> resizers;
 typedef mpl::vector_c<int, 1, 3, 0> resizer_multiplicities;
 
 typedef mpl::copy<resizers,
-                  mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>,
-                                                                  vector_steppers<mpl::_2> > > >::type
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, vector_steppers<mpl::_2> > > >::type
     all_stepper_methods;
 
 typedef mpl::size<vector_steppers<initially_resizer> >::type num_steppers;
-typedef mpl::copy<
-    resizer_multiplicities,
-    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>,
-                                                    const_range<num_steppers, mpl::_2> > > >::type
-    all_multiplicities;
+typedef mpl::copy<resizer_multiplicities,
+    mpl::inserter<mpl::vector0<>,
+        mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, const_range<num_steppers, mpl::_2> > > >::type all_multiplicities;
 
 BOOST_AUTO_TEST_SUITE(symplectic_steppers_test)
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_types, Stepper, vector_steppers<initially_resizer>) {
-  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::coor_type, diagnostic_state_type>::value),
-                          "Coordinate type");
-  BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::momentum_type, diagnostic_state_type2>::value), "Momentum type");
-  BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::coor_deriv_type, diagnostic_deriv_type>::value), "Coordinate "
-                                                                                         "deriv type");
-  BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::momentum_deriv_type, diagnostic_deriv_type2>::value),
-      "Momentum deriv type");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::coor_type, diagnostic_state_type>::value), "Coordinate "
+                                                                                                       "type");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::momentum_type, diagnostic_state_type2>::value), "Momentum "
+                                                                                                            "type");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::coor_deriv_type, diagnostic_deriv_type>::value), "Coordinat"
+                                                                                                             "e "
+                                                                                                             "deriv "
+                                                                                                             "type");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::momentum_deriv_type, diagnostic_deriv_type2>::value), "Mome"
+                                                                                                                  "ntum"
+                                                                                                                  " der"
+                                                                                                                  "iv "
+                                                                                                                  "typ"
+                                                                                                                  "e");
 
   BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::state_type,
-                      std::pair<diagnostic_state_type, diagnostic_state_type2> >::value),
+      (boost::is_same<typename Stepper::state_type, std::pair<diagnostic_state_type, diagnostic_state_type2> >::value),
       "State type");
   BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::deriv_type,
-                      std::pair<diagnostic_deriv_type, diagnostic_deriv_type2> >::value),
+      (boost::is_same<typename Stepper::deriv_type, std::pair<diagnostic_deriv_type, diagnostic_deriv_type2> >::value),
       "Deriv type");
 
   BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::value_type, double>::value), "Value type");
   BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::time_type, double>::value), "Time type");
-  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::algebra_type, custom_range_algebra>::value),
-                          "Algebra type");
-  BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::operations_type, custom_default_operations>::value), "Operations"
-                                                                                             " type");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::algebra_type, custom_range_algebra>::value), "Algebra "
+                                                                                                         "type");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::operations_type, custom_default_operations>::value), "Opera"
+                                                                                                                 "tions"
+                                                                                                                 " typ"
+                                                                                                                 "e");
 
-  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::resizer_type, initially_resizer>::value),
-                          "Resizer type");
-  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::stepper_category, stepper_tag>::value),
-                          "Stepper category");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::resizer_type, initially_resizer>::value), "Resizer type");
+  BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::stepper_category, stepper_tag>::value), "Stepper category");
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_adjust_size, Stepper, vector_steppers<initially_resizer>) {
@@ -255,8 +250,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_do_step_range, Stepper, vector_steppers<initi
   std::vector<double> x;
   x.push_back(1.0);
   x.push_back(2.0);
-  s.do_step(constant_mom_func(), std::make_pair(x.begin(), x.begin() + 1),
-            std::make_pair(x.begin() + 1, x.begin() + 2), 0.0, 0.1);
+  s.do_step(constant_mom_func(), std::make_pair(x.begin(), x.begin() + 1), std::make_pair(x.begin() + 1, x.begin() + 2),
+      0.0, 0.1);
 
   s.do_step(constant_mom_func(), q, p, 0.0, 0.1);
 
@@ -297,23 +292,22 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_do_step_v3, Stepper, vector_steppers<initiall
 }
 
 typedef vector_space_1d<double> vector_space;
-typedef complete_steppers<vector_space, vector_space, double, vector_space, vector_space, double,
-                          vector_space_algebra, default_operations, initially_resizer>
+typedef complete_steppers<vector_space, vector_space, double, vector_space, vector_space, double, vector_space_algebra,
+    default_operations, initially_resizer>
     vector_space_steppers;
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_with_vector_space_algebra, Stepper, vector_space_steppers) {
   Stepper s;
   std::pair<vector_space, vector_space> x;
   s.do_step(constant_mom_func_vector_space_1d(), x, 0.0, 0.1);
 
-  s.do_step(std::make_pair(default_coor_func_vector_space_1d(), constant_mom_func_vector_space_1d()), x,
-            0.0, 0.1);
+  s.do_step(std::make_pair(default_coor_func_vector_space_1d(), constant_mom_func_vector_space_1d()), x, 0.0, 0.1);
 }
 
 typedef boost::fusion::vector<length_type> coor_type;
 typedef boost::fusion::vector<velocity_type> mom_type;
 typedef boost::fusion::vector<acceleration_type> acc_type;
 typedef complete_steppers<coor_type, mom_type, double, mom_type, acc_type, time_type, fusion_algebra,
-                          default_operations, initially_resizer>
+    default_operations, initially_resizer>
     boost_unit_steppers;
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_with_boost_units, Stepper, boost_unit_steppers) {
   namespace fusion = boost::fusion;
@@ -331,7 +325,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_with_boost_units, Stepper, boost_unit_stepper
   s.do_step(oscillator_mom_func_units(), std::make_pair(boost::ref(q), boost::ref(p)), t, dt);
 
   s.do_step(std::make_pair(oscillator_coor_func_units(), oscillator_mom_func_units()),
-            std::make_pair(boost::ref(q1), boost::ref(p1)), t, dt);
+      std::make_pair(boost::ref(q1), boost::ref(p1)), t, dt);
 
   s.do_step(oscillator_mom_func_units(), q2, p2, t, dt);
 

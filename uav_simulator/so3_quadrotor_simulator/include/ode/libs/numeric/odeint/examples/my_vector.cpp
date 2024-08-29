@@ -81,9 +81,9 @@ struct is_resizeable<my_vector<N> > {
   typedef boost::true_type type;
   static const bool value = type::value;
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 //]
 
 typedef my_vector<3> state_type;

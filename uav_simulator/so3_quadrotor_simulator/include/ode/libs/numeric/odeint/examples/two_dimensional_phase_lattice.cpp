@@ -36,14 +36,12 @@ struct two_dimensional_phase_lattice {
     for (size_t i = 1; i < size1 - 1; ++i) {
       for (size_t j = 1; j < size2 - 1; ++j) {
         dxdt(i, j) = coupling_func(x(i + 1, j) - x(i, j)) + coupling_func(x(i - 1, j) - x(i, j)) +
-            coupling_func(x(i, j + 1) - x(i, j)) + coupling_func(x(i, j - 1) - x(i, j));
+                     coupling_func(x(i, j + 1) - x(i, j)) + coupling_func(x(i, j - 1) - x(i, j));
       }
     }
 
-    for (size_t i = 0; i < x.size1(); ++i)
-      dxdt(i, 0) = dxdt(i, x.size2() - 1) = 0.0;
-    for (size_t j = 0; j < x.size2(); ++j)
-      dxdt(0, j) = dxdt(x.size1() - 1, j) = 0.0;
+    for (size_t i = 0; i < x.size1(); ++i) dxdt(i, 0) = dxdt(i, x.size2() - 1) = 0.0;
+    for (size_t j = 0; j < x.size2(); ++j) dxdt(0, j) = dxdt(x.size1() - 1, j) = 0.0;
   }
 
   double coupling_func(double x) const {
@@ -128,8 +126,7 @@ int main(int argc, char** argv) {
 
   cout << "set term x11" << endl;
   cout << "set pm3d map" << endl;
-  integrate_const(runge_kutta4<state_type>(), two_dimensional_phase_lattice(1.2), x, 0.0, 1001.0, 0.1,
-                  boost::ref(obs));
+  integrate_const(runge_kutta4<state_type>(), two_dimensional_phase_lattice(1.2), x, 0.0, 1001.0, 0.1, boost::ref(obs));
 
   return 0;
 }

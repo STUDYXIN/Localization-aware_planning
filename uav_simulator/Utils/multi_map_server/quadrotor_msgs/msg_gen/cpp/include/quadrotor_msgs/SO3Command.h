@@ -28,7 +28,7 @@ struct SO3Command_ {
   }
 
   SO3Command_(const ContainerAllocator& _alloc)
-      : header(_alloc), force(_alloc), orientation(_alloc), kR(), kOm(), aux(_alloc) {
+    : header(_alloc), force(_alloc), orientation(_alloc), kR(), kOm(), aux(_alloc) {
     kR.assign(0.0);
     kOm.assign(0.0);
   }
@@ -75,18 +75,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::SO3Command_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::SO3Command_<ContainerAllocator> > {
-  static const char* value() { return "a466650b2633e768513aa3bf62383c86"; }
+  static const char* value() {
+    return "a466650b2633e768513aa3bf62383c86";
+  }
 
-  static const char* value(const ::quadrotor_msgs::SO3Command_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::SO3Command_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0xa466650b2633e768ULL;
   static const uint64_t static_value2 = 0x513aa3bf62383c86ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::SO3Command_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/SO3Command"; }
+  static const char* value() {
+    return "quadrotor_msgs/SO3Command";
+  }
 
-  static const char* value(const ::quadrotor_msgs::SO3Command_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::SO3Command_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -144,7 +152,9 @@ bool use_external_yaw\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::SO3Command_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::SO3Command_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -180,8 +190,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::SO3Command_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::SO3Command_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::SO3Command_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

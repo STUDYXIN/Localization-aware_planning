@@ -42,8 +42,8 @@ int main(int argc, char* argv[]) {
   namespace pl = std::placeholders;
 
   state_type x = { { 10.0, 10.0, 10.0 } };
-  integrate_const(runge_kutta4<state_type>(), std::bind(&lorenz::ode, lorenz(), pl::_1, pl::_2, pl::_3),
-                  x, 0.0, 10.0, 0.01);
+  integrate_const(
+      runge_kutta4<state_type>(), std::bind(&lorenz::ode, lorenz(), pl::_1, pl::_2, pl::_3), x, 0.0, 10.0, 0.01);
   //]
   return 0;
 }

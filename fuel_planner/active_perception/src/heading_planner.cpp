@@ -21,10 +21,14 @@ void Graph::print() {
 }
 
 // template <typename VERTEX>
-void Graph::addVertex(const YawVertex::Ptr& vertex) { vertice_.push_back(vertex); }
+void Graph::addVertex(const YawVertex::Ptr& vertex) {
+  vertice_.push_back(vertex);
+}
 
 // template <typename VERTEX>
-void Graph::addEdge(const int& from, const int& to) { vertice_[from]->neighbors_.push_back(vertice_[to]); }
+void Graph::addEdge(const int& from, const int& to) {
+  vertice_[from]->neighbors_.push_back(vertice_[to]);
+}
 
 // template <typename VERTEX>
 void Graph::setParams(const double& w, const double& my, const double& dt) {
@@ -154,13 +158,15 @@ HeadingPlanner::HeadingPlanner(ros::NodeHandle& nh) {
   }
 }
 
-HeadingPlanner::~HeadingPlanner() {}
+HeadingPlanner::~HeadingPlanner() {
+}
 
-void HeadingPlanner::setMap(const shared_ptr<SDFMap>& map) { sdf_map_ = map; }
+void HeadingPlanner::setMap(const shared_ptr<SDFMap>& map) {
+  sdf_map_ = map;
+}
 
-void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const vector<double>& yaws,
-                                     const double& dt, const Eigen::MatrixXd& ctrl_pts,
-                                     vector<double>& path) {
+void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const vector<double>& yaws, const double& dt,
+    const Eigen::MatrixXd& ctrl_pts, vector<double>& path) {
   Graph yaw_graph;
   yaw_graph.setParams(w_, max_yaw_rate_, dt);
   int gid = 0;
@@ -181,8 +187,7 @@ void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const v
       vector<future<double>> futs(vert_num);
       for (int j = 0; j < vert_num; ++j) {  // evaluate info gain in parallel
         double ys = yaws[i] + double(j - half_vert_num_) * yaw_diff_;
-        futs[j] = std::async(std::launch::async, &HeadingPlanner::calcInformationGain, this, pts[i], ys,
-                             ctrl_pts, j);
+        futs[j] = std::async(std::launch::async, &HeadingPlanner::calcInformationGain, this, pts[i], ys, ctrl_pts, j);
       }
       for (int j = 0; j < vert_num; ++j) {
         double ys = yaws[i] + double(j - half_vert_num_) * yaw_diff_;
@@ -224,8 +229,8 @@ void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const v
   std::cout << "" << std::endl;
 }
 
-double HeadingPlanner::calcInformationGain(const Eigen::Vector3d& pt, const double& yaw,
-                                           const Eigen::MatrixXd& ctrl_pts, const int& task_id) {
+double HeadingPlanner::calcInformationGain(
+    const Eigen::Vector3d& pt, const double& yaw, const Eigen::MatrixXd& ctrl_pts, const int& task_id) {
   // compute camera transform
   auto t1 = ros::Time::now();
   Eigen::Matrix3d R_wb;
@@ -239,7 +244,7 @@ double HeadingPlanner::calcInformationGain(const Eigen::Vector3d& pt, const doub
   Eigen::Vector3d t_wc = T_wc.block(0, 3, 3, 1);
 
   // rotate camera seperating plane normals
-  vector<Eigen::Vector3d> normals = {n_top_, n_bottom_, n_left_, n_right_};
+  vector<Eigen::Vector3d> normals = { n_top_, n_bottom_, n_left_, n_right_ };
   for (auto& n : normals) n = R_wc * n;
   Eigen::Vector3i lbi, ubi;
   calcFovAABB(R_wc, t_wc, lbi, ubi);
@@ -325,7 +330,7 @@ double HeadingPlanner::calcInfoGain(const Eigen::Vector3d& pt, const double& yaw
   Eigen::Vector3d t_wc = T_wc.block(0, 3, 3, 1);
 
   // rotate camera seperating plane normals
-  vector<Eigen::Vector3d> normals = {n_top_, n_bottom_, n_left_, n_right_};
+  vector<Eigen::Vector3d> normals = { n_top_, n_bottom_, n_left_, n_right_ };
   for (auto& n : normals) n = R_wc * n;
   Eigen::Vector3i lbi, ubi;
   calcFovAABB(R_wc, t_wc, lbi, ubi);
@@ -387,8 +392,8 @@ void HeadingPlanner::initCastFlag(const Eigen::Vector3d& pos) {
   cast_flags_.reset(lbi, ubi);
 }
 
-void HeadingPlanner::calcFovAABB(const Eigen::Matrix3d& R_wc, const Eigen::Vector3d& t_wc,
-                                 Eigen::Vector3i& lb, Eigen::Vector3i& ub) {
+void HeadingPlanner::calcFovAABB(
+    const Eigen::Matrix3d& R_wc, const Eigen::Vector3d& t_wc, Eigen::Vector3i& lb, Eigen::Vector3i& ub) {
   // axis-aligned bounding box(AABB) of camera FoV
   vector<Eigen::Vector3d> vertice(5);
   vertice[0] = R_wc * lefttop_ + t_wc;
@@ -438,8 +443,8 @@ void HeadingPlanner::visualizeBox(const Eigen::Vector3d& lb, const Eigen::Vector
   box_pub_.publish(mk);
 }
 
-void HeadingPlanner::distToPathAndCurPos(const Eigen::Vector3d& check_pt, const Eigen::MatrixXd& ctrl_pts,
-                                         pair<double, double>& dists, bool debug) {
+void HeadingPlanner::distToPathAndCurPos(
+    const Eigen::Vector3d& check_pt, const Eigen::MatrixXd& ctrl_pts, pair<double, double>& dists, bool debug) {
   double min_squ = numeric_limits<double>::max();
   int idx = -1;
   for (int i = 0; i < ctrl_pts.rows(); ++i) {
@@ -456,12 +461,11 @@ void HeadingPlanner::distToPathAndCurPos(const Eigen::Vector3d& check_pt, const 
     dists.second += (ctrl_pts.row(i + 1) - ctrl_pts.row(i)).norm();
   }
   if (debug)
-    std::cout << "pos: " << check_pt.transpose() << ", d1: " << dists.first << ", d2: " << dists.second
-              << std::endl;
+    std::cout << "pos: " << check_pt.transpose() << ", d1: " << dists.first << ", d2: " << dists.second << std::endl;
 }
 
-bool HeadingPlanner::insideFoV(const Eigen::Vector3d& pw, const Eigen::Vector3d& pc,
-                               const vector<Eigen::Vector3d>& normals) {
+bool HeadingPlanner::insideFoV(
+    const Eigen::Vector3d& pw, const Eigen::Vector3d& pc, const vector<Eigen::Vector3d>& normals) {
   Eigen::Vector3d dir = pw - pc;
   if (dir.norm() > far_) {
     return false;
@@ -500,8 +504,8 @@ void HeadingPlanner::setFrontier(const vector<vector<Eigen::Vector3d>>& frontier
   ft_kdtree_.setInputCloud(frontier_);
 }
 
-void HeadingPlanner::calcVisibFrontier(const Eigen::Vector3d& pt, const double& yaw,
-                                       unordered_map<int, int>& visib_idx) {
+void HeadingPlanner::calcVisibFrontier(
+    const Eigen::Vector3d& pt, const double& yaw, unordered_map<int, int>& visib_idx) {
   auto t1 = ros::Time::now();
 
   // search relevant frontier points
@@ -581,8 +585,8 @@ void HeadingPlanner::showVisibFrontier(const vector<YawVertex::Ptr>& path) {
   frontier_pub_.publish(msg);
 }
 
-void HeadingPlanner::axisAlignedBoundingBox(const vector<Eigen::Vector3d>& points, Eigen::Vector3d& lb,
-                                            Eigen::Vector3d& ub) {
+void HeadingPlanner::axisAlignedBoundingBox(
+    const vector<Eigen::Vector3d>& points, Eigen::Vector3d& lb, Eigen::Vector3d& ub) {
   lb = points.front();
   ub = points.front();
   for (auto p : points) {

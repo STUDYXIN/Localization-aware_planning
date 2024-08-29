@@ -24,18 +24,18 @@ struct ExplorationData;
 enum EXPL_RESULT { NO_FRONTIER, FAIL, SUCCEED };
 
 class FastExplorationManager {
- public:
+public:
   FastExplorationManager();
   ~FastExplorationManager();
 
-  void initialize(ros::NodeHandle &nh);
+  void initialize(ros::NodeHandle& nh);
 
-  int planExploreMotion(const Vector3d &pos, const Vector3d &vel, const Vector3d &acc, const Vector3d &yaw);
-  int plantoGoalMotion(const Vector3d &start_pt, const Vector3d &start_vel, const Vector3d &start_acc,
-                       const Vector3d &start_yaw, const Vector3d &end_pt, const Vector3d &end_vel);
+  int planExploreMotion(const Vector3d& pos, const Vector3d& vel, const Vector3d& acc, const Vector3d& yaw);
+  int plantoGoalMotion(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
+      const Vector3d& start_yaw, const Vector3d& end_pt, const Vector3d& end_vel);
   // Benchmark method, classic frontier and rapid frontier
-  int classicFrontier(const Vector3d &pos, const double &yaw);
-  int rapidFrontier(const Vector3d &pos, const Vector3d &vel, const double &yaw, bool &classic);
+  int classicFrontier(const Vector3d& pos, const double& yaw);
+  int rapidFrontier(const Vector3d& pos, const Vector3d& vel, const double& yaw, bool& classic);
 
   shared_ptr<ExplorationData> ed_;
   shared_ptr<ExplorationParam> ep_;
@@ -43,23 +43,22 @@ class FastExplorationManager {
   shared_ptr<FrontierFinder> frontier_finder_;
   // unique_ptr<ViewFinder> view_finder_;
 
- private:
+private:
   shared_ptr<EDTEnvironment> edt_environment_;
   shared_ptr<SDFMap> sdf_map_, global_sdf_map_;
   shared_ptr<FeatureMap> feature_map_;
 
   // Find optimal tour for coarse viewpoints of all frontiers
-  void findGlobalTour(const Vector3d &cur_pos, const Vector3d &cur_vel, const Vector3d cur_yaw,
-                      vector<int> &indices);
+  void findGlobalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw, vector<int>& indices);
 
   // Refine local tour for next few frontiers, using more diverse viewpoints
-  void refineLocalTour(const Vector3d &cur_pos, const Vector3d &cur_vel, const Vector3d &cur_yaw,
-                       const vector<vector<Vector3d>> &n_points, const vector<vector<double>> &n_yaws,
-                       vector<Vector3d> &refined_pts, vector<double> &refined_yaws);
+  void refineLocalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d& cur_yaw,
+      const vector<vector<Vector3d>>& n_points, const vector<vector<double>>& n_yaws, vector<Vector3d>& refined_pts,
+      vector<double>& refined_yaws);
 
-  void shortenPath(vector<Vector3d> &path);
+  void shortenPath(vector<Vector3d>& path);
 
- public:
+public:
   typedef shared_ptr<FastExplorationManager> Ptr;
 };
 

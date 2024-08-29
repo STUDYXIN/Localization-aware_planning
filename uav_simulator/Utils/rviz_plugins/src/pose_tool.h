@@ -42,7 +42,7 @@ class Arrow;
 class DisplayContext;
 
 class Pose3DTool : public Tool {
- public:
+public:
   Pose3DTool();
   virtual ~Pose3DTool();
 
@@ -53,7 +53,7 @@ class Pose3DTool : public Tool {
 
   virtual int processMouseEvent(ViewportMouseEvent& event);
 
- protected:
+protected:
   virtual void onPoseSet(double x, double y, double z, double theta) = 0;
 
   Arrow* arrow_;

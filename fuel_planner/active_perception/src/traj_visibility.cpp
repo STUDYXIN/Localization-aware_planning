@@ -3,7 +3,8 @@
 #include <plan_env/sdf_map.h>
 
 namespace fast_planner {
-VisibilityUtil::VisibilityUtil() {}
+VisibilityUtil::VisibilityUtil() {
+}
 
 VisibilityUtil::VisibilityUtil(const ros::NodeHandle& nh) {
   // set parameters
@@ -17,7 +18,8 @@ VisibilityUtil::VisibilityUtil(const ros::NodeHandle& nh) {
   caster_.reset(new RayCaster);
 }
 
-VisibilityUtil::~VisibilityUtil() {}
+VisibilityUtil::~VisibilityUtil() {
+}
 
 void VisibilityUtil::setEDTEnvironment(const EDTEnvironment::Ptr& edt) {
   edt_env_ = edt;
@@ -27,8 +29,8 @@ void VisibilityUtil::setEDTEnvironment(const EDTEnvironment::Ptr& edt) {
   offset_ = Eigen::Vector3d(0.5, 0.5, 0.5) - origin / resolution_;
 }
 
-Eigen::Vector3d VisibilityUtil::getMinDistVoxel(const Eigen::Vector3d& q1, const Eigen::Vector3d& q2,
-                                                const Eigen::Vector3d& offset, const double& res) {
+Eigen::Vector3d VisibilityUtil::getMinDistVoxel(
+    const Eigen::Vector3d& q1, const Eigen::Vector3d& q2, const Eigen::Vector3d& offset, const double& res) {
   Eigen::Vector3d qk, min_pt;
   Eigen::Vector3i pt_id, min_id;
   double min_dist = 1000000, dist;
@@ -54,8 +56,7 @@ Eigen::Vector3d VisibilityUtil::getMinDistVoxel(const Eigen::Vector3d& q1, const
 }
 
 Eigen::Vector3d VisibilityUtil::getMinDistVoxelOnLine(const Eigen::Vector3d& q1, const Eigen::Vector3d& q2,
-                                                      const Eigen::Vector3d& offset, const double& res,
-                                                      int& state, Eigen::Vector3d& block) {
+    const Eigen::Vector3d& offset, const double& res, int& state, Eigen::Vector3d& block) {
   Eigen::Vector3d tmp;
   Eigen::Vector3i pt_id;
   double min_dist = 1000000, dist;
@@ -190,7 +191,7 @@ bool VisibilityUtil::findUnknownPoint(NonUniformBspline& traj, Eigen::Vector3d& 
 }
 
 bool VisibilityUtil::findCriticalPoint(NonUniformBspline& traj, const Eigen::Vector3d& unknown_pt,
-                                       const double& unknown_t, Eigen::Vector3d& pc, double& tc) {
+    const double& unknown_t, Eigen::Vector3d& pc, double& tc) {
   Eigen::Vector3d pt, pb;
   double tb = -10.0;
   // coarse finding backward
@@ -219,7 +220,7 @@ bool VisibilityUtil::findCriticalPoint(NonUniformBspline& traj, const Eigen::Vec
 }
 
 bool VisibilityUtil::findDirAndIdx(NonUniformBspline& traj, const double& unknown_t, const double& crit_t,
-                                   Eigen::Vector3d& dir, int& idx, Eigen::Vector3d& min_pt) {
+    Eigen::Vector3d& dir, int& idx, Eigen::Vector3d& min_pt) {
   // max speed to unknown pt
   // double mean_v = 0.0;
   // int num_v = 0;
@@ -305,8 +306,7 @@ void VisibilityUtil::calcViewConstraint(NonUniformBspline& traj, ViewConstraint&
 
 /* precompute the blocking points of the trajectory which will be used for
  * evaluating the visibility cost */
-vector<Eigen::Vector3d> VisibilityUtil::precomputeForVisibility(const vector<Eigen::Vector3d>& ctrl_pts,
-                                                                bool debug) {
+vector<Eigen::Vector3d> VisibilityUtil::precomputeForVisibility(const vector<Eigen::Vector3d>& ctrl_pts, bool debug) {
   int n = ctrl_pts.size() - visible_num_;
   vector<Eigen::Vector3d> block_pts(n);
   int unknwon_num = 0;
@@ -381,8 +381,8 @@ vector<Eigen::Vector3d> VisibilityUtil::precomputeForVisibility(const vector<Eig
   return block_pts;
 }
 
-Eigen::Vector3d VisibilityUtil::getVirtualBlockPt(const vector<Eigen::Vector3d>& q, int i, int j,
-                                                  const Eigen::Vector3d& min_pt) {
+Eigen::Vector3d VisibilityUtil::getVirtualBlockPt(
+    const vector<Eigen::Vector3d>& q, int i, int j, const Eigen::Vector3d& min_pt) {
   Eigen::Vector3d qij = q[j] - q[i];
   Eigen::Vector3d qkm, qk;
   double min_dot = 1000;

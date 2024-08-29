@@ -117,8 +117,7 @@ int main(int argc, char** argv) {
   //     Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y,
   //     odom.pose.pose.position.z);
 
-  pos.row(0) =
-      Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z);
+  pos.row(0) = Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z);
   // pos.row(0) = Eigen::Vector3d(-2, 0, 1);
   pos.row(1) = Eigen::Vector3d(-0.5, 0.5, 1);
   pos.row(2) = Eigen::Vector3d(0, 0, 1);

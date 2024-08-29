@@ -86,8 +86,7 @@ void Quadrotor::step(double dt) {
   updateInternalState();
 }
 
-void Quadrotor::operator()(const Quadrotor::InternalState& x, Quadrotor::InternalState& dxdt,
-                           const double /* t */) {
+void Quadrotor::operator()(const Quadrotor::InternalState& x, Quadrotor::InternalState& dxdt, const double /* t */) {
   State cur_state;
   for (int i = 0; i < 3; i++) {
     cur_state.x(i) = x[0 + i];
@@ -130,11 +129,10 @@ void Quadrotor::operator()(const Quadrotor::InternalState& x, Quadrotor::Interna
   Eigen::Array4d motor_linear_velocity;
   Eigen::Array4d AOA;
   blade_linear_velocity = 0.104719755  // rpm to rad/s
-      * cur_state.motor_rpm.array() * prop_radius_;
+                          * cur_state.motor_rpm.array() * prop_radius_;
   for (int i = 0; i < 4; ++i)
-    AOA[i] = alpha0 -
-        atan2(motor_linear_velocity[i], blade_linear_velocity[i]) *  //
-            180 / 3.14159265;
+    AOA[i] = alpha0 - atan2(motor_linear_velocity[i], blade_linear_velocity[i]) *  //
+                          180 / 3.14159265;
   //! @todo end
 
   // double totalF = kf_ * motor_rpm_sq.sum();
@@ -145,9 +143,9 @@ void Quadrotor::operator()(const Quadrotor::InternalState& x, Quadrotor::Interna
   moments(1) = kf_ * (motor_rpm_sq(1) - motor_rpm_sq(0)) * arm_length_;
   moments(2) = km_ * (motor_rpm_sq(0) + motor_rpm_sq(1) - motor_rpm_sq(2) - motor_rpm_sq(3));
 
-  double resistance = 0.1 *                         // C
-      3.14159265 * (arm_length_) * (arm_length_) *  // S
-      cur_state.v.norm() * cur_state.v.norm();
+  double resistance = 0.1 *                                         // C
+                      3.14159265 * (arm_length_) * (arm_length_) *  // S
+                      cur_state.v.norm() * cur_state.v.norm();
 
   //  ROS_INFO("resistance: %lf, Thrust: %lf%% ", resistance,
   //           motor_rpm_sq.sum() / (4 * max_rpm_ * max_rpm_) * 100.0);
@@ -158,7 +156,7 @@ void Quadrotor::operator()(const Quadrotor::InternalState& x, Quadrotor::Interna
   }
   x_dot = cur_state.v;
   v_dot = -Eigen::Vector3d(0, 0, g_) + thrust * R.col(2) / mass_ + external_force_ / mass_ /*; //*/ -
-      resistance * vnorm / mass_;
+          resistance * vnorm / mass_;
 
   acc_ = v_dot;
   //  acc_[2] = -acc_[2]; // to NED
@@ -360,4 +358,4 @@ void Quadrotor::updateInternalState(void) {
 Eigen::Vector3d Quadrotor::getAcc() const {
   return acc_;
 }
-}
+}  // namespace QuadrotorSimulator

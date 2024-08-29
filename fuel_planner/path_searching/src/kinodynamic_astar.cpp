@@ -14,8 +14,7 @@ KinodynamicAstar::~KinodynamicAstar() {
 }
 
 int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, Eigen::Vector3d start_a,
-                             Eigen::Vector3d end_pt, Eigen::Vector3d end_v, bool init, bool dynamic,
-                             double time_start) {
+    Eigen::Vector3d end_pt, Eigen::Vector3d end_v, bool init, bool dynamic, double time_start) {
   start_vel_ = start_v;
   start_acc_ = start_a;
 
@@ -118,8 +117,7 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
             um << ax, ay, az;
             inputs.push_back(um);
           }
-      for (double tau = time_res * max_tau_; tau <= max_tau_; tau += time_res * max_tau_)
-        durations.push_back(tau);
+      for (double tau = time_res * max_tau_; tau <= max_tau_; tau += time_res * max_tau_) durations.push_back(tau);
     }
 
     // cout << "cur state:" << cur_state.head(3).transpose() << endl;
@@ -140,8 +138,7 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
         // Check if in close set
         Eigen::Vector3i pro_id = posToIndex(pro_pos);
         int pro_t_id = timeToIndex(pro_t);
-        PathNodePtr pro_node =
-            dynamic ? expanded_nodes_.find(pro_id, pro_t_id) : expanded_nodes_.find(pro_id);
+        PathNodePtr pro_node = dynamic ? expanded_nodes_.find(pro_id, pro_t_id) : expanded_nodes_.find(pro_id);
         if (pro_node != NULL && pro_node->node_state == IN_CLOSE_SET) {
           if (init_search) std::cout << "close" << std::endl;
           continue;
@@ -170,8 +167,7 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
           double dt = tau * double(k) / double(check_num_);
           stateTransit(cur_state, xt, um, dt);
           pos = xt.head(3);
-          if (edt_environment_->sdf_map_->getInflateOccupancy(pos) == 1 ||
-              !edt_environment_->sdf_map_->isInBox(pos)) {
+          if (edt_environment_->sdf_map_->getInflateOccupancy(pos) == 1 || !edt_environment_->sdf_map_->isInBox(pos)) {
             is_occ = true;
             break;
           }
@@ -193,8 +189,7 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
         bool prune = false;
         for (int j = 0; j < tmp_expand_nodes.size(); ++j) {
           PathNodePtr expand_node = tmp_expand_nodes[j];
-          if ((pro_id - expand_node->index).norm() == 0 &&
-              ((!dynamic) || pro_t_id == expand_node->time_idx)) {
+          if ((pro_id - expand_node->index).norm() == 0 && ((!dynamic) || pro_t_id == expand_node->time_idx)) {
             prune = true;
             if (tmp_f_score < expand_node->f_score) {
               expand_node->f_score = tmp_f_score;
@@ -373,8 +368,8 @@ bool KinodynamicAstar::computeShotTraj(Eigen::VectorXd state1, Eigen::VectorXd s
       }
     }
 
-    if (coord(0) < origin_(0) || coord(0) >= map_size_3d_(0) || coord(1) < origin_(1) ||
-        coord(1) >= map_size_3d_(1) || coord(2) < origin_(2) || coord(2) >= map_size_3d_(2)) {
+    if (coord(0) < origin_(0) || coord(0) >= map_size_3d_(0) || coord(1) < origin_(1) || coord(1) >= map_size_3d_(1) ||
+        coord(2) < origin_(2) || coord(2) >= map_size_3d_(2)) {
       return false;
     }
 
@@ -475,7 +470,9 @@ void KinodynamicAstar::init() {
   iter_num_ = 0;
 }
 
-void KinodynamicAstar::setEnvironment(const EDTEnvironment::Ptr& env) { this->edt_environment_ = env; }
+void KinodynamicAstar::setEnvironment(const EDTEnvironment::Ptr& env) {
+  this->edt_environment_ = env;
+}
 
 void KinodynamicAstar::reset() {
   expanded_nodes_.clear();
@@ -535,8 +532,8 @@ std::vector<Eigen::Vector3d> KinodynamicAstar::getKinoTraj(double delta_t) {
   return state_list;
 }
 
-void KinodynamicAstar::getSamples(double& ts, vector<Eigen::Vector3d>& point_set,
-                                  vector<Eigen::Vector3d>& start_end_derivatives) {
+void KinodynamicAstar::getSamples(
+    double& ts, vector<Eigen::Vector3d>& point_set, vector<Eigen::Vector3d>& start_end_derivatives) {
   /* ---------- path duration ---------- */
   double T_sum = 0.0;
   if (is_shot_succ_) T_sum += t_shot_;
@@ -648,8 +645,8 @@ int KinodynamicAstar::timeToIndex(double time) {
   return idx;
 }
 
-void KinodynamicAstar::stateTransit(Eigen::Matrix<double, 6, 1>& state0, Eigen::Matrix<double, 6, 1>& state1,
-                                    Eigen::Vector3d um, double tau) {
+void KinodynamicAstar::stateTransit(
+    Eigen::Matrix<double, 6, 1>& state0, Eigen::Matrix<double, 6, 1>& state1, Eigen::Vector3d um, double tau) {
   for (int i = 0; i < 3; ++i) phi_(i, i + 3) = tau;
 
   Eigen::Matrix<double, 6, 1> integral;

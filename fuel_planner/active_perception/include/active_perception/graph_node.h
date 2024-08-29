@@ -26,15 +26,18 @@ class RayCaster;
 namespace fast_planner {
 // Basic noded type containing only general artributes required by graph search
 class BaseNode {
- public:
+public:
   typedef shared_ptr<BaseNode> Ptr;
   BaseNode() {
     g_value_ = 1000000;
     closed_ = false;
   }
-  ~BaseNode() {}
+  ~BaseNode() {
+  }
 
-  virtual void print() { std::cout << "Base node" << std::endl; }
+  virtual void print() {
+    std::cout << "Base node" << std::endl;
+  }
 
   int id_;
   bool closed_;
@@ -45,13 +48,17 @@ class BaseNode {
 class Astar;
 class SDFMap;
 class ViewNode : public BaseNode {
- public:
+public:
   typedef shared_ptr<ViewNode> Ptr;
   ViewNode(const Vector3d& p, const double& y);
-  ViewNode() {}
-  ~ViewNode() {}
+  ViewNode() {
+  }
+  ~ViewNode() {
+  }
 
-  virtual void print() { std::cout << "View node" << yaw_ << std::endl; }
+  virtual void print() {
+    std::cout << "View node" << yaw_ << std::endl;
+  }
 
   void printNeighbors() {
     for (auto v : neighbors_) v->print();
@@ -59,7 +66,7 @@ class ViewNode : public BaseNode {
 
   double costTo(const ViewNode::Ptr& node);
   static double computeCost(const Vector3d& p1, const Vector3d& p2, const double& y1, const double& y2,
-                            const Vector3d& v1, const double& yd1, vector<Vector3d>& path);
+      const Vector3d& v1, const double& yd1, vector<Vector3d>& path);
   // Coarse to fine path searching
   static double searchPath(const Vector3d& p1, const Vector3d& p2, vector<Vector3d>& path);
 

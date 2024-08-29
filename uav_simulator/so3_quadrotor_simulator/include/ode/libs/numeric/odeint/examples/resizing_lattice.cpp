@@ -62,7 +62,7 @@ struct compacton_lattice {
     for (size_t i = 0; i < N; i++) {
       const double diff = q[(i + 1) % N] - q[i];
       energies[i] = p[i] * p[i] / 2.0 + m_pot[m_pot_start_index + i] * q[i] * q[i] * q[i] * q[i] / 4.0 +
-          m_beta / 4.0 * diff * diff * diff * diff;
+                    m_beta / 4.0 * diff * diff * diff * diff;
       en += energies[i];
     }
     en = 1.0 / en;
@@ -78,7 +78,7 @@ struct compacton_lattice {
     for (size_t i = 0; i < N; i++) {
       const double diff = q[(i + 1) % N] - q[i];
       en += p[i] * p[i] / 2.0 + m_pot[m_pot_start_index + i] * q[i] * q[i] * q[i] * q[i] / 4.0 +
-          m_beta / 4.0 * diff * diff * diff * diff;
+            m_beta / 4.0 * diff * diff * diff * diff;
     }
     return en;
   }
@@ -118,8 +118,8 @@ int main() {
   compacton_lattice lattice(max_N, beta, (max_N - N_start) / 2);
 
   // create the stepper, note that we use an always_resizer because state size might change during steps
-  typedef symplectic_rkn_sb3a_mclachlan<coord_type, coord_type, double, coord_type, coord_type, double,
-                                        range_algebra, default_operations, always_resizer>
+  typedef symplectic_rkn_sb3a_mclachlan<coord_type, coord_type, double, coord_type, coord_type, double, range_algebra,
+      default_operations, always_resizer>
       hamiltonian_stepper;
   hamiltonian_stepper stepper;
   hamiltonian_stepper::state_type state = make_pair(q, p);
@@ -137,18 +137,18 @@ int main() {
       rotate(state.first.begin(), state.first.end() - 20, state.first.end());
       rotate(state.second.begin(), state.second.end() - 20, state.second.end());
       lattice.change_pot_start(-20);
-      cout << t << ": resized left to " << distr.size()
-           << ", energy = " << lattice.energy(state.first, state.second) << endl;
+      cout << t << ": resized left to " << distr.size() << ", energy = " << lattice.energy(state.first, state.second)
+           << endl;
     }
     if (distr[distr.size() - 10] > 1E-150) {
       do_resize(state.first, state.second, distr, state.first.size() + 20);
-      cout << t << ": resized right to " << distr.size()
-           << ", energy = " << lattice.energy(state.first, state.second) << endl;
+      cout << t << ": resized right to " << distr.size() << ", energy = " << lattice.energy(state.first, state.second)
+           << endl;
     }
     t += dt;
   }
   //]
 
-  cout << "final lattice size: " << distr.size()
-       << ", final energy: " << lattice.energy(state.first, state.second) << endl;
+  cout << "final lattice size: " << distr.size() << ", final energy: " << lattice.energy(state.first, state.second)
+       << endl;
 }

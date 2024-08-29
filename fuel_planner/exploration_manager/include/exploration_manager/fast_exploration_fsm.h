@@ -32,7 +32,7 @@ struct M2GData;
 enum EXPL_STATE { INIT, WAIT_TRIGGER, PLAN_TRAJ, PUB_TRAJ, EXEC_TRAJ, FINISH };
 enum TARGET_TYPE { EXPLORATION = 0, PRESET_TARGET = 1 };
 class FastExplorationFSM {
- private:
+private:
   /* planning utils */
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FastExplorationManager> expl_manager_;
@@ -65,9 +65,11 @@ class FastExplorationFSM {
   void visualize();
   void clearVisMarker();
 
- public:
-  FastExplorationFSM(/* args */) {}
-  ~FastExplorationFSM() {}
+public:
+  FastExplorationFSM(/* args */) {
+  }
+  ~FastExplorationFSM() {
+  }
 
   void init(ros::NodeHandle& nh);
 

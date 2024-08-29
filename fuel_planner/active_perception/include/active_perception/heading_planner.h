@@ -27,12 +27,16 @@ class SDFMap;
 
 // Basic vertex type containing only general artributes required by graph search
 class BaseVertex {
- public:
+public:
   typedef shared_ptr<BaseVertex> Ptr;
-  BaseVertex() {}
-  ~BaseVertex() {}
+  BaseVertex() {
+  }
+  ~BaseVertex() {
+  }
 
-  virtual void print() { std::cout << "no data in base vertex" << std::endl; }
+  virtual void print() {
+    std::cout << "no data in base vertex" << std::endl;
+  }
 
   int id_;
   double g_value_;
@@ -41,15 +45,18 @@ class BaseVertex {
 // vertex type for heading planning
 
 class YawVertex : public BaseVertex {
- public:
+public:
   typedef shared_ptr<YawVertex> Ptr;
   YawVertex(const double& y, double gain, const int& id) {
     yaw_ = y;
     info_gain_ = gain;
     id_ = id;
   }
-  ~YawVertex() {}
-  virtual void print() { std::cout << "yaw: " << yaw_ << std::endl; }
+  ~YawVertex() {
+  }
+  virtual void print() {
+    std::cout << "yaw: " << yaw_ << std::endl;
+  }
 
   // vertex type specific members-------
 
@@ -57,9 +64,13 @@ class YawVertex : public BaseVertex {
     for (auto v : neighbors_) v->print();
   }
 
-  double gain(const YawVertex::Ptr& v) { return v->info_gain_; }
+  double gain(const YawVertex::Ptr& v) {
+    return v->info_gain_;
+  }
 
-  double dist(const YawVertex::Ptr& v) { return fabs(yaw_ - v->yaw_); }
+  double dist(const YawVertex::Ptr& v) {
+    return fabs(yaw_ - v->yaw_);
+  }
 
   list<YawVertex::Ptr> neighbors_;
   YawVertex::Ptr parent_;
@@ -67,7 +78,7 @@ class YawVertex : public BaseVertex {
   double yaw_;
   double info_gain_;
 
- private:
+private:
   double visib_;
 
   // vertex type specific members-------
@@ -78,9 +89,11 @@ class YawVertex : public BaseVertex {
 
 // template <typename VERTEX>
 class Graph {
- public:
-  Graph() {}
-  ~Graph() {}
+public:
+  Graph() {
+  }
+  ~Graph() {
+  }
 
   void print();
   void addVertex(const YawVertex::Ptr& vertex);
@@ -89,7 +102,7 @@ class Graph {
   void setParams(const double& w, const double& my, const double& dt);
   void dijkstraSearch(const int& start, const int& goal, vector<YawVertex::Ptr>& path);
 
- private:
+private:
   double penal(const double& diff);
   vector<YawVertex::Ptr> vertice_;
   double w_;
@@ -100,15 +113,19 @@ class Graph {
 // !SECTION
 
 class CastFlags {
- private:
+private:
   /* data */
   vector<char> flags_;
   Eigen::Vector3i lb_, ub_, cells_;
 
- public:
-  CastFlags() {}
-  CastFlags(const int& size) { flags_.resize(size); }
-  ~CastFlags() {}
+public:
+  CastFlags() {
+  }
+  CastFlags(const int& size) {
+    flags_.resize(size);
+  }
+  ~CastFlags() {
+  }
 
   void reset(const Eigen::Vector3i& lb, const Eigen::Vector3i& ub) {
     lb_ = lb;
@@ -122,19 +139,23 @@ class CastFlags {
     return diff[2] + diff[1] * cells_[2] + diff[0] * cells_[1] * cells_[2];
   }
 
-  inline char getFlag(const Eigen::Vector3i& idx) { return flags_[address(idx)]; }
+  inline char getFlag(const Eigen::Vector3i& idx) {
+    return flags_[address(idx)];
+  }
 
-  inline void setFlag(const Eigen::Vector3i& idx, const char& f) { flags_[address(idx)] = f; }
+  inline void setFlag(const Eigen::Vector3i& idx, const char& f) {
+    flags_[address(idx)] = f;
+  }
 };
 
 class HeadingPlanner {
- public:
+public:
   HeadingPlanner(ros::NodeHandle& nh);
   ~HeadingPlanner();
 
   void setMap(const shared_ptr<SDFMap>& map);
   void searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const vector<double>& yaws, const double& dt,
-                       const Eigen::MatrixXd& ctrl_pts, vector<double>& path);
+      const Eigen::MatrixXd& ctrl_pts, vector<double>& path);
 
   // frontier-based IG, not good to evaluate information gain
   void setFrontier(const vector<vector<Eigen::Vector3d>>& frontier);
@@ -142,23 +163,20 @@ class HeadingPlanner {
   void showVisibFrontier(const vector<YawVertex::Ptr>& path);
   double calcInfoGain(const Eigen::Vector3d& pt, const double& yaw, const int& task_id);
 
- private:
+private:
   void setTransform(const Eigen::Matrix3d& R_wb, const Eigen::Vector3d& t_wb);
   bool insideFoV(const Eigen::Vector4d& pw);
 
   // iterate within volume and check visibility, voexl are weighted by distance
-  double calcInformationGain(const Eigen::Vector3d& pt, const double& yaw, const Eigen::MatrixXd& ctrl_pts,
-                             const int& task_id);
+  double calcInformationGain(
+      const Eigen::Vector3d& pt, const double& yaw, const Eigen::MatrixXd& ctrl_pts, const int& task_id);
   // iterate within volume and check visibility, voexl are weighted uniformly
-  bool insideFoV(const Eigen::Vector3d& pw, const Eigen::Vector3d& pc,
-                 const vector<Eigen::Vector3d>& normals);
+  bool insideFoV(const Eigen::Vector3d& pw, const Eigen::Vector3d& pc, const vector<Eigen::Vector3d>& normals);
   void distToPathAndCurPos(const Eigen::Vector3d& check_pt, const Eigen::MatrixXd& ctrl_pts,
-                           std::pair<double, double>& dists, bool debug = false);
-  void axisAlignedBoundingBox(const vector<Eigen::Vector3d>& points, Eigen::Vector3d& lb,
-                              Eigen::Vector3d& ub);
+      std::pair<double, double>& dists, bool debug = false);
+  void axisAlignedBoundingBox(const vector<Eigen::Vector3d>& points, Eigen::Vector3d& lb, Eigen::Vector3d& ub);
   void visualizeBox(const Eigen::Vector3d& lb, const Eigen::Vector3d& ub);
-  void calcFovAABB(const Eigen::Matrix3d& R_wc, const Eigen::Vector3d& t_wc, Eigen::Vector3i& lb,
-                   Eigen::Vector3i& ub);
+  void calcFovAABB(const Eigen::Matrix3d& R_wc, const Eigen::Vector3d& t_wc, Eigen::Vector3i& lb, Eigen::Vector3i& ub);
   void initCastFlag(const Eigen::Vector3d& pos);
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr frontier_;

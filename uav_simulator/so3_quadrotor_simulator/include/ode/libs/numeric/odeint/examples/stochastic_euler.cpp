@@ -80,8 +80,7 @@ public:
     deriv_type det, stoch;
     system.first(x, det);
     system.second(x, stoch);
-    for (size_t i = 0; i < x.size(); ++i)
-      x[i] += dt * det[i] + sqrt(dt) * stoch[i];
+    for (size_t i = 0; i < x.size(); ++i) x[i] += dt * det[i] + sqrt(dt) * stoch[i];
   }
 };
 //]
@@ -123,8 +122,8 @@ int main(int argc, char** argv) {
   //[ ornstein_uhlenbeck_main
   double dt = 0.1;
   state_type x = { { 1.0 } };
-  integrate_const(stochastic_euler<N>(), make_pair(ornstein_det(), ornstein_stoch(1.0)), x, 0.0, 10.0,
-                  dt, streaming_observer());
+  integrate_const(
+      stochastic_euler<N>(), make_pair(ornstein_det(), ornstein_stoch(1.0)), x, 0.0, 10.0, dt, streaming_observer());
   //]
   return 0;
 }

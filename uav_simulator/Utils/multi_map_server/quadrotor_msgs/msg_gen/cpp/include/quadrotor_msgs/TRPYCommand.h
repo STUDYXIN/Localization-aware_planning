@@ -20,10 +20,12 @@ template <class ContainerAllocator>
 struct TRPYCommand_ {
   typedef TRPYCommand_<ContainerAllocator> Type;
 
-  TRPYCommand_() : header(), thrust(0.0), roll(0.0), pitch(0.0), yaw(0.0), aux() {}
+  TRPYCommand_() : header(), thrust(0.0), roll(0.0), pitch(0.0), yaw(0.0), aux() {
+  }
 
   TRPYCommand_(const ContainerAllocator& _alloc)
-      : header(_alloc), thrust(0.0), roll(0.0), pitch(0.0), yaw(0.0), aux(_alloc) {}
+    : header(_alloc), thrust(0.0), roll(0.0), pitch(0.0), yaw(0.0), aux(_alloc) {
+  }
 
   typedef ::std_msgs::Header_<ContainerAllocator> _header_type;
   ::std_msgs::Header_<ContainerAllocator> header;
@@ -67,18 +69,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::TRPYCommand_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::TRPYCommand_<ContainerAllocator> > {
-  static const char* value() { return "6779ee8a86cc757aeea21725df32d00c"; }
+  static const char* value() {
+    return "6779ee8a86cc757aeea21725df32d00c";
+  }
 
-  static const char* value(const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0x6779ee8a86cc757aULL;
   static const uint64_t static_value2 = 0xeea21725df32d00cULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::TRPYCommand_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/TRPYCommand"; }
+  static const char* value() {
+    return "quadrotor_msgs/TRPYCommand";
+  }
 
-  static const char* value(const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -120,7 +130,9 @@ bool use_external_yaw\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -156,8 +168,8 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::TRPYCommand_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>& v) {
+  static void stream(
+      Stream& s, const std::string& indent, const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

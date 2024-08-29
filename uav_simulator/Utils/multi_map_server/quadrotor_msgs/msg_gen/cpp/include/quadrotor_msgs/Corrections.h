@@ -18,7 +18,9 @@ template <class ContainerAllocator>
 struct Corrections_ {
   typedef Corrections_<ContainerAllocator> Type;
 
-  Corrections_() : kf_correction(0.0), angle_corrections() { angle_corrections.assign(0.0); }
+  Corrections_() : kf_correction(0.0), angle_corrections() {
+    angle_corrections.assign(0.0);
+  }
 
   Corrections_(const ContainerAllocator& _alloc) : kf_correction(0.0), angle_corrections() {
     angle_corrections.assign(0.0);
@@ -54,18 +56,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::Corrections_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::Corrections_<ContainerAllocator> > {
-  static const char* value() { return "61e86887a75fe520847d3256306360f5"; }
+  static const char* value() {
+    return "61e86887a75fe520847d3256306360f5";
+  }
 
-  static const char* value(const ::quadrotor_msgs::Corrections_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Corrections_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0x61e86887a75fe520ULL;
   static const uint64_t static_value2 = 0x847d3256306360f5ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::Corrections_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/Corrections"; }
+  static const char* value() {
+    return "quadrotor_msgs/Corrections";
+  }
 
-  static const char* value(const ::quadrotor_msgs::Corrections_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Corrections_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -77,7 +87,9 @@ float64[2] angle_corrections\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::Corrections_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Corrections_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -107,8 +119,8 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::Corrections_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::Corrections_<ContainerAllocator>& v) {
+  static void stream(
+      Stream& s, const std::string& indent, const ::quadrotor_msgs::Corrections_<ContainerAllocator>& v) {
     s << indent << "kf_correction: ";
     Printer<double>::stream(s, indent + "  ", v.kf_correction);
     s << indent << "angle_corrections[]" << std::endl;

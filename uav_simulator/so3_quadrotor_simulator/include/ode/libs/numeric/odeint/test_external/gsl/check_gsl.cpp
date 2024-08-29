@@ -29,8 +29,8 @@ const double b = 8.0 / 3.0;
 
 void lorenz(const state_type x, state_type dxdt, double t) {
   gsl_vector_set(dxdt, 0, sigma * (gsl_vector_get(x, 1) - gsl_vector_get(x, 0)));
-  gsl_vector_set(dxdt, 1, R * gsl_vector_get(x, 0) - gsl_vector_get(x, 1) -
-                     gsl_vector_get(x, 0) * gsl_vector_get(x, 2));
+  gsl_vector_set(
+      dxdt, 1, R * gsl_vector_get(x, 0) - gsl_vector_get(x, 1) - gsl_vector_get(x, 0) * gsl_vector_get(x, 2));
   gsl_vector_set(dxdt, 2, gsl_vector_get(x, 0) * gsl_vector_get(x, 1) - b * gsl_vector_get(x, 2));
 }
 

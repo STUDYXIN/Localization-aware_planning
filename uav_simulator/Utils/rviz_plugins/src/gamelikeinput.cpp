@@ -52,41 +52,32 @@ void GameLikeInput::updateTopic() {
 }
 
 GameLikeInput::GameLikeInput()
-    : rviz::SelectionTool(),
-      move_tool_(new rviz::InteractionTool()),
-      selecting_(false),
-      sel_start_x_(0),
-      sel_start_y_(0),
-      moving_(false) {
+  : rviz::SelectionTool()
+  , move_tool_(new rviz::InteractionTool())
+  , selecting_(false)
+  , sel_start_x_(0)
+  , sel_start_y_(0)
+  , moving_(false) {
   shortcut_key_ = 'z';
   access_all_keys_ = true;
 
-  topic_property_wp_ =
-      new rviz::StringProperty("TopicPoint", "point_list", "The topic on which to publish navigation goals.",
-                               getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_wp_ = new rviz::StringProperty("TopicPoint", "point_list",
+      "The topic on which to publish navigation goals.", getPropertyContainer(), SLOT(updateTopic()), this);
 
-  topic_property_drone_ =
-      new rviz::StringProperty("TopicSelect", "select_list", "The topic on which to publish select drone id.",
-                               getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_drone_ = new rviz::StringProperty("TopicSelect", "select_list",
+      "The topic on which to publish select drone id.", getPropertyContainer(), SLOT(updateTopic()), this);
 
-  topic_property_swarm_ =
-      new rviz::StringProperty("TopicSwarm", "swarm", "The topic on which to publish swarm command.",
-                               getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_swarm_ = new rviz::StringProperty("TopicSwarm", "swarm",
+      "The topic on which to publish swarm command.", getPropertyContainer(), SLOT(updateTopic()), this);
 
-  property_z_max =
-      new rviz::FloatProperty("RangeZ_max", 1.7, "", getPropertyContainer(), SLOT(updateTopic()), this);
-  property_z_min =
-      new rviz::FloatProperty("RangeZ_min", 0.8, "", getPropertyContainer(), SLOT(updateTopic()), this);
+  property_z_max = new rviz::FloatProperty("RangeZ_max", 1.7, "", getPropertyContainer(), SLOT(updateTopic()), this);
+  property_z_min = new rviz::FloatProperty("RangeZ_min", 0.8, "", getPropertyContainer(), SLOT(updateTopic()), this);
 
-  property_y_max =
-      new rviz::FloatProperty("RangeY_max", 2.5, "", getPropertyContainer(), SLOT(updateTopic()), this);
-  property_y_min =
-      new rviz::FloatProperty("RangeY_min", -2.5, "", getPropertyContainer(), SLOT(updateTopic()), this);
+  property_y_max = new rviz::FloatProperty("RangeY_max", 2.5, "", getPropertyContainer(), SLOT(updateTopic()), this);
+  property_y_min = new rviz::FloatProperty("RangeY_min", -2.5, "", getPropertyContainer(), SLOT(updateTopic()), this);
 
-  property_x_max =
-      new rviz::FloatProperty("RangeX_max", 4, "", getPropertyContainer(), SLOT(updateTopic()), this);
-  property_x_min =
-      new rviz::FloatProperty("RangeX_min", -4, "", getPropertyContainer(), SLOT(updateTopic()), this);
+  property_x_max = new rviz::FloatProperty("RangeX_max", 4, "", getPropertyContainer(), SLOT(updateTopic()), this);
+  property_x_min = new rviz::FloatProperty("RangeX_min", -4, "", getPropertyContainer(), SLOT(updateTopic()), this);
 }
 
 GameLikeInput::~GameLikeInput() {
@@ -200,16 +191,13 @@ void GameLikeInput::onPoseSet(double x, double y, double z, double theta) {
   std::string fixed_frame = context_->getFixedFrame().toStdString();
   tf::Quaternion quat;
   quat.setRPY(0.0, 0.0, theta);
-  tf::Stamped<tf::Pose> p =
-      tf::Stamped<tf::Pose>(tf::Pose(quat, tf::Point(x, y, z)), ros::Time::now(), fixed_frame);
+  tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(quat, tf::Point(x, y, z)), ros::Time::now(), fixed_frame);
   geometry_msgs::PoseStamped goal;
   tf::poseStampedTFToMsg(p, goal);
-  ROS_INFO(
-      "Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), "
-      "Orientation(%.3f, %.3f, %.3f, %.3f) = Angle: %.3f\n",
-      fixed_frame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
-      goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w,
-      theta);
+  ROS_INFO("Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), "
+           "Orientation(%.3f, %.3f, %.3f, %.3f) = Angle: %.3f\n",
+      fixed_frame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, goal.pose.orientation.x,
+      goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w, theta);
 }
 
 int GameLikeInput::processMouseEvent(rviz::ViewportMouseEvent& event) {

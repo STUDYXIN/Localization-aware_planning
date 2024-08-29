@@ -53,9 +53,9 @@ struct is_resizeable<my_vec> {
   typedef boost::true_type type;
   const static bool value = type::value;
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 
 typedef double value_type;
 // typedef std::vector< value_type > state_type;

@@ -225,49 +225,43 @@ void check_dense_output_stepper(Stepper& stepper) {
 }
 
 class stepper_types
-    : public mpl::vector<
-          euler<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-          runge_kutta4<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-          runge_kutta4_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-          runge_kutta_cash_karp54<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-          runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
-          // don't run rk78 test - gcc requires > 5GB RAM to compile this
-          //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
-          > {};
+  : public mpl::vector<euler<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+        runge_kutta4<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+        runge_kutta4_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+        runge_kutta_cash_karp54<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+        runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
+        // don't run rk78 test - gcc requires > 5GB RAM to compile this
+        //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
+        > {};
 
 class fsal_stepper_types
-    : public mpl::vector<
-          runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
+  : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
 
 class error_stepper_types
-    : public mpl::vector<
-          runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
-          //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
-          > {};
+  : public mpl::vector<runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
+        //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
+        > {};
 
 class fsal_error_stepper_types
-    : public mpl::vector<
-          runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
+  : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
 
 class controlled_stepper_types
-    : public mpl::vector<controlled_runge_kutta<runge_kutta_cash_karp54_classic<
-                             state_type, value_type, deriv_type, time_type, fusion_algebra> >,
-                         controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type,
-                                                                   time_type, fusion_algebra> >,
-                         bulirsch_stoer<state_type, value_type, deriv_type, time_type, fusion_algebra>
-                         // rk78 with units needs up to 3GB memory to compile - disable testing...
-                         //, controlled_runge_kutta< runge_kutta_fehlberg78< state_type , value_type ,
-                         //deriv_type , time_type , fusion_algebra > >
-                         > {};
+  : public mpl::vector<controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type,
+                           time_type, fusion_algebra> >,
+        controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
+        bulirsch_stoer<state_type, value_type, deriv_type, time_type, fusion_algebra>
+        // rk78 with units needs up to 3GB memory to compile - disable testing...
+        //, controlled_runge_kutta< runge_kutta_fehlberg78< state_type , value_type ,
+        // deriv_type , time_type , fusion_algebra > >
+        > {};
 
 class dense_output_stepper_types
-    : public mpl::vector<dense_output_runge_kutta<
-                             euler<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
-                         dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<
-                             state_type, value_type, deriv_type, time_type, fusion_algebra> > >
-                         //, bulirsch_stoer_dense_out< state_type , value_type , deriv_type , time_type ,
-                         //fusion_algebra >
-                         > {};
+  : public mpl::vector<dense_output_runge_kutta<euler<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
+        dense_output_runge_kutta<
+            controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > >
+        //, bulirsch_stoer_dense_out< state_type , value_type , deriv_type , time_type ,
+        // fusion_algebra >
+        > {};
 
 BOOST_AUTO_TEST_SUITE(stepper_with_units)
 

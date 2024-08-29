@@ -10,7 +10,7 @@ class RayCaster;
 namespace fast_planner {
 /* ---------- used for iterating all topo combination ---------- */
 class TopoIterator {
- private:
+private:
   /* data */
   vector<int> path_nums_;
   vector<int> cur_index_;
@@ -25,7 +25,7 @@ class TopoIterator {
     }
   }
 
- public:
+public:
   TopoIterator(vector<int> pn) {
     path_nums_ = pn;
     cur_index_.resize(path_nums_.size());
@@ -38,8 +38,10 @@ class TopoIterator {
     }
     std::cout << "[Topo]: merged path num: " << combine_num_ << std::endl;
   }
-  TopoIterator() {}
-  ~TopoIterator() {}
+  TopoIterator() {
+  }
+  ~TopoIterator() {
+  }
 
   bool nextIndex(vector<int>& index) {
     index = cur_index_;
@@ -55,22 +57,24 @@ class TopoIterator {
 
 /* ---------- node of topo graph ---------- */
 class GraphNode {
- private:
+private:
   /* data */
 
- public:
+public:
   enum NODE_TYPE { Guard = 1, Connector = 2 };
 
   enum NODE_STATE { NEW = 1, CLOSE = 2, OPEN = 3 };
 
-  GraphNode(/* args */) {}
+  GraphNode(/* args */) {
+  }
   GraphNode(Eigen::Vector3d pos, NODE_TYPE type, int id) {
     pos_ = pos;
     type_ = type;
     state_ = NEW;
     id_ = id;
   }
-  ~GraphNode() {}
+  ~GraphNode() {
+  }
 
   vector<shared_ptr<GraphNode>> neighbors_;
   Eigen::Vector3d pos_;
@@ -82,7 +86,7 @@ class GraphNode {
 };
 
 class TopologyPRM {
- private:
+private:
   /* data */
   EDTEnvironment::Ptr edt_environment_;  // environment representation
 
@@ -132,10 +136,10 @@ class TopologyPRM {
   vector<GraphNode::Ptr> findVisibGuard(Eigen::Vector3d pt);  // find pairs of visibile
                                                               // guard
   bool needConnection(GraphNode::Ptr g1, GraphNode::Ptr g2,
-                      Eigen::Vector3d pt);  // test redundancy with existing
-                                            // connection between two guard
-  bool lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, double thresh, Eigen::Vector3d& pc,
-                 int caster_id = 0);
+      Eigen::Vector3d pt);  // test redundancy with existing
+                            // connection between two guard
+  bool lineVisib(
+      const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, double thresh, Eigen::Vector3d& pc, int caster_id = 0);
   bool triangleVisib(Eigen::Vector3d pt, Eigen::Vector3d p1, Eigen::Vector3d p2);
   void pruneGraph();
 
@@ -148,13 +152,12 @@ class TopologyPRM {
   void shortcutPath(vector<Eigen::Vector3d> path, int path_id, int iter_num = 1);
 
   vector<Eigen::Vector3d> discretizePath(const vector<Eigen::Vector3d>& path, int pt_num);
-  bool sameTopoPath(const vector<Eigen::Vector3d>& path1, const vector<Eigen::Vector3d>& path2,
-                    double thresh);
+  bool sameTopoPath(const vector<Eigen::Vector3d>& path1, const vector<Eigen::Vector3d>& path2, double thresh);
   Eigen::Vector3d getOrthoPoint(const vector<Eigen::Vector3d>& path);
 
   int shortestPath(vector<vector<Eigen::Vector3d>>& paths);
 
- public:
+public:
   double clearance_;
 
   TopologyPRM(/* args */);
@@ -165,10 +168,8 @@ class TopologyPRM {
   void setEnvironment(const EDTEnvironment::Ptr& env);
 
   void findTopoPaths(Eigen::Vector3d start, Eigen::Vector3d end, vector<Eigen::Vector3d> start_pts,
-                     vector<Eigen::Vector3d> end_pts, list<GraphNode::Ptr>& graph,
-                     vector<vector<Eigen::Vector3d>>& raw_paths,
-                     vector<vector<Eigen::Vector3d>>& filtered_paths,
-                     vector<vector<Eigen::Vector3d>>& select_paths);
+      vector<Eigen::Vector3d> end_pts, list<GraphNode::Ptr>& graph, vector<vector<Eigen::Vector3d>>& raw_paths,
+      vector<vector<Eigen::Vector3d>>& filtered_paths, vector<vector<Eigen::Vector3d>>& select_paths);
 
   double pathLength(const vector<Eigen::Vector3d>& path);
   void pathToGuidePts(vector<Eigen::Vector3d>& path, const int& pt_num, vector<Eigen::Vector3d>& pts);

@@ -55,8 +55,7 @@ BOOST_AUTO_TEST_CASE(gsl) {
 
   double Rmin = 0.1, Rmax = 50.0, dR = (Rmax - Rmin) / double(n - 1);
   std::vector<double> x(n * 3), r(n);
-  for (size_t i = 0; i < n; ++i)
-    r[i] = Rmin + dR * double(i);
+  for (size_t i = 0; i < n; ++i) r[i] = Rmin + dR * double(i);
 
   state_type X(ctx.queue(), n);
   X(0) = 10.0;
@@ -65,8 +64,7 @@ BOOST_AUTO_TEST_CASE(gsl) {
 
   vector_type R(ctx.queue(), r);
 
-  odeint::runge_kutta4<state_type, double, state_type, double, odeint::vector_space_algebra,
-                       odeint::default_operations>
+  odeint::runge_kutta4<state_type, double, state_type, double, odeint::vector_space_algebra, odeint::default_operations>
       stepper;
 
   odeint::integrate_const(stepper, sys_func(R), X, 0.0, t_max, dt);

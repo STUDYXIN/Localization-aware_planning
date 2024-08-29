@@ -23,7 +23,7 @@ using std::vector;
 
 namespace fast_planner {
 class TopoReplanFSM {
- private:
+private:
   /* ---------- flag ---------- */
   enum FSM_EXEC_STATE { INIT, WAIT_TARGET, GEN_NEW_TRAJ, REPLAN_TRAJ, EXEC_TRAJ, REPLAN_NEW };
   enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2, REFENCE_PATH = 3 };
@@ -70,9 +70,11 @@ class TopoReplanFSM {
   void waypointCallback(const nav_msgs::PathConstPtr& msg);
   void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
 
- public:
-  TopoReplanFSM(/* args */) {}
-  ~TopoReplanFSM() {}
+public:
+  TopoReplanFSM(/* args */) {
+  }
+  ~TopoReplanFSM() {
+  }
 
   void init(ros::NodeHandle& nh);
 

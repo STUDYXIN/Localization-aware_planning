@@ -43,8 +43,7 @@ struct sys {
 };
 
 struct jacobi {
-  void operator()(const state_type& x, matrix_type& jacobi, const value_type& t,
-                  state_type& dfdt) const {
+  void operator()(const state_type& x, matrix_type& jacobi, const value_type& t, state_type& dfdt) const {
     jacobi(0, 0) = 0;
     jacobi(0, 1) = 1;
     jacobi(1, 0) = -1;

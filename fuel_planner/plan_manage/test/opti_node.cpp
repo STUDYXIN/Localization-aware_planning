@@ -27,8 +27,7 @@ void displayPathWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen
   poly_traj_pub.publish(mk);
 
   mk.action = visualization_msgs::Marker::ADD;
-  mk.pose.orientation.x = 0.0, mk.pose.orientation.y = 0.0, mk.pose.orientation.z = 0.0,
-  mk.pose.orientation.w = 1.0;
+  mk.pose.orientation.x = 0.0, mk.pose.orientation.y = 0.0, mk.pose.orientation.z = 0.0, mk.pose.orientation.w = 1.0;
   mk.scale.x = resolution, mk.scale.y = resolution, mk.scale.z = resolution;
 
   mk.color.r = color(0), mk.color.g = color(1), mk.color.b = color(2), mk.color.a = color(3);

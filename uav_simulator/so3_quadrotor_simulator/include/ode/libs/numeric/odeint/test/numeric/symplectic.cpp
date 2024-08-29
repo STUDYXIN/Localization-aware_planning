@@ -75,8 +75,7 @@ struct perform_symplectic_test {
   }
 };
 
-typedef mpl::vector<symplectic_euler<state_type>, symplectic_rkn_sb3a_mclachlan<state_type> >
-    symplectic_steppers;
+typedef mpl::vector<symplectic_euler<state_type>, symplectic_rkn_sb3a_mclachlan<state_type> > symplectic_steppers;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(symplectic_test, Stepper, symplectic_steppers) {
   perform_symplectic_test<Stepper> tester;

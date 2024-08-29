@@ -74,8 +74,7 @@ public:
 
   // For internal use, but needs to be public for odeint
   typedef boost::array<double, 22> InternalState;
-  void operator()(const Quadrotor::InternalState& x, Quadrotor::InternalState& dxdt,
-                  const double /* t */);
+  void operator()(const Quadrotor::InternalState& x, Quadrotor::InternalState& dxdt, const double /* t */);
 
   Eigen::Vector3d getAcc() const;
 
@@ -104,5 +103,5 @@ private:
 
   InternalState internal_state_;
 };
-}
+}  // namespace QuadrotorSimulator
 #endif

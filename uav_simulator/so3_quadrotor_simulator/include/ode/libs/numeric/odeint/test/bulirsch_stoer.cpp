@@ -100,16 +100,15 @@ BOOST_AUTO_TEST_CASE(test_bulirsch_stoer) {
   dt = 1E-1;
   bs_do.initialize(x, t, dt);
   bs_do.do_step(sin_system());
-  std::cout << "one step successful, new time: " << bs_do.current_time() << " (" << t << ")"
-            << std::endl;
+  std::cout << "one step successful, new time: " << bs_do.current_time() << " (" << t << ")" << std::endl;
 
   x = bs_do.current_state();
-  std::cout << "x( " << bs_do.current_time() << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2]
-            << " ]" << std::endl;
+  std::cout << "x( " << bs_do.current_time() << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2] << " ]"
+            << std::endl;
 
   bs_do.calc_state(bs_do.current_time() / 3, x);
-  std::cout << "x( " << bs_do.current_time() / 3 << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2]
-            << " ]" << std::endl;
+  std::cout << "x( " << bs_do.current_time() / 3 << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2] << " ]"
+            << std::endl;
 
   std::cout << std::endl
             << "=======================================================================" << std::endl
@@ -123,8 +122,8 @@ BOOST_AUTO_TEST_CASE(test_bulirsch_stoer) {
   bs_do.initialize(x, t, dt);
   bs_do.do_step(sin_system());
   x = bs_do.current_state();
-  std::cout << "x( " << bs_do.current_time() << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2]
-            << " ]" << std::endl;
+  std::cout << "x( " << bs_do.current_time() << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2] << " ]"
+            << std::endl;
 
   t = dt;
   bs_do.initialize(x, t, dt);
@@ -136,8 +135,8 @@ BOOST_AUTO_TEST_CASE(test_bulirsch_stoer) {
   bs_do.do_step(sin_system());
   x = bs_do.current_state();
 
-  std::cout << "x( " << bs_do.current_time() << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2]
-            << " ]" << std::endl;
+  std::cout << "x( " << bs_do.current_time() << " ) = [ " << x[0] << " , " << x[1] << " , " << x[2] << " ]"
+            << std::endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END()

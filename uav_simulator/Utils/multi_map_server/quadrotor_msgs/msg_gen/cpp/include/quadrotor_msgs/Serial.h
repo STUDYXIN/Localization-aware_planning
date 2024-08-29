@@ -19,9 +19,11 @@ template <class ContainerAllocator>
 struct Serial_ {
   typedef Serial_<ContainerAllocator> Type;
 
-  Serial_() : header(), channel(0), type(0), data() {}
+  Serial_() : header(), channel(0), type(0), data() {
+  }
 
-  Serial_(const ContainerAllocator& _alloc) : header(_alloc), channel(0), type(0), data(_alloc) {}
+  Serial_(const ContainerAllocator& _alloc) : header(_alloc), channel(0), type(0), data(_alloc) {
+  }
 
   typedef ::std_msgs::Header_<ContainerAllocator> _header_type;
   ::std_msgs::Header_<ContainerAllocator> header;
@@ -66,18 +68,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::Serial_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::Serial_<ContainerAllocator> > {
-  static const char* value() { return "e448fb7595af9a8adfcab5ec241c7d4f"; }
+  static const char* value() {
+    return "e448fb7595af9a8adfcab5ec241c7d4f";
+  }
 
-  static const char* value(const ::quadrotor_msgs::Serial_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Serial_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0xe448fb7595af9a8aULL;
   static const uint64_t static_value2 = 0xdfcab5ec241c7d4fULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::Serial_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/Serial"; }
+  static const char* value() {
+    return "quadrotor_msgs/Serial";
+  }
 
-  static const char* value(const ::quadrotor_msgs::Serial_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Serial_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -118,7 +128,9 @@ string frame_id\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::Serial_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Serial_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -152,8 +164,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::Serial_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::Serial_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::Serial_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

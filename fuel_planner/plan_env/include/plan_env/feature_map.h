@@ -22,7 +22,7 @@ using std::vector;
 
 namespace fast_planner {
 class CameraParam {
- public:
+public:
   double cx;
   double cy;
   double fx;
@@ -34,7 +34,7 @@ class CameraParam {
   double feature_visual_min;
   double feature_visual_max;
 
-  void init(ros::NodeHandle &nh) {
+  void init(ros::NodeHandle& nh) {
     nh.param("feature/cam_cx", cx, 321.046);
     nh.param("feature/cam_cy", cy, 243.449);
     nh.param("feature/cam_fx", fx, 387.229);
@@ -62,8 +62,7 @@ class CameraParam {
     std::cout << "Feature Visual Min: " << feature_visual_min << std::endl;
   }
 
-  bool is_in_FOV(const Eigen::Vector3d &camera_p, const Eigen::Vector3d &target_p,
-                 const Eigen::Quaterniond &camera_q) {
+  bool is_in_FOV(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p, const Eigen::Quaterniond& camera_q) {
     Eigen::Vector3d target_in_camera = camera_q.inverse() * (target_p - camera_p);
     double x = target_in_camera.x();
     double y = target_in_camera.y();
@@ -80,7 +79,7 @@ class CameraParam {
 class EDTEnvironment;
 class SDFMap;
 class FeatureMap {
- public:
+public:
   FeatureMap();
   ~FeatureMap();
   typedef shared_ptr<FeatureMap> Ptr;
@@ -90,24 +89,24 @@ class FeatureMap {
     double depth_min_;
     double depth_max_;
   };
-  void setMap(shared_ptr<SDFMap> &map);
-  void initMap(ros::NodeHandle &nh);
-  void loadMap(const string &filename);
-  void addFeatureCloud(const Eigen::Vector3d &pos, const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
-  void getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
-  void getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res);
-  void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
-  void sensorposCallback(const geometry_msgs::PoseStampedConstPtr &pose);
+  void setMap(shared_ptr<SDFMap>& map);
+  void initMap(ros::NodeHandle& nh);
+  void loadMap(const string& filename);
+  void addFeatureCloud(const Eigen::Vector3d& pos, const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+  void getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+  void getFeatures(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>& res);
+  void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
+  void sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose);
   void pubDebugmsg(int debugMode = 0);
-  int get_NumCloud_using_PosOrient(const Eigen::Vector3d &pos, const Eigen::Quaterniond &orient,
-                                   vector<Eigen::Vector3d> &res);
+  int get_NumCloud_using_PosOrient(
+      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res);
   Config config_;
   shared_ptr<SDFMap> sdf_map;
   CameraParam camera_param;
   ros::Subscriber odom_sub_, sensorpos_sub;
   ros::Publisher feature_map_pub_, visual_feature_cloud_pub_;
 
- private:
+private:
   pcl::PointCloud<pcl::PointXYZ> features_cloud_;
   pcl::KdTreeFLANN<pcl::PointXYZ> features_kdtree_;
   // double feature_visual_max, feature_visual_min;

@@ -19,20 +19,12 @@ struct AuxCommand_ {
   typedef AuxCommand_<ContainerAllocator> Type;
 
   AuxCommand_()
-      : current_yaw(0.0),
-        kf_correction(0.0),
-        angle_corrections(),
-        enable_motors(false),
-        use_external_yaw(false) {
+    : current_yaw(0.0), kf_correction(0.0), angle_corrections(), enable_motors(false), use_external_yaw(false) {
     angle_corrections.assign(0.0);
   }
 
   AuxCommand_(const ContainerAllocator& _alloc)
-      : current_yaw(0.0),
-        kf_correction(0.0),
-        angle_corrections(),
-        enable_motors(false),
-        use_external_yaw(false) {
+    : current_yaw(0.0), kf_correction(0.0), angle_corrections(), enable_motors(false), use_external_yaw(false) {
     angle_corrections.assign(0.0);
   }
 
@@ -75,18 +67,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::AuxCommand_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::AuxCommand_<ContainerAllocator> > {
-  static const char* value() { return "94f75840e4b1e03675da764692f2c839"; }
+  static const char* value() {
+    return "94f75840e4b1e03675da764692f2c839";
+  }
 
-  static const char* value(const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0x94f75840e4b1e036ULL;
   static const uint64_t static_value2 = 0x75da764692f2c839ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::AuxCommand_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/AuxCommand"; }
+  static const char* value() {
+    return "quadrotor_msgs/AuxCommand";
+  }
 
-  static const char* value(const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -101,7 +101,9 @@ bool use_external_yaw\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -134,8 +136,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::AuxCommand_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::AuxCommand_<ContainerAllocator>& v) {
     s << indent << "current_yaw: ";
     Printer<double>::stream(s, indent + "  ", v.current_yaw);
     s << indent << "kf_correction: ";

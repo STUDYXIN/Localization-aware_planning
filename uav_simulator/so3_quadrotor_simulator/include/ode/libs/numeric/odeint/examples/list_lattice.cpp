@@ -41,9 +41,9 @@ struct resize_impl<state_type, state_type> {  // define how to resize
     v1.resize(v2.size());
   }
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 //]
 
 void lattice(const state_type& x, state_type& dxdt, const double /* t */) {
@@ -63,8 +63,7 @@ using namespace boost::numeric::odeint;
 int main() {
   const int N = 32;
   state_type x;
-  for (int i = 0; i < N; ++i)
-    x.push_back(1.0 * i / N);
+  for (int i = 0; i < N; ++i) x.push_back(1.0 * i / N);
 
   integrate_const(runge_kutta4<state_type>(), lattice, x, 0.0, 10.0, 0.1);
 }

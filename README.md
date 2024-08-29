@@ -43,3 +43,11 @@
 
 - **使用方法**：
   - 理论上，直接运行 `start.sh` 即可。
+
+### 8月29日更新
+
+- **安装 clang-format**： `sudo apt install clang-format`
+
+- **手动进行clang-format** 在`ClangFormat.py`的目录打开终端，运行 `python3 ClangFormat.py`,弹出一系列被格式化的文件，则格式化成功，注：目前只格式化`.cpp` 和 `.h`文件
+
+- **自动进行clang-format** 增加`.git/hooks/pre-commit`,每次运行 `git commit` 命令时，`pre-commit` 钩子会被触发。

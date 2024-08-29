@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
 
     rk.do_step(sys1, inout, dxdtinout, t, dt);
     rk.do_step(sys2, inout, dxdtinout, t,
-               dt);  // Ok, internal derivative is not used, dxdtinout is updated
+        dt);  // Ok, internal derivative is not used, dxdtinout is updated
 
     rk.do_step(sys1, in, dxdtin, t, out, dxdtout, dt);
     rk.do_step(sys2, in, dxdtin, t, out, dxdtout, dt);  // Ok, internal derivative is not used
@@ -115,8 +115,7 @@ int main(int argc, char** argv) {
 
     //[ symplectic_stepper_detail_system_class_example
     harm_osc h;
-    rkn.do_step(make_pair(boost::bind(&harm_osc::f1, h, _1, _2), boost::bind(&harm_osc::f2, h, _1, _2)),
-                x, t, dt);
+    rkn.do_step(make_pair(boost::bind(&harm_osc::f1, h, _1, _2), boost::bind(&harm_osc::f2, h, _1, _2)), x, t, dt);
     //]
   }
 
@@ -173,8 +172,8 @@ int main(int argc, char** argv) {
     //]
 
     //[ dense_output_detail_generation2
-    integrate_const(make_dense_output(1.0e-6, 1.0e-6, runge_kutta_dopri5<state_type>()), sys, inout,
-                    t_start, t_end, dt);
+    integrate_const(
+        make_dense_output(1.0e-6, 1.0e-6, runge_kutta_dopri5<state_type>()), sys, inout, t_start, t_end, dt);
     //]
   }
 

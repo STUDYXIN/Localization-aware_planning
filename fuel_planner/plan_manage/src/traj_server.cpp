@@ -47,7 +47,7 @@ Eigen::Matrix3d R_loop;
 Eigen::Vector3d T_loop;
 bool isLoopCorrection = false;
 
-double calcPathLength(const vector<Eigen::Vector3d> &path) {
+double calcPathLength(const vector<Eigen::Vector3d>& path) {
   if (path.empty()) return 0;
   double len = 0.0;
   for (int i = 0; i < path.size() - 1; ++i) {
@@ -88,7 +88,7 @@ void displayTrajWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen
   ros::Duration(0.001).sleep();
 }
 
-void drawFOV(const vector<Eigen::Vector3d> &list1, const vector<Eigen::Vector3d> &list2) {
+void drawFOV(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
@@ -130,8 +130,7 @@ void drawFOV(const vector<Eigen::Vector3d> &list1, const vector<Eigen::Vector3d>
   cmd_vis_pub.publish(mk);
 }
 
-void drawCmd(const Eigen::Vector3d &pos, const Eigen::Vector3d &vec, const int &id,
-             const Eigen::Vector4d &color) {
+void drawCmd(const Eigen::Vector3d& pos, const Eigen::Vector3d& vec, const int& id, const Eigen::Vector4d& color) {
   visualization_msgs::Marker mk_state;
   mk_state.header.frame_id = "world";
   mk_state.header.stamp = ros::Time::now();
@@ -177,7 +176,7 @@ void newCallback(std_msgs::Empty msg) {
   traj_real_.clear();
 }
 
-void odomCallbck(const nav_msgs::Odometry &msg) {
+void odomCallbck(const nav_msgs::Odometry& msg) {
   if (msg.child_frame_id == "X" || msg.child_frame_id == "O") return;
   odom = msg;
   traj_real_.push_back(
@@ -188,8 +187,7 @@ void odomCallbck(const nav_msgs::Odometry &msg) {
 
 void pgTVioCallback(geometry_msgs::Pose msg) {
   // World to odom
-  Eigen::Quaterniond q =
-      Eigen::Quaterniond(msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
+  Eigen::Quaterniond q = Eigen::Quaterniond(msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
   R_loop = q.toRotationMatrix();
   T_loop << msg.position.x, msg.position.y, msg.position.z;
 
@@ -197,7 +195,7 @@ void pgTVioCallback(geometry_msgs::Pose msg) {
   // cout << "T_loop: " << T_loop << endl;
 }
 
-void visCallback(const ros::TimerEvent &e) {
+void visCallback(const ros::TimerEvent& e) {
   // Draw the executed traj (desired state)
   // displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(1, 0, 0, 1), pub_traj_id_);
   // displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(0, 1, 0, 1), pub_traj_id_);
@@ -208,7 +206,7 @@ void visCallback(const ros::TimerEvent &e) {
   //                      1);
 }
 
-void bsplineCallback(const bspline::BsplineConstPtr &msg) {
+void bsplineCallback(const bspline::BsplineConstPtr& msg) {
   // Received traj should have ascending traj_id
   if (msg->traj_id <= traj_id_) {
     ROS_ERROR("out of order bspline.");
@@ -253,7 +251,7 @@ void bsplineCallback(const bspline::BsplineConstPtr &msg) {
   }
 }
 
-void cmdCallback(const ros::TimerEvent &e) {
+void cmdCallback(const ros::TimerEvent& e) {
   // No publishing before receive traj data
   if (!receive_traj_) return;
 
@@ -283,7 +281,7 @@ void cmdCallback(const ros::TimerEvent &e) {
     double len = calcPathLength(traj_cmd_);
     double flight_t = (end_time - start_time).toSec();
     ROS_WARN_THROTTLE(2, "flight time: %lf, path length: %lf, mean vel: %lf, energy is: % lf ", flight_t, len,
-                      len / flight_t, energy);
+        len / flight_t, energy);
   } else {
     cout << "[Traj server]: invalid time." << endl;
   }
@@ -428,7 +426,7 @@ void test() {
   }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   ros::init(argc, argv, "traj_server");
   ros::NodeHandle node;
   ros::NodeHandle nh("~");
@@ -459,8 +457,8 @@ int main(int argc, char **argv) {
   ros::Duration(1.0).sleep();
 
   // Control parameter
-  cmd.kx = {5.7, 5.7, 6.2};
-  cmd.kv = {3.4, 3.4, 4.0};
+  cmd.kx = { 5.7, 5.7, 6.2 };
+  cmd.kv = { 3.4, 3.4, 4.0 };
 
   std::cout << start_time.toSec() << std::endl;
   std::cout << end_time.toSec() << std::endl;

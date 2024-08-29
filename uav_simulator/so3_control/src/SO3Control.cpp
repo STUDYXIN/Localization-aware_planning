@@ -3,28 +3,37 @@
 
 #include <iostream>
 
-SO3Control::SO3Control() : mass_(0.5), g_(9.81) { acc_.setZero(); }
+SO3Control::SO3Control() : mass_(0.5), g_(9.81) {
+  acc_.setZero();
+}
 
-void SO3Control::setMass(const double mass) { mass_ = mass; }
+void SO3Control::setMass(const double mass) {
+  mass_ = mass;
+}
 
-void SO3Control::setGravity(const double g) { g_ = g; }
+void SO3Control::setGravity(const double g) {
+  g_ = g;
+}
 
-void SO3Control::setPosition(const Eigen::Vector3d& position) { pos_ = position; }
+void SO3Control::setPosition(const Eigen::Vector3d& position) {
+  pos_ = position;
+}
 
-void SO3Control::setVelocity(const Eigen::Vector3d& velocity) { vel_ = velocity; }
+void SO3Control::setVelocity(const Eigen::Vector3d& velocity) {
+  vel_ = velocity;
+}
 
 void SO3Control::calculateControl(const Eigen::Vector3d& des_pos, const Eigen::Vector3d& des_vel,
-                                  const Eigen::Vector3d& des_acc, const double des_yaw,
-                                  const double des_yaw_dot, const Eigen::Vector3d& kx,
-                                  const Eigen::Vector3d& kv) {
+    const Eigen::Vector3d& des_acc, const double des_yaw, const double des_yaw_dot, const Eigen::Vector3d& kx,
+    const Eigen::Vector3d& kv) {
   //  ROS_INFO("Error %lf %lf %lf", (des_pos - pos_).norm(),
   //           (des_vel - vel_).norm(), (des_acc - acc_).norm());
 
   Eigen::Vector3d totalError = (des_pos - pos_) + (des_vel - vel_) + (des_acc - acc_);
 
   Eigen::Vector3d ka(fabs(totalError[0]) > 3 ? 0 : (fabs(totalError[0]) * 0.2),
-                     fabs(totalError[1]) > 3 ? 0 : (fabs(totalError[1]) * 0.2),
-                     fabs(totalError[2]) > 3 ? 0 : (fabs(totalError[2]) * 0.2));
+      fabs(totalError[1]) > 3 ? 0 : (fabs(totalError[1]) * 0.2),
+      fabs(totalError[2]) > 3 ? 0 : (fabs(totalError[2]) * 0.2));
 
   force_.noalias() = kx.asDiagonal() * (des_pos - pos_) + kv.asDiagonal() * (des_vel - vel_) +
                      mass_ * /*(Eigen::Vector3d(1, 1, 1) - ka).asDiagonal() **/ (des_acc) +
@@ -64,8 +73,14 @@ void SO3Control::calculateControl(const Eigen::Vector3d& des_pos, const Eigen::V
   orientation_ = Eigen::Quaterniond(R);
 }
 
-const Eigen::Vector3d& SO3Control::getComputedForce(void) { return force_; }
+const Eigen::Vector3d& SO3Control::getComputedForce(void) {
+  return force_;
+}
 
-const Eigen::Quaterniond& SO3Control::getComputedOrientation(void) { return orientation_; }
+const Eigen::Quaterniond& SO3Control::getComputedOrientation(void) {
+  return orientation_;
+}
 
-void SO3Control::setAcc(const Eigen::Vector3d& acc) { acc_ = acc; }
+void SO3Control::setAcc(const Eigen::Vector3d& acc) {
+  acc_ = acc;
+}

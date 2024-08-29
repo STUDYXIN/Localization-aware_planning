@@ -29,26 +29,26 @@
 #define InInitialTour(a, b) ((a)->InitialSuc == (b) || (b)->InitialSuc == (a))
 #define Near(a, b) ((a)->BestSuc ? InBestTour(a, b) : (a)->Dad == (b) || (b)->Dad == (a))
 
-#define Link(a, b)                                                                                      \
+#define Link(a, b)                                                                                                     \
   { ((a)->Suc = (b))->Pred = (a); }
-#define Follow(b, a)                                                                                    \
-  {                                                                                                     \
-    Link((b)->Pred, (b)->Suc);                                                                          \
-    Link(b, b);                                                                                         \
-    Link(b, (a)->Suc);                                                                                  \
-    Link(a, b);                                                                                         \
+#define Follow(b, a)                                                                                                   \
+  {                                                                                                                    \
+    Link((b)->Pred, (b)->Suc);                                                                                         \
+    Link(b, b);                                                                                                        \
+    Link(b, (a)->Suc);                                                                                                 \
+    Link(a, b);                                                                                                        \
   }
-#define Precede(a, b)                                                                                   \
-  {                                                                                                     \
-    Link((a)->Pred, (a)->Suc);                                                                          \
-    Link(a, a);                                                                                         \
-    Link((b)->Pred, a);                                                                                 \
-    Link(a, b);                                                                                         \
+#define Precede(a, b)                                                                                                  \
+  {                                                                                                                    \
+    Link((a)->Pred, (a)->Suc);                                                                                         \
+    Link(a, a);                                                                                                        \
+    Link((b)->Pred, a);                                                                                                \
+    Link(a, b);                                                                                                        \
   }
-#define SLink(a, b)                                                                                     \
-  {                                                                                                     \
-    (a)->Suc = (b);                                                                                     \
-    (b)->Pred = (a);                                                                                    \
+#define SLink(a, b)                                                                                                    \
+  {                                                                                                                    \
+    (a)->Suc = (b);                                                                                                    \
+    (b)->Pred = (a);                                                                                                   \
   }
 
 enum Types { TSP, ATSP, SOP, HCP, CVRP, TOUR, HPP };
@@ -329,18 +329,16 @@ int Trial;                      /* Ordinal number of the current trial */
 /* The following variables are read by the functions ReadParameters and
    ReadProblem: */
 
-char *ParameterFileName, *ProblemFileName, *PiFileName, *TourFileName, *OutputTourFileName,
-    *InputTourFileName, **CandidateFileName, **EdgeFileName, *InitialTourFileName,
-    *SubproblemTourFileName, **MergeTourFileName;
+char *ParameterFileName, *ProblemFileName, *PiFileName, *TourFileName, *OutputTourFileName, *InputTourFileName,
+    **CandidateFileName, **EdgeFileName, *InitialTourFileName, *SubproblemTourFileName, **MergeTourFileName;
 char *Name, *Type, *EdgeWeightType, *EdgeWeightFormat, *EdgeDataFormat, *NodeCoordType, *DisplayDataType;
-int CandidateSetSymmetric, CandidateSetType, CoordType, DelaunayPartitioning, DelaunayPure,
-    ExtraCandidateSetSymmetric, ExtraCandidateSetType, InitialTourAlgorithm, KarpPartitioning,
-    KCenterPartitioning, KMeansPartitioning, MoorePartitioning, PatchingAExtended, PatchingARestricted,
-    PatchingCExtended, PatchingCRestricted, ProblemType, RohePartitioning, SierpinskiPartitioning,
-    SubproblemBorders, SubproblemsCompressed, WeightType, WeightFormat;
+int CandidateSetSymmetric, CandidateSetType, CoordType, DelaunayPartitioning, DelaunayPure, ExtraCandidateSetSymmetric,
+    ExtraCandidateSetType, InitialTourAlgorithm, KarpPartitioning, KCenterPartitioning, KMeansPartitioning,
+    MoorePartitioning, PatchingAExtended, PatchingARestricted, PatchingCExtended, PatchingCRestricted, ProblemType,
+    RohePartitioning, SierpinskiPartitioning, SubproblemBorders, SubproblemsCompressed, WeightType, WeightFormat;
 
-FILE *ParameterFile, *ProblemFile, *PiFile, *InputTourFile, *TourFile, *InitialTourFile,
-    *SubproblemTourFile, **MergeTourFile;
+FILE *ParameterFile, *ProblemFile, *PiFile, *InputTourFile, *TourFile, *InitialTourFile, *SubproblemTourFile,
+    **MergeTourFile;
 CostFunction Distance, D, C, c;
 MoveFunction BestMove, BacktrackMove, BestSubsequentMove;
 MergeTourFunction MergeWithTour;
@@ -407,8 +405,8 @@ Node* BestKOptMove(Node* t1, Node* t2, GainType* G0, GainType* Gain);
 int Between(const Node* ta, const Node* tb, const Node* tc);
 int Between_SL(const Node* ta, const Node* tb, const Node* tc);
 int Between_SSL(const Node* ta, const Node* tb, const Node* tc);
-GainType BridgeGain(Node* s1, Node* s2, Node* s3, Node* s4, Node* s5, Node* s6, Node* s7, Node* s8,
-                    int Case6, GainType G);
+GainType BridgeGain(
+    Node* s1, Node* s2, Node* s3, Node* s4, Node* s5, Node* s6, Node* s7, Node* s8, int Case6, GainType G);
 Node** BuildKDTree(int Cutoff);
 void ChooseInitialTour(void);
 void Connect(Node* N1, int Max, int Sparse);
@@ -445,10 +443,9 @@ void KSwapKick(int K);
 GainType LinKernighan(void);
 void Make2OptMove(Node* t1, Node* t2, Node* t3, Node* t4);
 void Make3OptMove(Node* t1, Node* t2, Node* t3, Node* t4, Node* t5, Node* t6, int Case);
-void Make4OptMove(Node* t1, Node* t2, Node* t3, Node* t4, Node* t5, Node* t6, Node* t7, Node* t8,
-                  int Case);
-void Make5OptMove(Node* t1, Node* t2, Node* t3, Node* t4, Node* t5, Node* t6, Node* t7, Node* t8,
-                  Node* t9, Node* t10, int Case);
+void Make4OptMove(Node* t1, Node* t2, Node* t3, Node* t4, Node* t5, Node* t6, Node* t7, Node* t8, int Case);
+void Make5OptMove(
+    Node* t1, Node* t2, Node* t3, Node* t4, Node* t5, Node* t6, Node* t7, Node* t8, Node* t9, Node* t10, int Case);
 void MakeKOptMove(int K);
 GainType MergeTourWithBestTour(void);
 GainType MergeWithTourIPT(void);

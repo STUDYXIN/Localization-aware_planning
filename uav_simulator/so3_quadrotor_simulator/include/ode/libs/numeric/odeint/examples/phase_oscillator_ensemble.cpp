@@ -47,8 +47,7 @@ struct phase_ensemble {
   container_type m_omega;
   double m_epsilon;
 
-  phase_ensemble(const size_t n, double g = 1.0, double epsilon = 1.0)
-    : m_omega(n, 0.0), m_epsilon(epsilon) {
+  phase_ensemble(const size_t n, double g = 1.0, double epsilon = 1.0) : m_omega(n, 0.0), m_epsilon(epsilon) {
     create_frequencies(g);
   }
 
@@ -69,8 +68,7 @@ struct phase_ensemble {
 
   void operator()(const container_type& x, container_type& dxdt, double /* t */) const {
     pair<double, double> mean = calc_mean_field(x);
-    for (size_t i = 0; i < x.size(); ++i)
-      dxdt[i] = m_omega[i] + m_epsilon * mean.first * sin(mean.second - x[i]);
+    for (size_t i = 0; i < x.size(); ++i) dxdt[i] = m_omega[i] + m_epsilon * mean.first * sin(mean.second - x[i]);
   }
 };
 //]
@@ -127,8 +125,7 @@ int main(int argc, char** argv) {
     integrate_const(runge_kutta4<container_type>(), boost::ref(ensemble), x, 0.0, 10.0, dt);
 
     // integrate and compute the statistics
-    integrate_const(runge_kutta4<container_type>(), boost::ref(ensemble), x, 0.0, 100.0, dt,
-                    boost::ref(obs));
+    integrate_const(runge_kutta4<container_type>(), boost::ref(ensemble), x, 0.0, 100.0, dt, boost::ref(obs));
     cout << epsilon << "\t" << obs.get_K_mean() << endl;
   }
 

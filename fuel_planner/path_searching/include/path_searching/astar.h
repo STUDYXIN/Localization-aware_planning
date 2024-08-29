@@ -26,7 +26,7 @@ namespace fast_planner {
 #define inf 1 >> 30
 
 class Node {
- public:
+public:
   /* -------------------- */
   Eigen::Vector3i index;
   Eigen::Vector3d position;
@@ -47,20 +47,26 @@ class Node {
 typedef Node* NodePtr;
 
 class NodeComparator0 {
- public:
-  bool operator()(NodePtr node1, NodePtr node2) { return node1->f_score > node2->f_score; }
+public:
+  bool operator()(NodePtr node1, NodePtr node2) {
+    return node1->f_score > node2->f_score;
+  }
 };
 
 class NodeHashTable0 {
- private:
+private:
   /* data */
   std::unordered_map<Eigen::Vector3i, NodePtr, matrix_hash0<Eigen::Vector3i>> data_3d_;
   std::unordered_map<Eigen::Vector4i, NodePtr, matrix_hash0<Eigen::Vector4i>> data_4d_;
 
- public:
-  NodeHashTable0(/* args */) {}
-  ~NodeHashTable0() {}
-  void insert(Eigen::Vector3i idx, NodePtr node) { data_3d_.insert(make_pair(idx, node)); }
+public:
+  NodeHashTable0(/* args */) {
+  }
+  ~NodeHashTable0() {
+  }
+  void insert(Eigen::Vector3i idx, NodePtr node) {
+    data_3d_.insert(make_pair(idx, node));
+  }
   void insert(Eigen::Vector3i idx, int time_idx, NodePtr node) {
     data_4d_.insert(make_pair(Eigen::Vector4i(idx(0), idx(1), idx(2), time_idx), node));
   }
@@ -81,7 +87,7 @@ class NodeHashTable0 {
 };
 
 class Astar {
- private:
+private:
   /* ---------- main data structure ---------- */
   vector<NodePtr> path_node_pool_;
   int use_node_num_, iter_num_;
@@ -114,7 +120,7 @@ class Astar {
   double getManhHeu(Eigen::Vector3d x1, Eigen::Vector3d x2);
   double getEuclHeu(Eigen::Vector3d x1, Eigen::Vector3d x2);
 
- public:
+public:
   Astar(){};
   ~Astar();
 
@@ -124,8 +130,7 @@ class Astar {
   void setParam(ros::NodeHandle& nh);
   void init();
   void reset();
-  int search(Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, bool dynamic = false,
-             double time_start = -1.0);
+  int search(Eigen::Vector3d start_pt, Eigen::Vector3d end_pt, bool dynamic = false, double time_start = -1.0);
 
   void setEnvironment(const EDTEnvironment::Ptr& env);
   std::vector<Eigen::Vector3d> getPath();

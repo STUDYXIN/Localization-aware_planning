@@ -183,24 +183,20 @@ void testRidiculouslyMassiveArray(int size) {
   clock_t tend_mtl4 = clock();
 
   clog << x[0] << endl;
-  clog << num_of_steps_mtl4 << " time elapsed: " << (double)(tend_mtl4 - tstart_mtl4) / CLOCKS_PER_SEC
-       << endl;
+  clog << num_of_steps_mtl4 << " time elapsed: " << (double)(tend_mtl4 - tstart_mtl4) / CLOCKS_PER_SEC << endl;
 
   vec_ublas x_ublas(size, 0.0);
   x_ublas[0] = 1;
 
   clock_t tstart_boost = clock();
-  size_t num_of_steps_ublas = integrate_const(
-      booststepper(), make_pair(system1_ublas(), jacobi1_ublas()), x_ublas, 0.0, endtime, dt);
+  size_t num_of_steps_ublas =
+      integrate_const(booststepper(), make_pair(system1_ublas(), jacobi1_ublas()), x_ublas, 0.0, endtime, dt);
   clock_t tend_boost = clock();
 
   clog << x_ublas[0] << endl;
-  clog << num_of_steps_ublas << " time elapsed: " << (double)(tend_boost - tstart_boost) / CLOCKS_PER_SEC
-       << endl;
+  clog << num_of_steps_ublas << " time elapsed: " << (double)(tend_boost - tstart_boost) / CLOCKS_PER_SEC << endl;
 
-  clog << "dt_ublas/dt_mtl4 = " << (double)(tend_boost - tstart_boost) / (tend_mtl4 - tstart_mtl4)
-       << endl
-       << endl;
+  clog << "dt_ublas/dt_mtl4 = " << (double)(tend_boost - tstart_boost) / (tend_mtl4 - tstart_mtl4) << endl << endl;
   return;
 }
 
@@ -221,25 +217,21 @@ void testRidiculouslyMassiveArray2(int size) {
   clock_t tend_mtl4 = clock();
 
   clog << x[0] << endl;
-  clog << num_of_steps_mtl4 << " time elapsed: " << (double)(tend_mtl4 - tstart_mtl4) / CLOCKS_PER_SEC
-       << endl;
+  clog << num_of_steps_mtl4 << " time elapsed: " << (double)(tend_mtl4 - tstart_mtl4) / CLOCKS_PER_SEC << endl;
 
   vec_ublas x_ublas(size, 0.0);
   x_ublas[0] = 100;
 
   clock_t tstart_boost = clock();
-  size_t num_of_steps_ublas = integrate_const(
-      booststepper(), make_pair(system1_ublas(), jacobi1_ublas()), x_ublas, 0.0, endtime, dt);
+  size_t num_of_steps_ublas =
+      integrate_const(booststepper(), make_pair(system1_ublas(), jacobi1_ublas()), x_ublas, 0.0, endtime, dt);
 
   clock_t tend_boost = clock();
 
   clog << x_ublas[0] << endl;
-  clog << num_of_steps_ublas << " time elapsed: " << (double)(tend_boost - tstart_boost) / CLOCKS_PER_SEC
-       << endl;
+  clog << num_of_steps_ublas << " time elapsed: " << (double)(tend_boost - tstart_boost) / CLOCKS_PER_SEC << endl;
 
-  clog << "dt_ublas/dt_mtl4 = " << (double)(tend_boost - tstart_boost) / (tend_mtl4 - tstart_mtl4)
-       << endl
-       << endl;
+  clog << "dt_ublas/dt_mtl4 = " << (double)(tend_boost - tstart_boost) / (tend_mtl4 - tstart_mtl4) << endl << endl;
   return;
 }
 

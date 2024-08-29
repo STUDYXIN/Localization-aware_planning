@@ -25,18 +25,16 @@ namespace fast_planner {
 class SDFMap;
 
 class MapROS {
- public:
+public:
   MapROS();
   ~MapROS();
   void setMap(SDFMap* map);
   void init();
   bool using_global_map;
 
- private:
-  void depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
-                         const geometry_msgs::PoseStampedConstPtr& pose);
-  void cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
-                         const geometry_msgs::PoseStampedConstPtr& pose);
+private:
+  void depthPoseCallback(const sensor_msgs::ImageConstPtr& img, const geometry_msgs::PoseStampedConstPtr& pose);
+  void cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg, const geometry_msgs::PoseStampedConstPtr& pose);
   void global_cloud_subCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
   void updateESDFCallback(const ros::TimerEvent& /*event*/);
   void visCallback(const ros::TimerEvent& /*event*/);
@@ -55,8 +53,7 @@ class MapROS {
   typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::PoseStamped>
       SyncPolicyImagePose;
   typedef shared_ptr<message_filters::Synchronizer<SyncPolicyImagePose>> SynchronizerImagePose;
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2,
-                                                          geometry_msgs::PoseStamped>
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, geometry_msgs::PoseStamped>
       SyncPolicyCloudPose;
   typedef shared_ptr<message_filters::Synchronizer<SyncPolicyCloudPose>> SynchronizerCloudPose;
 
@@ -68,8 +65,8 @@ class MapROS {
   SynchronizerImagePose sync_image_pose_;
   SynchronizerCloudPose sync_cloud_pose_;
 
-  ros::Publisher map_local_pub_, map_local_inflate_pub_, esdf_pub_, map_all_pub_, unknown_pub_,
-      update_range_pub_, depth_pub_;
+  ros::Publisher map_local_pub_, map_local_inflate_pub_, esdf_pub_, map_all_pub_, unknown_pub_, update_range_pub_,
+      depth_pub_;
   ros::Timer esdf_timer_, vis_timer_;
 
   // params, depth projection

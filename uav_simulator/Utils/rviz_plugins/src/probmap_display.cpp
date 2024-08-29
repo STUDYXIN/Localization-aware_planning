@@ -53,30 +53,29 @@
 namespace rviz {
 
 ProbMapDisplay::ProbMapDisplay()
-    : Display(),
-      manual_object_(NULL)
-      //! @bug cannot compile @gcc-5 or later, material_(0)
-      ,
-      loaded_(false),
-      resolution_(0.0f),
-      width_(0),
-      height_(0),
-      position_(Ogre::Vector3::ZERO),
-      orientation_(Ogre::Quaternion::IDENTITY),
-      new_map_(false) {
-  topic_property_ = new RosTopicProperty(
-      "Topic", "", QString::fromStdString(ros::message_traits::datatype<nav_msgs::OccupancyGrid>()),
+  : Display()
+  , manual_object_(NULL)
+  //! @bug cannot compile @gcc-5 or later, material_(0)
+  , loaded_(false)
+  , resolution_(0.0f)
+  , width_(0)
+  , height_(0)
+  , position_(Ogre::Vector3::ZERO)
+  , orientation_(Ogre::Quaternion::IDENTITY)
+  , new_map_(false) {
+  topic_property_ = new RosTopicProperty("Topic", "",
+      QString::fromStdString(ros::message_traits::datatype<nav_msgs::OccupancyGrid>()),
       "nav_msgs::OccupancyGrid topic to subscribe to.", this, SLOT(updateTopic()));
 
-  alpha_property_ = new FloatProperty("Alpha", 0.7, "Amount of transparency to apply to the map.", this,
-                                      SLOT(updateAlpha()));
+  alpha_property_ =
+      new FloatProperty("Alpha", 0.7, "Amount of transparency to apply to the map.", this, SLOT(updateAlpha()));
   alpha_property_->setMin(0);
   alpha_property_->setMax(1);
 
   draw_under_property_ = new Property("Draw Behind", false,
-                                      "Rendering option, controls whether or not the map is always"
-                                      " drawn behind everything else.",
-                                      this, SLOT(updateDrawUnder()));
+      "Rendering option, controls whether or not the map is always"
+      " drawn behind everything else.",
+      this, SLOT(updateDrawUnder()));
 
   resolution_property_ = new FloatProperty("Resolution", 0, "Resolution of the map. (not editable)", this);
   resolution_property_->setReadOnly(true);
@@ -87,13 +86,12 @@ ProbMapDisplay::ProbMapDisplay()
   height_property_ = new IntProperty("Height", 0, "Height of the map, in meters. (not editable)", this);
   height_property_->setReadOnly(true);
 
-  position_property_ =
-      new VectorProperty("Position", Ogre::Vector3::ZERO,
-                         "Position of the bottom left corner of the map, in meters. (not editable)", this);
+  position_property_ = new VectorProperty("Position", Ogre::Vector3::ZERO,
+      "Position of the bottom left corner of the map, in meters. (not editable)", this);
   position_property_->setReadOnly(true);
 
-  orientation_property_ = new QuaternionProperty("Orientation", Ogre::Quaternion::IDENTITY,
-                                                 "Orientation of the map. (not editable)", this);
+  orientation_property_ =
+      new QuaternionProperty("Orientation", Ogre::Quaternion::IDENTITY, "Orientation of the map. (not editable)", this);
   orientation_property_->setReadOnly(true);
 }
 
@@ -106,8 +104,8 @@ void ProbMapDisplay::onInitialize() {
   static int count = 0;
   std::stringstream ss;
   ss << "MapObjectMaterial" << count++;
-  material_ = Ogre::MaterialManager::getSingleton().create(
-      ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+  material_ =
+      Ogre::MaterialManager::getSingleton().create(ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
   material_->setReceiveShadows(false);
   material_->getTechnique(0)->setLightingEnabled(false);
   material_->setDepthBias(-16.0f, 0.0f);
@@ -117,7 +115,9 @@ void ProbMapDisplay::onInitialize() {
   updateAlpha();
 }
 
-void ProbMapDisplay::onEnable() { subscribe(); }
+void ProbMapDisplay::onEnable() {
+  subscribe();
+}
 
 void ProbMapDisplay::onDisable() {
   unsubscribe();
@@ -139,7 +139,9 @@ void ProbMapDisplay::subscribe() {
   }
 }
 
-void ProbMapDisplay::unsubscribe() { map_sub_.shutdown(); }
+void ProbMapDisplay::unsubscribe() {
+  map_sub_.shutdown();
+}
 
 void ProbMapDisplay::updateAlpha() {
   float alpha = alpha_property_->getFloat();
@@ -228,8 +230,8 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
 
   if (!validateFloats(*current_map_)) {
     setStatus(StatusProperty::Error, "Map",
-              "Message contained invalid floating point values (nans or "
-              "infs)");
+        "Message contained invalid floating point values (nans or "
+        "infs)");
     return;
   }
 
@@ -245,17 +247,16 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
   setStatus(StatusProperty::Ok, "Message", "Map received");
 
   ROS_DEBUG("Received a %d X %d map @ %.3f m/pix\n", current_map_->info.width, current_map_->info.height,
-            current_map_->info.resolution);
+      current_map_->info.resolution);
 
   float resolution = current_map_->info.resolution;
 
   int width = current_map_->info.width;
   int height = current_map_->info.height;
 
-  Ogre::Vector3 position(current_map_->info.origin.position.x, current_map_->info.origin.position.y,
-                         current_map_->info.origin.position.z);
-  Ogre::Quaternion orientation(
-      current_map_->info.origin.orientation.w, current_map_->info.origin.orientation.x,
+  Ogre::Vector3 position(
+      current_map_->info.origin.position.x, current_map_->info.origin.position.y, current_map_->info.origin.position.z);
+  Ogre::Quaternion orientation(current_map_->info.origin.orientation.w, current_map_->info.origin.orientation.x,
       current_map_->info.origin.orientation.y, current_map_->info.origin.orientation.z);
   frame_ = current_map_->header.frame_id;
   if (frame_.empty()) {
@@ -303,9 +304,9 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
   std::stringstream ss;
   ss << "MapTexture" << tex_count++;
   try {
-    texture_ = Ogre::TextureManager::getSingleton().loadRawData(
-        ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, pixel_stream, width, height,
-        Ogre::PF_L8, Ogre::TEX_TYPE_2D, 0);
+    texture_ = Ogre::TextureManager::getSingleton().loadRawData(ss.str(),
+        Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, pixel_stream, width, height, Ogre::PF_L8,
+        Ogre::TEX_TYPE_2D, 0);
 
     if (!map_status_set) {
       setStatus(StatusProperty::Ok, "Map", "Map OK");
@@ -327,15 +328,14 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
 
     {
       std::stringstream ss;
-      ss << "Map is larger than your graphics card supports.  Downsampled from [" << width << "x" << height
-         << "] to [" << fwidth << "x" << fheight << "]";
+      ss << "Map is larger than your graphics card supports.  Downsampled from [" << width << "x" << height << "] to ["
+         << fwidth << "x" << fheight << "]";
       setStatus(StatusProperty::Ok, "Map", QString::fromStdString(ss.str()));
     }
 
-    ROS_WARN(
-        "Failed to create full-size map texture, likely because your "
-        "graphics card does not support textures of size > 2048.  "
-        "Downsampling to [%d x %d]...",
+    ROS_WARN("Failed to create full-size map texture, likely because your "
+             "graphics card does not support textures of size > 2048.  "
+             "Downsampling to [%d x %d]...",
         (int)fwidth, (int)fheight);
     // ROS_INFO("Stream size [%d], width [%f], height [%f], w * h [%f]",
     // pixel_stream->size(), width, height, width * height);
@@ -435,13 +435,12 @@ void ProbMapDisplay::transformMap() {
 
   Ogre::Vector3 position;
   Ogre::Quaternion orientation;
-  if (!context_->getFrameManager()->transform(frame_, ros::Time(), current_map_->info.origin, position,
-                                              orientation)) {
-    ROS_DEBUG("Error transforming map '%s' from frame '%s' to frame '%s'", qPrintable(getName()),
-              frame_.c_str(), qPrintable(fixed_frame_));
+  if (!context_->getFrameManager()->transform(frame_, ros::Time(), current_map_->info.origin, position, orientation)) {
+    ROS_DEBUG("Error transforming map '%s' from frame '%s' to frame '%s'", qPrintable(getName()), frame_.c_str(),
+        qPrintable(fixed_frame_));
 
     setStatus(StatusProperty::Error, "Transform",
-              "No transform from [" + QString::fromStdString(frame_) + "] to [" + fixed_frame_ + "]");
+        "No transform from [" + QString::fromStdString(frame_) + "] to [" + fixed_frame_ + "]");
   } else {
     setStatus(StatusProperty::Ok, "Transform", "Transform OK");
   }
@@ -450,7 +449,9 @@ void ProbMapDisplay::transformMap() {
   scene_node_->setOrientation(orientation);
 }
 
-void ProbMapDisplay::fixedFrameChanged() { transformMap(); }
+void ProbMapDisplay::fixedFrameChanged() {
+  transformMap();
+}
 
 void ProbMapDisplay::reset() {
   Display::reset();

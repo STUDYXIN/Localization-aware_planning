@@ -42,9 +42,12 @@
 
 namespace rviz {
 
-Pose3DTool::Pose3DTool() : Tool(), arrow_(NULL) {}
+Pose3DTool::Pose3DTool() : Tool(), arrow_(NULL) {
+}
 
-Pose3DTool::~Pose3DTool() { delete arrow_; }
+Pose3DTool::~Pose3DTool() {
+  delete arrow_;
+}
 
 void Pose3DTool::onInitialize() {
   arrow_ = new Arrow(scene_manager_, NULL, 2.0f, 0.2f, 0.5f, 0.35f);
@@ -57,7 +60,9 @@ void Pose3DTool::activate() {
   state_ = Position;
 }
 
-void Pose3DTool::deactivate() { arrow_->getSceneNode()->setVisible(false); }
+void Pose3DTool::deactivate() {
+  arrow_->getSceneNode()->setVisible(false);
+}
 
 int Pose3DTool::processMouseEvent(ViewportMouseEvent& event) {
   int flags = 0;

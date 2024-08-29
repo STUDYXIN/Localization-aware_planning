@@ -9,9 +9,8 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "write_tsp");
   ros::NodeHandle node("~");
 
-  ofstream tsp_file(
-      "/home/boboyu/workspaces/plan_ws/src/fast_planner/exploration_manager/resource/"
-      "test.tsp");
+  ofstream tsp_file("/home/boboyu/workspaces/plan_ws/src/fast_planner/exploration_manager/resource/"
+                    "test.tsp");
 
   // write the problem into file
   // NAME : pr2392
@@ -57,9 +56,8 @@ int main(int argc, char** argv) {
   tsp_file.close();
 
   // read the tour
-  ifstream res_file(
-      "/home/boboyu/workspaces/plan_ws/src/fast_planner/third_party/"
-      "LKH-2.0.9/test.txt");
+  ifstream res_file("/home/boboyu/workspaces/plan_ws/src/fast_planner/third_party/"
+                    "LKH-2.0.9/test.txt");
   string res;
   vector<int> tour;
 

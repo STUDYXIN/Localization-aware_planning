@@ -80,18 +80,18 @@ void KinoReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
 }
 
 void KinoReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call) {
-  string state_str[5] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ",
-                         "EXEC_"
-                         "TRAJ"};
+  string state_str[5] = { "INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ",
+    "EXEC_"
+    "TRAJ" };
   int pre_s = int(exec_state_);
   exec_state_ = new_state;
   cout << "[" + pos_call + "]: from " + state_str[pre_s] + " to " + state_str[int(new_state)] << endl;
 }
 
 void KinoReplanFSM::printFSMExecState() {
-  string state_str[5] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ",
-                         "EXEC_"
-                         "TRAJ"};
+  string state_str[5] = { "INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ",
+    "EXEC_"
+    "TRAJ" };
 
   cout << "[FSM]: state: " + state_str[int(exec_state_)] << endl;
 }
@@ -206,9 +206,9 @@ void KinoReplanFSM::checkCollisionCallback(const ros::TimerEvent& e) {
   if (have_target_) {
     auto edt_env = planner_manager_->edt_environment_;
 
-    double dist = planner_manager_->pp_.dynamic_
-                      ? edt_env->evaluateCoarseEDT(end_pt_, /* time to program start + */ info->duration_)
-                      : edt_env->evaluateCoarseEDT(end_pt_, -1.0);
+    double dist = planner_manager_->pp_.dynamic_ ?
+                      edt_env->evaluateCoarseEDT(end_pt_, /* time to program start + */ info->duration_) :
+                      edt_env->evaluateCoarseEDT(end_pt_, -1.0);
 
     if (dist <= 0.3) {
       /* try to find a max distance goal around */
@@ -225,10 +225,9 @@ void KinoReplanFSM::checkCollisionCallback(const ros::TimerEvent& e) {
             new_z = end_pt_(2) + nz;
 
             Eigen::Vector3d new_pt(new_x, new_y, new_z);
-            dist = planner_manager_->pp_.dynamic_
-                       ? edt_env->evaluateCoarseEDT(new_pt,
-                                                    /* time to program start+ */ info->duration_)
-                       : edt_env->evaluateCoarseEDT(new_pt, -1.0);
+            dist = planner_manager_->pp_.dynamic_ ? edt_env->evaluateCoarseEDT(new_pt,
+                                                        /* time to program start+ */ info->duration_) :
+                                                    edt_env->evaluateCoarseEDT(new_pt, -1.0);
 
             if (dist > max_dist) {
               /* reset end_pt_ */
@@ -281,8 +280,7 @@ void KinoReplanFSM::checkCollisionCallback(const ros::TimerEvent& e) {
 bool KinoReplanFSM::callKinodynamicReplan() {
   auto t1 = ros::Time::now();
   ros::Time time_r = ros::Time::now();
-  bool plan_success =
-      planner_manager_->kinodynamicReplan(start_pt_, start_vel_, start_acc_, end_pt_, end_vel_);
+  bool plan_success = planner_manager_->kinodynamicReplan(start_pt_, start_vel_, start_acc_, end_pt_, end_vel_);
 
   auto t2 = ros::Time::now();
   if (plan_success) {
@@ -333,8 +331,8 @@ bool KinoReplanFSM::callKinodynamicReplan() {
     auto plan_data = &planner_manager_->plan_data_;
 
     visualization_->drawGeometricPath(plan_data->kino_path_, 0.05, Eigen::Vector4d(1, 0, 1, 1));
-    visualization_->drawBspline(info->position_traj_, 0.08, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true, 0.15,
-                                Eigen::Vector4d(1, 0, 0, 1));
+    visualization_->drawBspline(
+        info->position_traj_, 0.08, Eigen::Vector4d(1.0, 1.0, 0.0, 1), true, 0.15, Eigen::Vector4d(1, 0, 0, 1));
 
     return true;
   } else {

@@ -21,7 +21,7 @@ typedef boost::array<double, dim> state_type;
 
 template <class System, typename T, size_t dim>
 void rk4_step(const System sys, boost::array<T, dim>& x, const double t,
-              const double dt) {  // fast rk4 implementation adapted from the book 'Numerical Recipes'
+    const double dt) {  // fast rk4 implementation adapted from the book 'Numerical Recipes'
   size_t i;
   const double hh = dt * 0.5;
   const double h6 = dt / 6.0;
@@ -30,12 +30,10 @@ void rk4_step(const System sys, boost::array<T, dim>& x, const double t,
 
   sys(x, dydx, t);
 
-  for (i = 0; i < dim; i++)
-    yt[i] = x[i] + hh * dydx[i];
+  for (i = 0; i < dim; i++) yt[i] = x[i] + hh * dydx[i];
 
   sys(yt, dyt, th);
-  for (i = 0; i < dim; i++)
-    yt[i] = x[i] + hh * dyt[i];
+  for (i = 0; i < dim; i++) yt[i] = x[i] + hh * dyt[i];
 
   sys(yt, dym, th);
   for (i = 0; i < dim; i++) {
@@ -43,8 +41,7 @@ void rk4_step(const System sys, boost::array<T, dim>& x, const double t,
     dym[i] += dyt[i];
   }
   sys(yt, dyt, t + dt);
-  for (i = 0; i < dim; i++)
-    x[i] += h6 * (dydx[i] + dyt[i] + 2.0 * dym[i]);
+  for (i = 0; i < dim; i++) x[i] += h6 * (dydx[i] + dyt[i] + 2.0 * dym[i]);
 }
 
 class nr_wrapper {

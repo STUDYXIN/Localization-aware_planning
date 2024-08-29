@@ -19,10 +19,12 @@ template <class ContainerAllocator>
 struct VerticalOccupancyGridList_ {
   typedef VerticalOccupancyGridList_<ContainerAllocator> Type;
 
-  VerticalOccupancyGridList_() : x(0.0), y(0.0), upper(), lower(), mass() {}
+  VerticalOccupancyGridList_() : x(0.0), y(0.0), upper(), lower(), mass() {
+  }
 
   VerticalOccupancyGridList_(const ContainerAllocator& _alloc)
-      : x(0.0), y(0.0), upper(_alloc), lower(_alloc), mass(_alloc) {}
+    : x(0.0), y(0.0), upper(_alloc), lower(_alloc), mass(_alloc) {
+  }
 
   typedef float _x_type;
   float x;
@@ -40,20 +42,17 @@ struct VerticalOccupancyGridList_ {
   std::vector<int32_t, typename ContainerAllocator::template rebind<int32_t>::other> mass;
 
   typedef boost::shared_ptr< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> const>
-      ConstPtr;
+  typedef boost::shared_ptr< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> const> ConstPtr;
 };  // struct VerticalOccupancyGridList
 typedef ::multi_map_server::VerticalOccupancyGridList_<std::allocator<void> > VerticalOccupancyGridList;
 
 typedef boost::shared_ptr< ::multi_map_server::VerticalOccupancyGridList> VerticalOccupancyGridListPtr;
-typedef boost::shared_ptr< ::multi_map_server::VerticalOccupancyGridList const>
-    VerticalOccupancyGridListConstPtr;
+typedef boost::shared_ptr< ::multi_map_server::VerticalOccupancyGridList const> VerticalOccupancyGridListConstPtr;
 
 template <typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s,
-                         const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>& v) {
-  ros::message_operations::Printer<
-      ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::stream(s, "", v);
+std::ostream& operator<<(std::ostream& s, const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>& v) {
+  ros::message_operations::Printer< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::stream(
+      s, "", v);
   return s;
 }
 
@@ -64,11 +63,12 @@ namespace message_traits {
 template <class ContainerAllocator>
 struct IsMessage< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > : public TrueType {};
 template <class ContainerAllocator>
-struct IsMessage< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> const>
-    : public TrueType {};
+struct IsMessage< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > {
-  static const char* value() { return "7ef85cc95b82747f51eb01a16bd7c795"; }
+  static const char* value() {
+    return "7ef85cc95b82747f51eb01a16bd7c795";
+  }
 
   static const char* value(const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>&) {
     return value();
@@ -79,7 +79,9 @@ struct MD5Sum< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator
 
 template <class ContainerAllocator>
 struct DataType< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > {
-  static const char* value() { return "multi_map_server/VerticalOccupancyGridList"; }
+  static const char* value() {
+    return "multi_map_server/VerticalOccupancyGridList";
+  }
 
   static const char* value(const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>&) {
     return value();
@@ -133,7 +135,7 @@ template <class ContainerAllocator>
 struct Printer< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > {
   template <typename Stream>
   static void stream(Stream& s, const std::string& indent,
-                     const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>& v) {
+      const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>& v) {
     s << indent << "x: ";
     Printer<float>::stream(s, indent + "  ", v.x);
     s << indent << "y: ";

@@ -359,10 +359,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr& msg) {
     colvec q90 = R_to_quaternion(ypr_to_R(p90));
     transform90.setRotation(tf::Quaternion(q90(1), q90(2), q90(3), q90(0)));
 
-    broadcaster->sendTransform(
-        tf::StampedTransform(transform, msg->header.stamp, string("world"), string("/base")));
-    broadcaster->sendTransform(
-        tf::StampedTransform(transform45, msg->header.stamp, string("/base"), string("/laser")));
+    broadcaster->sendTransform(tf::StampedTransform(transform, msg->header.stamp, string("world"), string("/base")));
+    broadcaster->sendTransform(tf::StampedTransform(transform45, msg->header.stamp, string("/base"), string("/laser")));
     broadcaster->sendTransform(
         tf::StampedTransform(transform45, msg->header.stamp, string("/base"), string("/vision")));
     broadcaster->sendTransform(
@@ -419,8 +417,7 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "odom_visualization");
   ros::NodeHandle n("~");
 
-  n.param("mesh_resource", mesh_resource,
-          std::string("package://odom_visualization/meshes/hummingbird.mesh"));
+  n.param("mesh_resource", mesh_resource, std::string("package://odom_visualization/meshes/hummingbird.mesh"));
   n.param("color/r", color_r, 1.0);
   n.param("color/g", color_g, 0.0);
   n.param("color/b", color_b, 0.0);

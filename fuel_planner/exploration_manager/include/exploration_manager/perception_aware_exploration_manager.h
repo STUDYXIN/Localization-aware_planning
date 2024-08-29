@@ -27,13 +27,13 @@ struct ExplorationData;
 enum NEXT_GOAL_TYPE { REACH_END, SEARCH_FRONTIER, NO_FRONTIER, NO_AVAILABLE_FRONTIER };
 
 class PAExplorationManager {
- public:
+public:
   PAExplorationManager(shared_ptr<PAExplorationFSM> expl_fsm);
 
-  void initialize(ros::NodeHandle &nh);
+  void initialize(ros::NodeHandle& nh);
 
-  NEXT_GOAL_TYPE selectNextGoal(Vector3d &next_pos, double &next_yaw);
-  bool planToNextGoal(const Vector3d &next_pos, const double &next_yaw);
+  NEXT_GOAL_TYPE selectNextGoal(Vector3d& next_pos, double& next_yaw);
+  bool planToNextGoal(const Vector3d& next_pos, const double& next_yaw);
 
   weak_ptr<PAExplorationFSM> expl_fsm_;
 
@@ -42,23 +42,22 @@ class PAExplorationManager {
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FrontierFinder> frontier_finder_;
 
- private:
+private:
   shared_ptr<EDTEnvironment> edt_environment_;
   shared_ptr<SDFMap> sdf_map_, global_sdf_map_;
   shared_ptr<FeatureMap> feature_map_;
 
   // Find optimal tour for coarse viewpoints of all frontiers
-  void findGlobalTour(const Vector3d &cur_pos, const Vector3d &cur_vel, const Vector3d cur_yaw,
-                      vector<int> &indices);
+  void findGlobalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw, vector<int>& indices);
 
   // Refine local tour for next few frontiers, using more diverse viewpoints
-  void refineLocalTour(const Vector3d &cur_pos, const Vector3d &cur_vel, const Vector3d &cur_yaw,
-                       const vector<vector<Vector3d>> &n_points, const vector<vector<double>> &n_yaws,
-                       vector<Vector3d> &refined_pts, vector<double> &refined_yaws);
+  void refineLocalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d& cur_yaw,
+      const vector<vector<Vector3d>>& n_points, const vector<vector<double>>& n_yaws, vector<Vector3d>& refined_pts,
+      vector<double>& refined_yaws);
 
-  void shortenPath(vector<Vector3d> &path);
+  void shortenPath(vector<Vector3d>& path);
 
- public:
+public:
   typedef shared_ptr<PAExplorationManager> Ptr;
 };
 

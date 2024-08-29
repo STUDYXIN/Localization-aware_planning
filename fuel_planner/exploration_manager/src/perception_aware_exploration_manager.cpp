@@ -22,9 +22,10 @@ using namespace Eigen;
 
 namespace fast_planner {
 // SECTION interfaces for setup and query
-PAExplorationManager::PAExplorationManager(shared_ptr<PAExplorationFSM> expl_fsm) : expl_fsm_(expl_fsm) {}
+PAExplorationManager::PAExplorationManager(shared_ptr<PAExplorationFSM> expl_fsm) : expl_fsm_(expl_fsm) {
+}
 
-void PAExplorationManager::initialize(ros::NodeHandle &nh) {
+void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   planner_manager_.reset(new FastPlannerManager);
   planner_manager_->initPlanModules(nh);
   edt_environment_ = planner_manager_->edt_environment_;
@@ -71,12 +72,12 @@ void PAExplorationManager::initialize(ros::NodeHandle &nh) {
   ViewNode::caster_->setParams(resolution_, origin);
 }
 
-NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d &next_pos, double &next_yaw) {
-  const auto &start_pos = expl_fsm_.lock()->start_pos_;
-  const auto &start_vel = expl_fsm_.lock()->start_vel_;
-  const auto &start_acc = expl_fsm_.lock()->start_acc_;
-  const auto &start_yaw = expl_fsm_.lock()->start_yaw_;
-  const auto &final_goal = expl_fsm_.lock()->final_goal_;
+NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& next_yaw) {
+  const auto& start_pos = expl_fsm_.lock()->start_pos_;
+  const auto& start_vel = expl_fsm_.lock()->start_vel_;
+  const auto& start_acc = expl_fsm_.lock()->start_acc_;
+  const auto& start_yaw = expl_fsm_.lock()->start_yaw_;
+  const auto& final_goal = expl_fsm_.lock()->final_goal_;
 
   bool reach_end_flag = false;
 
@@ -128,7 +129,7 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d &next_pos, double &
   // auto best_idx = std::max_element(gains.begin(), gains.end(), [&](const auto &a, const auto &b)
   //                                  { return a.second < b.second; });
 
-  std::sort(gains.begin(), gains.end(), [&](const auto &a, const auto &b) { return a.second > b.second; });
+  std::sort(gains.begin(), gains.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
 
   // 按序遍历前沿点，直到找到一个可以规划成功的点
   for (size_t i = 0; i < gains.size(); i++) {
@@ -147,12 +148,12 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d &next_pos, double &
   // return SEARCH_FRONTIER;
 }
 
-bool PAExplorationManager::planToNextGoal(const Vector3d &next_pos, const double &next_yaw) {
-  const auto &start_pos = expl_fsm_.lock()->start_pos_;
-  const auto &start_vel = expl_fsm_.lock()->start_vel_;
-  const auto &start_acc = expl_fsm_.lock()->start_acc_;
-  const auto &start_yaw = expl_fsm_.lock()->start_yaw_;
-  const auto &final_goal = expl_fsm_.lock()->final_goal_;
+bool PAExplorationManager::planToNextGoal(const Vector3d& next_pos, const double& next_yaw) {
+  const auto& start_pos = expl_fsm_.lock()->start_pos_;
+  const auto& start_vel = expl_fsm_.lock()->start_vel_;
+  const auto& start_acc = expl_fsm_.lock()->start_acc_;
+  const auto& start_yaw = expl_fsm_.lock()->start_yaw_;
+  const auto& final_goal = expl_fsm_.lock()->final_goal_;
 
   // Compute time lower bound of start_yaw and use in trajectory generation
   // Compute time lower bound of yaw and use in trajectory generation
@@ -182,7 +183,7 @@ bool PAExplorationManager::planToNextGoal(const Vector3d &next_pos, const double
     // dead end)
     std::cout << "Far goal." << std::endl;
     double len2 = 0.0;
-    vector<Eigen::Vector3d> truncated_path = {ed_->path_next_goal_.front()};
+    vector<Eigen::Vector3d> truncated_path = { ed_->path_next_goal_.front() };
     for (int i = 1; i < ed_->path_next_goal_.size() && len2 < radius_far; ++i) {
       auto cur_pt = ed_->path_next_goal_[i];
       len2 += (cur_pt - truncated_path.back()).norm();
@@ -195,13 +196,12 @@ bool PAExplorationManager::planToNextGoal(const Vector3d &next_pos, const double
     std::cout << "Mid goal" << std::endl;
     ed_->next_goal_ = next_pos;
 
-    if (!planner_manager_->kinodynamicReplan(start_pos, start_vel, start_acc, ed_->next_goal_,
-                                             Vector3d(0, 0, 0), time_lb))
+    if (!planner_manager_->kinodynamicReplan(
+            start_pos, start_vel, start_acc, ed_->next_goal_, Vector3d(0, 0, 0), time_lb))
       return false;
   }
 
-  if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1)
-    ROS_ERROR("Lower bound not satified!");
+  if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1) ROS_ERROR("Lower bound not satified!");
 
   planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
 
@@ -296,7 +296,7 @@ bool PAExplorationManager::planToNextGoal(const Vector3d &next_pos, const double
 //   return SUCCEED;
 // }
 
-void PAExplorationManager::shortenPath(vector<Vector3d> &path) {
+void PAExplorationManager::shortenPath(vector<Vector3d>& path) {
   if (path.empty()) {
     ROS_ERROR("Empty path to shorten");
     return;
@@ -304,7 +304,7 @@ void PAExplorationManager::shortenPath(vector<Vector3d> &path) {
 
   // Shorten the tour, only critical intermediate points are reserved.
   const double dist_thresh = 3.0;
-  vector<Vector3d> short_tour = {path.front()};
+  vector<Vector3d> short_tour = { path.front() };
   for (int i = 1; i < path.size() - 1; ++i) {
     if ((path[i] - short_tour.back()).norm() > dist_thresh)
       short_tour.push_back(path[i]);
@@ -334,8 +334,8 @@ void PAExplorationManager::shortenPath(vector<Vector3d> &path) {
   path = short_tour;
 }
 
-void PAExplorationManager::findGlobalTour(const Vector3d &cur_pos, const Vector3d &cur_vel,
-                                          const Vector3d cur_yaw, vector<int> &indices) {
+void PAExplorationManager::findGlobalTour(
+    const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw, vector<int>& indices) {
   auto t1 = ros::Time::now();
 
   // Get cost matrix for current state and clusters
@@ -433,10 +433,9 @@ void PAExplorationManager::findGlobalTour(const Vector3d &cur_pos, const Vector3
   ROS_WARN("Cost mat: %lf, TSP: %lf", mat_time, tsp_time);
 }
 
-void PAExplorationManager::refineLocalTour(const Vector3d &cur_pos, const Vector3d &cur_vel,
-                                           const Vector3d &cur_yaw, const vector<vector<Vector3d>> &n_points,
-                                           const vector<vector<double>> &n_yaws,
-                                           vector<Vector3d> &refined_pts, vector<double> &refined_yaws) {
+void PAExplorationManager::refineLocalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d& cur_yaw,
+    const vector<vector<Vector3d>>& n_points, const vector<vector<double>>& n_yaws, vector<Vector3d>& refined_pts,
+    vector<double>& refined_yaws) {
   double create_time, search_time, parse_time;
   auto t1 = ros::Time::now();
 

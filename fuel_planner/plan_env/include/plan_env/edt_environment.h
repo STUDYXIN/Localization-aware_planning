@@ -19,7 +19,7 @@ namespace fast_planner {
 class SDFMap;
 
 class EDTEnvironment {
- private:
+private:
   /* data */
   ObjPrediction obj_prediction_;
   ObjScale obj_scale_;
@@ -27,9 +27,11 @@ class EDTEnvironment {
   double distToBox(int idx, const Eigen::Vector3d& pos, const double& time);
   double minDistToAllBox(const Eigen::Vector3d& pos, const double& time);
 
- public:
-  EDTEnvironment(/* args */) {}
-  ~EDTEnvironment() {}
+public:
+  EDTEnvironment(/* args */) {
+  }
+  ~EDTEnvironment() {
+  }
 
   shared_ptr<SDFMap> sdf_map_;
 
@@ -42,8 +44,7 @@ class EDTEnvironment {
 
   // deprecated
   void getSurroundDistance(Eigen::Vector3d pts[2][2][2], double dists[2][2][2]);
-  void interpolateTrilinear(double values[2][2][2], const Eigen::Vector3d& diff, double& value,
-                            Eigen::Vector3d& grad);
+  void interpolateTrilinear(double values[2][2][2], const Eigen::Vector3d& diff, double& value, Eigen::Vector3d& grad);
 
   typedef shared_ptr<EDTEnvironment> Ptr;
 };

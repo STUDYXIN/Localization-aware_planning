@@ -10,14 +10,14 @@
 using namespace std;
 
 class Map2D {
- private:
+private:
   nav_msgs::OccupancyGrid map;
   int expandStep;
   int binning;
   bool isBinningSet;
   bool updated;
 
- public:
+public:
   Map2D() {
     map.data.resize(0);
     map.info.origin.orientation = tf::createQuaternionMsgFromYaw(0.0);
@@ -36,15 +36,30 @@ class Map2D {
     updated = false;
   }
 
-  ~Map2D() {}
+  ~Map2D() {
+  }
 
-  double GetResolution() { return map.info.resolution; }
-  double GetMinX() { return map.info.origin.position.x; }
-  double GetMinY() { return map.info.origin.position.y; }
-  double GetMaxX() { return map.info.origin.position.x + map.info.width * map.info.resolution; }
-  double GetMaxY() { return map.info.origin.position.y + map.info.height * map.info.resolution; }
-  bool Updated() { return updated; }
-  void Reset() { map = nav_msgs::OccupancyGrid(); }
+  double GetResolution() {
+    return map.info.resolution;
+  }
+  double GetMinX() {
+    return map.info.origin.position.x;
+  }
+  double GetMinY() {
+    return map.info.origin.position.y;
+  }
+  double GetMaxX() {
+    return map.info.origin.position.x + map.info.width * map.info.resolution;
+  }
+  double GetMaxY() {
+    return map.info.origin.position.y + map.info.height * map.info.resolution;
+  }
+  bool Updated() {
+    return updated;
+  }
+  void Reset() {
+    map = nav_msgs::OccupancyGrid();
+  }
 
   void SetBinning(int _binning) {
     if (!isBinningSet) binning = _binning;
@@ -190,12 +205,12 @@ class Map2D {
     // Merge map
     for (int x = 0; x < mx; x++) {
       for (int y = 0; y < my; y++) {
-        int xn = (cyaw * (x * map.info.resolution) - syaw * (y * map.info.resolution) + ox -
-                  map.info.origin.position.x) /
-                 map.info.resolution;
-        int yn = (syaw * (x * map.info.resolution) + cyaw * (y * map.info.resolution) + oy -
-                  map.info.origin.position.y) /
-                 map.info.resolution;
+        int xn =
+            (cyaw * (x * map.info.resolution) - syaw * (y * map.info.resolution) + ox - map.info.origin.position.x) /
+            map.info.resolution;
+        int yn =
+            (syaw * (x * map.info.resolution) + cyaw * (y * map.info.resolution) + oy - map.info.origin.position.y) /
+            map.info.resolution;
         if (abs((int)(map.data[yn * map.info.width + xn]) + (int)(m.data[y * mx + x])) <= 127)
           map.data[yn * map.info.width + xn] += m.data[y * mx + x];
       }

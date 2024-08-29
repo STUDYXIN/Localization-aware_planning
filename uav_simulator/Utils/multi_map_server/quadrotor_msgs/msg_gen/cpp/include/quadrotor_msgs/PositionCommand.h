@@ -28,14 +28,7 @@ struct PositionCommand_ {
   }
 
   PositionCommand_(const ContainerAllocator& _alloc)
-      : header(_alloc),
-        position(_alloc),
-        velocity(_alloc),
-        acceleration(_alloc),
-        yaw(0.0),
-        yaw_dot(0.0),
-        kx(),
-        kv() {
+    : header(_alloc), position(_alloc), velocity(_alloc), acceleration(_alloc), yaw(0.0), yaw_dot(0.0), kx(), kv() {
     kx.assign(0.0);
     kv.assign(0.0);
   }
@@ -74,8 +67,7 @@ typedef boost::shared_ptr< ::quadrotor_msgs::PositionCommand const> PositionComm
 
 template <typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> >::stream(s, "",
-                                                                                                     v);
+  ros::message_operations::Printer< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> >::stream(s, "", v);
   return s;
 }
 
@@ -89,18 +81,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> > {
-  static const char* value() { return "835935bcd6f18632d9e26a3093237902"; }
+  static const char* value() {
+    return "835935bcd6f18632d9e26a3093237902";
+  }
 
-  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0x835935bcd6f18632ULL;
   static const uint64_t static_value2 = 0xd9e26a3093237902ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/PositionCommand"; }
+  static const char* value() {
+    return "quadrotor_msgs/PositionCommand";
+  }
 
-  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -150,7 +150,9 @@ float64 z\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -188,8 +190,8 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>& v) {
+  static void stream(
+      Stream& s, const std::string& indent, const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

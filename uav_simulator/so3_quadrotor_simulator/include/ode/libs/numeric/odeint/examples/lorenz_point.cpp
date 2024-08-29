@@ -7,7 +7,7 @@
  * copy at http://www.boost.org/LICENSE_1_0.txt)
  *
  * Example for the lorenz system with a 3D point type
-*/
+ */
 
 #include <iostream>
 #include <cmath>
@@ -18,8 +18,7 @@
 
 //[point3D
 class point3D
-    : boost::additive1<point3D,
-                       boost::additive2<point3D, double, boost::multiplicative2<point3D, double> > > {
+  : boost::additive1<point3D, boost::additive2<point3D, double, boost::multiplicative2<point3D, double> > > {
 public:
   double x, y, z;
 
@@ -77,9 +76,9 @@ struct vector_space_reduce<point3D> {
     return init;
   }
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 //]
 
 std::ostream& operator<<(std::ostream& out, const point3D& p) {

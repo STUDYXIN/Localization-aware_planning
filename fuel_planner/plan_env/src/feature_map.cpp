@@ -19,7 +19,7 @@ void FeatureMap::initMap(ros::NodeHandle& nh) {
   std::string filename;
   nh.param("feature/load_from_file", load_from_file, true);
   if (load_from_file) {
-    nh.param<std::string>("feature/filename", filename, std::string(""));  // 显式指定默认值为 std::string
+    nh.param<std::string>("feature/filename", filename, std::string(""));  //显式指定默认值为 std::string
     loadMap(filename);
   }
   camera_param.init(nh);

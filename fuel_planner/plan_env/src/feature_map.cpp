@@ -1,5 +1,5 @@
-#include <plan_env/edt_environment.h>
 #include <plan_env/feature_map.h>
+#include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
 
 namespace fast_planner {
@@ -9,7 +9,6 @@ FeatureMap::FeatureMap() {
 
 FeatureMap::~FeatureMap() {
 }
-
 void FeatureMap::setMap(shared_ptr<SDFMap>& map) {
   this->sdf_map = map;
 }
@@ -110,6 +109,7 @@ void FeatureMap::getFeatures(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>
 }
 
 void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
+
   // fd_->odom_pos_(0) = msg->pose.pose.position.x;
   // fd_->odom_pos_(1) = msg->pose.pose.position.y;
   // fd_->odom_pos_(2) = msg->pose.pose.position.z;
@@ -162,7 +162,7 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
 }
 
 void FeatureMap::pubDebugmsg(int debugMode) {
-  if (debugMode == 1)  // 发布接受的全局点云
+  if (debugMode == 1)  //发布接受的全局点云
   {
     pcl::PointXYZ pt;
     pcl::PointCloud<pcl::PointXYZ> cloud1, cloud2;
@@ -185,7 +185,7 @@ void FeatureMap::pubDebugmsg(int debugMode) {
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg(cloud1, cloud_msg);
     feature_map_pub_.publish(cloud_msg);
-  } else if (debugMode == 2)  // 发布接受的特征点云
+  } else if (debugMode == 2)  //发布接受的特征点云
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
     *pointcloud = features_cloud_;
@@ -220,9 +220,9 @@ int FeatureMap::get_NumCloud_using_PosOrient(
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
-    if (camera_param.is_in_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
+    if (camera_param.is_in_FOV(pos, f, orient))  //检查特征点是否在相机FOV中
     {
-      if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
+      if (!sdf_map->checkObstacleBetweenPoints(pos, f))  //检查这个特征点与无人机之间有无障碍
         res.push_back(f);
     }
   }

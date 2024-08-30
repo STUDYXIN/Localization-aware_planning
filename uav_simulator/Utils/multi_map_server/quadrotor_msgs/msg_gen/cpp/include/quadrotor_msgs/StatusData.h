@@ -19,9 +19,11 @@ template <class ContainerAllocator>
 struct StatusData_ {
   typedef StatusData_<ContainerAllocator> Type;
 
-  StatusData_() : header(), loop_rate(0), voltage(0.0), seq(0) {}
+  StatusData_() : header(), loop_rate(0), voltage(0.0), seq(0) {
+  }
 
-  StatusData_(const ContainerAllocator& _alloc) : header(_alloc), loop_rate(0), voltage(0.0), seq(0) {}
+  StatusData_(const ContainerAllocator& _alloc) : header(_alloc), loop_rate(0), voltage(0.0), seq(0) {
+  }
 
   typedef ::std_msgs::Header_<ContainerAllocator> _header_type;
   ::std_msgs::Header_<ContainerAllocator> header;
@@ -59,18 +61,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::StatusData_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::StatusData_<ContainerAllocator> > {
-  static const char* value() { return "c70a4ec4725273263ae176ad30f89553"; }
+  static const char* value() {
+    return "c70a4ec4725273263ae176ad30f89553";
+  }
 
-  static const char* value(const ::quadrotor_msgs::StatusData_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::StatusData_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0xc70a4ec472527326ULL;
   static const uint64_t static_value2 = 0x3ae176ad30f89553ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::StatusData_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/StatusData"; }
+  static const char* value() {
+    return "quadrotor_msgs/StatusData";
+  }
 
-  static const char* value(const ::quadrotor_msgs::StatusData_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::StatusData_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -102,7 +112,9 @@ string frame_id\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::StatusData_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::StatusData_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -136,8 +148,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::StatusData_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::StatusData_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::StatusData_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

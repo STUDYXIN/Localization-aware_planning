@@ -44,9 +44,9 @@ template <>
 struct get_controller<custom_stepper> {
   typedef custom_controller type;
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 //]
 
 //[ generation_functions_controller_factory
@@ -60,9 +60,9 @@ struct controller_factory<custom_stepper, custom_controller> {
     return custom_controller();
   }
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 //]
 
 int main(int argc, char** argv) {

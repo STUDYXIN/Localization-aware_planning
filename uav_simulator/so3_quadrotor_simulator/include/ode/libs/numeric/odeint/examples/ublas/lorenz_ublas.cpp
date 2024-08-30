@@ -30,9 +30,9 @@ struct is_resizeable<state_type> {
   typedef boost::true_type type;
   const static bool value = type::value;
 };
-}
-}
-}
+}  // namespace odeint
+}  // namespace numeric
+}  // namespace boost
 //]
 
 void lorenz(const state_type& x, state_type& dxdt, const double t) {

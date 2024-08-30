@@ -120,8 +120,7 @@ struct perform_integrate_adaptive_test {
 
     std::vector<value_type> times;
 
-    size_t steps =
-        integrate_adaptive(Stepper(), *lorenz, x, 0.0, t_end, dt, push_back_time(times, x_end));
+    size_t steps = integrate_adaptive(Stepper(), *lorenz, x, 0.0, t_end, dt, push_back_time(times, x_end));
 
     //        std::cout << t_end << " , " << steps << " , " << times.size() << " , " << 10.0+dt*steps <<
     //        "=" << x_end[0] << std::endl;
@@ -149,14 +148,12 @@ struct perform_integrate_times_test {
     std::vector<double> times;
 
     std::vector<double> obs_times(abs(n));
-    for (int i = 0;
-         boost::numeric::odeint::detail::less_with_sign(i, static_cast<int>(obs_times.size()), dt);
+    for (int i = 0; boost::numeric::odeint::detail::less_with_sign(i, static_cast<int>(obs_times.size()), dt);
          i += dn) {
       obs_times[i] = i;
     }
     // simple stepper
-    integrate_times(Stepper(), lorenz, x, obs_times.begin(), obs_times.end(), dt,
-                    push_back_time(times, x_end));
+    integrate_times(Stepper(), lorenz, x, obs_times.begin(), obs_times.end(), dt, push_back_time(times, x_end));
 
     BOOST_CHECK_EQUAL(static_cast<int>(times.size()), abs(n));
 
@@ -166,9 +163,9 @@ struct perform_integrate_times_test {
 
     // check first, trivial, component
     BOOST_CHECK_SMALL((10.0 + 1.0 * times[times.size() - 1]) - x_end[0],
-                      1E-6);  // precision of steppers: 1E-6
-                              //        BOOST_CHECK_EQUAL( x[1] , x_end[1] );
-                              //        BOOST_CHECK_EQUAL( x[2] , x_end[2] );
+        1E-6);  // precision of steppers: 1E-6
+                //        BOOST_CHECK_EQUAL( x[1] , x_end[1] );
+                //        BOOST_CHECK_EQUAL( x[2] , x_end[2] );
   }
 };
 
@@ -183,8 +180,7 @@ struct perform_integrate_n_steps_test {
     std::vector<double> times;
 
     // simple stepper
-    value_type end_time =
-        integrate_n_steps(Stepper(), lorenz, x, 0.0, dt, n, push_back_time(times, x_end));
+    value_type end_time = integrate_n_steps(Stepper(), lorenz, x, 0.0, dt, n, push_back_time(times, x_end));
 
     BOOST_CHECK_SMALL(end_time - n * dt, 2E-16);
     BOOST_CHECK_EQUAL(static_cast<int>(times.size()), n + 1);
@@ -201,16 +197,14 @@ struct perform_integrate_n_steps_test {
 };
 
 class stepper_methods
-    : public mpl::vector<
-          euler<state_type>, modified_midpoint<state_type>, runge_kutta4<state_type>,
-          runge_kutta_cash_karp54<state_type>, runge_kutta_dopri5<state_type>,
-          runge_kutta_fehlberg78<state_type>,
-          controlled_runge_kutta<runge_kutta_cash_karp54<state_type> >,
-          controlled_runge_kutta<runge_kutta_dopri5<state_type> >,
-          controlled_runge_kutta<runge_kutta_fehlberg78<state_type> >, bulirsch_stoer<state_type>,
-          dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > >
-          // bulirsch_stoer_dense_out< state_type >
-          > {};
+  : public mpl::vector<euler<state_type>, modified_midpoint<state_type>, runge_kutta4<state_type>,
+        runge_kutta_cash_karp54<state_type>, runge_kutta_dopri5<state_type>, runge_kutta_fehlberg78<state_type>,
+        controlled_runge_kutta<runge_kutta_cash_karp54<state_type> >,
+        controlled_runge_kutta<runge_kutta_dopri5<state_type> >,
+        controlled_runge_kutta<runge_kutta_fehlberg78<state_type> >, bulirsch_stoer<state_type>,
+        dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > >
+        // bulirsch_stoer_dense_out< state_type >
+        > {};
 
 BOOST_AUTO_TEST_SUITE(integrate_test)
 

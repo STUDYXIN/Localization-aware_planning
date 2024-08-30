@@ -54,7 +54,7 @@ inline std::complex<__float128> pow(std::complex<__float128> x, __float128 y) {
   __float128 phi = atanq(x.imag() / x.real());
   return std::complex<__float128>(r * cosq(y * phi), r * sinq(y * phi));
 }
-}
+}  // namespace std
 
 inline std::ostream& operator<<(std::ostream& os, const __float128& f) {
 
@@ -89,7 +89,7 @@ struct radMod {
 
     dxdt[0] = x[1];
     dxdt[1] = -(2 * (r - 1) / (r * (r - 2))) * x[1] -
-        ((m_om * m_om * r * r / ((r - 2) * (r - 2))) - (m_l * (m_l + 1) / (r * (r - 2)))) * x[0];
+              ((m_om * m_om * r * r / ((r - 2) * (r - 2))) - (m_l * (m_l + 1) / (r * (r - 2)))) * x[0];
   }
 };
 
@@ -122,10 +122,8 @@ int main(int argc, char** argv) {
       controlled_dopri5_type(default_error_checker<my_float>(abs_err, rel_err, a_x, a_dxdt)));
 
   std::for_each(make_adaptive_time_iterator_begin(dopri5, radMod(omega, ell), x, start, end, dt),
-                make_adaptive_time_iterator_end(dopri5, radMod(omega, ell), x),
-                [](const std::pair<state_type&, my_float>& x) {
-                  std::cout << x.second << ", " << x.first[0].real() << "\n";
-                });
+      make_adaptive_time_iterator_end(dopri5, radMod(omega, ell), x),
+      [](const std::pair<state_type&, my_float>& x) { std::cout << x.second << ", " << x.first[0].real() << "\n"; });
 
   return 0;
 }

@@ -134,12 +134,12 @@ struct vector_fixture {
   }
 };
 
-#define CHECK_VALUES(x, x0, x1, x2, x3, x4, x5)                                                         \
-  BOOST_CHECK_CLOSE(x[0], x0, 1.0e-8);                                                                  \
-  BOOST_CHECK_CLOSE(x[1], x1, 1.0e-8);                                                                  \
-  BOOST_CHECK_CLOSE(x[2], x2, 1.0e-8);                                                                  \
-  BOOST_CHECK_CLOSE(x[3], x3, 1.0e-8);                                                                  \
-  BOOST_CHECK_CLOSE(x[4], x4, 1.0e-8);                                                                  \
+#define CHECK_VALUES(x, x0, x1, x2, x3, x4, x5)                                                                        \
+  BOOST_CHECK_CLOSE(x[0], x0, 1.0e-8);                                                                                 \
+  BOOST_CHECK_CLOSE(x[1], x1, 1.0e-8);                                                                                 \
+  BOOST_CHECK_CLOSE(x[2], x2, 1.0e-8);                                                                                 \
+  BOOST_CHECK_CLOSE(x[3], x3, 1.0e-8);                                                                                 \
+  BOOST_CHECK_CLOSE(x[4], x4, 1.0e-8);                                                                                 \
   BOOST_CHECK_CLOSE(x[5], x5, 1.0e-8)
 
 BOOST_AUTO_TEST_SUITE(stepper_with_ranges)
@@ -182,8 +182,7 @@ BOOST_AUTO_TEST_CASE(runge_kutta_dopri5_with_range_v5) {
 BOOST_AUTO_TEST_CASE(controlled_error_stepper_rk54) {
   double t = 0.0, dt = 0.1;
   vector_fixture f;
-  boost::numeric::odeint::controlled_runge_kutta<
-      boost::numeric::odeint::runge_kutta_cash_karp54_classic<state_type> >
+  boost::numeric::odeint::controlled_runge_kutta<boost::numeric::odeint::runge_kutta_cash_karp54_classic<state_type> >
       stepper;
   stepper.try_step(system2(), std::make_pair(f.in.begin() + 1, f.in.begin() + 4), t, dt);
   CHECK_VALUES(f.in, 0.0, 1.1, 2.2, 3.3, 4.0, 5.0);
@@ -192,8 +191,7 @@ BOOST_AUTO_TEST_CASE(controlled_error_stepper_rk54) {
 BOOST_AUTO_TEST_CASE(controlled_error_stepper_dopri5) {
   double t = 0.0, dt = 0.1;
   vector_fixture f;
-  boost::numeric::odeint::controlled_runge_kutta<boost::numeric::odeint::runge_kutta_dopri5<state_type> >
-      stepper;
+  boost::numeric::odeint::controlled_runge_kutta<boost::numeric::odeint::runge_kutta_dopri5<state_type> > stepper;
   stepper.try_step(system2(), std::make_pair(f.in.begin() + 1, f.in.begin() + 4), t, dt);
   CHECK_VALUES(f.in, 0.0, 1.1, 2.2, 3.3, 4.0, 5.0);
 }
@@ -202,7 +200,7 @@ BOOST_AUTO_TEST_CASE(symplectic_euler_coor_func) {
   vector_fixture f;
   boost::numeric::odeint::symplectic_euler<state_type> euler;
   euler.do_step(ham_sys(), std::make_pair(f.q.begin() + 1, f.q.begin() + 4),
-                std::make_pair(f.p.begin() + 3, f.p.begin() + 6), 0.0, 0.1);
+      std::make_pair(f.p.begin() + 3, f.p.begin() + 6), 0.0, 0.1);
   CHECK_VALUES(f.q, 0.0, 1.3, 2.4, 3.5, 4.0, 5.0);
   CHECK_VALUES(f.p, 0.0, 1.0, 2.0, 3.1, 4.2, 5.3);
 }
@@ -211,7 +209,7 @@ BOOST_AUTO_TEST_CASE(symplectic_euler_coor_and_mom_func) {
   vector_fixture f;
   boost::numeric::odeint::symplectic_euler<state_type> euler;
   euler.do_step(std::make_pair(ham_sys(), ham_sys()), std::make_pair(f.q.begin() + 1, f.q.begin() + 4),
-                std::make_pair(f.p.begin() + 3, f.p.begin() + 6), 0.0, 0.1);
+      std::make_pair(f.p.begin() + 3, f.p.begin() + 6), 0.0, 0.1);
   CHECK_VALUES(f.q, 0.0, 1.1, 2.2, 3.3, 4.0, 5.0);
   CHECK_VALUES(f.p, 0.0, 1.0, 2.0, 3.1, 4.2, 5.3);
 }

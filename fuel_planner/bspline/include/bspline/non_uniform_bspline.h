@@ -11,7 +11,7 @@ namespace fast_planner {
 // An implementation of non-uniform B-spline with different dimensions
 // It also represents uniform B-spline which is a special case of non-uniform
 class NonUniformBspline {
- public:
+public:
   NonUniformBspline();
   NonUniformBspline(const Eigen::MatrixXd& points, const int& order, const double& interval);
   ~NonUniformBspline();
@@ -33,16 +33,14 @@ class NonUniformBspline {
   Eigen::VectorXd evaluateDeBoorT(const double& t);  // use t \in [0, duration]
   void computeDerivatives(const int& k, vector<NonUniformBspline>& ders);
   NonUniformBspline getDerivative();
-  void getBoundaryStates(const int& ks, const int& ke, vector<Eigen::Vector3d>& start,
-                         vector<Eigen::Vector3d>& end);
+  void getBoundaryStates(const int& ks, const int& ke, vector<Eigen::Vector3d>& start, vector<Eigen::Vector3d>& end);
 
   // 3D B-spline interpolation of points in point_set, with boundary vel&acc
   // constraints
   // input : (K+2) points with boundary vel/acc; ts
   // output: (K+6) control_pts
   static void parameterizeToBspline(const double& ts, const vector<Eigen::Vector3d>& point_set,
-                                    const vector<Eigen::Vector3d>& start_end_derivative, const int& degree,
-                                    Eigen::MatrixXd& ctrl_pts);
+      const vector<Eigen::Vector3d>& start_end_derivative, const int& degree, Eigen::MatrixXd& ctrl_pts);
 
   // Check feasibility, adjust time
   void setPhysicalLimits(const double& vel, const double& acc);
@@ -61,7 +59,7 @@ class NonUniformBspline {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
- private:
+private:
   // control points for B-spline with different dimensions.
   // Each row represents one single control point
   // The dimension is determined by column number

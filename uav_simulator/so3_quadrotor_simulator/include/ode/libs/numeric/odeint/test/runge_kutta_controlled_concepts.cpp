@@ -95,10 +95,8 @@ struct perform_controlled_stepper_test<ControlledStepper, vector_type> {
     //                             typename ControlledStepper::operations_type > error_checker;
     // ControlledStepper controlled_stepper( error_stepper , error_checker );
     ControlledStepper controlled_stepper;
-    check_controlled_stepper_concept(controlled_stepper,
-                                     constant_system_standard<vector_type, vector_type, double>, x);
-    check_controlled_stepper_concept(controlled_stepper, boost::cref(constant_system_functor_standard()),
-                                     x);
+    check_controlled_stepper_concept(controlled_stepper, constant_system_standard<vector_type, vector_type, double>, x);
+    check_controlled_stepper_concept(controlled_stepper, boost::cref(constant_system_functor_standard()), x);
     BOOST_CHECK_SMALL(fabs(x[0] - result), eps);
   }
 };
@@ -115,10 +113,8 @@ struct perform_controlled_stepper_test<ControlledStepper, vector_space_type> {
       ControlledStepper controlled_stepper( error_stepper , error_checker );*/
     ControlledStepper controlled_stepper;
     check_controlled_stepper_concept(
-        controlled_stepper, constant_system_vector_space<vector_space_type, vector_space_type, double>,
-        x);
-    check_controlled_stepper_concept(controlled_stepper,
-                                     boost::cref(constant_system_functor_vector_space()), x);
+        controlled_stepper, constant_system_vector_space<vector_space_type, vector_space_type, double>, x);
+    check_controlled_stepper_concept(controlled_stepper, boost::cref(constant_system_functor_vector_space()), x);
     BOOST_CHECK_SMALL(fabs(x.m_x - result), eps);
   }
 };
@@ -134,35 +130,29 @@ struct perform_controlled_stepper_test<ControlledStepper, array_type> {
       typename ControlledStepper::operations_type > error_checker;
       ControlledStepper controlled_stepper( error_stepper , error_checker );*/
     ControlledStepper controlled_stepper;
-    check_controlled_stepper_concept(controlled_stepper,
-                                     constant_system_standard<array_type, array_type, double>, x);
-    check_controlled_stepper_concept(controlled_stepper, boost::cref(constant_system_functor_standard()),
-                                     x);
+    check_controlled_stepper_concept(controlled_stepper, constant_system_standard<array_type, array_type, double>, x);
+    check_controlled_stepper_concept(controlled_stepper, boost::cref(constant_system_functor_standard()), x);
     BOOST_CHECK_SMALL(fabs(x[0] - result), eps);
   }
 };
 
 template <class State>
 class controlled_stepper_methods
-    : public mpl::vector<
-          controlled_runge_kutta<runge_kutta_cash_karp54_classic<
-              State, double, State, double, typename algebra_dispatcher<State>::type> >,
-          controlled_runge_kutta<runge_kutta_dopri5<State, double, State, double,
-                                                    typename algebra_dispatcher<State>::type> >,
-          controlled_runge_kutta<runge_kutta_fehlberg78<State, double, State, double,
-                                                        typename algebra_dispatcher<State>::type> >,
-          bulirsch_stoer<State, double, State, double, typename algebra_dispatcher<State>::type> > {};
+  : public mpl::vector<controlled_runge_kutta<runge_kutta_cash_karp54_classic<State, double, State, double,
+                           typename algebra_dispatcher<State>::type> >,
+        controlled_runge_kutta<
+            runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type> >,
+        controlled_runge_kutta<
+            runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type> >,
+        bulirsch_stoer<State, double, State, double, typename algebra_dispatcher<State>::type> > {};
 
-typedef mpl::copy<
-    container_types,
-    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>,
-                                                    controlled_stepper_methods<mpl::_2> > > >::type
+typedef mpl::copy<container_types, mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>,
+                                                                     controlled_stepper_methods<mpl::_2> > > >::type
     all_controlled_stepper_methods;
 
 BOOST_AUTO_TEST_SUITE(controlled_runge_kutta_concept_test)
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(controlled_stepper_test, ControlledStepper,
-                              all_controlled_stepper_methods) {
+BOOST_AUTO_TEST_CASE_TEMPLATE(controlled_stepper_test, ControlledStepper, all_controlled_stepper_methods) {
   perform_controlled_stepper_test<ControlledStepper, typename ControlledStepper::state_type> tester;
   tester();
 }

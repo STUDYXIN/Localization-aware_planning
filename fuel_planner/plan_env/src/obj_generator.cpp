@@ -93,8 +93,7 @@ int main(int argc, char** argv) {
     Eigen::Vector3d acc(r * cos(t), r * sin(t), z);
 
     model.initialize(pos, vel, acc, yaw, yaw_dot, color, scale);
-    model.setLimits(Eigen::Vector3d(_xy_size, _xy_size, _h_size), Eigen::Vector2d(0.0, _vel),
-                    Eigen::Vector2d(0, 0));
+    model.setLimits(Eigen::Vector3d(_xy_size, _xy_size, _h_size), Eigen::Vector2d(0.0, _vel), Eigen::Vector2d(0, 0));
     obj_models.push_back(model);
   }
 

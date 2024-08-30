@@ -76,8 +76,7 @@ struct lorenz {
 int main(int argc, char* argv[]) {
   using namespace boost::numeric::odeint;
   state_type x = { { 10.0, 10.0, 10.0 } };
-  integrate_const(runge_kutta4<state_type>(), make_ode_wrapper(lorenz(), &lorenz::ode), x, 0.0, 10.0,
-                  0.01);
+  integrate_const(runge_kutta4<state_type>(), make_ode_wrapper(lorenz(), &lorenz::ode), x, 0.0, 10.0, 0.01);
   return 0;
 }
 //]

@@ -53,15 +53,14 @@
 namespace rviz {
 
 MultiProbMapDisplay::MultiProbMapDisplay() : Display(), loaded_(false), new_map_(false) {
-  topic_property_ = new RosTopicProperty(
-      "Topic", "",
+  topic_property_ = new RosTopicProperty("Topic", "",
       QString::fromStdString(ros::message_traits::datatype<multi_map_server::MultiOccupancyGrid>()),
       "multi_map_server::MultiOccupancyGrid topic to subscribe to.", this, SLOT(updateTopic()));
 
   draw_under_property_ = new Property("Draw Behind", false,
-                                      "Rendering option, controls whether or not the map is always"
-                                      " drawn behind everything else.",
-                                      this, SLOT(updateDrawUnder()));
+      "Rendering option, controls whether or not the map is always"
+      " drawn behind everything else.",
+      this, SLOT(updateDrawUnder()));
 }
 
 MultiProbMapDisplay::~MultiProbMapDisplay() {
@@ -69,9 +68,12 @@ MultiProbMapDisplay::~MultiProbMapDisplay() {
   clear();
 }
 
-void MultiProbMapDisplay::onInitialize() {}
+void MultiProbMapDisplay::onInitialize() {
+}
 
-void MultiProbMapDisplay::onEnable() { subscribe(); }
+void MultiProbMapDisplay::onEnable() {
+  subscribe();
+}
 
 void MultiProbMapDisplay::onDisable() {
   unsubscribe();
@@ -85,8 +87,7 @@ void MultiProbMapDisplay::subscribe() {
 
   if (!topic_property_->getTopic().isEmpty()) {
     try {
-      map_sub_ =
-          update_nh_.subscribe(topic_property_->getTopicStd(), 1, &MultiProbMapDisplay::incomingMap, this);
+      map_sub_ = update_nh_.subscribe(topic_property_->getTopicStd(), 1, &MultiProbMapDisplay::incomingMap, this);
       setStatus(StatusProperty::Ok, "Topic", "OK");
     } catch (ros::Exception& e) {
       setStatus(StatusProperty::Error, "Topic", QString("Error subscribing: ") + e.what());
@@ -94,7 +95,9 @@ void MultiProbMapDisplay::subscribe() {
   }
 }
 
-void MultiProbMapDisplay::unsubscribe() { map_sub_.shutdown(); }
+void MultiProbMapDisplay::unsubscribe() {
+  map_sub_.shutdown();
+}
 
 void MultiProbMapDisplay::updateDrawUnder() {
   bool draw_under = draw_under_property_->getValue().toBool();
@@ -166,8 +169,7 @@ void MultiProbMapDisplay::update(float wall_dt, float ros_dt) {
     memset(pixels, 255, pixels_size);
     unsigned int num_pixels_to_copy = pixels_size;
     if (pixels_size != current_map_->maps[k].data.size())
-      if (current_map_->maps[k].data.size() < pixels_size)
-        num_pixels_to_copy = current_map_->maps[k].data.size();
+      if (current_map_->maps[k].data.size() < pixels_size) num_pixels_to_copy = current_map_->maps[k].data.size();
     for (unsigned int pixel_index = 0; pixel_index < num_pixels_to_copy; pixel_index++) {
       unsigned char val;
       int8_t data = current_map_->maps[k].data[pixel_index];
@@ -193,9 +195,9 @@ void MultiProbMapDisplay::update(float wall_dt, float ros_dt) {
     ss1 << "MultiMapTexture" << tex_count++;
     Ogre::TexturePtr _texture_;
     // t[2] = ros::Time::now();
-    _texture_ = Ogre::TextureManager::getSingleton().loadRawData(
-        ss1.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, pixel_stream, width, height,
-        Ogre::PF_L8, Ogre::TEX_TYPE_2D, 0);
+    _texture_ = Ogre::TextureManager::getSingleton().loadRawData(ss1.str(),
+        Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, pixel_stream, width, height, Ogre::PF_L8,
+        Ogre::TEX_TYPE_2D, 0);
     // t[3] = ros::Time::now();
     texture_.push_back(_texture_);
     delete[] pixels;
@@ -299,8 +301,7 @@ void MultiProbMapDisplay::update(float wall_dt, float ros_dt) {
       }
     }
     manual_object_.back()->end();
-    if (draw_under_property_->getValue().toBool())
-      manual_object_.back()->setRenderQueueGroup(Ogre::RENDER_QUEUE_4);
+    if (draw_under_property_->getValue().toBool()) manual_object_.back()->setRenderQueueGroup(Ogre::RENDER_QUEUE_4);
 
     // for (int i = 0; i < 4; i++)
     //  dt[i] += (t[i+1] - t[i]).toSec();

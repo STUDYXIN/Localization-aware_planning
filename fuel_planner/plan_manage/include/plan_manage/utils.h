@@ -1,8 +1,7 @@
 #include <Eigen/Eigen>
 #include <vector>
 
-Eigen::Vector3d getFarPoint(const std::vector<Eigen::Vector3d>& path, Eigen::Vector3d x1,
-                            Eigen::Vector3d x2) {
+Eigen::Vector3d getFarPoint(const std::vector<Eigen::Vector3d>& path, Eigen::Vector3d x1, Eigen::Vector3d x2) {
   double max_dist = -1000;
   Eigen::Vector3d vl = (x2 - x1).normalized();
   Eigen::Vector3d far_pt;

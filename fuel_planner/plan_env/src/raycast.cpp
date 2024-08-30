@@ -4,9 +4,13 @@
 #include <cmath>
 #include <iostream>
 
-int signum(int x) { return x == 0 ? 0 : x < 0 ? -1 : 1; }
+int signum(int x) {
+  return x == 0 ? 0 : x < 0 ? -1 : 1;
+}
 
-double mod(double value, double modulus) { return fmod(fmod(value, modulus) + modulus, modulus); }
+double mod(double value, double modulus) {
+  return fmod(fmod(value, modulus) + modulus, modulus);
+}
 
 double intbound(double s, double ds) {
   // Find the smallest positive t such that s+t*ds is an integer.
@@ -20,7 +24,7 @@ double intbound(double s, double ds) {
 }
 
 void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eigen::Vector3d& min,
-             const Eigen::Vector3d& max, int& output_points_cnt, Eigen::Vector3d* output) {
+    const Eigen::Vector3d& max, int& output_points_cnt, Eigen::Vector3d* output) {
   //    std::cout << start << ' ' << end << std::endl;
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
   // by John Amanatides and Andrew Woo, 1987
@@ -82,8 +86,7 @@ void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eig
       output[output_points_cnt](2) = z;
 
       output_points_cnt++;
-      dist = sqrt((x - start(0)) * (x - start(0)) + (y - start(1)) * (y - start(1)) +
-                  (z - start(2)) * (z - start(2)));
+      dist = sqrt((x - start(0)) * (x - start(0)) + (y - start(1)) * (y - start(1)) + (z - start(2)) * (z - start(2)));
 
       if (dist > maxDist) return;
 
@@ -123,7 +126,7 @@ void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eig
 }
 
 void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eigen::Vector3d& min,
-             const Eigen::Vector3d& max, std::vector<Eigen::Vector3d>* output) {
+    const Eigen::Vector3d& max, std::vector<Eigen::Vector3d>* output) {
   //    std::cout << start << ' ' << end << std::endl;
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
   // by John Amanatides and Andrew Woo, 1987

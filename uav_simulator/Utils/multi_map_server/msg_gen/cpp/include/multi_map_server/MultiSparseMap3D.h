@@ -21,25 +21,23 @@ template <class ContainerAllocator>
 struct MultiSparseMap3D_ {
   typedef MultiSparseMap3D_<ContainerAllocator> Type;
 
-  MultiSparseMap3D_() : maps(), origins() {}
+  MultiSparseMap3D_() : maps(), origins() {
+  }
 
-  MultiSparseMap3D_(const ContainerAllocator& _alloc) : maps(_alloc), origins(_alloc) {}
+  MultiSparseMap3D_(const ContainerAllocator& _alloc) : maps(_alloc), origins(_alloc) {
+  }
 
   typedef std::vector< ::multi_map_server::SparseMap3D_<ContainerAllocator>,
-                       typename ContainerAllocator::template rebind<
-                           ::multi_map_server::SparseMap3D_<ContainerAllocator> >::other>
+      typename ContainerAllocator::template rebind< ::multi_map_server::SparseMap3D_<ContainerAllocator> >::other>
       _maps_type;
   std::vector< ::multi_map_server::SparseMap3D_<ContainerAllocator>,
-               typename ContainerAllocator::template rebind<
-                   ::multi_map_server::SparseMap3D_<ContainerAllocator> >::other>
+      typename ContainerAllocator::template rebind< ::multi_map_server::SparseMap3D_<ContainerAllocator> >::other>
       maps;
 
-  typedef std::vector<
-      ::geometry_msgs::Pose_<ContainerAllocator>,
+  typedef std::vector< ::geometry_msgs::Pose_<ContainerAllocator>,
       typename ContainerAllocator::template rebind< ::geometry_msgs::Pose_<ContainerAllocator> >::other>
       _origins_type;
-  std::vector<
-      ::geometry_msgs::Pose_<ContainerAllocator>,
+  std::vector< ::geometry_msgs::Pose_<ContainerAllocator>,
       typename ContainerAllocator::template rebind< ::geometry_msgs::Pose_<ContainerAllocator> >::other>
       origins;
 
@@ -52,10 +50,8 @@ typedef boost::shared_ptr< ::multi_map_server::MultiSparseMap3D> MultiSparseMap3
 typedef boost::shared_ptr< ::multi_map_server::MultiSparseMap3D const> MultiSparseMap3DConstPtr;
 
 template <typename ContainerAllocator>
-std::ostream& operator<<(std::ostream& s,
-                         const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> >::stream(s, "",
-                                                                                                        v);
+std::ostream& operator<<(std::ostream& s, const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>& v) {
+  ros::message_operations::Printer< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> >::stream(s, "", v);
   return s;
 }
 
@@ -69,7 +65,9 @@ template <class ContainerAllocator>
 struct IsMessage< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
-  static const char* value() { return "2e3d76c98ee3e2b23a422f64965f6418"; }
+  static const char* value() {
+    return "2e3d76c98ee3e2b23a422f64965f6418";
+  }
 
   static const char* value(const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>&) {
     return value();
@@ -80,7 +78,9 @@ struct MD5Sum< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
 
 template <class ContainerAllocator>
 struct DataType< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
-  static const char* value() { return "multi_map_server/MultiSparseMap3D"; }
+  static const char* value() {
+    return "multi_map_server/MultiSparseMap3D";
+  }
 
   static const char* value(const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>&) {
     return value();
@@ -197,8 +197,8 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>& v) {
+  static void stream(
+      Stream& s, const std::string& indent, const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>& v) {
     s << indent << "maps[]" << std::endl;
     for (size_t i = 0; i < v.maps.size(); ++i) {
       s << indent << "  maps[" << i << "]: ";

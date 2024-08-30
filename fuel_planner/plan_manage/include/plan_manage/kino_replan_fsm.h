@@ -23,21 +23,28 @@ using std::vector;
 
 namespace fast_planner {
 class Test {
- private:
+private:
   /* data */
   int test_;
   std::vector<int> test_vec_;
   ros::NodeHandle nh_;
 
- public:
-  Test(const int& v) { test_ = v; }
-  Test(ros::NodeHandle& node) { nh_ = node; }
-  ~Test() {}
-  void print() { std::cout << "test: " << test_ << std::endl; }
+public:
+  Test(const int& v) {
+    test_ = v;
+  }
+  Test(ros::NodeHandle& node) {
+    nh_ = node;
+  }
+  ~Test() {
+  }
+  void print() {
+    std::cout << "test: " << test_ << std::endl;
+  }
 };
 
 class KinoReplanFSM {
- private:
+private:
   /* ---------- flag ---------- */
   enum FSM_EXEC_STATE { INIT, WAIT_TARGET, GEN_NEW_TRAJ, REPLAN_TRAJ, EXEC_TRAJ, REPLAN_NEW };
   enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2, REFENCE_PATH = 3 };
@@ -82,9 +89,11 @@ class KinoReplanFSM {
   void waypointCallback(const nav_msgs::PathConstPtr& msg);
   void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
 
- public:
-  KinoReplanFSM(/* args */) {}
-  ~KinoReplanFSM() {}
+public:
+  KinoReplanFSM(/* args */) {
+  }
+  ~KinoReplanFSM() {
+  }
 
   void init(ros::NodeHandle& nh);
 

@@ -41,7 +41,7 @@ Goal3DTool::Goal3DTool() {
   shortcut_key_ = 'g';
 
   topic_property_ = new StringProperty("Topic", "goal", "The topic on which to publish navigation goals.",
-                                       getPropertyContainer(), SLOT(updateTopic()), this);
+      getPropertyContainer(), SLOT(updateTopic()), this);
 }
 
 void Goal3DTool::onInitialize() {
@@ -59,16 +59,13 @@ void Goal3DTool::onPoseSet(double x, double y, double z, double theta) {
   std::string fixed_frame = context_->getFixedFrame().toStdString();
   tf::Quaternion quat;
   quat.setRPY(0.0, 0.0, theta);
-  tf::Stamped<tf::Pose> p =
-      tf::Stamped<tf::Pose>(tf::Pose(quat, tf::Point(x, y, z)), ros::Time::now(), fixed_frame);
+  tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(quat, tf::Point(x, y, z)), ros::Time::now(), fixed_frame);
   geometry_msgs::PoseStamped goal;
   tf::poseStampedTFToMsg(p, goal);
-  ROS_INFO(
-      "Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), Orientation(%.3f, %.3f, %.3f, %.3f) = "
-      "Angle: %.3f\n",
-      fixed_frame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
-      goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w,
-      theta);
+  ROS_INFO("Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), Orientation(%.3f, %.3f, %.3f, %.3f) = "
+           "Angle: %.3f\n",
+      fixed_frame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, goal.pose.orientation.x,
+      goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w, theta);
   pub_.publish(goal);
 }
 

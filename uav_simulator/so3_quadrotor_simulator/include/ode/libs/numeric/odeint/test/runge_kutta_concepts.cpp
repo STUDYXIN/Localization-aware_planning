@@ -99,8 +99,7 @@ struct perform_stepper_test<Stepper, vector_space_type> {
     vector_space_type x;
     x.m_x = 2.0;
     Stepper stepper;
-    check_stepper_concept(stepper,
-                          constant_system_vector_space<vector_space_type, vector_space_type, double>, x);
+    check_stepper_concept(stepper, constant_system_vector_space<vector_space_type, vector_space_type, double>, x);
     check_stepper_concept(stepper, boost::cref(constant_system_functor_vector_space()), x);
     std::cout << x.m_x << " ?= " << result << std::endl;
     BOOST_CHECK_SMALL(fabs(x.m_x - result), eps);
@@ -122,22 +121,17 @@ struct perform_stepper_test<Stepper, array_type> {
 
 template <class State>
 class stepper_methods
-    : public mpl::vector<
-          euler<State, double, State, double, typename algebra_dispatcher<State>::type>,
-          modified_midpoint<State, double, State, double, typename algebra_dispatcher<State>::type>,
-          runge_kutta4<State, double, State, double, typename algebra_dispatcher<State>::type>,
-          runge_kutta4_classic<State, double, State, double, typename algebra_dispatcher<State>::type>,
-          runge_kutta_cash_karp54_classic<State, double, State, double,
-                                          typename algebra_dispatcher<State>::type>,
-          runge_kutta_cash_karp54<State, double, State, double,
-                                  typename algebra_dispatcher<State>::type>,
-          runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type>,
-          runge_kutta_fehlberg78<State, double, State, double,
-                                 typename algebra_dispatcher<State>::type> > {};
+  : public mpl::vector<euler<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        modified_midpoint<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta4<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta4_classic<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta_cash_karp54_classic<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta_cash_karp54<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type> > {};
 
 typedef mpl::copy<container_types,
-                  mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>,
-                                                                  stepper_methods<mpl::_2> > > >::type
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, stepper_methods<mpl::_2> > > >::type
     all_stepper_methods;
 
 BOOST_AUTO_TEST_SUITE(runge_kutta_concept_test)

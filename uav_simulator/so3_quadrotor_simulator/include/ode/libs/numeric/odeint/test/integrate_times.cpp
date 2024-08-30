@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
 
   // simple stepper
   integrate_times(runge_kutta4<state_type>(), lorenz, x, boost::counting_iterator<int>(0),
-                  boost::counting_iterator<int>(10), dt, push_back_time(times));
+      boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -82,8 +82,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
 
   // controlled stepper
   integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type> >(), lorenz, x,
-                  boost::counting_iterator<int>(0), boost::counting_iterator<int>(10), dt,
-                  push_back_time(times));
+      boost::counting_iterator<int>(0), boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -92,7 +91,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
 
   // another controlled stepper
   integrate_times(bulirsch_stoer<state_type>(), lorenz, x, boost::counting_iterator<int>(0),
-                  boost::counting_iterator<int>(10), dt, push_back_time(times));
+      boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -100,16 +99,15 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
   times.clear();
 
   // dense output stepper
-  integrate_times(dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > >(),
-                  lorenz, x, boost::counting_iterator<int>(0), boost::counting_iterator<int>(10), dt,
-                  push_back_time(times));
+  integrate_times(dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > >(), lorenz, x,
+      boost::counting_iterator<int>(0), boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
     BOOST_CHECK_EQUAL(times[i], static_cast<double>(i));
 
   integrate_times(bulirsch_stoer_dense_out<state_type>(), lorenz, x, boost::counting_iterator<int>(0),
-                  boost::counting_iterator<int>(10), dt, push_back_time(times));
+      boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -127,8 +125,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times_ranges) {
 
   // simple stepper
   integrate_times(runge_kutta4<state_type>(), lorenz, x,
-                  std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)),
-                  dt, push_back_time(times));
+      std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -137,8 +134,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times_ranges) {
 
   // controlled stepper
   integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type> >(), lorenz, x,
-                  std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)),
-                  dt, push_back_time(times));
+      std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -147,8 +143,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times_ranges) {
 
   // another controlled stepper
   integrate_times(bulirsch_stoer<state_type>(), lorenz, x,
-                  std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)),
-                  dt, push_back_time(times));
+      std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -157,8 +152,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times_ranges) {
 
   // dense output stepper
   integrate_times(bulirsch_stoer_dense_out<state_type>(), lorenz, x,
-                  std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)),
-                  dt, push_back_time(times));
+      std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...

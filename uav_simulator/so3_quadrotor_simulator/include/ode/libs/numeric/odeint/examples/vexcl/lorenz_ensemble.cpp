@@ -59,8 +59,7 @@ int main(int argc, char** argv) {
   // initialize R
   double Rmin = 0.1, Rmax = 50.0, dR = (Rmax - Rmin) / double(n - 1);
   std::vector<double> x(n * 3), r(n);
-  for (size_t i = 0; i < n; ++i)
-    r[i] = Rmin + dR * double(i);
+  for (size_t i = 0; i < n; ++i) r[i] = Rmin + dR * double(i);
   vector_type R(ctx.queue(), r);
 
   // initialize the state of the lorenz ensemble
@@ -70,8 +69,7 @@ int main(int argc, char** argv) {
   X(2) = 10.0;
 
   // create a stepper
-  runge_kutta4<state_type, double, state_type, double, odeint::vector_space_algebra,
-               odeint::default_operations>
+  runge_kutta4<state_type, double, state_type, double, odeint::vector_space_algebra, odeint::default_operations>
       stepper;
 
   // solve the system

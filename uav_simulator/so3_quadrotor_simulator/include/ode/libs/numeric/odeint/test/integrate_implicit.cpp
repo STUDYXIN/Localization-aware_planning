@@ -57,8 +57,7 @@ struct sys {
 };
 
 struct jacobi {
-  void operator()(const state_type& x, matrix_type& jacobi, const value_type& t,
-                  state_type& dfdt) const {
+  void operator()(const state_type& x, matrix_type& jacobi, const value_type& t, state_type& dfdt) const {
     jacobi(0, 0) = 1;
     jacobi(0, 1) = 2;
     jacobi(1, 0) = 0;
@@ -88,8 +87,7 @@ struct perform_integrate_const_test {
 
     std::vector<value_type> times;
 
-    integrate_const(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, t_end, dt,
-                    push_back_time(times));
+    integrate_const(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, t_end, dt, push_back_time(times));
 
     BOOST_CHECK_EQUAL(static_cast<int>(times.size()), static_cast<int>(floor(t_end / dt)) + 1);
 
@@ -110,8 +108,8 @@ struct perform_integrate_adaptive_test {
 
     std::vector<value_type> times;
 
-    size_t steps = integrate_adaptive(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, t_end, dt,
-                                      push_back_time(times));
+    size_t steps =
+        integrate_adaptive(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, t_end, dt, push_back_time(times));
 
     BOOST_CHECK_EQUAL(times.size(), steps + 1);
 
@@ -131,7 +129,7 @@ struct perform_integrate_times_test {
 
     // simple stepper
     integrate_times(Stepper(), std::make_pair(sys(), jacobi()), x, boost::counting_iterator<int>(0),
-                    boost::counting_iterator<int>(10), dt, push_back_time(times));
+        boost::counting_iterator<int>(10), dt, push_back_time(times));
 
     BOOST_CHECK_EQUAL(static_cast<int>(times.size()), 10);
 
@@ -152,8 +150,8 @@ struct perform_integrate_n_steps_test {
     std::vector<double> times;
 
     // simple stepper
-    value_type end_time = integrate_n_steps(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, dt, n,
-                                            push_back_time(times));
+    value_type end_time =
+        integrate_n_steps(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, dt, n, push_back_time(times));
 
     BOOST_CHECK_SMALL(end_time - n * dt, 3.0e-16);
     BOOST_CHECK_EQUAL(static_cast<int>(times.size()), n + 1);
@@ -164,10 +162,8 @@ struct perform_integrate_n_steps_test {
   }
 };
 
-class stepper_methods
-    : public mpl::vector<rosenbrock4<value_type>, rosenbrock4_controller<rosenbrock4<value_type> >,
-                         rosenbrock4_dense_output<rosenbrock4_controller<rosenbrock4<value_type> > > > {
-};
+class stepper_methods : public mpl::vector<rosenbrock4<value_type>, rosenbrock4_controller<rosenbrock4<value_type> >,
+                            rosenbrock4_dense_output<rosenbrock4_controller<rosenbrock4<value_type> > > > {};
 
 BOOST_AUTO_TEST_SUITE(integrate_test)
 

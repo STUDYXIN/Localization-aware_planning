@@ -35,7 +35,7 @@ struct M2GData;
 enum FSM_EXEC_STATE { INIT, WAIT_TARGET, PLAN_TO_NEXT_GOAL, PUB_TRAJ, MOVE_TO_NEXT_GOAL };
 
 class PAExplorationFSM : public std::enable_shared_from_this<PAExplorationFSM> {
- public:
+public:
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<PAExplorationManager> expl_manager_;
   shared_ptr<PlanningVisualization> visualization_;
@@ -80,20 +80,20 @@ class PAExplorationFSM : public std::enable_shared_from_this<PAExplorationFSM> {
 
   bool checkReachFinalGoal();
 
-  void transitState(const FSM_EXEC_STATE new_state, const string &pos_call);
+  void transitState(const FSM_EXEC_STATE new_state, const string& pos_call);
 
   /* ROS functions */
-  void FSMCallback(const ros::TimerEvent &e);
-  void safetyCallback(const ros::TimerEvent &e);
-  void frontierCallback(const ros::TimerEvent &e);
+  void FSMCallback(const ros::TimerEvent& e);
+  void safetyCallback(const ros::TimerEvent& e);
+  void frontierCallback(const ros::TimerEvent& e);
 
   // Subscriber callbacks
-  void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
-  void waypointCallback(const nav_msgs::PathConstPtr &msg);
+  void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
+  void waypointCallback(const nav_msgs::PathConstPtr& msg);
 
   void visualize();
 
-  void init(ros::NodeHandle &nh);
+  void init(ros::NodeHandle& nh);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

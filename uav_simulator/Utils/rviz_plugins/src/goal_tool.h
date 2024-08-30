@@ -45,18 +45,19 @@ class StringProperty;
 
 class Goal3DTool : public Pose3DTool {
   Q_OBJECT
- public:
+public:
   Goal3DTool();
-  virtual ~Goal3DTool() {}
+  virtual ~Goal3DTool() {
+  }
   virtual void onInitialize();
 
- protected:
+protected:
   virtual void onPoseSet(double x, double y, double z, double theta);
 
- private Q_SLOTS:
+private Q_SLOTS:
   void updateTopic();
 
- private:
+private:
   ros::NodeHandle nh_;
   ros::Publisher pub_;
 

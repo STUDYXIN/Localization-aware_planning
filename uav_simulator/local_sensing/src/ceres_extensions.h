@@ -22,8 +22,9 @@ namespace ceres_ext {
 // that the first element of the quaternion vector is the real (cos
 // theta) part.
 class EigenQuaternionParameterization : public ceres::LocalParameterization {
- public:
-  virtual ~EigenQuaternionParameterization() {}
+public:
+  virtual ~EigenQuaternionParameterization() {
+  }
 
   virtual bool Plus(const double* x_raw, const double* delta_raw, double* x_plus_delta_raw) const {
     const Eigen::Map<const Eigen::Quaterniond> x(x_raw);
@@ -34,8 +35,8 @@ class EigenQuaternionParameterization : public ceres::LocalParameterization {
     const double delta_norm = delta.norm();
     if (delta_norm > 0.0) {
       const double sin_delta_by_delta = sin(delta_norm) / delta_norm;
-      Eigen::Quaterniond tmp(cos(delta_norm), sin_delta_by_delta * delta[0], sin_delta_by_delta * delta[1],
-                             sin_delta_by_delta * delta[2]);
+      Eigen::Quaterniond tmp(
+          cos(delta_norm), sin_delta_by_delta * delta[0], sin_delta_by_delta * delta[1], sin_delta_by_delta * delta[2]);
 
       x_plus_delta = tmp * x;
     } else {
@@ -60,8 +61,12 @@ class EigenQuaternionParameterization : public ceres::LocalParameterization {
     return true;
   }
 
-  virtual int GlobalSize() const { return 4; }
-  virtual int LocalSize() const { return 3; }
+  virtual int GlobalSize() const {
+    return 4;
+  }
+  virtual int LocalSize() const {
+    return 3;
+  }
 };
 
 template <typename T>
@@ -70,8 +75,7 @@ inline void EigenQuaternionToScaledRotation(const T q[4], T R[3 * 3]) {
 }
 
 template <typename T, int row_stride, int col_stride>
-inline void EigenQuaternionToScaledRotation(const T q[4],
-                                            const ceres::MatrixAdapter<T, row_stride, col_stride>& R) {
+inline void EigenQuaternionToScaledRotation(const T q[4], const ceres::MatrixAdapter<T, row_stride, col_stride>& R) {
   // Make convenient names for elements of q.
   T a = q[3];
   T b = q[0];
@@ -107,8 +111,7 @@ inline void EigenQuaternionToRotation(const T q[4], T R[3 * 3]) {
 }
 
 template <typename T, int row_stride, int col_stride>
-inline void EigenQuaternionToRotation(const T q[4],
-                                      const ceres::MatrixAdapter<T, row_stride, col_stride>& R) {
+inline void EigenQuaternionToRotation(const T q[4], const ceres::MatrixAdapter<T, row_stride, col_stride>& R) {
   EigenQuaternionToScaledRotation(q, R);
 
   T normalizer = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
@@ -145,10 +148,10 @@ inline void EigenQuaternionRotatePoint(const T q[4], const T pt[3], T result[3])
 
   // Make unit-norm version of q.
   const T unit[4] = {
-      scale * q[0],
-      scale * q[1],
-      scale * q[2],
-      scale * q[3],
+    scale * q[0],
+    scale * q[1],
+    scale * q[2],
+    scale * q[3],
   };
 
   EigenUnitQuaternionRotatePoint(unit, pt, result);

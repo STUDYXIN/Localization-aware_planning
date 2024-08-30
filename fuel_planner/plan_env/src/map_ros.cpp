@@ -7,9 +7,11 @@
 #include <fstream>
 
 namespace fast_planner {
-MapROS::MapROS() {}
+MapROS::MapROS() {
+}
 
-MapROS::~MapROS() {}
+MapROS::~MapROS() {
+}
 
 void MapROS::setMap(SDFMap* map) {
   this->map_ = map;
@@ -66,8 +68,7 @@ void MapROS::init() {
   update_range_pub_ = node_.advertise<visualization_msgs::Marker>("/sdf_map/update_range", 10);
   depth_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/depth_cloud", 10);
 
-  global_cloud_sub =
-      node_.subscribe("/map_generator/global_cloud", 10, &MapROS::global_cloud_subCallback, this);
+  global_cloud_sub = node_.subscribe("/map_generator/global_cloud", 10, &MapROS::global_cloud_subCallback, this);
   if (!using_global_map) {
     depth_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(node_, "/map_ros/depth", 50));
     cloud_sub_.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_, "/map_ros/cloud", 50));
@@ -115,20 +116,18 @@ void MapROS::updateESDFCallback(const ros::TimerEvent& /*event*/) {
   max_esdf_time_ = max(max_esdf_time_, (t2 - t1).toSec());
   esdf_num_++;
   if (show_esdf_time_)
-    ROS_WARN("ESDF t: cur: %lf, avg: %lf, max: %lf", (t2 - t1).toSec(), esdf_time_ / esdf_num_,
-             max_esdf_time_);
+    ROS_WARN("ESDF t: cur: %lf, avg: %lf, max: %lf", (t2 - t1).toSec(), esdf_time_ / esdf_num_, max_esdf_time_);
 }
 
-void MapROS::depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
-                               const geometry_msgs::PoseStampedConstPtr& pose) {
+void MapROS::depthPoseCallback(const sensor_msgs::ImageConstPtr& img, const geometry_msgs::PoseStampedConstPtr& pose) {
   camera_pos_(0) = pose->pose.position.x;
   camera_pos_(1) = pose->pose.position.y;
   camera_pos_(2) = pose->pose.position.z;
   if (!map_->isInMap(camera_pos_))  // exceed mapped region
     return;
 
-  camera_q_ = Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y,
-                                 pose->pose.orientation.z);
+  camera_q_ = Eigen::Quaterniond(
+      pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
   cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, img->encoding);
   if (img->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
     (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, k_depth_scaling_factor_);
@@ -150,17 +149,16 @@ void MapROS::depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
   max_fuse_time_ = max(max_fuse_time_, (t2 - t1).toSec());
   fuse_num_ += 1;
   if (show_occ_time_)
-    ROS_WARN("Fusion t: cur: %lf, avg: %lf, max: %lf", (t2 - t1).toSec(), fuse_time_ / fuse_num_,
-             max_fuse_time_);
+    ROS_WARN("Fusion t: cur: %lf, avg: %lf, max: %lf", (t2 - t1).toSec(), fuse_time_ / fuse_num_, max_fuse_time_);
 }
 
-void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg,
-                               const geometry_msgs::PoseStampedConstPtr& pose) {
+void MapROS::cloudPoseCallback(
+    const sensor_msgs::PointCloud2ConstPtr& msg, const geometry_msgs::PoseStampedConstPtr& pose) {
   camera_pos_(0) = pose->pose.position.x;
   camera_pos_(1) = pose->pose.position.y;
   camera_pos_(2) = pose->pose.position.z;
-  camera_q_ = Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y,
-                                 pose->pose.orientation.z);
+  camera_q_ = Eigen::Quaterniond(
+      pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
   pcl::PointCloud<pcl::PointXYZ> cloud;
   pcl::fromROSMsg(*msg, cloud);
   int num = cloud.points.size();
@@ -262,10 +260,9 @@ void MapROS::publishMapAll() {
           known_volumn += 0.1 * 0.1 * 0.1;
       }
 
-  ofstream file(
-      "/home/boboyu/workspaces/plan_ws/src/fast_planner/exploration_manager/"
-      "resource/"
-      "curve1.txt",
+  ofstream file("/home/boboyu/workspaces/plan_ws/src/fast_planner/exploration_manager/"
+                "resource/"
+                "curve1.txt",
       ios::app);
   file << "time:" << time_now << ",vol:" << known_volumn << std::endl;
 }
@@ -414,12 +411,12 @@ void MapROS::publishESDF() {
   const double min_dist = 0.0;
   const double max_dist = 3.0;
 
-  Eigen::Vector3i min_cut = map_->md_->local_bound_min_ - Eigen::Vector3i(map_->mp_->local_map_margin_,
-                                                                          map_->mp_->local_map_margin_,
-                                                                          map_->mp_->local_map_margin_);
-  Eigen::Vector3i max_cut = map_->md_->local_bound_max_ + Eigen::Vector3i(map_->mp_->local_map_margin_,
-                                                                          map_->mp_->local_map_margin_,
-                                                                          map_->mp_->local_map_margin_);
+  Eigen::Vector3i min_cut =
+      map_->md_->local_bound_min_ -
+      Eigen::Vector3i(map_->mp_->local_map_margin_, map_->mp_->local_map_margin_, map_->mp_->local_map_margin_);
+  Eigen::Vector3i max_cut =
+      map_->md_->local_bound_max_ +
+      Eigen::Vector3i(map_->mp_->local_map_margin_, map_->mp_->local_map_margin_, map_->mp_->local_map_margin_);
   map_->boundIndex(min_cut);
   map_->boundIndex(max_cut);
 

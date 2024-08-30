@@ -60,10 +60,8 @@ typedef vector<vector<double> > state_type;
 
 // the stepper, choose a symplectic one to account for hamiltonian structure
 // use nested_range_algebra for calculations on vector< vector< ... > >
-typedef boost::numeric::odeint::symplectic_rkn_sb3a_mclachlan<
-    state_type, state_type, double, state_type, state_type, double,
-    nested_range_algebra<boost::numeric::odeint::range_algebra>,
-    boost::numeric::odeint::default_operations>
+typedef boost::numeric::odeint::symplectic_rkn_sb3a_mclachlan<state_type, state_type, double, state_type, state_type,
+    double, nested_range_algebra<boost::numeric::odeint::range_algebra>, boost::numeric::odeint::default_operations>
     stepper_type;
 
 double time_diff_in_ms(timeval& t1, timeval& t2) {
@@ -111,6 +109,5 @@ int main(int argc, const char* argv[]) {
 
   gettimeofday(&elapsed_time_end, NULL);
   double elapsed_time = time_diff_in_ms(elapsed_time_start, elapsed_time_end);
-  cout << steps << " steps in " << elapsed_time / 1000 << " s (energy: " << lattice.energy(q, p) << ")"
-       << endl;
+  cout << steps << " steps in " << elapsed_time / 1000 << " s (energy: " << lattice.energy(q, p) << ")" << endl;
 }

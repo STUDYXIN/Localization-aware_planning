@@ -20,8 +20,7 @@ void displaySphereList(vector<Eigen::Vector3d> list, double resolution, Eigen::V
   // traj_pub.publish(mk);
 
   mk.action = visualization_msgs::Marker::ADD;
-  mk.pose.orientation.x = 0.0, mk.pose.orientation.y = 0.0, mk.pose.orientation.z = 0.0,
-  mk.pose.orientation.w = 1.0;
+  mk.pose.orientation.x = 0.0, mk.pose.orientation.y = 0.0, mk.pose.orientation.z = 0.0, mk.pose.orientation.w = 1.0;
   mk.color.r = color(0), mk.color.g = color(1), mk.color.b = color(2), mk.color.a = color(3);
   mk.scale.x = resolution, mk.scale.y = resolution, mk.scale.z = resolution;
   geometry_msgs::Point pt;
@@ -39,8 +38,8 @@ void displaySphereList(vector<Eigen::Vector3d> list, double resolution, Eigen::V
   }
 }
 
-void drawBspline(NonUniformBspline bspline, double size, Eigen::Vector4d color, bool show_ctrl_pts,
-                 double size2, Eigen::Vector4d color2, int id1, int id2) {
+void drawBspline(NonUniformBspline bspline, double size, Eigen::Vector4d color, bool show_ctrl_pts, double size2,
+    Eigen::Vector4d color2, int id1, int id2) {
   vector<Eigen::Vector3d> traj_pts;
   double tm, tmp;
   bspline.getTimeSpan(tm, tmp);

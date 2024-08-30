@@ -54,14 +54,12 @@ int main(int argc, char** argv) {
   srand(time(NULL));
 
   // initial conditions
-  for (int i = 0; i < 2; i++)
-    x[i] = 1.0;  //(1.0 * rand()) / RAND_MAX;
+  for (int i = 0; i < 2; i++) x[i] = 1.0;  //(1.0 * rand()) / RAND_MAX;
 
-  size_t num_of_steps =
-      integrate_const(make_dense_output<rosenbrock4<double> >(1.0e-6, 1.0e-6),
-                      make_pair(vdp_stiff(), vdp_stiff_jacobi()), x, 0.0, 1000.0, 1.0,
-                      cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << " "
-                           << phoenix::arg_names::arg1[1] << "\n");
+  size_t num_of_steps = integrate_const(make_dense_output<rosenbrock4<double> >(1.0e-6, 1.0e-6),
+      make_pair(vdp_stiff(), vdp_stiff_jacobi()), x, 0.0, 1000.0, 1.0,
+      cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << " " << phoenix::arg_names::arg1[1]
+           << "\n");
   //]
   clog << num_of_steps << endl;
 
@@ -69,13 +67,12 @@ int main(int argc, char** argv) {
 
   vector_type x2(2);
   // initial conditions
-  for (int i = 0; i < 2; i++)
-    x2[i] = 1.0;  //(1.0 * rand()) / RAND_MAX;
+  for (int i = 0; i < 2; i++) x2[i] = 1.0;  //(1.0 * rand()) / RAND_MAX;
 
-  size_t num_of_steps2 = integrate_const(
-      make_dense_output<runge_kutta_dopri5<vector_type> >(1.0e-6, 1.0e-6), vdp_stiff(), x2, 0.0, 1000.0,
-      1.0, cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << " "
-                << phoenix::arg_names::arg1[1] << "\n");
+  size_t num_of_steps2 = integrate_const(make_dense_output<runge_kutta_dopri5<vector_type> >(1.0e-6, 1.0e-6),
+      vdp_stiff(), x2, 0.0, 1000.0, 1.0,
+      cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << " " << phoenix::arg_names::arg1[1]
+           << "\n");
   //]
   clog << num_of_steps2 << endl;
 

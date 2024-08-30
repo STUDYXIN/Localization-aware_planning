@@ -34,11 +34,15 @@ void ObjHistory::poseCallback(const geometry_msgs::PoseStampedConstPtr& msg) {
 // ObjHistory::
 /* ============================== obj predictor ==============================
  */
-ObjPredictor::ObjPredictor(/* args */) {}
+ObjPredictor::ObjPredictor(/* args */) {
+}
 
-ObjPredictor::ObjPredictor(ros::NodeHandle& node) { this->node_handle_ = node; }
+ObjPredictor::ObjPredictor(ros::NodeHandle& node) {
+  this->node_handle_ = node;
+}
 
-ObjPredictor::~ObjPredictor() {}
+ObjPredictor::~ObjPredictor() {
+}
 
 void ObjPredictor::init() {
   /* get param */
@@ -67,17 +71,20 @@ void ObjPredictor::init() {
     pose_subs_.push_back(pose_sub);
   }
 
-  marker_sub_ = node_handle_.subscribe<visualization_msgs::Marker>("/dynamic/obj", 10,
-                                                                   &ObjPredictor::markerCallback, this);
+  marker_sub_ =
+      node_handle_.subscribe<visualization_msgs::Marker>("/dynamic/obj", 10, &ObjPredictor::markerCallback, this);
 
   /* update prediction */
-  predict_timer_ =
-      node_handle_.createTimer(ros::Duration(1 / predict_rate_), &ObjPredictor::predictCallback, this);
+  predict_timer_ = node_handle_.createTimer(ros::Duration(1 / predict_rate_), &ObjPredictor::predictCallback, this);
 }
 
-ObjPrediction ObjPredictor::getPredictionTraj() { return this->predict_trajs_; }
+ObjPrediction ObjPredictor::getPredictionTraj() {
+  return this->predict_trajs_;
+}
 
-ObjScale ObjPredictor::getObjScale() { return this->obj_scale_; }
+ObjScale ObjPredictor::getObjScale() {
+  return this->obj_scale_;
+}
 
 void ObjPredictor::predictPolyFit() {
   /* iterate all obj */
@@ -114,8 +121,8 @@ void ObjPredictor::predictPolyFit() {
         5 * pow(t1, 4) - 5 * pow(t2, 4);
     A.row(2) += -4 * lambda_ * temp.transpose();
 
-    temp << 0.0, 0.0, pow(t1, 2) - pow(t2, 2), 2 * pow(t1, 3) - 2 * pow(t2, 3),
-        3 * pow(t1, 4) - 3 * pow(t2, 4), 4 * pow(t1, 5) - 4 * pow(t2, 5);
+    temp << 0.0, 0.0, pow(t1, 2) - pow(t2, 2), 2 * pow(t1, 3) - 2 * pow(t2, 3), 3 * pow(t1, 4) - 3 * pow(t2, 4),
+        4 * pow(t1, 5) - 4 * pow(t2, 5);
     A.row(3) += -12 * lambda_ * temp.transpose();
 
     temp << 0.0, 0.0, 20 * pow(t1, 3) - 20 * pow(t2, 3), 45 * pow(t1, 4) - 45 * pow(t2, 4),

@@ -36,8 +36,7 @@ struct solar_system_coor {
   }
 
   void operator()(const container_type& p, container_type& dqdt) const {
-    for (size_t i = 0; i < n; ++i)
-      dqdt[i] = p[i] / m_masses[i];
+    for (size_t i = 0; i < n; ++i) dqdt[i] = p[i] / m_masses[i];
   }
 };
 //]
@@ -102,8 +101,7 @@ struct streaming_observer {
   void operator()(const State& x, double t) const {
     container_type& q = x.first;
     m_out << t;
-    for (size_t i = 0; i < q.size(); ++i)
-      m_out << "\t" << q[i];
+    for (size_t i = 0; i < q.size(); ++i) m_out << "\t" << q[i];
     m_out << "\n";
   }
 };
@@ -148,15 +146,14 @@ int main(int argc, char** argv) {
     p[i] -= pmean;
   }
 
-  for (size_t i = 0; i < n; ++i)
-    p[i] *= masses[i];
+  for (size_t i = 0; i < n; ++i) p[i] *= masses[i];
 
   //[ integration_solar_system
   typedef symplectic_rkn_sb3a_mclachlan<container_type> stepper_type;
   const double dt = 100.0;
 
   integrate_const(stepper_type(), make_pair(solar_system_coor(masses), solar_system_momentum(masses)),
-                  make_pair(boost::ref(q), boost::ref(p)), 0.0, 200000.0, dt, streaming_observer(cout));
+      make_pair(boost::ref(q), boost::ref(p)), 0.0, 200000.0, dt, streaming_observer(cout));
   //]
 
   return 0;

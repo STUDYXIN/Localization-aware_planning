@@ -47,10 +47,13 @@ struct OccupancyGrid {
 
 // Occupancy Grids List  --------------------------------
 class OccupancyGridList {
- public:
-  OccupancyGridList() { updateCounter = 0; }
+public:
+  OccupancyGridList() {
+    updateCounter = 0;
+  }
 
-  ~OccupancyGridList() {}
+  ~OccupancyGridList() {
+  }
 
   void PackMsg(multi_map_server::VerticalOccupancyGridList& msg) {
     msg.x = x;
@@ -81,7 +84,9 @@ class OccupancyGridList {
     for (list<OccupancyGrid>::iterator k = grids.begin(); k != grids.end(); k++) _grids.push_back((*k));
   }
 
-  inline int GetUpdateCounter() { return updateCounter; }
+  inline int GetUpdateCounter() {
+    return updateCounter;
+  }
 
   inline void SetUpdateCounterXY(int _updateCounter, double _x, double _y) {
     updateCounter = _updateCounter;
@@ -227,7 +232,7 @@ class OccupancyGridList {
     }
   }
 
- private:
+private:
   struct ComparePair {
     bool operator()(pair<int, int> p1, pair<int, int> p2) {
       if (p1.first != p2.first)
@@ -248,7 +253,7 @@ class OccupancyGridList {
 
 // 3D Map Object  ---------------------------------
 class Map3D {
- public:
+public:
   Map3D() {
     resolution = 0.1;
     decayInterval = -1;
@@ -398,8 +403,7 @@ class Map3D {
           vector<OccupancyGrid> grids;
           mapBase[my * mapX + mx]->GetOccupancyGrids(grids);
           for (unsigned int k = 0; k < grids.size(); k++) {
-            if ((grids[k].mass / (grids[k].upper - grids[k].lower + 1) > logOddOccupiedThr &&
-                 type == OCCUPIED) ||
+            if ((grids[k].mass / (grids[k].upper - grids[k].lower + 1) > logOddOccupiedThr && type == OCCUPIED) ||
                 (grids[k].mass / (grids[k].upper - grids[k].lower + 1) < logOddFreeThr && type == FREE)) {
               for (int mz = grids[k].lower; mz <= grids[k].upper; mz++) {
                 double x, y, z;
@@ -427,14 +431,26 @@ class Map3D {
     if (!updated && _decayInterval > 0) decayInterval = _decayInterval;
   }
 
-  inline double GetResolution() { return resolution; }
-  inline double GetMaxX() { return originX + mapX * resolution; }
-  inline double GetMinX() { return originX; }
-  inline double GetMaxY() { return originY + mapY * resolution; }
-  inline double GetMinY() { return originY; }
-  inline bool Updated() { return updated; }
+  inline double GetResolution() {
+    return resolution;
+  }
+  inline double GetMaxX() {
+    return originX + mapX * resolution;
+  }
+  inline double GetMinX() {
+    return originX;
+  }
+  inline double GetMaxY() {
+    return originY + mapY * resolution;
+  }
+  inline double GetMinY() {
+    return originY;
+  }
+  inline bool Updated() {
+    return updated;
+  }
 
- private:
+private:
   inline void WorldFrameToMapFrame(double x, double y, double z, int& mx, int& my, int& mz) {
     mx = (x - originX) / resolution;
     my = (y - originY) / resolution;
@@ -493,8 +509,7 @@ class Map3D {
       double r = pow(LOG_ODD_DECAY_RATE, dt);
       for (int mx = 0; mx < mapX; mx++)
         for (int my = 0; my < mapY; my++)
-          if (mapBase[my * mapX + mx])
-            mapBase[my * mapX + mx]->Decay(logOddOccupiedFixedThr, logOddFreeFixedThr, r);
+          if (mapBase[my * mapX + mx]) mapBase[my * mapX + mx]->Decay(logOddOccupiedFixedThr, logOddFreeFixedThr, r);
       prevDecayT = t;
     }
   }

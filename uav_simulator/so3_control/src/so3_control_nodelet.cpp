@@ -12,21 +12,23 @@
 #include <Eigen/Geometry>
 
 class SO3ControlNodelet : public nodelet::Nodelet {
- public:
+public:
   SO3ControlNodelet()
-      : position_cmd_updated_(false),
-        position_cmd_init_(false),
-        des_yaw_(0),
-        des_yaw_dot_(0),
-        current_yaw_(0),
-        enable_motors_(true),  // FIXME
-        use_external_yaw_(false) {}
+    : position_cmd_updated_(false)
+    , position_cmd_init_(false)
+    , des_yaw_(0)
+    , des_yaw_dot_(0)
+    , current_yaw_(0)
+    , enable_motors_(true)
+    ,  // FIXME
+    use_external_yaw_(false) {
+  }
 
   void onInit(void);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
- private:
+private:
   void publishSO3Command(void);
   void position_cmd_callback(const quadrotor_msgs::PositionCommand::ConstPtr& cmd);
   void odom_callback(const nav_msgs::Odometry::ConstPtr& odom);
@@ -98,10 +100,8 @@ void SO3ControlNodelet::position_cmd_callback(const quadrotor_msgs::PositionComm
 }
 
 void SO3ControlNodelet::odom_callback(const nav_msgs::Odometry::ConstPtr& odom) {
-  const Eigen::Vector3d position(odom->pose.pose.position.x, odom->pose.pose.position.y,
-                                 odom->pose.pose.position.z);
-  const Eigen::Vector3d velocity(odom->twist.twist.linear.x, odom->twist.twist.linear.y,
-                                 odom->twist.twist.linear.z);
+  const Eigen::Vector3d position(odom->pose.pose.position.x, odom->pose.pose.position.y, odom->pose.pose.position.z);
+  const Eigen::Vector3d velocity(odom->twist.twist.linear.x, odom->twist.twist.linear.y, odom->twist.twist.linear.z);
 
   current_yaw_ = tf::getYaw(odom->pose.pose.orientation);
 
@@ -166,18 +166,16 @@ void SO3ControlNodelet::onInit(void) {
 
   so3_command_pub_ = n.advertise<quadrotor_msgs::SO3Command>("so3_cmd", 10);
 
-  odom_sub_ =
-      n.subscribe("odom", 10, &SO3ControlNodelet::odom_callback, this, ros::TransportHints().tcpNoDelay());
-  position_cmd_sub_ = n.subscribe("position_cmd", 10, &SO3ControlNodelet::position_cmd_callback, this,
-                                  ros::TransportHints().tcpNoDelay());
+  odom_sub_ = n.subscribe("odom", 10, &SO3ControlNodelet::odom_callback, this, ros::TransportHints().tcpNoDelay());
+  position_cmd_sub_ = n.subscribe(
+      "position_cmd", 10, &SO3ControlNodelet::position_cmd_callback, this, ros::TransportHints().tcpNoDelay());
 
-  enable_motors_sub_ = n.subscribe("motors", 2, &SO3ControlNodelet::enable_motors_callback, this,
-                                   ros::TransportHints().tcpNoDelay());
-  corrections_sub_ = n.subscribe("corrections", 10, &SO3ControlNodelet::corrections_callback, this,
-                                 ros::TransportHints().tcpNoDelay());
+  enable_motors_sub_ =
+      n.subscribe("motors", 2, &SO3ControlNodelet::enable_motors_callback, this, ros::TransportHints().tcpNoDelay());
+  corrections_sub_ = n.subscribe(
+      "corrections", 10, &SO3ControlNodelet::corrections_callback, this, ros::TransportHints().tcpNoDelay());
 
-  imu_sub_ =
-      n.subscribe("imu", 10, &SO3ControlNodelet::imu_callback, this, ros::TransportHints().tcpNoDelay());
+  imu_sub_ = n.subscribe("imu", 10, &SO3ControlNodelet::imu_callback, this, ros::TransportHints().tcpNoDelay());
 }
 
 #include <pluginlib/class_list_macros.h>

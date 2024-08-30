@@ -63,8 +63,7 @@ public:
   size_t do_count;
 
   template <class System, class StateIn, class DerivIn, class StateOut>
-  void do_step(System system, const StateIn& in, const DerivIn& dxdt, value_type t, StateOut& out,
-               value_type dt) {
+  void do_step(System system, const StateIn& in, const DerivIn& dxdt, value_type t, StateOut& out, value_type dt) {
     m_stepper.do_step(system, in, dxdt, t, out, dt);
     ++do_count;
   }
@@ -96,16 +95,13 @@ BOOST_AUTO_TEST_CASE(test_adams_bashforth_coefficients) {
 BOOST_AUTO_TEST_CASE(test_rotating_buffer) {
   const size_t N = 5;
   detail::rotating_buffer<size_t, N> buffer;
-  for (size_t i = 0; i < N; ++i)
-    buffer[i] = i;
+  for (size_t i = 0; i < N; ++i) buffer[i] = i;
 
-  for (size_t i = 0; i < N; ++i)
-    BOOST_CHECK_EQUAL(buffer[i], i);
+  for (size_t i = 0; i < N; ++i) BOOST_CHECK_EQUAL(buffer[i], i);
 
   buffer.rotate();
 
-  for (size_t i = 1; i < N; ++i)
-    BOOST_CHECK_EQUAL(buffer[i], i - 1);
+  for (size_t i = 1; i < N; ++i) BOOST_CHECK_EQUAL(buffer[i], i - 1);
   BOOST_CHECK_EQUAL(buffer[0], size_t(N - 1));
 }
 
@@ -177,7 +173,7 @@ BOOST_AUTO_TEST_CASE(test_auto_initialization) {
   state_type x = { { 10.0, 10.0, 10.0 } };
 
   adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations,
-                  initially_resizer, rk4_decorator<state_type> >
+      initially_resizer, rk4_decorator<state_type> >
       adams;
 
   adams.initializing_stepper().do_count = 0;
@@ -202,7 +198,7 @@ BOOST_AUTO_TEST_CASE(test_manual_initialization) {
   state_type x = { { 10.0, 10.0, 10.0 } };
 
   adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations,
-                  initially_resizer, rk4_decorator<state_type> >
+      initially_resizer, rk4_decorator<state_type> >
       adams;
 
   adams.initializing_stepper().do_count = 0;

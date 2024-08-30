@@ -69,8 +69,8 @@ void FastPlannerManager::planYawActMap(const Eigen::Vector3d& start_yaw) {
   yaw.setZero();
   // boundary state
   Eigen::Matrix3d states2pts;
-  states2pts << 1.0, -dt_yaw, (1 / 3.0) * dt_yaw * dt_yaw, 1.0, 0.0, -(1 / 6.0) * dt_yaw * dt_yaw, 1.0,
-      dt_yaw, (1 / 3.0) * dt_yaw * dt_yaw;
+  states2pts << 1.0, -dt_yaw, (1 / 3.0) * dt_yaw * dt_yaw, 1.0, 0.0, -(1 / 6.0) * dt_yaw * dt_yaw, 1.0, dt_yaw,
+      (1 / 3.0) * dt_yaw * dt_yaw;
   yaw.block(0, 0, 3, 1) = states2pts * start_yaw3d;
 
   Eigen::Vector3d end_v = local_data_.velocity_traj_.evaluateDeBoorT(local_data_.duration_ - 0.1);
@@ -80,13 +80,12 @@ void FastPlannerManager::planYawActMap(const Eigen::Vector3d& start_yaw) {
 
   // call B-spline optimization solver
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
-  vector<Eigen::Vector3d> start = {Eigen::Vector3d(start_yaw3d[0], 0, 0),
-                                   Eigen::Vector3d(start_yaw3d[1], 0, 0),
-                                   Eigen::Vector3d(start_yaw3d[2], 0, 0)};
-  vector<Eigen::Vector3d> end = {Eigen::Vector3d(end_yaw[0], 0, 0), Eigen::Vector3d(0, 0, 0)};
+  vector<Eigen::Vector3d> start = { Eigen::Vector3d(start_yaw3d[0], 0, 0), Eigen::Vector3d(start_yaw3d[1], 0, 0),
+    Eigen::Vector3d(start_yaw3d[2], 0, 0) };
+  vector<Eigen::Vector3d> end = { Eigen::Vector3d(end_yaw[0], 0, 0), Eigen::Vector3d(0, 0, 0) };
   bspline_optimizers_[1]->setBoundaryStates(start, end);
-  int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START |
-                  BsplineOptimizer::END;
+  int cost_func =
+      BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::END;
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
 
   // update traj info
@@ -123,8 +122,8 @@ void FastPlannerManager::test() {
   int vid = 0;
 }
 
-bool FastPlannerManager::localExplore(Eigen::Vector3d start, Eigen::Vector3d start_vel,
-                                      Eigen::Vector3d start_acc, Eigen::Vector3d goal) {
+bool FastPlannerManager::localExplore(
+    Eigen::Vector3d start, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc, Eigen::Vector3d goal) {
   local_data_.start_time_ = ros::Time::now();
 
   Eigen::Vector3d gi;

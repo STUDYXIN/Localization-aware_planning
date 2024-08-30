@@ -6,7 +6,9 @@
 #include <sensor_msgs/Imu.h>
 #include <uav_utils/geometry_utils.h>
 
-typedef struct _Control { double rpm[4]; } Control;
+typedef struct _Control {
+  double rpm[4];
+} Control;
 
 typedef struct _Command {
   float force[3];
@@ -37,9 +39,7 @@ static Control getControl(const QuadrotorSimulator::Quadrotor& quad, const Comma
 
   const double d = quad.getArmLength();
   const Eigen::Matrix3f J = quad.getInertia().cast<float>();
-  const float I[3][3] = { { J(0, 0), J(0, 1), J(0, 2) },
-                          { J(1, 0), J(1, 1), J(1, 2) },
-                          { J(2, 0), J(2, 1), J(2, 2) } };
+  const float I[3][3] = { { J(0, 0), J(0, 1), J(0, 2) }, { J(1, 0), J(1, 1), J(1, 2) }, { J(2, 0), J(2, 1), J(2, 2) } };
   const QuadrotorSimulator::Quadrotor::State state = quad.getState();
 
   // Rotation, may use external yaw
@@ -47,8 +47,7 @@ static Control getControl(const QuadrotorSimulator::Quadrotor& quad, const Comma
   Eigen::Vector3d ypr = _ypr;
   if (cmd.use_external_yaw) ypr[0] = cmd.current_yaw;
   Eigen::Matrix3d R;
-  R = Eigen::AngleAxisd(ypr[0], Eigen::Vector3d::UnitZ()) *
-      Eigen::AngleAxisd(ypr[1], Eigen::Vector3d::UnitY()) *
+  R = Eigen::AngleAxisd(ypr[0], Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(ypr[1], Eigen::Vector3d::UnitY()) *
       Eigen::AngleAxisd(ypr[2], Eigen::Vector3d::UnitX());
   float R11 = R(0, 0);
   float R12 = R(0, 1);
@@ -84,8 +83,8 @@ static Control getControl(const QuadrotorSimulator::Quadrotor& quad, const Comma
   float Rd32 = 2 * (cmd.qy * cmd.qz + cmd.qw * cmd.qx);
   float Rd33 = cmd.qw * cmd.qw - cmd.qx * cmd.qx - cmd.qy * cmd.qy + cmd.qz * cmd.qz;
 
-  float Psi = 0.5f * (3.0f - (Rd11 * R11 + Rd21 * R21 + Rd31 * R31 + Rd12 * R12 + Rd22 * R22 +
-                              Rd32 * R32 + Rd13 * R13 + Rd23 * R23 + Rd33 * R33));
+  float Psi = 0.5f * (3.0f - (Rd11 * R11 + Rd21 * R21 + Rd31 * R31 + Rd12 * R12 + Rd22 * R22 + Rd32 * R32 + Rd13 * R13 +
+                                 Rd23 * R23 + Rd33 * R33));
 
   float force = 0;
   if (Psi < 1.0f)  // Position control stability guaranteed only when Psi < 1
@@ -99,12 +98,12 @@ static Control getControl(const QuadrotorSimulator::Quadrotor& quad, const Comma
   float eOm2 = Om2;
   float eOm3 = Om3;
 
-  float in1 = Om2 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3) -
-      Om3 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3);
-  float in2 = Om3 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3) -
-      Om1 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3);
-  float in3 = Om1 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3) -
-      Om2 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3);
+  float in1 =
+      Om2 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3) - Om3 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3);
+  float in2 =
+      Om3 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3) - Om1 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3);
+  float in3 =
+      Om1 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3) - Om2 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3);
   /*
     // Robust Control --------------------------------------------
     float c2       = 0.6;
@@ -179,10 +178,10 @@ int main(int argc, char** argv) {
   ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 100);
   ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu", 10);
   ros::Subscriber cmd_sub = n.subscribe("cmd", 100, &cmd_callback, ros::TransportHints().tcpNoDelay());
-  ros::Subscriber f_sub = n.subscribe("force_disturbance", 100, &force_disturbance_callback,
-                                      ros::TransportHints().tcpNoDelay());
-  ros::Subscriber m_sub = n.subscribe("moment_disturbance", 100, &moment_disturbance_callback,
-                                      ros::TransportHints().tcpNoDelay());
+  ros::Subscriber f_sub =
+      n.subscribe("force_disturbance", 100, &force_disturbance_callback, ros::TransportHints().tcpNoDelay());
+  ros::Subscriber m_sub =
+      n.subscribe("moment_disturbance", 100, &moment_disturbance_callback, ros::TransportHints().tcpNoDelay());
 
   QuadrotorSimulator::Quadrotor quad;
   double _init_x, _init_y, _init_z;

@@ -6,10 +6,17 @@ namespace fast_planner {
 
 FeatureMap::FeatureMap() {
 }
+FeatureMap::FeatureMap() {
+}
 
 FeatureMap::~FeatureMap() {
 }
+FeatureMap::~FeatureMap() {
+}
 
+void FeatureMap::setMap(shared_ptr<SDFMap>& map) {
+  this->sdf_map = map;
+}
 void FeatureMap::setMap(shared_ptr<SDFMap>& map) {
   this->sdf_map = map;
 }
@@ -110,37 +117,8 @@ void FeatureMap::getFeatures(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>
 }
 
 void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
-  // fd_->odom_pos_(0) = msg->pose.pose.position.x;
-  // fd_->odom_pos_(1) = msg->pose.pose.position.y;
-  // fd_->odom_pos_(2) = msg->pose.pose.position.z;
-
-  // fd_->odom_vel_(0) = msg->twist.twist.linear.x;
-  // fd_->odom_vel_(1) = msg->twist.twist.linear.y;
-  // fd_->odom_vel_(2) = msg->twist.twist.linear.z;
-
-  // fd_->odom_orient_.w() = msg->pose.pose.orientation.w;
-  // fd_->odom_orient_.x() = msg->pose.pose.orientation.x;
-  // fd_->odom_orient_.y() = msg->pose.pose.orientation.y;
-  // fd_->odom_orient_.z() = msg->pose.pose.orientation.z;
-
-  // Eigen::Vector3d rot_x = fd_->odom_orient_.toRotationMatrix().block<3, 1>(0, 0);
-  // fd_->odom_yaw_ = atan2(rot_x(1), rot_x(0));
-
-  // fd_->have_odom_ = true;
-  // pubDebugmsg(2);
-}
-
-void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose) {
-  Eigen::Vector3d camera_p;
-  camera_p(0) = pose->pose.position.x;
-  camera_p(1) = pose->pose.position.y;
-  camera_p(2) = pose->pose.position.z;
-  Eigen::Quaterniond camera_q =
-      Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
   vector<Eigen::Vector3d> visual_points_vec;
-  // ROS_WARN("[FeatureMap] -----------------------------------");
-  int feature_num = get_NumCloud_using_PosOrient(camera_p, camera_q, visual_points_vec);
-  // ROS_WARN("[FeatureMap] DEBUG 1");
+  int feature_num = get_NumCloud_using_Odom(msg, visual_points_vec);
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
   pointcloud->width = visual_points_vec.size();
@@ -158,6 +136,33 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
   sensor_msgs::PointCloud2 pointcloud_msg;
   pcl::toROSMsg(*pointcloud, pointcloud_msg);
   visual_feature_cloud_pub_.publish(pointcloud_msg);
+}
+
+void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose) {
+  Eigen::Vector3d camera_p;
+  camera_p(0) = pose->pose.position.x;
+  camera_p(1) = pose->pose.position.y;
+  camera_p(2) = pose->pose.position.z;
+  Eigen::Quaterniond camera_q =
+      Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
+  vector<Eigen::Vector3d> visual_points_vec;
+  int feature_num = get_NumCloud_using_CamPosOrient(camera_p, camera_q, visual_points_vec);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pointcloud->width = visual_points_vec.size();
+  pointcloud->height = 1;
+  pointcloud->is_dense = true;
+  pointcloud->header.frame_id = "world";
+  pointcloud->points.resize(pointcloud->width);
+  for (size_t i = 0; i < visual_points_vec.size(); ++i) {
+    pointcloud->points[i].x = visual_points_vec[i].x();
+    pointcloud->points[i].y = visual_points_vec[i].y();
+    pointcloud->points[i].z = visual_points_vec[i].z();
+  }
+
+  // ROS_WARN("[FeatureMap] Visualize feature size: %d", static_cast<int>(pointcloud->points.size()));
+  sensor_msgs::PointCloud2 pointcloud_msg;
+  pcl::toROSMsg(*pointcloud, pointcloud_msg);
+  // visual_feature_cloud_pub_.publish(pointcloud_msg);
   pubDebugmsg(2);
 }
 
@@ -202,12 +207,9 @@ void FeatureMap::pubDebugmsg(int debugMode) {
   }
 }
 
-int FeatureMap::get_NumCloud_using_PosOrient(
+int FeatureMap::get_NumCloud_using_CamPosOrient(
     const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res) {
-  if (features_cloud_.empty()) {
-    ROS_ERROR("Feature Cloud Empty!!!");
-    return 0;
-  }
+  if (features_cloud_.empty()) return 0;
 
   res.clear();
 
@@ -232,4 +234,65 @@ int FeatureMap::get_NumCloud_using_PosOrient(
   return res.size();
 }
 
+int FeatureMap::get_NumCloud_using_CamPosOrient(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient) {
+  if (features_cloud_.empty()) return 0;
+  int feature_num = 0;
+  pcl::PointXYZ searchPoint;
+  searchPoint.x = pos(0);
+  searchPoint.y = pos(1);
+  searchPoint.z = pos(2);
+
+  vector<int> pointIdxRadiusSearch;
+  vector<float> pointRadiusSquaredDistance;
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+
+  for (const auto& index : pointIdxRadiusSearch) {
+    Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (camera_param.is_in_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
+    {
+      if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
+        feature_num++;
+    }
+  }
+  return feature_num;
+}
+
+int FeatureMap::get_NumCloud_using_Odom(
+    const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res) {
+  Matrix4d Pose_receive = Matrix4d::Identity();
+  Pose_receive.block<3, 3>(0, 0) = orient.toRotationMatrix();
+  Pose_receive.block<3, 1>(0, 3) = pos;
+  Matrix4d camera_pose = Pose_receive * camera_param.sensor2body;
+  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
+  Eigen::Matrix3d cam_rot_matrix = camera_pose.block<3, 3>(0, 0);
+  Eigen::Quaterniond orient_transformed(cam_rot_matrix);
+
+  return get_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed, res);
+}
+
+int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<Eigen::Vector3d>& res) {
+  Eigen::Vector3d pos(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+  Eigen::Quaterniond orient(
+      msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
+  return get_NumCloud_using_Odom(pos, orient, res);
+}
+
+int FeatureMap::get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient) {
+  Matrix4d Pose_receive = Matrix4d::Identity();
+  Pose_receive.block<3, 3>(0, 0) = orient.toRotationMatrix();
+  Pose_receive.block<3, 1>(0, 3) = pos;
+  Matrix4d camera_pose = Pose_receive * camera_param.sensor2body;
+  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
+  Eigen::Matrix3d cam_rot_matrix = camera_pose.block<3, 3>(0, 0);
+  Eigen::Quaterniond orient_transformed(cam_rot_matrix);
+
+  return get_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed);
+}
+
+int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg) {
+  Eigen::Vector3d pos(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+  Eigen::Quaterniond orient(
+      msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
+  return get_NumCloud_using_Odom(pos, orient);
+}
 }  // namespace fast_planner

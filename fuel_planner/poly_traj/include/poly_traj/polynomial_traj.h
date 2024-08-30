@@ -9,11 +9,13 @@ using std::vector;
 namespace fast_planner {
 // A segment of polynomial trajectory
 class Polynomial {
- public:
+public:
   typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
-  Polynomial() {}
-  ~Polynomial() {}
+  Polynomial() {
+  }
+  ~Polynomial() {
+  }
 
   Polynomial(const Vector6d& cx, const Vector6d& cy, const Vector6d& cz, const double& time) {
     cx_ = cx;
@@ -42,9 +44,11 @@ class Polynomial {
   }
 
   // Get the duration of the polynomial
-  double getTime() const { return time_; }
+  double getTime() const {
+    return time_;
+  }
 
- private:
+private:
   // Time of the polynomial segment
   double time_;
 
@@ -54,9 +58,11 @@ class Polynomial {
 };
 
 class PolynomialTraj {
- public:
-  PolynomialTraj(/* args */) {}
-  ~PolynomialTraj() {}
+public:
+  PolynomialTraj(/* args */) {
+  }
+  ~PolynomialTraj() {
+  }
 
   void reset() {
     segments_.clear();
@@ -147,11 +153,10 @@ class PolynomialTraj {
   // input : position of waypoints, start/end vel and acc, segment time
   // Pos: Nx3
   static void waypointsTraj(const Eigen::MatrixXd& positions, const Eigen::Vector3d& start_vel,
-                            const Eigen::Vector3d& end_vel, const Eigen::Vector3d& start_acc,
-                            const Eigen::Vector3d& end_acc, const Eigen::VectorXd& times,
-                            PolynomialTraj& poly_traj);
+      const Eigen::Vector3d& end_vel, const Eigen::Vector3d& start_acc, const Eigen::Vector3d& end_acc,
+      const Eigen::VectorXd& times, PolynomialTraj& poly_traj);
 
- private:
+private:
   vector<Polynomial> segments_;
   vector<double> times_;  // Time duration of each segment
 
@@ -161,8 +166,8 @@ class PolynomialTraj {
   double length_;
 };
 
-PolynomialTraj fastLine4deg(Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc,
-                            double max_jerk);
+PolynomialTraj fastLine4deg(
+    Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc, double max_jerk);
 PolynomialTraj fastLine3deg(Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc);
 }  // namespace fast_planner
 

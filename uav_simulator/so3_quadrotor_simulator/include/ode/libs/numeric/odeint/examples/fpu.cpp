@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
   fpu fpu_instance(8.0);
 
   integrate_const(stepper_type(), fpu_instance, make_pair(boost::ref(q), boost::ref(p)), 0.0, 1000.0, dt,
-                  streaming_observer(cout, fpu_instance, 10));
+      streaming_observer(cout, fpu_instance, 10));
   //]
 
   return 0;

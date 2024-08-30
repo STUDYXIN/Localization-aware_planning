@@ -82,8 +82,7 @@ int main(int argc, char** argv) {
 
   /* create SDF map of the obstacles */
   for (size_t i = 0; i < cloud_map.points.size(); ++i) {
-    sdf_map->setOccupancy(
-        Eigen::Vector3d(cloud_map.points[i].x, cloud_map.points[i].y, cloud_map.points[i].z));
+    sdf_map->setOccupancy(Eigen::Vector3d(cloud_map.points[i].x, cloud_map.points[i].y, cloud_map.points[i].z));
   }
   sdf_map->updateESDF3d(true);
 
@@ -158,8 +157,8 @@ int main(int argc, char** argv) {
   // 0,
   //                         0);
 
-  visualizer->drawBspline(traj_opt, 0.1, Eigen::Vector4d(0.0, 1.0, 0.0, 1), true, 0.12,
-                          Eigen::Vector4d(0, 0, 1, 1), 1, 1);
+  visualizer->drawBspline(
+      traj_opt, 0.1, Eigen::Vector4d(0.0, 1.0, 0.0, 1), true, 0.12, Eigen::Vector4d(0, 0, 1, 1), 1, 1);
 
   ros::spin();
 

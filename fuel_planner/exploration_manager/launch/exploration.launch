@@ -6,7 +6,7 @@
 
   <arg name="init_x" value="-13.0"/>
   <arg name="init_y" value="0.0"/>
-  <arg name="init_z" value="1.0"/> 
+  <arg name="init_z" value="1.0"/>
   <arg name="feature_filename_" default="$(find map_publisher)/data/feature_map_sample1.ply" />
 
 
@@ -88,15 +88,15 @@
     <param name="perception_utils/right_angle" value="0.68901" type="double"/>
     <param name="perception_utils/max_dist" value="4.5" type="double"/>
     <param name="perception_utils/vis_dist" value="1.0" type="double"/>
-    
+
 
   </node>
 
   <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
-    <remap from="~odom" to="$(arg odom_topic)"/>        
+    <remap from="~odom" to="$(arg odom_topic)"/>
     <remap from="~goal" to="/move_base_simple/goal"/>
     <remap from="~traj_start_trigger" to="/traj_start_trigger" />
-    <param name="waypoint_type" value="manual-lonely-waypoint"/>    
+    <param name="waypoint_type" value="manual-lonely-waypoint"/>
   </node>
 
   <!-- use simulator -->

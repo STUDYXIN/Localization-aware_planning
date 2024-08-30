@@ -102,8 +102,7 @@ int main(int /* argc */, char** /* argv */) {
 
   //[ integrate_const_loop
   const double dt = 0.01;
-  for (double t = 0.0; t < 10.0; t += dt)
-    stepper.do_step(harmonic_oscillator, x, t, dt);
+  for (double t = 0.0; t < 10.0; t += dt) stepper.do_step(harmonic_oscillator, x, t, dt);
   //]
 
   //[ define_adapt_stepper
@@ -119,31 +118,29 @@ int main(int /* argc */, char** /* argv */) {
   {
     //[integrate_adapt_full
     double abs_err = 1.0e-10, rel_err = 1.0e-6, a_x = 1.0, a_dxdt = 1.0;
-    controlled_stepper_type controlled_stepper(
-        default_error_checker<double>(abs_err, rel_err, a_x, a_dxdt));
+    controlled_stepper_type controlled_stepper(default_error_checker<double>(abs_err, rel_err, a_x, a_dxdt));
     integrate_adaptive(controlled_stepper, harmonic_oscillator, x, 0.0, 10.0, 0.01);
     //]
   }
 
   //[integrate_adapt_make_controlled
-  integrate_adaptive(make_controlled<error_stepper_type>(1.0e-10, 1.0e-6), harmonic_oscillator, x, 0.0,
-                     10.0, 0.01);
+  integrate_adaptive(make_controlled<error_stepper_type>(1.0e-10, 1.0e-6), harmonic_oscillator, x, 0.0, 10.0, 0.01);
   //]
 
   //[integrate_adapt_make_controlled_alternative
-  integrate_adaptive(make_controlled(1.0e-10, 1.0e-6, error_stepper_type()), harmonic_oscillator, x, 0.0,
-                     10.0, 0.01);
-//]
+  integrate_adaptive(make_controlled(1.0e-10, 1.0e-6, error_stepper_type()), harmonic_oscillator, x, 0.0, 10.0, 0.01);
+  //]
 
 #ifdef BOOST_NUMERIC_ODEINT_CXX11
   //[ define_const_stepper_cpp11
   runge_kutta4<state_type> stepper;
-  integrate_const(stepper,
-                  [](const state_type& x, state_type& dxdt, double t) {
-                    dxdt[0] = x[1];
-                    dxdt[1] = -x[0] - gam * x[1];
-                  },
-                  x, 0.0, 10.0, 0.01);
+  integrate_const(
+      stepper,
+      [](const state_type& x, state_type& dxdt, double t) {
+        dxdt[0] = x[1];
+        dxdt[1] = -x[0] - gam * x[1];
+      },
+      x, 0.0, 10.0, 0.01);
 //]
 #endif
 }

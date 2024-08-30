@@ -168,15 +168,8 @@ void rcvOdometryCallbck(const nav_msgs::Odometry odom) {
   if (odom.child_frame_id == "X" || odom.child_frame_id == "O") return;
   _has_odom = true;
 
-  _state = {odom.pose.pose.position.x,
-            odom.pose.pose.position.y,
-            odom.pose.pose.position.z,
-            odom.twist.twist.linear.x,
-            odom.twist.twist.linear.y,
-            odom.twist.twist.linear.z,
-            0.0,
-            0.0,
-            0.0};
+  _state = { odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z, odom.twist.twist.linear.x,
+    odom.twist.twist.linear.y, odom.twist.twist.linear.z, 0.0, 0.0, 0.0 };
 }
 
 int i = 0;
@@ -202,8 +195,7 @@ void pubSensedPoints() {
 
   if (isnan(searchPoint.x) || isnan(searchPoint.y) || isnan(searchPoint.z)) return;
 
-  if (kdtreeLocalMap.radiusSearch(searchPoint, _sensing_range, pointIdxRadiusSearch,
-                                  pointRadiusSquaredDistance) > 0) {
+  if (kdtreeLocalMap.radiusSearch(searchPoint, _sensing_range, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0) {
     for (size_t i = 0; i < pointIdxRadiusSearch.size(); ++i) {
       pt = cloudMap.points[pointIdxRadiusSearch[i]];
       localMap.points.push_back(pt);

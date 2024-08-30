@@ -47,8 +47,7 @@ struct streaming_observer {
   template <class State, class Time>
   void operator()(const State& x, Time t) const {
     m_out << t;
-    for (size_t i = 0; i < x.size(); ++i)
-      m_out << "\t" << x[i];
+    for (size_t i = 0; i < x.size(); ++i) m_out << "\t" << x[i];
     m_out << "\n";
   }
 };
@@ -62,7 +61,7 @@ int main(int argc, char** argv) {
 
   cout.precision(1000);
   integrate_const(runge_kutta4<state_type, value_type>(), lorenz(), x, value_type(0.0), value_type(10.0),
-                  value_type(value_type(1.0) / value_type(10.0)), streaming_observer(cout));
+      value_type(value_type(1.0) / value_type(10.0)), streaming_observer(cout));
   //]
 
   return 0;

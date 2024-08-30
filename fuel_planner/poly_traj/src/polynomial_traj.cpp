@@ -4,9 +4,8 @@
 
 namespace fast_planner {
 void PolynomialTraj::waypointsTraj(const Eigen::MatrixXd& positions, const Eigen::Vector3d& start_vel,
-                                   const Eigen::Vector3d& end_vel, const Eigen::Vector3d& start_acc,
-                                   const Eigen::Vector3d& end_acc, const Eigen::VectorXd& times,
-                                   PolynomialTraj& poly_traj) {
+    const Eigen::Vector3d& end_vel, const Eigen::Vector3d& start_acc, const Eigen::Vector3d& end_acc,
+    const Eigen::VectorXd& times, PolynomialTraj& poly_traj) {
   const int seg_num = times.size();
 
   // Helper to construct the mapping matrix

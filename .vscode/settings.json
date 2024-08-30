@@ -1,20 +1,22 @@
 {
     "python.autoComplete.extraPaths": [
+        "/home/star/ActiveSlam/rrt4/devel/lib/python3/dist-packages",
+        "/home/star/ActiveSlam/new_planner/devel/lib/python3/dist-packages",
         "/home/star/ActiveSlam/my_git/devel/lib/python3/dist-packages",
-        "/home/star/ActiveSlam/ActiveSlam_airsim/devel/lib/python3/dist-packages",
         "/opt/ros/noetic/lib/python3/dist-packages"
     ],
     "python.analysis.extraPaths": [
+        "/home/star/ActiveSlam/rrt4/devel/lib/python3/dist-packages",
+        "/home/star/ActiveSlam/new_planner/devel/lib/python3/dist-packages",
         "/home/star/ActiveSlam/my_git/devel/lib/python3/dist-packages",
-        "/home/star/ActiveSlam/ActiveSlam_airsim/devel/lib/python3/dist-packages",
         "/opt/ros/noetic/lib/python3/dist-packages"
     ],
+    "editor.formatOnSave": true,
+    "clang-format.executable": "/usr/bin/clang-format",
     "files.associations": {
-        "*.ipp": "cpp",
-        "array": "cpp",
-        "string_view": "cpp",
-        "hash_map": "cpp",
-        "hash_set": "cpp",
+        "fstream": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -26,6 +28,7 @@
         "ctime": "cpp",
         "cwchar": "cpp",
         "cwctype": "cpp",
+        "array": "cpp",
         "atomic": "cpp",
         "strstream": "cpp",
         "*.tcc": "cpp",
@@ -36,8 +39,6 @@
         "cstdint": "cpp",
         "deque": "cpp",
         "list": "cpp",
-        "unordered_map": "cpp",
-        "unordered_set": "cpp",
         "vector": "cpp",
         "exception": "cpp",
         "algorithm": "cpp",
@@ -52,11 +53,13 @@
         "ratio": "cpp",
         "set": "cpp",
         "string": "cpp",
+        "string_view": "cpp",
         "system_error": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
-        "fstream": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
         "initializer_list": "cpp",
         "iomanip": "cpp",
         "iosfwd": "cpp",
@@ -76,8 +79,6 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "bit": "cpp",
-        "future": "cpp",
-        "core": "cpp"
+        "bit": "cpp"
     }
 }

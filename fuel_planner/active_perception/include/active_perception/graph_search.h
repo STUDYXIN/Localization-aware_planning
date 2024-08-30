@@ -26,19 +26,20 @@ namespace fast_planner {
 // GraphSearch that operates on different types of node using Dijkstra algorithm
 template <typename NodeT>
 class GraphSearch {
- public:
+public:
   GraphSearch() {
     node_num_ = 0;
     edge_num_ = 0;
   }
-  ~GraphSearch() {}
+  ~GraphSearch() {
+  }
 
   void print();
   void addNode(const shared_ptr<NodeT>& node);
   void addEdge(const int& from, const int& to);
   void DijkstraSearch(const int& start, const int& goal, vector<shared_ptr<NodeT>>& path);
 
- private:
+private:
   vector<shared_ptr<NodeT>> nodes_;
   int node_num_;
   int edge_num_;
@@ -46,7 +47,7 @@ class GraphSearch {
 
 template <typename NodeT>
 class NodeCompare {
- public:
+public:
   bool operator()(const shared_ptr<NodeT>& node1, const shared_ptr<NodeT>& node2) {
     return node1->g_value_ > node2->g_value_;
   }

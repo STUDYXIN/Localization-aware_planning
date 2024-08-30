@@ -49,8 +49,8 @@ void fusionB_v2(int* sol_blue, int* sol_red);
 GainType off_gen(int* sol_blue, int* sol_red, int* offspring, int* label_list);
 
 int n_cities, n_cand;
-int n_partitions_size2, n_partitions_before_fusion, n_partitions_after_fusion1,
-    n_partitions_after_fusion2, n_partitions_after_fusion3;
+int n_partitions_size2, n_partitions_before_fusion, n_partitions_after_fusion1, n_partitions_after_fusion2,
+    n_partitions_after_fusion3;
 int n_partitions_after_fusion4, n_partitions_after_fusion5, n_partitions_after_fusionB;
 Node** Map2Node;
 
@@ -58,11 +58,10 @@ int* alloc_vectori(int lines);
 int** alloc_matrixi(int lines, int collums);
 void dealloc_matrixi(int** Matrix, int lines);
 int weight(int i, int j);
-int d4_vertices_id(int* solution_blue, int* solution_red, int* d4_vertices, int* common_edges_blue,
-                   int* common_edges_red);
+int d4_vertices_id(
+    int* solution_blue, int* solution_red, int* d4_vertices, int* common_edges_blue, int* common_edges_red);
 void insert_ghost(int* solution, int* solution_p2, int* d4_vertices, int* label_list_inv);
-void tourTable(int* solution_blue_p2, int* solution_red_p2, int* solution_red, int* label_list,
-               int* label_list_inv, int* vector_comp, int n_new, int* common_edges_blue_p2,
-               int* common_edges_red_p2);
+void tourTable(int* solution_blue_p2, int* solution_red_p2, int* solution_red, int* label_list, int* label_list_inv,
+    int* vector_comp, int n_new, int* common_edges_blue_p2, int* common_edges_red_p2);
 
 #endif

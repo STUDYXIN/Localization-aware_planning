@@ -79,10 +79,9 @@ int main(int argc, char** argv) {
   //[ integrate_stiff_system
   vector_type x(2, 1.0);
 
-  size_t num_of_steps =
-      integrate_const(make_dense_output<rosenbrock4<double> >(1.0e-6, 1.0e-6),
-                      make_pair(stiff_system(), stiff_system_jacobi()), x, 0.0, 50.0, 0.01,
-                      cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << "\n");
+  size_t num_of_steps = integrate_const(make_dense_output<rosenbrock4<double> >(1.0e-6, 1.0e-6),
+      make_pair(stiff_system(), stiff_system_jacobi()), x, 0.0, 50.0, 0.01,
+      cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << "\n");
   //]
   clog << num_of_steps << endl;
 
@@ -93,9 +92,9 @@ int main(int argc, char** argv) {
 
   vector_type x2(2, 1.0);
 
-  size_t num_of_steps2 = integrate_const(
-      make_dense_output<runge_kutta_dopri5<vector_type> >(1.0e-6, 1.0e-6), stiff_system(), x2, 0.0, 50.0,
-      0.01, cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << "\n");
+  size_t num_of_steps2 =
+      integrate_const(make_dense_output<runge_kutta_dopri5<vector_type> >(1.0e-6, 1.0e-6), stiff_system(), x2, 0.0,
+          50.0, 0.01, cout << phoenix::arg_names::arg2 << " " << phoenix::arg_names::arg1[0] << "\n");
   //]
   clog << num_of_steps2 << endl;
 

@@ -3,7 +3,7 @@
 using std::cout;
 using std::endl;
 namespace fast_planner {
-PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh) {
+PlanningVisualization::PlanningVisualization(ros::NodeHandle& nh) {
   node = nh;
 
   traj_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/trajectory", 100);
@@ -15,9 +15,8 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh) {
   predict_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/prediction", 100);
   pubs_.push_back(predict_pub_);
 
-  visib_pub_ = node.advertise<visualization_msgs::Marker>(
-      "/planning_vis/"
-      "visib_constraint",
+  visib_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/"
+                                                          "visib_constraint",
       100);
   pubs_.push_back(visib_pub_);
 
@@ -37,9 +36,8 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh) {
   last_frontier_num_ = 0;
 }
 
-void PlanningVisualization::fillBasicInfo(visualization_msgs::Marker &mk, const Eigen::Vector3d &scale,
-                                          const Eigen::Vector4d &color, const string &ns, const int &id,
-                                          const int &shape) {
+void PlanningVisualization::fillBasicInfo(visualization_msgs::Marker& mk, const Eigen::Vector3d& scale,
+    const Eigen::Vector4d& color, const string& ns, const int& id, const int& shape) {
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
   mk.id = id;
@@ -61,8 +59,7 @@ void PlanningVisualization::fillBasicInfo(visualization_msgs::Marker &mk, const 
   mk.scale.z = scale[2];
 }
 
-void PlanningVisualization::fillGeometryInfo(visualization_msgs::Marker &mk,
-                                             const vector<Eigen::Vector3d> &list) {
+void PlanningVisualization::fillGeometryInfo(visualization_msgs::Marker& mk, const vector<Eigen::Vector3d>& list) {
   geometry_msgs::Point pt;
   for (int i = 0; i < int(list.size()); i++) {
     pt.x = list[i](0);
@@ -72,9 +69,8 @@ void PlanningVisualization::fillGeometryInfo(visualization_msgs::Marker &mk,
   }
 }
 
-void PlanningVisualization::fillGeometryInfo(visualization_msgs::Marker &mk,
-                                             const vector<Eigen::Vector3d> &list1,
-                                             const vector<Eigen::Vector3d> &list2) {
+void PlanningVisualization::fillGeometryInfo(
+    visualization_msgs::Marker& mk, const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2) {
   geometry_msgs::Point pt;
   for (int i = 0; i < int(list1.size()); ++i) {
     pt.x = list1[i](0);
@@ -89,9 +85,8 @@ void PlanningVisualization::fillGeometryInfo(visualization_msgs::Marker &mk,
   }
 }
 
-void PlanningVisualization::drawBox(const Eigen::Vector3d &center, const Eigen::Vector3d &scale,
-                                    const Eigen::Vector4d &color, const string &ns, const int &id,
-                                    const int &pub_id) {
+void PlanningVisualization::drawBox(const Eigen::Vector3d& center, const Eigen::Vector3d& scale,
+    const Eigen::Vector4d& color, const string& ns, const int& id, const int& pub_id) {
   visualization_msgs::Marker mk;
   fillBasicInfo(mk, scale, color, ns, id, visualization_msgs::Marker::CUBE);
   mk.action = visualization_msgs::Marker::DELETE;
@@ -106,12 +101,10 @@ void PlanningVisualization::drawBox(const Eigen::Vector3d &center, const Eigen::
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::drawSpheres(const vector<Eigen::Vector3d> &list, const double &scale,
-                                        const Eigen::Vector4d &color, const string &ns, const int &id,
-                                        const int &pub_id) {
+void PlanningVisualization::drawSpheres(const vector<Eigen::Vector3d>& list, const double& scale,
+    const Eigen::Vector4d& color, const string& ns, const int& id, const int& pub_id) {
   visualization_msgs::Marker mk;
-  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id,
-                visualization_msgs::Marker::SPHERE_LIST);
+  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id, visualization_msgs::Marker::SPHERE_LIST);
 
   // clean old marker
   mk.action = visualization_msgs::Marker::DELETE;
@@ -124,12 +117,10 @@ void PlanningVisualization::drawSpheres(const vector<Eigen::Vector3d> &list, con
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::drawCubes(const vector<Eigen::Vector3d> &list, const double &scale,
-                                      const Eigen::Vector4d &color, const string &ns, const int &id,
-                                      const int &pub_id) {
+void PlanningVisualization::drawCubes(const vector<Eigen::Vector3d>& list, const double& scale,
+    const Eigen::Vector4d& color, const string& ns, const int& id, const int& pub_id) {
   visualization_msgs::Marker mk;
-  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id,
-                visualization_msgs::Marker::CUBE_LIST);
+  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id, visualization_msgs::Marker::CUBE_LIST);
 
   // clean old marker
   mk.action = visualization_msgs::Marker::DELETE;
@@ -142,13 +133,10 @@ void PlanningVisualization::drawCubes(const vector<Eigen::Vector3d> &list, const
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::drawLines(const vector<Eigen::Vector3d> &list1,
-                                      const vector<Eigen::Vector3d> &list2, const double &scale,
-                                      const Eigen::Vector4d &color, const string &ns, const int &id,
-                                      const int &pub_id) {
+void PlanningVisualization::drawLines(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2,
+    const double& scale, const Eigen::Vector4d& color, const string& ns, const int& id, const int& pub_id) {
   visualization_msgs::Marker mk;
-  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id,
-                visualization_msgs::Marker::LINE_LIST);
+  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id, visualization_msgs::Marker::LINE_LIST);
 
   // clean old marker
   mk.action = visualization_msgs::Marker::DELETE;
@@ -163,12 +151,10 @@ void PlanningVisualization::drawLines(const vector<Eigen::Vector3d> &list1,
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::drawLines(const vector<Eigen::Vector3d> &list, const double &scale,
-                                      const Eigen::Vector4d &color, const string &ns, const int &id,
-                                      const int &pub_id) {
+void PlanningVisualization::drawLines(const vector<Eigen::Vector3d>& list, const double& scale,
+    const Eigen::Vector4d& color, const string& ns, const int& id, const int& pub_id) {
   visualization_msgs::Marker mk;
-  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id,
-                visualization_msgs::Marker::LINE_LIST);
+  fillBasicInfo(mk, Eigen::Vector3d(scale, scale, scale), color, ns, id, visualization_msgs::Marker::LINE_LIST);
 
   // clean old marker
   mk.action = visualization_msgs::Marker::DELETE;
@@ -190,8 +176,8 @@ void PlanningVisualization::drawLines(const vector<Eigen::Vector3d> &list, const
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::displaySphereList(const vector<Eigen::Vector3d> &list, double resolution,
-                                              const Eigen::Vector4d &color, int id, int pub_id) {
+void PlanningVisualization::displaySphereList(
+    const vector<Eigen::Vector3d>& list, double resolution, const Eigen::Vector4d& color, int id, int pub_id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
@@ -226,8 +212,8 @@ void PlanningVisualization::displaySphereList(const vector<Eigen::Vector3d> &lis
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::displayCubeList(const vector<Eigen::Vector3d> &list, double resolution,
-                                            const Eigen::Vector4d &color, int id, int pub_id) {
+void PlanningVisualization::displayCubeList(
+    const vector<Eigen::Vector3d>& list, double resolution, const Eigen::Vector4d& color, int id, int pub_id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
@@ -263,9 +249,8 @@ void PlanningVisualization::displayCubeList(const vector<Eigen::Vector3d> &list,
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::displayLineList(const vector<Eigen::Vector3d> &list1,
-                                            const vector<Eigen::Vector3d> &list2, double line_width,
-                                            const Eigen::Vector4d &color, int id, int pub_id) {
+void PlanningVisualization::displayLineList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2,
+    double line_width, const Eigen::Vector4d& color, int id, int pub_id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
@@ -303,7 +288,7 @@ void PlanningVisualization::displayLineList(const vector<Eigen::Vector3d> &list1
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::drawBsplinesPhase1(vector<NonUniformBspline> &bsplines, double size) {
+void PlanningVisualization::drawBsplinesPhase1(vector<NonUniformBspline>& bsplines, double size) {
   vector<Eigen::Vector3d> empty;
 
   for (int i = 0; i < last_bspline_phase1_num_; ++i) {
@@ -314,11 +299,11 @@ void PlanningVisualization::drawBsplinesPhase1(vector<NonUniformBspline> &bsplin
 
   for (int i = 0; i < bsplines.size(); ++i) {
     drawBspline(bsplines[i], size, getColor(double(i) / bsplines.size(), 0.2), false, 2 * size,
-                getColor(double(i) / bsplines.size()), i);
+        getColor(double(i) / bsplines.size()), i);
   }
 }
 
-void PlanningVisualization::drawBsplinesPhase2(vector<NonUniformBspline> &bsplines, double size) {
+void PlanningVisualization::drawBsplinesPhase2(vector<NonUniformBspline>& bsplines, double size) {
   vector<Eigen::Vector3d> empty;
 
   for (int i = 0; i < last_bspline_phase2_num_; ++i) {
@@ -331,13 +316,12 @@ void PlanningVisualization::drawBsplinesPhase2(vector<NonUniformBspline> &bsplin
 
   for (int i = 0; i < bsplines.size(); ++i) {
     drawBspline(bsplines[i], size, getColor(double(i) / bsplines.size(), 0.6), false, 1.5 * size,
-                getColor(double(i) / bsplines.size()), i);
+        getColor(double(i) / bsplines.size()), i);
   }
 }
 
-void PlanningVisualization::drawBspline(NonUniformBspline &bspline, double size, const Eigen::Vector4d &color,
-                                        bool show_ctrl_pts, double size2, const Eigen::Vector4d &color2,
-                                        int id1) {
+void PlanningVisualization::drawBspline(NonUniformBspline& bspline, double size, const Eigen::Vector4d& color,
+    bool show_ctrl_pts, double size2, const Eigen::Vector4d& color2, int id1) {
   if (bspline.getControlPoint().size() == 0) return;
 
   vector<Eigen::Vector3d> traj_pts;
@@ -364,9 +348,8 @@ void PlanningVisualization::drawBspline(NonUniformBspline &bspline, double size,
   }
 }
 
-void PlanningVisualization::drawTopoGraph(list<GraphNode::Ptr> &graph, double point_size, double line_width,
-                                          const Eigen::Vector4d &color1, const Eigen::Vector4d &color2,
-                                          const Eigen::Vector4d &color3, int id) {
+void PlanningVisualization::drawTopoGraph(list<GraphNode::Ptr>& graph, double point_size, double line_width,
+    const Eigen::Vector4d& color1, const Eigen::Vector4d& color2, const Eigen::Vector4d& color3, int id) {
   // clear exsiting node and edge (drawn last time)
   vector<Eigen::Vector3d> empty;
   displaySphereList(empty, point_size, color1, GRAPH_NODE, 1);
@@ -396,7 +379,7 @@ void PlanningVisualization::drawTopoGraph(list<GraphNode::Ptr> &graph, double po
   displayLineList(edge_pt1, edge_pt2, line_width, color3, GRAPH_EDGE, 1);
 }
 
-void PlanningVisualization::drawTopoPathsPhase2(vector<vector<Eigen::Vector3d>> &paths, double line_width) {
+void PlanningVisualization::drawTopoPathsPhase2(vector<vector<Eigen::Vector3d>>& paths, double line_width) {
   // clear drawn paths
   Eigen::Vector4d color1(1, 1, 1, 1);
   for (int i = 0; i < last_topo_path1_num_; ++i) {
@@ -416,12 +399,12 @@ void PlanningVisualization::drawTopoPathsPhase2(vector<vector<Eigen::Vector3d>> 
       edge_pt2.push_back(paths[i][j + 1]);
     }
 
-    displayLineList(edge_pt1, edge_pt2, line_width, getColor(double(i) / (last_topo_path1_num_)),
-                    SELECT_PATH + i % 100, 1);
+    displayLineList(
+        edge_pt1, edge_pt2, line_width, getColor(double(i) / (last_topo_path1_num_)), SELECT_PATH + i % 100, 1);
   }
 }
 
-void PlanningVisualization::drawTopoPathsPhase1(vector<vector<Eigen::Vector3d>> &paths, double size) {
+void PlanningVisualization::drawTopoPathsPhase1(vector<vector<Eigen::Vector3d>>& paths, double size) {
   // clear drawn paths
   Eigen::Vector4d color1(1, 1, 1, 1);
   for (int i = 0; i < last_topo_path2_num_; ++i) {
@@ -440,37 +423,36 @@ void PlanningVisualization::drawTopoPathsPhase1(vector<vector<Eigen::Vector3d>> 
       edge_pt2.push_back(paths[i][j + 1]);
     }
 
-    displayLineList(edge_pt1, edge_pt2, size, getColor(double(i) / (last_topo_path2_num_), 0.2),
-                    FILTERED_PATH + i % 100, 1);
+    displayLineList(
+        edge_pt1, edge_pt2, size, getColor(double(i) / (last_topo_path2_num_), 0.2), FILTERED_PATH + i % 100, 1);
   }
 }
 
-void PlanningVisualization::drawGoal(Eigen::Vector3d goal, double resolution, const Eigen::Vector4d &color,
-                                     int id) {
-  vector<Eigen::Vector3d> goal_vec = {goal};
+void PlanningVisualization::drawGoal(Eigen::Vector3d goal, double resolution, const Eigen::Vector4d& color, int id) {
+  vector<Eigen::Vector3d> goal_vec = { goal };
   displaySphereList(goal_vec, resolution, color, GOAL + id % 100);
 }
 
-void PlanningVisualization::drawNextGoal(Eigen::Vector3d goal, double resolution,
-                                         const Eigen::Vector4d &color, int id) {
-  vector<Eigen::Vector3d> goal_vec = {goal};
+void PlanningVisualization::drawNextGoal(
+    Eigen::Vector3d goal, double resolution, const Eigen::Vector4d& color, int id) {
+  vector<Eigen::Vector3d> goal_vec = { goal };
   displaySphereList(goal_vec, resolution, color, NEXT_GOAL + id % 100);
 }
 
-void PlanningVisualization::drawGeometricPath(const vector<Eigen::Vector3d> &path, double resolution,
-                                              const Eigen::Vector4d &color, int id) {
+void PlanningVisualization::drawGeometricPath(
+    const vector<Eigen::Vector3d>& path, double resolution, const Eigen::Vector4d& color, int id) {
   displaySphereList(path, resolution, color, PATH + id % 100);
 }
 
-void PlanningVisualization::drawPolynomialTraj(PolynomialTraj poly_traj, double resolution,
-                                               const Eigen::Vector4d &color, int id) {
+void PlanningVisualization::drawPolynomialTraj(
+    PolynomialTraj poly_traj, double resolution, const Eigen::Vector4d& color, int id) {
   vector<Eigen::Vector3d> poly_pts;
   poly_traj.getSamplePoints(poly_pts);
   displaySphereList(poly_pts, resolution, color, POLY_TRAJ + id % 100);
 }
 
-void PlanningVisualization::drawPrediction(ObjPrediction pred, double resolution,
-                                           const Eigen::Vector4d &color, int id) {
+void PlanningVisualization::drawPrediction(
+    ObjPrediction pred, double resolution, const Eigen::Vector4d& color, int id) {
   ros::Time time_now = ros::Time::now();
   double start_time = (time_now - ObjHistory::global_start_time_).toSec();
   const double range = 5.6;
@@ -488,8 +470,8 @@ void PlanningVisualization::drawPrediction(ObjPrediction pred, double resolution
   displaySphereList(traj, resolution, color, id % 100, 2);
 }
 
-void PlanningVisualization::drawVisibConstraint(const Eigen::MatrixXd &ctrl_pts,
-                                                const vector<Eigen::Vector3d> &block_pts) {
+void PlanningVisualization::drawVisibConstraint(
+    const Eigen::MatrixXd& ctrl_pts, const vector<Eigen::Vector3d>& block_pts) {
   int visible_num = ctrl_pts.rows() - block_pts.size();
 
   /* draw block points, their projection rays and visible pairs */
@@ -519,8 +501,7 @@ void PlanningVisualization::drawVisibConstraint(const Eigen::MatrixXd &ctrl_pts,
   displayLineList(pts3, pts4, 0.015, Eigen::Vector4d(0, 1, 0, 1), 3, 3);
 }
 
-void PlanningVisualization::drawVisibConstraint(const Eigen::MatrixXd &pts,
-                                                const vector<VisiblePair> &pairs) {
+void PlanningVisualization::drawVisibConstraint(const Eigen::MatrixXd& pts, const vector<VisiblePair>& pairs) {
   vector<Eigen::Vector3d> pts1, pts2, pts3, pts4;
   for (auto pr : pairs) {
     Eigen::Vector3d qb = pr.qb_;
@@ -539,7 +520,7 @@ void PlanningVisualization::drawVisibConstraint(const Eigen::MatrixXd &pts,
   displayLineList(pts3, pts4, 0.015, Eigen::Vector4d(0, 1, 0, 1), 3, 3);
 }
 
-void PlanningVisualization::drawViewConstraint(const ViewConstraint &vc) {
+void PlanningVisualization::drawViewConstraint(const ViewConstraint& vc) {
   if (vc.idx_ < 0) return;
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
@@ -567,11 +548,11 @@ void PlanningVisualization::drawViewConstraint(const ViewConstraint &vc) {
   mk.points.push_back(pt);
   pubs_[3].publish(mk);
 
-  vector<Eigen::Vector3d> pts = {vc.pcons_};
+  vector<Eigen::Vector3d> pts = { vc.pcons_ };
   displaySphereList(pts, 0.2, Eigen::Vector4d(0, 1, 0, 1), 1, 3);
 }
 
-void PlanningVisualization::drawFrontier(const vector<vector<Eigen::Vector3d>> &frontiers) {
+void PlanningVisualization::drawFrontier(const vector<vector<Eigen::Vector3d>>& frontiers) {
   for (int i = 0; i < frontiers.size(); ++i) {
     // displayCubeList(frontiers[i], 0.1, getColor(double(i) / frontiers.size(),
     // 0.4), i, 4);
@@ -586,7 +567,7 @@ void PlanningVisualization::drawFrontier(const vector<vector<Eigen::Vector3d>> &
   last_frontier_num_ = frontiers.size();
 }
 
-void PlanningVisualization::drawYawTraj(NonUniformBspline &pos, NonUniformBspline &yaw, const double &dt) {
+void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBspline& yaw, const double& dt) {
   double duration = pos.getTimeSum();
   vector<Eigen::Vector3d> pts1, pts2;
 
@@ -602,7 +583,7 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline &pos, NonUniformBsplin
   displayLineList(pts1, pts2, 0.04, Eigen::Vector4d(1, 0.5, 0, 1), 0, 5);
 }
 
-void PlanningVisualization::drawYawPath(NonUniformBspline &pos, const vector<double> &yaw, const double &dt) {
+void PlanningVisualization::drawYawPath(NonUniformBspline& pos, const vector<double>& yaw, const double& dt) {
   vector<Eigen::Vector3d> pts1, pts2;
 
   for (int i = 0; i < yaw.size(); ++i) {
@@ -616,7 +597,7 @@ void PlanningVisualization::drawYawPath(NonUniformBspline &pos, const vector<dou
   displayLineList(pts1, pts2, 0.04, Eigen::Vector4d(1, 0, 1, 1), 1, 5);
 }
 
-Eigen::Vector4d PlanningVisualization::getColor(const double &h, double alpha) {
+Eigen::Vector4d PlanningVisualization::getColor(const double& h, double alpha) {
   double h1 = h;
   if (h1 < 0.0 || h1 > 1.0) {
     std::cout << "h out of range" << std::endl;

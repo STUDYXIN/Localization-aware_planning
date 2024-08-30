@@ -81,8 +81,7 @@ int main(int argc, char** argv) {
 
   //[ lyapunov_full_code
   fill(x.begin() + n, x.end(), 0.0);
-  for (size_t i = 0; i < num_of_lyap; ++i)
-    x[n + n * i + i] = 1.0;
+  for (size_t i = 0; i < num_of_lyap; ++i) x[n + n * i + i] = 1.0;
   fill(lyap.begin(), lyap.end(), 0.0);
 
   double t = 0.0;
@@ -95,8 +94,7 @@ int main(int argc, char** argv) {
 
     if (!(count % 100000)) {
       cout << t;
-      for (size_t i = 0; i < num_of_lyap; ++i)
-        cout << "\t" << lyap[i] / t;
+      for (size_t i = 0; i < num_of_lyap; ++i) cout << "\t" << lyap[i] / t;
       cout << endl;
     }
   }

@@ -4,16 +4,21 @@
 namespace fast_planner {
 /* ============================== edt_environment ==============================
  */
-void EDTEnvironment::init() {}
+void EDTEnvironment::init() {
+}
 
 void EDTEnvironment::setMap(shared_ptr<SDFMap>& map) {
   this->sdf_map_ = map;
   resolution_inv_ = 1 / sdf_map_->getResolution();
 }
 
-void EDTEnvironment::setObjPrediction(ObjPrediction prediction) { this->obj_prediction_ = prediction; }
+void EDTEnvironment::setObjPrediction(ObjPrediction prediction) {
+  this->obj_prediction_ = prediction;
+}
 
-void EDTEnvironment::setObjScale(ObjScale scale) { this->obj_scale_ = scale; }
+void EDTEnvironment::setObjScale(ObjScale scale) {
+  this->obj_scale_ = scale;
+}
 
 double EDTEnvironment::distToBox(int idx, const Eigen::Vector3d& pos, const double& time) {
   // Eigen::Vector3d pos_box = obj_prediction_->at(idx).evaluate(time);
@@ -25,9 +30,8 @@ double EDTEnvironment::distToBox(int idx, const Eigen::Vector3d& pos, const doub
   Eigen::Vector3d dist;
 
   for (int i = 0; i < 3; i++) {
-    dist(i) = pos(i) >= box_min(i) && pos(i) <= box_max(i)
-                  ? 0.0
-                  : min(fabs(pos(i) - box_min(i)), fabs(pos(i) - box_max(i)));
+    dist(i) =
+        pos(i) >= box_min(i) && pos(i) <= box_max(i) ? 0.0 : min(fabs(pos(i) - box_min(i)), fabs(pos(i) - box_max(i)));
   }
 
   return dist.norm();
@@ -49,8 +53,8 @@ void EDTEnvironment::getSurroundDistance(Eigen::Vector3d pts[2][2][2], double di
       for (int z = 0; z < 2; z++) dists[x][y][z] = sdf_map_->getDistance(pts[x][y][z]);
 }
 
-void EDTEnvironment::interpolateTrilinear(double values[2][2][2], const Eigen::Vector3d& diff, double& value,
-                                          Eigen::Vector3d& grad) {
+void EDTEnvironment::interpolateTrilinear(
+    double values[2][2][2], const Eigen::Vector3d& diff, double& value, Eigen::Vector3d& grad) {
   // trilinear interpolation
   double v00 = (1 - diff(0)) * values[0][0][0] + diff(0) * values[1][0][0];
   double v01 = (1 - diff(0)) * values[0][0][1] + diff(0) * values[1][0][1];
@@ -70,8 +74,7 @@ void EDTEnvironment::interpolateTrilinear(double values[2][2][2], const Eigen::V
   grad[0] *= resolution_inv_;
 }
 
-void EDTEnvironment::evaluateEDTWithGrad(const Eigen::Vector3d& pos, double time, double& dist,
-                                         Eigen::Vector3d& grad) {
+void EDTEnvironment::evaluateEDTWithGrad(const Eigen::Vector3d& pos, double time, double& dist, Eigen::Vector3d& grad) {
   // Eigen::Vector3d diff;
   // Eigen::Vector3d sur_pts[2][2][2];
   // sdf_map_->getSurroundPts(pos, sur_pts, diff);

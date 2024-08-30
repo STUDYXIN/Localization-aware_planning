@@ -52,15 +52,14 @@ const boost::array<double, 1> a1 = { { 0.2 } };
 const boost::array<double, 2> a2 = { { 3.0 / 40.0, 9.0 / 40 } };
 const boost::array<double, 3> a3 = { { 0.3, -0.9, 1.2 } };
 const boost::array<double, 4> a4 = { { -11.0 / 54.0, 2.5, -70.0 / 27.0, 35.0 / 27.0 } };
-const boost::array<double, 5> a5 = { { 1631.0 / 55296.0, 175.0 / 512.0, 575.0 / 13824.0,
-                                       44275.0 / 110592.0, 253.0 / 4096.0 } };
+const boost::array<double, 5> a5 = { { 1631.0 / 55296.0, 175.0 / 512.0, 575.0 / 13824.0, 44275.0 / 110592.0,
+    253.0 / 4096.0 } };
 
 const error_rk_generic_type::coef_a_type a = fusion::make_vector(a1, a2, a3, a4, a5);
 const error_rk_generic_type::coef_b_type b = { { 37.0 / 378.0, 0.0, 250.0 / 621.0, 125.0 / 594.0, 0.0,
-                                                 512.0 / 1771.0 } };
-const error_rk_generic_type::coef_b_type b2 = { { b[0] - 2825.0 / 27648.0, b[1] - 0.0,
-                                                  b[2] - 18575.0 / 48384.0, b[3] - 13525.0 / 55296.0,
-                                                  b[4] - 277.0 / 14336.0, b[5] - 0.25 } };
+    512.0 / 1771.0 } };
+const error_rk_generic_type::coef_b_type b2 = { { b[0] - 2825.0 / 27648.0, b[1] - 0.0, b[2] - 18575.0 / 48384.0,
+    b[3] - 13525.0 / 55296.0, b[4] - 277.0 / 14336.0, b[5] - 0.25 } };
 const error_rk_generic_type::coef_c_type c = { { 0.0, 0.2, 0.3, 0.6, 1.0, 7.0 / 8 } };
 
 typedef runge_kutta_cash_karp54<state_type> error_rk54_ck_generic_type;

@@ -65,8 +65,8 @@ const double result = 2.4;  // four steps total...
 const double eps = 1.0e-14;
 
 template <class Stepper, class System>
-void check_error_stepper_concept(Stepper& stepper, System system, typename Stepper::state_type& x,
-                                 typename Stepper::state_type& xerr) {
+void check_error_stepper_concept(
+    Stepper& stepper, System system, typename Stepper::state_type& x, typename Stepper::state_type& xerr) {
   typedef Stepper stepper_type;
   typedef typename stepper_type::deriv_type container_type;
   typedef typename stepper_type::order_type order_type;
@@ -74,7 +74,7 @@ void check_error_stepper_concept(Stepper& stepper, System system, typename Stepp
 
   stepper.do_step(system, typename boost::add_reference<container_type>::type(x), 0.0, 0.1);
   stepper.do_step(system, typename boost::add_reference<container_type>::type(x), 0.0, 0.1,
-                  typename boost::add_reference<container_type>::type(xerr));
+      typename boost::add_reference<container_type>::type(xerr));
 }
 
 template <class Stepper, class State>
@@ -85,8 +85,7 @@ struct perform_error_stepper_test<Stepper, vector_type> {
   void operator()(void) {
     vector_type x(1, 2.0), xerr(1);
     Stepper stepper;
-    check_error_stepper_concept(stepper, constant_system_standard<vector_type, vector_type, double>, x,
-                                xerr);
+    check_error_stepper_concept(stepper, constant_system_standard<vector_type, vector_type, double>, x, xerr);
     check_error_stepper_concept(stepper, boost::cref(constant_system_functor_standard()), x, xerr);
     BOOST_CHECK_SMALL(fabs(x[0] - result), eps);
   }
@@ -111,8 +110,7 @@ struct perform_error_stepper_test<Stepper, array_type> {
     array_type x, xerr;
     x[0] = 2.0;
     Stepper stepper;
-    check_error_stepper_concept(stepper, constant_system_standard<array_type, array_type, double>, x,
-                                xerr);
+    check_error_stepper_concept(stepper, constant_system_standard<array_type, array_type, double>, x, xerr);
     check_error_stepper_concept(stepper, boost::cref(constant_system_functor_standard()), x, xerr);
     BOOST_CHECK_SMALL(fabs(x[0] - result), eps);
   }
@@ -120,18 +118,14 @@ struct perform_error_stepper_test<Stepper, array_type> {
 
 template <class State>
 class error_stepper_methods
-    : public mpl::vector<
-          runge_kutta_cash_karp54_classic<State, double, State, double,
-                                          typename algebra_dispatcher<State>::type>,
-          runge_kutta_cash_karp54<State, double, State, double,
-                                  typename algebra_dispatcher<State>::type>,
-          runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type>,
-          runge_kutta_fehlberg78<State, double, State, double,
-                                 typename algebra_dispatcher<State>::type> > {};
+  : public mpl::vector<
+        runge_kutta_cash_karp54_classic<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta_cash_karp54<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type>,
+        runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type> > {};
 
 typedef mpl::copy<container_types,
-                  mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>,
-                                                                  error_stepper_methods<mpl::_2> > > >::
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, error_stepper_methods<mpl::_2> > > >::
     type all_error_stepper_methods;
 
 BOOST_AUTO_TEST_SUITE(runge_kutta_error_concept_test)

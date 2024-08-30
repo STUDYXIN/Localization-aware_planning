@@ -29,8 +29,8 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pts;
 // calculate flight time and distance
 double distance1;
 
-void displayLineList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2,
-                     double line_width, const Eigen::Vector4d& color, int id) {
+void displayLineList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2, double line_width,
+    const Eigen::Vector4d& color, int id) {
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();

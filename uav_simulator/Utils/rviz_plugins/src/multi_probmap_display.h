@@ -59,7 +59,7 @@ class VectorProperty;
  */
 class MultiProbMapDisplay : public Display {
   Q_OBJECT
- public:
+public:
   MultiProbMapDisplay();
   virtual ~MultiProbMapDisplay();
 
@@ -68,11 +68,11 @@ class MultiProbMapDisplay : public Display {
   virtual void reset();
   virtual void update(float wall_dt, float ros_dt);
 
- protected Q_SLOTS:
+protected Q_SLOTS:
   void updateTopic();
   void updateDrawUnder();
 
- protected:
+protected:
   // overrides from Display
   virtual void onEnable();
   virtual void onDisable();

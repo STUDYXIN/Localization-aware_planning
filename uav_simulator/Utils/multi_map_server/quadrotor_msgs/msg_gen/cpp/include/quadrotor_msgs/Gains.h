@@ -18,9 +18,11 @@ template <class ContainerAllocator>
 struct Gains_ {
   typedef Gains_<ContainerAllocator> Type;
 
-  Gains_() : Kp(0.0), Kd(0.0), Kp_yaw(0.0), Kd_yaw(0.0) {}
+  Gains_() : Kp(0.0), Kd(0.0), Kp_yaw(0.0), Kd_yaw(0.0) {
+  }
 
-  Gains_(const ContainerAllocator& _alloc) : Kp(0.0), Kd(0.0), Kp_yaw(0.0), Kd_yaw(0.0) {}
+  Gains_(const ContainerAllocator& _alloc) : Kp(0.0), Kd(0.0), Kp_yaw(0.0), Kd_yaw(0.0) {
+  }
 
   typedef double _Kp_type;
   double Kp;
@@ -58,18 +60,26 @@ template <class ContainerAllocator>
 struct IsMessage< ::quadrotor_msgs::Gains_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
 struct MD5Sum< ::quadrotor_msgs::Gains_<ContainerAllocator> > {
-  static const char* value() { return "b82763b9f24e5595e2a816aa779c9461"; }
+  static const char* value() {
+    return "b82763b9f24e5595e2a816aa779c9461";
+  }
 
-  static const char* value(const ::quadrotor_msgs::Gains_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Gains_<ContainerAllocator>&) {
+    return value();
+  }
   static const uint64_t static_value1 = 0xb82763b9f24e5595ULL;
   static const uint64_t static_value2 = 0xe2a816aa779c9461ULL;
 };
 
 template <class ContainerAllocator>
 struct DataType< ::quadrotor_msgs::Gains_<ContainerAllocator> > {
-  static const char* value() { return "quadrotor_msgs/Gains"; }
+  static const char* value() {
+    return "quadrotor_msgs/Gains";
+  }
 
-  static const char* value(const ::quadrotor_msgs::Gains_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Gains_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -83,7 +93,9 @@ float64 Kd_yaw\n\
 ";
   }
 
-  static const char* value(const ::quadrotor_msgs::Gains_<ContainerAllocator>&) { return value(); }
+  static const char* value(const ::quadrotor_msgs::Gains_<ContainerAllocator>&) {
+    return value();
+  }
 };
 
 template <class ContainerAllocator>
@@ -115,8 +127,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::Gains_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-                     const ::quadrotor_msgs::Gains_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::Gains_<ContainerAllocator>& v) {
     s << indent << "Kp: ";
     Printer<double>::stream(s, indent + "  ", v.Kp);
     s << indent << "Kd: ";

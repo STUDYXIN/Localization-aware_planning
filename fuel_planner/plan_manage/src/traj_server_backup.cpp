@@ -18,8 +18,8 @@ using fast_planner::NonUniformBspline;
 ros::Publisher cmd_vis_pub, pos_cmd_pub, traj_pub;
 
 quadrotor_msgs::PositionCommand cmd;
-double pos_gain[3] = {5.7, 5.7, 6.2};
-double vel_gain[3] = {3.4, 3.4, 4.0};
+double pos_gain[3] = { 5.7, 5.7, 6.2 };
+double vel_gain[3] = { 3.4, 3.4, 4.0 };
 int pub_traj_id_;
 
 std::shared_ptr<LocalTrajServer> local_traj_;
@@ -64,8 +64,7 @@ void displayTrajWithColor(vector<Eigen::Vector3d> traj, double resolution, Eigen
   ros::Duration(0.001).sleep();
 }
 
-void drawCmd(const Eigen::Vector3d& pos, const Eigen::Vector3d& vec, const int& id,
-             const Eigen::Vector4d& color) {
+void drawCmd(const Eigen::Vector3d& pos, const Eigen::Vector3d& vec, const int& id, const Eigen::Vector4d& color) {
   visualization_msgs::Marker mk_state;
   mk_state.header.frame_id = "world";
   mk_state.header.stamp = ros::Time::now();
@@ -97,7 +96,9 @@ void drawCmd(const Eigen::Vector3d& pos, const Eigen::Vector3d& vec, const int& 
   cmd_vis_pub.publish(mk_state);
 }
 
-void pauseCallback(std_msgs::Empty msg) { local_traj_->resetDuration(); }
+void pauseCallback(std_msgs::Empty msg) {
+  local_traj_->resetDuration();
+}
 
 void visCallback(const ros::TimerEvent& e) {
   displayTrajWithColor(executed_cmd_, 0.05, Eigen::Vector4d(0, 1, 0, 1), pub_traj_id_);
@@ -172,8 +173,7 @@ void cmdCallback(const ros::TimerEvent& e) {
     if (executed_cmd_.size() == 0 ||
         (executed_cmd_.size() > 0 && (traj_cmd.pos - executed_cmd_.back()).norm() > 1e-6)) {
       executed_cmd_.push_back(traj_cmd.pos);
-      if (executed_cmd_.size() > 10000)
-        executed_cmd_.erase(executed_cmd_.begin(), executed_cmd_.begin() + 1000);
+      if (executed_cmd_.size() > 10000) executed_cmd_.erase(executed_cmd_.begin(), executed_cmd_.begin() + 1000);
     }
   }
 }

@@ -187,6 +187,7 @@
     <param name="manager/control_points_distance" value="0.35" type="double"/>
     <param name="manager/use_geometric_path" value="true" type="bool"/>
     <param name="manager/use_kinodynamic_path" value="true" type="bool"/>
+    <param name="manager/use_sample_path" value="true" type="bool"/>
     <param name="manager/use_topo_path" value="true" type="bool"/>
     <param name="manager/use_optimization" value="true" type="bool"/>
     <param name="manager/use_active_perception" value="true" type="bool"/>
@@ -212,6 +213,20 @@
     <param name="astar/resolution_astar" value="0.2" type="double"/>
     <param name="astar/allocate_num" value="1000000" type="int"/>
     <param name="astar/max_search_time" value="0.01" type="double"/>
+
+  <!-- sample based path searching -->
+    <param name="rrt/use_kd_tree" value="true" type="bool"/>
+
+    <param name="rrt/goal_bias_prob" value="0.15" type="double"/>
+    <param name="rrt/step_size" value="0.1" type="double"/>
+    <param name="rrt/neighbor_radius" value="1.0" type="double"/>
+
+    <param name="rrt/goal_dist_threshold" value="0.5" type="double"/>
+
+    <param name="rrt/max_search_time" value="10.0" type="double"/>
+
+    <param name="rrt/yaw_sample_piece_num" value="6" type="int"/>
+    <param name="rrt/min_feature_num" value="-1" type="int"/>
 
   <!-- trajectory optimization -->
     <param name="optimization/ld_smooth" value="20.0" type="double"/>

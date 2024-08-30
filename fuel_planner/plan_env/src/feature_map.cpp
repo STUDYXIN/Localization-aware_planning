@@ -4,13 +4,17 @@
 
 namespace fast_planner {
 
-FeatureMap::FeatureMap() {}
+FeatureMap::FeatureMap() {
+}
 
-FeatureMap::~FeatureMap() {}
+FeatureMap::~FeatureMap() {
+}
 
-void FeatureMap::setMap(shared_ptr<SDFMap> &map) { this->sdf_map = map; }
+void FeatureMap::setMap(shared_ptr<SDFMap>& map) {
+  this->sdf_map = map;
+}
 
-void FeatureMap::initMap(ros::NodeHandle &nh) {
+void FeatureMap::initMap(ros::NodeHandle& nh) {
   bool load_from_file;
   std::string filename;
   nh.param("feature/load_from_file", load_from_file, true);
@@ -26,7 +30,7 @@ void FeatureMap::initMap(ros::NodeHandle &nh) {
   visual_feature_cloud_pub_ = nh.advertise<sensor_msgs::PointCloud2>("/feature/visual_feature_cloud", 10);
 }
 
-void FeatureMap::loadMap(const string &filename) {
+void FeatureMap::loadMap(const string& filename) {
   features_cloud_.clear();
   bool use_simple_features = (filename == "");
 
@@ -49,13 +53,11 @@ void FeatureMap::loadMap(const string &filename) {
   }
 
   features_kdtree_.setInputCloud(features_cloud_.makeShared());
-  ROS_WARN("[FeatureMap] Load Success!!! filename: %s features num:%zu", filename.c_str(),
-           features_cloud_.size());
+  ROS_WARN("[FeatureMap] Load Success!!! filename: %s features num:%zu", filename.c_str(), features_cloud_.size());
 }
 
-void FeatureMap::addFeatureCloud(const Eigen::Vector3d &pos,
-                                 const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud) {
-  for (const auto &pt : cloud->points) {
+void FeatureMap::addFeatureCloud(const Eigen::Vector3d& pos, const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
+  for (const auto& pt : cloud->points) {
     Eigen::Vector3d pt_eigen(pt.x, pt.y, pt.z);
     double dist = (pt_eigen - pos).norm();
 
@@ -82,11 +84,11 @@ void FeatureMap::addFeatureCloud(const Eigen::Vector3d &pos,
   features_kdtree_.setInputCloud(features_cloud_.makeShared());
 }
 
-void FeatureMap::getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud) {
+void FeatureMap::getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
   cloud = features_cloud_.makeShared();
 }
 
-void FeatureMap::getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d> &res) {
+void FeatureMap::getFeatures(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>& res) {
   if (features_cloud_.points.empty()) return;
 
   res.clear();
@@ -99,16 +101,15 @@ void FeatureMap::getFeatures(const Eigen::Vector3d &pos, vector<Eigen::Vector3d>
   vector<int> pointIdxRadiusSearch;
   vector<float> pointRadiusSquaredDistance;
 
-  features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch,
-                                pointRadiusSquaredDistance);
+  features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
-  for (const auto &index : pointIdxRadiusSearch) {
+  for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if ((f - pos).norm() > config_.depth_min_) res.push_back(f);
   }
 }
 
-void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr &msg) {
+void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
   // fd_->odom_pos_(0) = msg->pose.pose.position.x;
   // fd_->odom_pos_(1) = msg->pose.pose.position.y;
   // fd_->odom_pos_(2) = msg->pose.pose.position.z;
@@ -129,13 +130,13 @@ void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr &msg) {
   // pubDebugmsg(2);
 }
 
-void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr &pose) {
+void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose) {
   Eigen::Vector3d camera_p;
   camera_p(0) = pose->pose.position.x;
   camera_p(1) = pose->pose.position.y;
   camera_p(2) = pose->pose.position.z;
-  Eigen::Quaterniond camera_q = Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x,
-                                                   pose->pose.orientation.y, pose->pose.orientation.z);
+  Eigen::Quaterniond camera_q =
+      Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
   vector<Eigen::Vector3d> visual_points_vec;
   // ROS_WARN("[FeatureMap] -----------------------------------");
   int feature_num = get_NumCloud_using_PosOrient(camera_p, camera_q, visual_points_vec);
@@ -168,8 +169,7 @@ void FeatureMap::pubDebugmsg(int debugMode) {
     for (int x = sdf_map->mp_->box_min_(0) /* + 1 */; x < sdf_map->mp_->box_max_(0); ++x)
       for (int y = sdf_map->mp_->box_min_(1) /* + 1 */; y < sdf_map->mp_->box_max_(1); ++y)
         for (int z = sdf_map->mp_->box_min_(2) /* + 1 */; z < sdf_map->mp_->box_max_(2); ++z) {
-          if (sdf_map->md_->occupancy_buffer_[sdf_map->toAddress(x, y, z)] >
-              sdf_map->mp_->min_occupancy_log_) {
+          if (sdf_map->md_->occupancy_buffer_[sdf_map->toAddress(x, y, z)] > sdf_map->mp_->min_occupancy_log_) {
             Eigen::Vector3d pos;
             sdf_map->indexToPos(Eigen::Vector3i(x, y, z), pos);
             pt.x = pos(0);
@@ -202,9 +202,12 @@ void FeatureMap::pubDebugmsg(int debugMode) {
   }
 }
 
-int FeatureMap::get_NumCloud_using_PosOrient(const Eigen::Vector3d &pos, const Eigen::Quaterniond &orient,
-                                             vector<Eigen::Vector3d> &res) {
-  if (features_cloud_.empty()) return 0;
+int FeatureMap::get_NumCloud_using_PosOrient(
+    const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res) {
+  if (features_cloud_.empty()) {
+    ROS_ERROR("Feature Cloud Empty!!!");
+    return 0;
+  }
 
   res.clear();
 
@@ -215,10 +218,9 @@ int FeatureMap::get_NumCloud_using_PosOrient(const Eigen::Vector3d &pos, const E
 
   vector<int> pointIdxRadiusSearch;
   vector<float> pointRadiusSquaredDistance;
-  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch,
-                                pointRadiusSquaredDistance);
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
-  for (const auto &index : pointIdxRadiusSearch) {
+  for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if (camera_param.is_in_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
     {
@@ -226,6 +228,7 @@ int FeatureMap::get_NumCloud_using_PosOrient(const Eigen::Vector3d &pos, const E
         res.push_back(f);
     }
   }
+
   return res.size();
 }
 

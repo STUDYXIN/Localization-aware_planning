@@ -9,7 +9,7 @@
 using Eigen::Vector4d;
 
 namespace fast_planner {
-void PAExplorationFSM::init(ros::NodeHandle &nh) {
+void PAExplorationFSM::init(ros::NodeHandle& nh) {
   fp_.reset(new FSMParam);
 
   /*  Fsm param  */
@@ -22,12 +22,10 @@ void PAExplorationFSM::init(ros::NodeHandle &nh) {
   expl_manager_ = make_shared<PAExplorationManager>(shared_from_this());
   expl_manager_->initialize(nh);
 
-  visualization_.reset(new PlanningVisualization(nh));
-
   planner_manager_ = expl_manager_->planner_manager_;
   visualization_.reset(new PlanningVisualization(nh));
 
-  state_str_ = {"INIT", "WAIT_TARGET", "PLAN_TO_NEXT_GOAL", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL"};
+  state_str_ = { "INIT", "WAIT_TARGET", "PLAN_TO_NEXT_GOAL", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL" };
 
   /* Ros sub, pub and timer */
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PAExplorationFSM::FSMCallback, this);
@@ -42,7 +40,7 @@ void PAExplorationFSM::init(ros::NodeHandle &nh) {
   bspline_pub_ = nh.advertise<bspline::Bspline>("/planning/bspline", 10);
 }
 
-void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr &msg) {
+void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
   if (msg->poses[0].pose.position.z < -0.1) return;
 
   ROS_WARN("Receive Goal!!!");
@@ -64,7 +62,7 @@ void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr &msg) {
   if (exec_state_ == WAIT_TARGET) transitState(PLAN_TO_NEXT_GOAL, "TRIG");
 }
 
-void PAExplorationFSM::FSMCallback(const ros::TimerEvent &e) {
+void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
   ROS_INFO_STREAM_THROTTLE(1.0, "[FSM]: state: " << state_str_[int(exec_state_)]);
 
   switch (exec_state_) {
@@ -93,7 +91,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent &e) {
         start_yaw_.setZero();
         start_yaw_(0) = odom_yaw_;
       } else {
-        LocalTrajData &info = planner_manager_->local_data_;
+        LocalTrajData& info = planner_manager_->local_data_;
         double t_r = (ros::Time::now() - info.start_time_).toSec() + fp_->replan_time_;
 
         start_pos_ = info.position_traj_.evaluateDeBoorT(t_r);
@@ -132,7 +130,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent &e) {
     }
 
     case MOVE_TO_NEXT_GOAL: {
-      LocalTrajData *info = &planner_manager_->local_data_;
+      LocalTrajData* info = &planner_manager_->local_data_;
       double t_cur = (ros::Time::now() - info->start_time_).toSec();
 
       // Replan if traj is almost fully executed
@@ -153,7 +151,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent &e) {
 }
 
 bool PAExplorationFSM::checkReachFinalGoal() {
-  const auto &sdf_map = planner_manager_->edt_environment_->sdf_map_;
+  const auto& sdf_map = planner_manager_->edt_environment_->sdf_map_;
 
   if ((odom_pos_ - final_goal_).norm() < 0.2 && sdf_map->getOccupancy(final_goal_) == SDFMap::FREE &&
       sdf_map->getDistance(final_goal_) > 0.2) {
@@ -178,13 +176,8 @@ int PAExplorationFSM::callExplorationPlanner() {
 
   if (res == NO_FRONTIER || res == NO_AVAILABLE_FRONTIER) return res;
 
-  // cout << "next_pos: " << next_pos.transpose() << endl;
-  // cout << "next_yaw: " << next_yaw << endl;
-
   visualization_->drawNextGoal(next_pos, 0.3, Eigen::Vector4d(0, 0, 1, 1.0));
 
-  // if (expl_manager_->planToNextGoal(next_pos, next_yaw))
-  // {
   auto info = &planner_manager_->local_data_;
   info->start_time_ = (ros::Time::now() - time_r).toSec() > 0 ? ros::Time::now() : time_r;
 
@@ -200,6 +193,7 @@ int PAExplorationFSM::callExplorationPlanner() {
     pt.z = pos_pts(i, 2);
     bspline.pos_pts.push_back(pt);
   }
+
   Eigen::VectorXd knots = info->position_traj_.getKnot();
   for (int i = 0; i < knots.rows(); ++i) {
     bspline.knots.push_back(knots(i));
@@ -212,7 +206,6 @@ int PAExplorationFSM::callExplorationPlanner() {
   bspline.yaw_dt = info->yaw_traj_.getKnotSpan();
 
   newest_traj_ = bspline;
-  // }
 
   return res;
 }
@@ -231,9 +224,8 @@ void PAExplorationFSM::visualize() {
   // Draw frontier
   static int last_ftr_num = 0;
   for (int i = 0; i < ed_ptr->frontiers_.size(); ++i) {
-    visualization_->drawCubes(ed_ptr->frontiers_[i], 0.1,
-                              visualization_->getColor(double(i) / ed_ptr->frontiers_.size(), 0.4),
-                              "frontier", i, 4);
+    visualization_->drawCubes(
+        ed_ptr->frontiers_[i], 0.1, visualization_->getColor(double(i) / ed_ptr->frontiers_.size(), 0.4), "frontier", i, 4);
   }
 
   for (int i = ed_ptr->frontiers_.size(); i < last_ftr_num; ++i) {
@@ -242,11 +234,10 @@ void PAExplorationFSM::visualize() {
 
   last_ftr_num = ed_ptr->frontiers_.size();
 
-  visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15,
-                              Vector4d(1, 1, 0, 1));
+  visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
 }
 
-void PAExplorationFSM::frontierCallback(const ros::TimerEvent &e) {
+void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   static int delay = 0;
   if (++delay < 5) {
     return;
@@ -264,9 +255,8 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent &e) {
 
     // Draw frontier and bounding box
     for (int i = 0; i < ed->frontiers_.size(); ++i) {
-      visualization_->drawCubes(ed->frontiers_[i], 0.1,
-                                visualization_->getColor(double(i) / ed->frontiers_.size(), 0.4), "frontier",
-                                i, 4);
+      visualization_->drawCubes(
+          ed->frontiers_[i], 0.1, visualization_->getColor(double(i) / ed->frontiers_.size(), 0.4), "frontier", i, 4);
     }
 
     for (int i = ed->frontiers_.size(); i < 50; ++i) {
@@ -275,7 +265,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent &e) {
   }
 }
 
-void PAExplorationFSM::safetyCallback(const ros::TimerEvent &e) {
+void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
   if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
     // Check safety and trigger replan if necessary
     double dist;
@@ -287,7 +277,7 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent &e) {
   }
 }
 
-void PAExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg) {
+void PAExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
   odom_pos_(0) = msg->pose.pose.position.x;
   odom_pos_(1) = msg->pose.pose.position.y;
   odom_pos_(2) = msg->pose.pose.position.z;
@@ -307,7 +297,7 @@ void PAExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg) {
   have_odom_ = true;
 }
 
-void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string &pos_call) {
+void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string& pos_call) {
   int pre_s = int(exec_state_);
   exec_state_ = new_state;
   cout << "[" + pos_call + "]: from " + state_str_[pre_s] + " to " + state_str_[int(new_state)] << endl;

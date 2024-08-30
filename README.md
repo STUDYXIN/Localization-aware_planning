@@ -50,3 +50,99 @@
 - **手动进行clang-format** 在`ClangFormat.py`的目录打开终端，运行 `python3 ClangFormat.py`,弹出一系列被格式化的文件，则格式化成功，注：目前只格式化`.cpp` 和 `.h`文件
 
 - **自动进行clang-format** 保存的时候自动格式化，注意可以在使用 `Ctrl+Shift+I` 确保编辑器中的代码文件，选择 "Format Document"。
+
+### 8月30日更新
+
+- **FeatureMap::get_NumCloud_using_CamPosOrient**
+
+  **功能：**  
+  根据`相机的位置和方向`，返回相机视野中的特征点云及其数量。
+
+  **函数声明与重载：**
+
+  ```cpp
+  int get_NumCloud_using_CamPosOrient(
+        const Eigen::Vector3d& pos, 
+        const Eigen::Quaterniond& orient, 
+        vector<Eigen::Vector3d>& res);
+  ```
+
+  **参数：**
+  - `pos`：相机的位置（在世界坐标系中）。
+  - `orient`：相机的方向（以四元数表示）。
+  - `res`：输出参数，包含相机视野中的特征点云。
+
+  **返回值：**
+  - 返回在相机视野中的特征点数量。  
+
+  ```cpp
+  int get_NumCloud_using_CamPosOrient(
+        const Eigen::Vector3d& pos,
+        const Eigen::Quaterniond& orient);
+  ```
+
+  **参数：**
+  - `pos`：相机的位置（在世界坐标系中）。
+  - `orient`：相机的方向（以四元数表示）。
+
+  **返回值：**
+  - 返回在相机视野中的特征点数量。  
+
+- **FeatureMap::get_NumCloud_using_Odom**
+
+  **功能：**  
+  根据`odom信息`，返回相机视野中的特征点云及其数量。
+
+  **函数声明与重载：**
+
+  ```cpp
+  int get_NumCloud_using_Odom(
+      const Eigen::Vector3d& pos,
+      const Eigen::Quaterniond& orient,
+      vector<Eigen::Vector3d>& res);
+  ```
+
+  **参数：**
+  - `pos`：odom的位置（在世界坐标系中）。
+  - `orient`：odom的方向（以四元数表示）。
+  - `res`：输出参数，包含相机视野中的特征点云。
+
+  **返回值：**
+  - 返回在相机视野中的特征点数量。  
+
+  ```cpp
+  int get_NumCloud_using_Odom(
+      const nav_msgs::OdometryConstPtr& msg,
+      vector<Eigen::Vector3d>& res);
+  ```
+
+  **参数：**
+  - `msg`：包含无人机位姿和方向的里程计消息。
+  - `res`：输出参数，包含相机视野中的特征点云。
+
+  **返回值：**
+  - 返回在相机视野中的特征点数量。  
+
+  ```cpp
+  int get_NumCloud_using_Odom(
+      const Eigen::Vector3d& pos,
+      const Eigen::Quaterniond& orient);
+  ```
+
+  **参数：**
+  - `pos`：odom的位置（在世界坐标系中）。
+  - `orient`：odom的方向（以四元数表示）。
+
+  **返回值：**
+  - 返回在相机视野中的特征点数量。  
+
+  ```cpp
+  int get_NumCloud_using_Odom(
+      const nav_msgs::OdometryConstPtr& msg);
+  ```
+
+  **参数：**
+  - `msg`：包含无人机位姿和方向的里程计消息。
+
+  **返回值：**
+  - 返回在相机视野中的特征点数量。  

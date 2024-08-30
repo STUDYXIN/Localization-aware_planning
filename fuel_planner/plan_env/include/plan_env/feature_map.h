@@ -10,7 +10,7 @@
 #include <pcl/point_types.h>
 #include <pcl/search/kdtree.h>
 #include <pcl_conversions/pcl_conversions.h>
-
+#include <Eigen/Dense>
 #include <Eigen/Eigen>
 #include <memory>
 #include <pcl/search/impl/kdtree.hpp>
@@ -19,6 +19,7 @@ using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+using namespace Eigen;
 
 namespace fast_planner {
 class CameraParam {
@@ -33,6 +34,7 @@ public:
   double fov_vertical;
   double feature_visual_min;
   double feature_visual_max;
+  Eigen::Matrix4d sensor2body;
 
   void init(ros::NodeHandle& nh) {
     nh.param("feature/cam_cx", cx, 321.046);
@@ -43,6 +45,18 @@ public:
     nh.param("feature/cam_height", height, 480);
     nh.param("feature/feature_visual_max", feature_visual_max, 10.0);
     nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
+    std::vector<double> cam02body;
+    if (nh.getParam("feature/cam02body", cam02body)) {
+      if (cam02body.size() == 16) {
+        sensor2body << cam02body[0], cam02body[1], cam02body[2], cam02body[3], cam02body[4], cam02body[5], cam02body[6],
+            cam02body[7], cam02body[8], cam02body[9], cam02body[10], cam02body[11], cam02body[12], cam02body[13],
+            cam02body[14], cam02body[15];
+      } else {
+        ROS_ERROR("Parameter 'feature/cam02body' size is incorrect. Expected 16 values.");
+      }
+    } else {
+      ROS_ERROR("Failed to get parameter 'feature/cam02body'.");
+    }
     fov_horizontal = 2 * atan(width / (2 * fx)) * 180 / M_PI;
     fov_vertical = 2 * atan(height / (2 * fy)) * 180 / M_PI;
     printParameters();
@@ -98,8 +112,14 @@ public:
   void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
   void sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose);
   void pubDebugmsg(int debugMode = 0);
-  int get_NumCloud_using_PosOrient(
+  int get_NumCloud_using_CamPosOrient(
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res);
+  int get_NumCloud_using_CamPosOrient(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
+  int get_NumCloud_using_Odom(
+      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res);
+  int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<Eigen::Vector3d>& res);
+  int get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
+  int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg);
   Config config_;
   shared_ptr<SDFMap> sdf_map;
   CameraParam camera_param;

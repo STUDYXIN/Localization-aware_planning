@@ -21,6 +21,8 @@ using fast_planner::PolynomialTraj;
 ros::Publisher cmd_vis_pub, pos_cmd_pub, traj_pub;
 nav_msgs::Odometry odom;
 quadrotor_msgs::PositionCommand cmd;
+quadrotor_msgs::PositionCommand emergency_stop_cmd;
+bool flag_emergency_stop = false;
 
 // Info of generated traj
 vector<NonUniformBspline> traj_;
@@ -37,6 +39,7 @@ double replan_time_;
 
 // Executed traj, commanded and real ones
 vector<Eigen::Vector3d> traj_cmd_, traj_real_;
+vector<Eigen::Quaterniond> traj_real_yaw_;
 
 // Data for benchmark comparison
 ros::Time start_time, end_time, last_time;
@@ -162,6 +165,34 @@ void drawCmd(const Eigen::Vector3d& pos, const Eigen::Vector3d& vec, const int& 
   cmd_vis_pub.publish(mk_state);
 }
 
+void emergencyStopCallback(std_msgs::Empty msg) {
+  if (flag_emergency_stop) return;
+
+  ROS_WARN("emergencyStopCallback");
+
+  flag_emergency_stop = true;
+
+  emergency_stop_cmd.kx = { 5.7, 5.7, 6.2 };
+  emergency_stop_cmd.kv = { 3.4, 3.4, 4.0 };
+
+  emergency_stop_cmd.header.frame_id = "world";
+  emergency_stop_cmd.trajectory_flag = quadrotor_msgs::PositionCommand::TRAJECTORY_STATUS_READY;
+
+  emergency_stop_cmd.position.x = traj_real_.back().x();
+  emergency_stop_cmd.position.y = traj_real_.back().y();
+  emergency_stop_cmd.position.z = traj_real_.back().z();
+  emergency_stop_cmd.velocity.x = emergency_stop_cmd.velocity.y = emergency_stop_cmd.velocity.z = 0.0;
+  emergency_stop_cmd.acceleration.x = emergency_stop_cmd.acceleration.y = emergency_stop_cmd.acceleration.z = 0.0;
+
+  double yaw = traj_real_yaw_.back().toRotationMatrix().eulerAngles(0, 1, 2)[2];
+  emergency_stop_cmd.yaw = yaw;
+  emergency_stop_cmd.yaw_dot = 0.0;
+
+  traj_cmd_.clear();
+  traj_real_.clear();
+  traj_real_yaw_.clear();
+}
+
 void replanCallback(std_msgs::Empty msg) {
   // Informed of new replan, end the current traj after some time
   const double time_out = 0.3;
@@ -174,15 +205,18 @@ void newCallback(std_msgs::Empty msg) {
   // Clear the executed traj data
   traj_cmd_.clear();
   traj_real_.clear();
+  traj_real_yaw_.clear();
 }
 
 void odomCallbck(const nav_msgs::Odometry& msg) {
   if (msg.child_frame_id == "X" || msg.child_frame_id == "O") return;
   odom = msg;
-  traj_real_.push_back(
-      Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z));
+  traj_real_.push_back(Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z));
+  traj_real_yaw_.push_back(Eigen::Quaterniond(
+      odom.pose.pose.orientation.w, odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z));
 
   if (traj_real_.size() > 10000) traj_real_.erase(traj_real_.begin(), traj_real_.begin() + 1000);
+  if (traj_real_yaw_.size() > 10000) traj_real_yaw_.erase(traj_real_yaw_.begin(), traj_real_yaw_.begin() + 1000);
 }
 
 void pgTVioCallback(geometry_msgs::Pose msg) {
@@ -200,10 +234,6 @@ void visCallback(const ros::TimerEvent& e) {
   // displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(1, 0, 0, 1), pub_traj_id_);
   // displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(0, 1, 0, 1), pub_traj_id_);
   displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(0, 0, 1, 1), pub_traj_id_);
-
-  // displayTrajWithColor(traj_real_, 0.03, Eigen::Vector4d(0.925, 0.054, 0.964,
-  // 1),
-  //                      1);
 }
 
 void bsplineCallback(const bspline::BsplineConstPtr& msg) {
@@ -255,6 +285,24 @@ void cmdCallback(const ros::TimerEvent& e) {
   // No publishing before receive traj data
   if (!receive_traj_) return;
 
+  if (flag_emergency_stop) {
+    emergency_stop_cmd.header.stamp = ros::Time::now();
+    emergency_stop_cmd.trajectory_id = ++traj_id_;
+    pos_cmd_pub.publish(emergency_stop_cmd);
+
+    // cout << "target pos: " << emergency_stop_cmd.position.x << ", " << emergency_stop_cmd.position.y << ", "
+    //      << emergency_stop_cmd.position.z << endl;
+
+    // cout << "target vel: " << emergency_stop_cmd.velocity.x << ", " << emergency_stop_cmd.velocity.y << ", "
+    //      << emergency_stop_cmd.velocity.z << endl;
+
+    // cout << "target acc: " << emergency_stop_cmd.acceleration.x << ", " << emergency_stop_cmd.acceleration.y << ", "
+    //      << emergency_stop_cmd.acceleration.z << endl;
+
+    ROS_WARN("Publish emergency stop cmd");
+    return;
+  }
+
   ros::Time time_now = ros::Time::now();
   double t_cur = (time_now - start_time_).toSec();
   Eigen::Vector3d pos, vel, acc, jer;
@@ -268,7 +316,9 @@ void cmdCallback(const ros::TimerEvent& e) {
     yaw = traj_[3].evaluateDeBoorT(t_cur)[0];
     yawdot = traj_[4].evaluateDeBoorT(t_cur)[0];
     jer = traj_[5].evaluateDeBoorT(t_cur);
-  } else if (t_cur >= traj_duration_) {
+  }
+
+  else if (t_cur >= traj_duration_) {
     // Current time exceed range of planned traj
     // keep publishing the final position and yaw
     pos = traj_[0].evaluateDeBoorT(traj_duration_);
@@ -280,8 +330,8 @@ void cmdCallback(const ros::TimerEvent& e) {
     // Report info of the whole flight
     double len = calcPathLength(traj_cmd_);
     double flight_t = (end_time - start_time).toSec();
-    ROS_WARN_THROTTLE(2, "flight time: %lf, path length: %lf, mean vel: %lf, energy is: % lf ", flight_t, len,
-        len / flight_t, energy);
+    ROS_WARN_THROTTLE(
+        2, "flight time: %lf, path length: %lf, mean vel: %lf, energy is: % lf ", flight_t, len, len / flight_t, energy);
   } else {
     cout << "[Traj server]: invalid time." << endl;
   }
@@ -307,6 +357,15 @@ void cmdCallback(const ros::TimerEvent& e) {
   cmd.acceleration.x = acc(0);
   cmd.acceleration.y = acc(1);
   cmd.acceleration.z = acc(2);
+  // cmd.position.x = -12;
+  // cmd.position.y = 0;
+  // cmd.position.z = 1;
+  // cmd.velocity.x = 0;
+  // cmd.velocity.y = 0;
+  // cmd.velocity.z = 0;
+  // cmd.acceleration.x = 0;
+  // cmd.acceleration.y = 0;
+  // cmd.acceleration.z = 0;
   cmd.yaw = yaw;
   cmd.yaw_dot = yawdot;
   pos_cmd_pub.publish(cmd);
@@ -339,98 +398,12 @@ void cmdCallback(const ros::TimerEvent& e) {
   //   traj_cmd_.erase(traj_cmd_.begin(), traj_cmd_.begin() + 1000);
 }
 
-void test() {
-  // Test B-spline
-  // Generate the first B-spline's control points from a sin curve
-  vector<Eigen::Vector3d> samples;
-  const double dt1 = M_PI / 6.0;
-  for (double theta = 0; theta <= 2 * M_PI; theta += dt1) {
-    Eigen::Vector3d sample(theta, sin(theta), 1);
-    samples.push_back(sample);
-  }
-  Eigen::MatrixXd points(samples.size(), 3);
-  for (int i = 0; i < samples.size(); ++i) points.row(i) = samples[i].transpose();
-
-  Eigen::VectorXd times(samples.size() - 1);
-  times.setConstant(dt1);
-  times[0] += dt1;
-  times[times.rows() - 1] += dt1;
-  Eigen::Vector3d zero(0, 0, 0);
-
-  PolynomialTraj poly;
-  PolynomialTraj::waypointsTraj(points, zero, zero, zero, zero, times, poly);
-
-  const int degree = 5;
-  double duration = poly.getTotalTime();
-  vector<Eigen::Vector3d> traj_pts;
-  for (double ts = 0; ts <= duration; ts += 0.01) traj_pts.push_back(poly.evaluate(ts, 0));
-  // displayTrajWithColor(traj_pts, 0.05, Eigen::Vector4d(1, 0, 0, 1), 99);
-
-  // Fit the polynomialw with B-spline
-  const int seg_num = 30;
-  double dt = duration / seg_num;
-  vector<Eigen::Vector3d> point_set, boundary_der;
-  for (double ts = 0; ts <= 1e-3 + duration; ts += dt) point_set.push_back(poly.evaluate(ts, 0));
-
-  boundary_der.push_back(poly.evaluate(0, 1));
-  boundary_der.push_back(poly.evaluate(duration, 1));
-  boundary_der.push_back(poly.evaluate(0, 2));
-  boundary_der.push_back(poly.evaluate(duration, 2));
-
-  Eigen::MatrixXd ctrl_pts;
-  NonUniformBspline::parameterizeToBspline(dt, point_set, boundary_der, degree, ctrl_pts);
-  NonUniformBspline fitted(ctrl_pts, degree, dt);
-
-  traj_pts.clear();
-  double duration2 = fitted.getTimeSum();
-  for (double ts = 0; ts <= duration2; ts += 0.01) traj_pts.push_back(fitted.evaluateDeBoorT(ts));
-
-  vector<Eigen::Vector3d> ctrl_pts_vec;
-  for (int i = 0; i < ctrl_pts.rows(); ++i) {
-    Eigen::Vector3d pr = ctrl_pts.row(i).transpose();
-    ctrl_pts_vec.push_back(pr);
-  }
-  displayTrajWithColor(ctrl_pts_vec, 0.1, Eigen::Vector4d(1, 1, 0, 1), 98);
-  displayTrajWithColor(traj_pts, 0.05, Eigen::Vector4d(1, 0, 0, 1), 99);
-
-  auto vel = fitted.getDerivative();
-  auto acc = vel.getDerivative();
-
-  ros::Duration(0.1).sleep();
-
-  // Pub the traj
-  auto t1 = ros::Time::now();
-  double tn = (ros::Time::now() - t1).toSec();
-  while (tn < duration && ros::ok()) {
-    // Eigen::Vector3d p = bspline.evaluateDeBoorT(tn);
-    // Eigen::Vector3d v = vel.evaluateDeBoorT(tn);
-    // Eigen::Vector3d a = acc.evaluateDeBoorT(tn);
-    Eigen::Vector3d p = fitted.evaluateDeBoorT(tn);
-    Eigen::Vector3d v = vel.evaluateDeBoorT(tn);
-    Eigen::Vector3d a = acc.evaluateDeBoorT(tn);
-
-    cmd.header.stamp = ros::Time::now();
-    cmd.position.x = p(0);
-    cmd.position.y = p(1);
-    cmd.position.z = p(2);
-    cmd.velocity.x = v(0);
-    cmd.velocity.y = v(1);
-    cmd.velocity.z = v(2);
-    cmd.acceleration.x = a(0);
-    cmd.acceleration.y = a(1);
-    cmd.acceleration.z = a(2);
-    pos_cmd_pub.publish(cmd);
-
-    ros::Duration(0.02).sleep();
-    tn = (ros::Time::now() - t1).toSec();
-  }
-}
-
 int main(int argc, char** argv) {
   ros::init(argc, argv, "traj_server");
   ros::NodeHandle node;
   ros::NodeHandle nh("~");
 
+  ros::Subscriber emergency_stop_sub = node.subscribe("planning/emergency_stop", 10, emergencyStopCallback);
   ros::Subscriber bspline_sub = node.subscribe("planning/bspline", 10, bsplineCallback);
   ros::Subscriber replan_sub = node.subscribe("planning/replan", 10, replanCallback);
   ros::Subscriber new_sub = node.subscribe("planning/new", 10, newCallback);

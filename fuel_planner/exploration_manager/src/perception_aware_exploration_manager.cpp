@@ -102,6 +102,8 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
 
   // 需要渐进地通过前沿区域朝目标点摸索
 
+  // 使用混合A*算法搜索最优路径
+
   // Search frontiers and group them into clusters
   frontier_finder_->searchFrontiers();
 
@@ -211,7 +213,8 @@ bool PAExplorationManager::planToNextGoal(const Vector3d& next_pos, const double
   //   }
   // }
 
-  if (!planner_manager_->kinodynamicReplan(start_pos, start_vel, start_acc, next_pos, Vector3d::Zero(), time_lb)) {
+  if (!planner_manager_->kinodynamicReplan(
+          start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
     return false;
   }
 

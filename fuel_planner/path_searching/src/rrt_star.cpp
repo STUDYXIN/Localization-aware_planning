@@ -304,7 +304,9 @@ void RRTStar::generateNewNode(const Vector3d& pos, vector<RRTNode::Ptr>& nodes) 
     // std::cout << "input pos: " << pos.transpose() << std::endl;
     // std::cout << "input yaw: " << yaw << std::endl;
 
-    auto feature_num = feature_map_->get_NumCloud_using_PosOrient(pos, quat, res);
+    auto feature_num = feature_map_->get_NumCloud_using_Odom(pos, quat, res);
+    // RRTNode* node = tree_.front().get();
+    // auto feature_num = feature_map_->get_NumCloud_using_Odom(node->position_, Quaterniond::Identity(), res);
     // cout << "feature_num: " << feature_num << endl;
 
     if (feature_num > param_.min_feature_num_) {

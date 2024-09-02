@@ -6,17 +6,10 @@ namespace fast_planner {
 
 FeatureMap::FeatureMap() {
 }
-FeatureMap::FeatureMap() {
-}
 
 FeatureMap::~FeatureMap() {
 }
-FeatureMap::~FeatureMap() {
-}
 
-void FeatureMap::setMap(shared_ptr<SDFMap>& map) {
-  this->sdf_map = map;
-}
 void FeatureMap::setMap(shared_ptr<SDFMap>& map) {
   this->sdf_map = map;
 }

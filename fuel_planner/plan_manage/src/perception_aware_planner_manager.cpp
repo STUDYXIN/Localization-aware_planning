@@ -1,4 +1,5 @@
 #include "plan_manage/perception_aware_planner_manager.h"
+#include "plan_manage/utils.hpp"
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -9,6 +10,8 @@
 #include <visualization_msgs/Marker.h>
 
 #include <thread>
+
+using namespace Eigen;
 
 namespace fast_planner {
 // SECTION interfaces for setup and query
@@ -35,6 +38,8 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
   nh.param("manager/control_points_distance", pp_.ctrl_pt_dist, -1.0);
   nh.param("manager/bspline_degree", pp_.bspline_degree_, 3);
   nh.param("manager/min_time", pp_.min_time_, false);
+
+  nh.param("manager/min_feature_num", pp_.min_feature_num_, -1);
 
   bool use_geometric_path, use_kinodynamic_path, use_topo_path, use_optimization, use_active_perception;
   bool use_sample_path;
@@ -66,9 +71,9 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
 
   if (use_kinodynamic_path) {
     kino_path_finder_.reset(new KinodynamicAstar);
-    kino_path_finder_->setParam(nh);
-    kino_path_finder_->setEnvironment(edt_environment_);
-    kino_path_finder_->init();
+    // kino_path_finder_->setParam(nh);
+    // kino_path_finder_->setEnvironment(edt_environment_);
+    kino_path_finder_->init(nh, edt_environment_);
   }
 
   if (use_optimization) {
@@ -115,6 +120,42 @@ bool FastPlannerManager::checkTrajCollision(double& distance) {
       distance = radius;
       // std::cout << "collision at: " << fut_pt.transpose() << ", dist: " << dist << std::endl;
       std::cout << "collision at: " << fut_pt.transpose() << std::endl;
+      return false;
+    }
+    radius = (fut_pt - cur_pt).norm();
+    fut_t += 0.02;
+  }
+
+  return true;
+}
+
+bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Quaterniond& orient) {
+  if (feature_map_ == nullptr) return true;
+
+  return feature_map_->get_NumCloud_using_Odom(pos, orient) > pp_.min_feature_num_;
+}
+
+bool FastPlannerManager::checkTrajLocalizability(double& distance) {
+  double t_now = (ros::Time::now() - local_data_.start_time_).toSec();
+
+  Eigen::Vector3d cur_pt = local_data_.position_traj_.evaluateDeBoorT(t_now);
+  double radius = 0.0;
+  Eigen::Vector3d fut_pt;
+  double fut_yaw;
+  Eigen::Vector3d fut_acc;
+  double fut_t = 0.02;
+
+  while (radius < 6.0 && t_now + fut_t < local_data_.duration_) {
+    fut_pt = local_data_.position_traj_.evaluateDeBoorT(t_now + fut_t);
+    fut_yaw = local_data_.yaw_traj_.evaluateDeBoorT(t_now + fut_t)[0];
+    fut_acc = local_data_.acceleration_traj_.evaluateDeBoorT(t_now + fut_t);
+
+    Quaterniond fut_orient = Utils::calcOrientation(fut_yaw, fut_acc);
+
+    if (!checkCurrentLocalizability(fut_pt, fut_orient)) {
+      distance = radius;
+      // std::cout << "collision at: " << fut_pt.transpose() << ", dist: " << dist << std::endl;
+      std::cout << "poor localizability at: " << fut_pt.transpose() << std::endl;
       return false;
     }
     radius = (fut_pt - cur_pt).norm();
@@ -219,13 +260,15 @@ bool FastPlannerManager::sampleBasedReplan(const Eigen::Vector3d& start_pt, cons
 
 // SECTION kinodynamic replanning
 
-bool FastPlannerManager::kinodynamicReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel,
-    const Eigen::Vector3d& start_acc, const Eigen::Vector3d& end_pt, const Eigen::Vector3d& end_vel, const double& time_lb) {
+bool FastPlannerManager::kinodynamicReplan(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
+    const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb) {
   std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
   std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
   std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
+  std::cout << "[Kino replan]: start yaw: " << start_yaw << endl;
   std::cout << "[Kino replan]: end pos: " << end_pt.transpose() << endl;
   std::cout << "[Kino replan]: end vel: " << end_vel.transpose() << endl;
+  std::cout << "[Kino replan]: end yaw: " << end_yaw << endl;
 
   if ((start_pt - end_pt).norm() < 1e-2) {
     cout << "Close goal" << endl;
@@ -236,16 +279,25 @@ bool FastPlannerManager::kinodynamicReplan(const Eigen::Vector3d& start_pt, cons
 
   auto time_start = ros::Time::now();
 
+  kino_path_finder_->setFeatureMap(feature_map_);
   kino_path_finder_->reset();
-  int status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+  // int status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+  // if (status == KinodynamicAstar::NO_PATH) {
+  //   ROS_ERROR("Init kinodynamic A* search fail");
+  //   // Retry
+  //   kino_path_finder_->reset();
+  //   status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
+  //   if (status == KinodynamicAstar::NO_PATH) {
+  //     return false;
+  //   }
+  // }
+
+  ROS_INFO("Start search");
+  int status = kino_path_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
+  ROS_INFO("End search");
   if (status == KinodynamicAstar::NO_PATH) {
-    ROS_ERROR("Init kinodynamic A* search fail");
-    // Retry
-    kino_path_finder_->reset();
-    status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
-    if (status == KinodynamicAstar::NO_PATH) {
-      return false;
-    }
+    ROS_ERROR("Kinodynamic A* search fail");
+    return false;
   }
   plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
 
@@ -281,8 +333,6 @@ bool FastPlannerManager::kinodynamicReplan(const Eigen::Vector3d& start_pt, cons
 
   double time_opt = (ros::Time::now() - time_start_2).toSec();
   ROS_WARN("Time cost of optimize: %lf(sec)", time_opt);
-
-  // ROS_WARN("Kino t: %lf, opt: %lf", t_search, t_opt);
 
   updateTrajInfo();
 

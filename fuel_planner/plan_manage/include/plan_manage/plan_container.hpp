@@ -14,8 +14,8 @@ using std::vector;
 
 namespace fast_planner {
 class GlobalTrajData {
- private:
- public:
+private:
+public:
   PolynomialTraj global_traj_;
   vector<NonUniformBspline> local_traj_;
 
@@ -25,13 +25,17 @@ class GlobalTrajData {
   double time_change_;
   double last_time_inc_;
 
-  GlobalTrajData(/* args */) {}
+  GlobalTrajData(/* args */) {
+  }
 
-  ~GlobalTrajData() {}
+  ~GlobalTrajData() {
+  }
 
-  bool localTrajReachTarget() { return fabs(local_end_time_ - global_duration_) < 1e-3; }
+  bool localTrajReachTarget() {
+    return fabs(local_end_time_ - global_duration_) < 1e-3;
+  }
 
-  void setGlobalTraj(const PolynomialTraj &traj, const ros::Time &time) {
+  void setGlobalTraj(const PolynomialTraj& traj, const ros::Time& time) {
     global_traj_ = traj;
     global_duration_ = global_traj_.getTotalTime();
     global_start_time_ = time;
@@ -43,8 +47,7 @@ class GlobalTrajData {
     last_time_inc_ = 0.0;
   }
 
-  void setLocalTraj(const NonUniformBspline &traj, const double &local_ts, const double &local_te,
-                    const double &time_change) {
+  void setLocalTraj(const NonUniformBspline& traj, const double& local_ts, const double& local_te, const double& time_change) {
     local_traj_.resize(3);
     local_traj_[0] = traj;
     local_traj_[1] = local_traj_[0].getDerivative();
@@ -57,7 +60,7 @@ class GlobalTrajData {
     last_time_inc_ = time_change;
   }
 
-  Eigen::Vector3d getState(const double &t, const int &k) {
+  Eigen::Vector3d getState(const double& t, const int& k) {
     if (t >= -1e-3 && t <= local_start_time_)
       return global_traj_.evaluate(t - time_change_ + last_time_inc_, k);
     else if (t >= local_end_time_ && t <= global_duration_ + 1e-3)
@@ -67,9 +70,8 @@ class GlobalTrajData {
   }
 
   // Get data required to parameterize a Bspline within a duration
-  void getTrajInfoInDuration(const double &start_t, const double &duration, const double &dt,
-                             vector<Eigen::Vector3d> &point_set,
-                             vector<Eigen::Vector3d> &start_end_derivative) {
+  void getTrajInfoInDuration(const double& start_t, const double& duration, const double& dt, vector<Eigen::Vector3d>& point_set,
+      vector<Eigen::Vector3d>& start_end_derivative) {
     for (double tp = 0.0; tp <= duration + 1e-4; tp += dt) {
       auto cur_pt = getState(start_t + tp, 0);
       point_set.push_back(cur_pt);
@@ -81,9 +83,8 @@ class GlobalTrajData {
   }
 
   // Get data required to parameterize a Bspline within a sphere
-  void getTrajInfoInSphere(const double &start_t, const double &radius, const double &dist_pt,
-                           vector<Eigen::Vector3d> &point_set, vector<Eigen::Vector3d> &start_end_derivative,
-                           double &dt, double &duration) {
+  void getTrajInfoInSphere(const double& start_t, const double& radius, const double& dist_pt, vector<Eigen::Vector3d>& point_set,
+      vector<Eigen::Vector3d>& start_end_derivative, double& dt, double& duration) {
     double segment_len = 0.0;                         // Length of the truncated segment
     double segment_time = 0.0;                        // Duration of the truncated segment
     Eigen::Vector3d first_pt = getState(start_t, 0);  // First point of the segment
@@ -125,6 +126,8 @@ struct PlanParameters {
   double time_search_ = 0.0;
   double time_optimize_ = 0.0;
   double time_adjust_ = 0.0;
+
+  int min_feature_num_;
 };
 
 struct LocalTrajData {
@@ -134,8 +137,7 @@ struct LocalTrajData {
   double duration_;
   ros::Time start_time_;
   Eigen::Vector3d start_pos_;
-  NonUniformBspline position_traj_, velocity_traj_, acceleration_traj_, yaw_traj_, yawdot_traj_,
-      yawdotdot_traj_;
+  NonUniformBspline position_traj_, velocity_traj_, acceleration_traj_, yaw_traj_, yawdot_traj_, yawdotdot_traj_;
 };
 
 // structure of trajectory info
@@ -146,17 +148,18 @@ struct LocalTrajState {
 };
 
 class LocalTrajServer {
- private:
+private:
   LocalTrajData traj1_, traj2_;
 
- public:
+public:
   LocalTrajServer(/* args */) {
     traj1_.traj_id_ = 0;
     traj2_.traj_id_ = 0;
   }
-  ~LocalTrajServer() {}
+  ~LocalTrajServer() {
+  }
 
-  void addTraj(const LocalTrajData &traj) {
+  void addTraj(const LocalTrajData& traj) {
     if (traj1_.traj_id_ == 0) {
       // receive the first traj, save in traj1
       traj1_ = traj;
@@ -165,7 +168,7 @@ class LocalTrajServer {
     }
   }
 
-  bool evaluate(const ros::Time &time, LocalTrajState &traj_state) {
+  bool evaluate(const ros::Time& time, LocalTrajState& traj_state) {
     if (traj1_.traj_id_ == 0) {
       // not receive traj yet
       return false;
@@ -215,9 +218,11 @@ class LocalTrajServer {
 };
 
 class MidPlanData {
- public:
-  MidPlanData(/* args */) {}
-  ~MidPlanData() {}
+public:
+  MidPlanData(/* args */) {
+  }
+  ~MidPlanData() {
+  }
 
   vector<Eigen::Vector3d> global_waypoints_;
 
@@ -261,9 +266,8 @@ class MidPlanData {
     topo_select_paths_.clear();
   }
 
-  void addTopoPaths(list<GraphNode::Ptr> &graph, vector<vector<Eigen::Vector3d>> &paths,
-                    vector<vector<Eigen::Vector3d>> &filtered_paths,
-                    vector<vector<Eigen::Vector3d>> &selected_paths) {
+  void addTopoPaths(list<GraphNode::Ptr>& graph, vector<vector<Eigen::Vector3d>>& paths,
+      vector<vector<Eigen::Vector3d>>& filtered_paths, vector<vector<Eigen::Vector3d>>& selected_paths) {
     topo_graph_ = graph;
     topo_paths_ = paths;
     topo_filtered_paths_ = filtered_paths;

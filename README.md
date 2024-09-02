@@ -5,7 +5,7 @@
 - **新增特征点地图**：现在支持特征点地图，数量限制在250个左右。
 - **增加交互接口**：
   - 函数
-  `int FeatureMap::get_NumCloud_using_PosOrient(const Eigen::Vector3d &pos, const Eigen::Quaterniond &orient, vector<Eigen::Vector3d> &res)`：
+    `int FeatureMap::get_NumCloud_using_PosOrient(const Eigen::Vector3d &pos, const Eigen::Quaterniond &orient, vector<Eigen::Vector3d> &res)`：
     - **功能**：输入任意位姿，导出可见的特征点云及数量。
     - **用法**：可以参考 `void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose)` 函数，此函数实时发布当前里程计可见的特征点云。
 
@@ -146,3 +146,70 @@
 
   **返回值：**
   - 返回在相机视野中的特征点数量。  
+
+### 9月2日更新
+
+**`path_searching`功能包：**
+
+- 新加入了RRT*相关的代码，调用的接口如下：
+
+  ```c++
+  bool sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw, const double& time_lb = -1);
+  ```
+
+  然而由于没有考虑动力学，使用RRT*规划飞行的效果不是很好，并且在waypoint数量只有2个时会导致程序崩溃，懒得修，目前暂时还是采用混合Astar
+
+  
+
+- 将混合Astar的状态中加入了yaw维度，输入中加入了yaw_rate维度，目前只是简单将FOV里特征点少于阈值的节点视为Invalid，目前单次search的时间可达几百ms，后面需要优化过程减少耗时
+
+- 后端轨迹优化暂时还没有把APACE揉进去
+
+  
+
+**`exploration_manager`功能包：**
+
+- 加入了任务失败检测的机制，原理是开启定时器，检测当前FOV特征点是否少于阈值，如果是就触发急停，无人机停在当前位置，FSM没有后续状态跳转，具体触发部分在如下代码：
+
+  ```C++
+  void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
+    if (!have_odom_) {
+      return;
+    }
+  
+    // if (exec_state_ == FSM_EXEC_STATE::EMERGENCY_STOP) {
+    //   return;
+    // }
+  
+    if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_)) {
+      ROS_WARN("Replan: Too few features detected==================================");
+      emergency_stop_pub_.publish(std_msgs::Empty());
+      transitState(EMERGENCY_STOP, "safetyCallback");
+      return;
+    }
+  
+    if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
+      // Check safety and trigger replan if necessary
+      double dist;
+      bool safe = planner_manager_->checkTrajLocalizability(dist);
+      if (!safe) {
+        ROS_WARN("Replan: Poor localizability detected==================================");
+        transitState(PLAN_TO_NEXT_GOAL, "safetyCallback");
+      }
+    }
+  
+    if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
+      // Check safety and trigger replan if necessary
+      double dist;
+      bool safe = planner_manager_->checkTrajCollision(dist);
+      if (!safe) {
+        ROS_WARN("Replan: collision detected==================================");
+        transitState(PLAN_TO_NEXT_GOAL, "safetyCallback");
+      }
+    }
+  }
+  ```
+
+  
+
+- 预留了重规划的状态机定义，但是还没有写跳转

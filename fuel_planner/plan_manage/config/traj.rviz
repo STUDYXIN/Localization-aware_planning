@@ -16,6 +16,8 @@ Panels:
         - /processed_msg1/Namespaces1
         - /PointCloud21/Autocompute Value Bounds1
         - /Marker2
+        - /Marker3
+        - /MarkerArray1
       Splitter Ratio: 0.5216138362884521
     Tree Height: 880
   - Class: rviz/Selection
@@ -661,8 +663,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 3.151099920272827
-        Min Value: 0.3003920018672943
+        Max Value: 3.498650074005127
+        Min Value: 0.21776700019836426
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -691,7 +693,7 @@ Visualization Manager:
       Marker Topic: /exploration_node/rrt/path
       Name: Marker
       Namespaces:
-        Path: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -699,7 +701,23 @@ Visualization Manager:
       Marker Topic: /exploration_node/rrt/tree
       Name: Marker
       Namespaces:
-        Tree: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /exploration_node/kinodynamic_astar/pos
+      Name: Marker
+      Namespaces:
+        Path: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /exploration_node/kinodynamic_astar/angle
+      Name: MarkerArray
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -729,7 +747,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 21.009132385253906
+      Distance: 29.51631736755371
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -747,7 +765,7 @@ Visualization Manager:
       Near Clip Distance: 0.009999999776482582
       Pitch: 1.2597967386245728
       Target Frame: <Fixed Frame>
-      Yaw: 2.801504135131836
+      Yaw: 2.8115041255950928
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 40.93450164794922

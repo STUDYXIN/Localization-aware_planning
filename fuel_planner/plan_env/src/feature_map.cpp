@@ -22,6 +22,7 @@ void FeatureMap::initMap(ros::NodeHandle& nh) {
     nh.param<std::string>("feature/filename", filename, std::string(""));  //显式指定默认值为 std::string
     loadMap(filename);
   }
+  nh.param("feature/yaw_samples_max", yaw_samples_max, 360);
   camera_param.init(nh);
   // ros sub and pub
   odom_sub_ = nh.subscribe("/odom_world", 1, &FeatureMap::odometryCallback, this);
@@ -289,4 +290,28 @@ int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg) {
       msg->pose.pose.orientation.z);
   return get_NumCloud_using_Odom(pos, orient);
 }
+
+void FeatureMap::getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw) {
+  sorted_yaw.clear();
+  const double yaw_step = 2 * M_PI / yaw_samples_max;  // Yaw step in radians
+  pcl::PointXYZ searchPoint;
+  searchPoint.x = pos(0);
+  searchPoint.y = pos(1);
+  searchPoint.z = pos(2);
+
+  vector<int> pointIdxRadiusSearch;
+  vector<float> pointRadiusSquaredDistance;
+  features_kdtree_.radiusSearch(
+      searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+
+  for (const auto& index : pointIdxRadiusSearch) {
+    Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (camera_param.is_depth_useful(pos, f) &&
+        !sdf_map->checkObstacleBetweenPoints(
+            pos, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+    {
+    }
+  }
+}
+
 }  // namespace fast_planner

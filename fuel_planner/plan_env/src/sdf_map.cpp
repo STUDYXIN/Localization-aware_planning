@@ -529,7 +529,13 @@ bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eige
   caster_->input(start, end);
   Eigen::Vector3i idx;
   while (caster_->nextId(idx)) {
-    if (getOccupancy(idx) == OCCUPIED) return true;  // 检测到障碍物
+    if (getOccupancy(idx) == OCCUPIED)  //多投射一次
+    {
+      if (caster_->nextId(idx))  //还没有到达终点
+        return true;             // 检测到障碍物
+      else
+        return false;
+    }
   }
   return false;  // 没有检测到障碍物
 }

@@ -88,6 +88,10 @@ public:
     bool within_vertical_fov = std::abs(fov_y) <= fov_vertical / 2.0;
     return within_horizontal_fov && within_vertical_fov;
   }
+
+  bool is_depth_useful(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
+    return (target_p - camera_p).norm() > feature_visual_min && (target_p - camera_p).norm() < feature_visual_max;
+  }
 };
 
 class EDTEnvironment;
@@ -120,11 +124,13 @@ public:
   int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<Eigen::Vector3d>& res);
   int get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
   int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg);
+  void getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw);
   Config config_;
   shared_ptr<SDFMap> sdf_map;
   CameraParam camera_param;
   ros::Subscriber odom_sub_, sensorpos_sub;
   ros::Publisher feature_map_pub_, visual_feature_cloud_pub_;
+  int yaw_samples_max;
 
 private:
   pcl::PointCloud<pcl::PointXYZ> features_cloud_;

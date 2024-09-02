@@ -24,6 +24,8 @@
   <arg name="max_acc"/>
   <arg name="feature_filename" default=""/>
 
+  <arg name="min_feature_num"/>
+
   <arg name="point_num"/>
 
   <arg name="point0_x"/>
@@ -110,6 +112,7 @@
     <param name="fsm/thresh_replan1" value="0.5" type="double"/>
     <param name="fsm/thresh_replan2" value="0.5" type="double"/>
     <param name="fsm/thresh_replan3" value="1.5" type="double"/>
+    <param name="fsm/min_feature_num" value="$(arg min_feature_num)" type="int"/>
 
     <!-- <param name="fsm/thresh_replan1" value="0.00001" type="double"/> -->
     <!-- <param name="fsm/thresh_replan2" value="100.0" type="double"/> -->
@@ -196,10 +199,12 @@
     <param name="manager/control_points_distance" value="0.35" type="double"/>
     <param name="manager/use_geometric_path" value="true" type="bool"/>
     <param name="manager/use_kinodynamic_path" value="true" type="bool"/>
+    <param name="manager/use_sample_path" value="true" type="bool"/>
     <param name="manager/use_topo_path" value="true" type="bool"/>
     <param name="manager/use_optimization" value="true" type="bool"/>
     <param name="manager/use_active_perception" value="true" type="bool"/>
     <param name="manager/min_time" value="true" type="bool"/>
+    <param name="manager/min_feature_num" value="$(arg min_feature_num)" type="int"/>
 
     <!-- kinodynamic path searching -->
     <param name="search/max_tau" value="0.8" type="double"/>
@@ -217,12 +222,31 @@
     <param name="search/check_num" value="10" type="int"/>
     <param name="search/optimistic" value="false" type="bool"/>
 
+    <param name="search/max_yaw_rate" value="0.6" type="double"/>
+    <param name="search/yaw_origin" value="-1000.0" type="double"/>
+    <param name="search/yaw_size" value="2000.0" type="double"/>
+    <param name="search/min_feature_num" value="$(arg min_feature_num)" type="int"/>
+
     <param name="astar/lambda_heu" value="10000.0" type="double"/>
     <param name="astar/resolution_astar" value="0.2" type="double"/>
     <param name="astar/allocate_num" value="1000000" type="int"/>
     <param name="astar/max_search_time" value="0.01" type="double"/>
 
-    <!-- trajectory optimization -->
+  <!-- sample based path searching -->
+    <param name="rrt/use_kd_tree" value="true" type="bool"/>
+
+    <param name="rrt/goal_bias_prob" value="0.15" type="double"/>
+    <param name="rrt/step_size" value="0.1" type="double"/>
+    <param name="rrt/neighbor_radius" value="1.0" type="double"/>
+
+    <param name="rrt/goal_dist_threshold" value="0.5" type="double"/>
+
+    <param name="rrt/max_search_time" value="10.0" type="double"/>
+
+    <param name="rrt/yaw_sample_piece_num" value="6" type="int"/>
+    <param name="rrt/min_feature_num" value="$(arg min_feature_num)" type="int"/>
+
+  <!-- trajectory optimization -->
     <param name="optimization/ld_smooth" value="20.0" type="double"/>
     <param name="optimization/ld_dist" value="10.0" type="double"/>
     <param name="optimization/ld_feasi" value="2.0" type="double"/>

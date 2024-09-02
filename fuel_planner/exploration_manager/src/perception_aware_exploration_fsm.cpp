@@ -3,7 +3,7 @@
 #include <exploration_manager/perception_aware_exploration_manager.h>
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
-#include <plan_manage/planner_manager.h>
+#include <plan_manage/perception_aware_planner_manager.h>
 #include <traj_utils/planning_visualization.h>
 
 using Eigen::Vector4d;
@@ -18,16 +18,16 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/thresh_replan3", fp_->replan_thresh3_, -1.0);
   nh.param("fsm/replan_time", fp_->replan_time_, -1.0);
 
+  nh.param("fsm/min_feature_num", fp_->min_feature_num_, -1);
+
   /* Initialize main modules */
   expl_manager_ = make_shared<PAExplorationManager>(shared_from_this());
   expl_manager_->initialize(nh);
 
-  visualization_.reset(new PlanningVisualization(nh));
-
   planner_manager_ = expl_manager_->planner_manager_;
   visualization_.reset(new PlanningVisualization(nh));
 
-  state_str_ = { "INIT", "WAIT_TARGET", "PLAN_TO_NEXT_GOAL", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL" };
+  state_str_ = { "INIT", "WAIT_TARGET", "PLAN_TO_NEXT_GOAL", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP" };
 
   /* Ros sub, pub and timer */
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PAExplorationFSM::FSMCallback, this);
@@ -37,6 +37,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   odom_sub_ = nh.subscribe("/odom_world", 1, &PAExplorationFSM::odometryCallback, this);
   waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &PAExplorationFSM::waypointCallback, this);
 
+  emergency_stop_pub_ = nh.advertise<std_msgs::Empty>("/planning/emergency_stop", 10);
   replan_pub_ = nh.advertise<std_msgs::Empty>("/planning/replan", 10);
   new_pub_ = nh.advertise<std_msgs::Empty>("/planning/new", 10);
   bspline_pub_ = nh.advertise<bspline::Bspline>("/planning/bspline", 10);
@@ -149,6 +150,15 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
       break;
     }
+
+    case REPLAN: {
+      break;
+    }
+
+    case EMERGENCY_STOP: {
+      ROS_ERROR("Emergency Stop.");
+      break;
+    }
   }
 }
 
@@ -178,13 +188,8 @@ int PAExplorationFSM::callExplorationPlanner() {
 
   if (res == NO_FRONTIER || res == NO_AVAILABLE_FRONTIER) return res;
 
-  // cout << "next_pos: " << next_pos.transpose() << endl;
-  // cout << "next_yaw: " << next_yaw << endl;
-
   visualization_->drawNextGoal(next_pos, 0.3, Eigen::Vector4d(0, 0, 1, 1.0));
 
-  // if (expl_manager_->planToNextGoal(next_pos, next_yaw))
-  // {
   auto info = &planner_manager_->local_data_;
   info->start_time_ = (ros::Time::now() - time_r).toSec() > 0 ? ros::Time::now() : time_r;
 
@@ -200,6 +205,7 @@ int PAExplorationFSM::callExplorationPlanner() {
     pt.z = pos_pts(i, 2);
     bspline.pos_pts.push_back(pt);
   }
+
   Eigen::VectorXd knots = info->position_traj_.getKnot();
   for (int i = 0; i < knots.rows(); ++i) {
     bspline.knots.push_back(knots(i));
@@ -212,7 +218,6 @@ int PAExplorationFSM::callExplorationPlanner() {
   bspline.yaw_dt = info->yaw_traj_.getKnotSpan();
 
   newest_traj_ = bspline;
-  // }
 
   return res;
 }
@@ -231,8 +236,8 @@ void PAExplorationFSM::visualize() {
   // Draw frontier
   static int last_ftr_num = 0;
   for (int i = 0; i < ed_ptr->frontiers_.size(); ++i) {
-    visualization_->drawCubes(ed_ptr->frontiers_[i], 0.1,
-        visualization_->getColor(double(i) / ed_ptr->frontiers_.size(), 0.4), "frontier", i, 4);
+    visualization_->drawCubes(
+        ed_ptr->frontiers_[i], 0.1, visualization_->getColor(double(i) / ed_ptr->frontiers_.size(), 0.4), "frontier", i, 4);
   }
 
   for (int i = ed_ptr->frontiers_.size(); i < last_ftr_num; ++i) {
@@ -241,6 +246,7 @@ void PAExplorationFSM::visualize() {
 
   last_ftr_num = ed_ptr->frontiers_.size();
 
+  visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
   visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
 }
 
@@ -273,6 +279,31 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
 }
 
 void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
+  if (!have_odom_) {
+    return;
+  }
+
+  // if (exec_state_ == FSM_EXEC_STATE::EMERGENCY_STOP) {
+  //   return;
+  // }
+
+  if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_)) {
+    ROS_WARN("Replan: Too few features detected==================================");
+    emergency_stop_pub_.publish(std_msgs::Empty());
+    transitState(EMERGENCY_STOP, "safetyCallback");
+    return;
+  }
+
+  if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
+    // Check safety and trigger replan if necessary
+    double dist;
+    bool safe = planner_manager_->checkTrajLocalizability(dist);
+    if (!safe) {
+      ROS_WARN("Replan: Poor localizability detected==================================");
+      transitState(PLAN_TO_NEXT_GOAL, "safetyCallback");
+    }
+  }
+
   if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
     // Check safety and trigger replan if necessary
     double dist;

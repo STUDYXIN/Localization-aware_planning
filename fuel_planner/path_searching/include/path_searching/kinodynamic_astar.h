@@ -15,38 +15,36 @@
 #include <utility>
 
 #include "plan_env/edt_environment.h"
+#include "plan_env/feature_map.h"
+
+using std::vector;
 
 namespace fast_planner {
-// #define REACH_HORIZON 1
-// #define REACH_END 2
-// #define NO_PATH 3
 #define IN_CLOSE_SET 'a'
 #define IN_OPEN_SET 'b'
 #define NOT_EXPAND 'c'
 #define inf 1 >> 30
 
+using PVYawState = Eigen::Matrix<double, 7, 1>;
+
 class PathNode {
 public:
   /* -------------------- */
-  Eigen::Vector3i index;
-  Eigen::Matrix<double, 6, 1> state;
+  Eigen::Vector4i index;
+  PVYawState state;
   double g_score, f_score;
-  Eigen::Vector3d input;
+  Eigen::Vector4d input;
   double duration;
   double time;  // dyn
   int time_idx;
-  PathNode* parent;
-  char node_state;
+  PathNode* parent = nullptr;
+  char node_state = NOT_EXPAND;
 
   /* -------------------- */
-  PathNode() {
-    parent = NULL;
-    node_state = NOT_EXPAND;
-  }
-  ~PathNode(){};
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-typedef PathNode* PathNodePtr;
+
+using PathNodePtr = PathNode*;
 
 class NodeComparator {
 public:
@@ -58,59 +56,71 @@ public:
 class NodeHashTable {
 private:
   /* data */
-  std::unordered_map<Eigen::Vector3i, PathNodePtr, matrix_hash<Eigen::Vector3i>> data_3d_;
   std::unordered_map<Eigen::Vector4i, PathNodePtr, matrix_hash<Eigen::Vector4i>> data_4d_;
 
 public:
-  NodeHashTable(/* args */) {
-  }
-  ~NodeHashTable() {
-  }
-  void insert(Eigen::Vector3i idx, PathNodePtr node) {
-    data_3d_.insert(std::make_pair(idx, node));
-  }
-  void insert(Eigen::Vector3i idx, int time_idx, PathNodePtr node) {
-    data_4d_.insert(std::make_pair(Eigen::Vector4i(idx(0), idx(1), idx(2), time_idx), node));
+  void insert(const Eigen::Vector4i& idx, PathNodePtr node) {
+    data_4d_.insert(std::make_pair(idx, node));
   }
 
-  PathNodePtr find(Eigen::Vector3i idx) {
-    auto iter = data_3d_.find(idx);
-    return iter == data_3d_.end() ? NULL : iter->second;
-  }
-  PathNodePtr find(Eigen::Vector3i idx, int time_idx) {
-    auto iter = data_4d_.find(Eigen::Vector4i(idx(0), idx(1), idx(2), time_idx));
-    return iter == data_4d_.end() ? NULL : iter->second;
+  PathNodePtr find(const Eigen::Vector4i& idx) {
+    auto iter = data_4d_.find(idx);
+    return iter == data_4d_.end() ? nullptr : iter->second;
   }
 
   void clear() {
-    data_3d_.clear();
     data_4d_.clear();
   }
+};
+
+class KinodynamicAstarVisualizer {
+public:
+  geometry_msgs::Point eigen2geo(const Eigen::Vector3d& vector3d) {
+    geometry_msgs::Point pt;
+    pt.x = vector3d.x();
+    pt.y = vector3d.y();
+    pt.z = vector3d.z();
+    return pt;
+  }
+
+  void init(ros::NodeHandle& nh);
+
+  void visPath(const vector<PathNodePtr>& path);
+
+private:
+  ros::Publisher pos_vis_pub_;
+  ros::Publisher yaw_vis_pub_;
 };
 
 class KinodynamicAstar {
 private:
   /* ---------- main data structure ---------- */
   vector<PathNodePtr> path_node_pool_;
-  int use_node_num_, iter_num_;
+  int use_node_num_ = 0;
+  int iter_num_ = 0;
   NodeHashTable expanded_nodes_;
   std::priority_queue<PathNodePtr, std::vector<PathNodePtr>, NodeComparator> open_set_;
   std::vector<PathNodePtr> path_nodes_;
 
   /* ---------- record data ---------- */
+  double start_yaw_;
   Eigen::Vector3d start_vel_, end_vel_, start_acc_;
-  Eigen::Matrix<double, 6, 6> phi_;  // state transit matrix
-  // shared_ptr<SDFMap> sdf_map;
-  EDTEnvironment::Ptr edt_environment_;
+  Eigen::Matrix<double, 7, 7> phi_;  // state transit matrix
+
+  std::unique_ptr<KinodynamicAstarVisualizer> visualizer_ = nullptr;
+
+  EDTEnvironment::Ptr edt_environment_ = nullptr;
+  FeatureMap::Ptr feature_map_ = nullptr;
   bool is_shot_succ_ = false;
   Eigen::MatrixXd coef_shot_;
   double t_shot_;
-  bool has_path_ = false;
 
   /* ---------- parameter ---------- */
   /* search */
   double max_tau_, init_max_tau_;
   double max_vel_, max_acc_;
+  double max_yaw_rate_;
+
   double w_time_, horizon_, lambda_heu_;
   int allocate_num_, check_num_;
   double tie_breaker_;
@@ -118,38 +128,46 @@ private:
 
   /* map */
   double resolution_, inv_resolution_, time_resolution_, inv_time_resolution_;
-  Eigen::Vector3d origin_, map_size_3d_;
-  double time_origin_;
+  // Eigen::Vector3d origin_, map_size_3d_;
+  Eigen::Vector4d origin_, map_size_4d_;
+  double yaw_origin_, yaw_size_;
+
+  int min_feature_num_;
 
   /* helper */
-  Eigen::Vector3i posToIndex(Eigen::Vector3d pt);
-  int timeToIndex(double time);
+  bool checkCollision(const PVYawState& cur_state, const Eigen::Vector4d& um, const double tau);
+  bool checkLocalizability(const PVYawState& state);
+  bool checkCollisionAndLocalizability(const PVYawState& cur_state, const Eigen::Vector4d& um, const double tau);
+
+  // Eigen::Vector3i posToIndex(const Eigen::Vector3d& pt);
+  Eigen::Vector4i stateToIndex(const PVYawState& state);
   void retrievePath(PathNodePtr end_node);
 
   /* shot trajectory */
   vector<double> cubic(double a, double b, double c, double d);
   vector<double> quartic(double a, double b, double c, double d, double e);
-  bool computeShotTraj(Eigen::VectorXd state1, Eigen::VectorXd state2, double time_to_goal);
-  double estimateHeuristic(Eigen::VectorXd x1, Eigen::VectorXd x2, double& optimal_time);
+  bool computeShotTraj(const PVYawState& state1, const PVYawState& state2, const double time_to_goal);
+  double estimateHeuristic(const PVYawState& x1, const PVYawState& x2, double& optimal_time);
 
   /* state propagation */
-  void stateTransit(
-      Eigen::Matrix<double, 6, 1>& state0, Eigen::Matrix<double, 6, 1>& state1, Eigen::Vector3d um, double tau);
+  void stateTransit(const PVYawState& state0, PVYawState& state1, const Eigen::Vector4d& um, const double tau);
 
 public:
-  KinodynamicAstar(){};
   ~KinodynamicAstar();
 
   enum { REACH_HORIZON = 1, REACH_END = 2, NO_PATH = 3, NEAR_END = 4 };
 
   /* main API */
   void setParam(ros::NodeHandle& nh);
-  void init();
+  void init(ros::NodeHandle& nh, const EDTEnvironment::Ptr& env);
   void reset();
-  int search(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc, Eigen::Vector3d end_pt,
-      Eigen::Vector3d end_vel, bool init, bool dynamic = false, double time_start = -1.0);
+  int search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_v, const Eigen::Vector3d& start_a,
+      const double start_yaw, const Eigen::Vector3d& end_pt, const Eigen::Vector3d& end_v, const double end_yaw);
 
   void setEnvironment(const EDTEnvironment::Ptr& env);
+  void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
+    feature_map_ = feature_map;
+  }
 
   std::vector<Eigen::Vector3d> getKinoTraj(double delta_t);
 

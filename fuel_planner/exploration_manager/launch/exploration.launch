@@ -53,6 +53,8 @@
     <arg name="max_vel" value="2.0" />
     <arg name="max_acc" value="2.0" />
 
+    <arg name="min_feature_num" value="15" />
+
     <arg name="point_num" value="2" />
 
     <arg name="point0_x" value="13.0" />

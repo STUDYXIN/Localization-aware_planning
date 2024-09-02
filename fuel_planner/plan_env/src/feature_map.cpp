@@ -19,7 +19,7 @@ void FeatureMap::initMap(ros::NodeHandle& nh) {
   std::string filename;
   nh.param("feature/load_from_file", load_from_file, true);
   if (load_from_file) {
-    nh.param<std::string>("feature/filename", filename, std::string(""));  //显式指定默认值为 std::string
+    nh.param<std::string>("feature/filename", filename, std::string(""));  // 显式指定默认值为 std::string
     loadMap(filename);
   }
   nh.param("feature/yaw_samples_max", yaw_samples_max, 360);
@@ -137,8 +137,8 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
   camera_p(0) = pose->pose.position.x;
   camera_p(1) = pose->pose.position.y;
   camera_p(2) = pose->pose.position.z;
-  Eigen::Quaterniond camera_q = Eigen::Quaterniond(
-      pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
+  Eigen::Quaterniond camera_q =
+      Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
   vector<Eigen::Vector3d> visual_points_vec;
   int feature_num = get_NumCloud_using_CamPosOrient(camera_p, camera_q, visual_points_vec);
   pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -214,8 +214,7 @@ int FeatureMap::get_NumCloud_using_CamPosOrient(
 
   vector<int> pointIdxRadiusSearch;
   vector<float> pointRadiusSquaredDistance;
-  features_kdtree_.radiusSearch(
-      searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
@@ -225,6 +224,7 @@ int FeatureMap::get_NumCloud_using_CamPosOrient(
         res.push_back(f);
     }
   }
+
   return res.size();
 }
 
@@ -238,8 +238,7 @@ int FeatureMap::get_NumCloud_using_CamPosOrient(const Eigen::Vector3d& pos, cons
 
   vector<int> pointIdxRadiusSearch;
   vector<float> pointRadiusSquaredDistance;
-  features_kdtree_.radiusSearch(
-      searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
@@ -267,8 +266,8 @@ int FeatureMap::get_NumCloud_using_Odom(
 
 int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<Eigen::Vector3d>& res) {
   Eigen::Vector3d pos(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
-  Eigen::Quaterniond orient(msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y,
-      msg->pose.pose.orientation.z);
+  Eigen::Quaterniond orient(
+      msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
   return get_NumCloud_using_Odom(pos, orient, res);
 }
 
@@ -286,8 +285,8 @@ int FeatureMap::get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen:
 
 int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg) {
   Eigen::Vector3d pos(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
-  Eigen::Quaterniond orient(msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y,
-      msg->pose.pose.orientation.z);
+  Eigen::Quaterniond orient(
+      msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
   return get_NumCloud_using_Odom(pos, orient);
 }
 

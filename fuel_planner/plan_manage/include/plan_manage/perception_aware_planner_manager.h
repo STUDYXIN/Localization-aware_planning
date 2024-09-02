@@ -1,5 +1,5 @@
-#ifndef _PLANNER_MANAGER_H_
-#define _PLANNER_MANAGER_H_
+#ifndef _PERCEPTION_AWARE_PLANNER_MANAGER_H_
+#define _PERCEPTION_AWARE_PLANNER_MANAGER_H_
 
 #include <active_perception/frontier_finder.h>
 #include <active_perception/heading_planner.h>
@@ -7,6 +7,7 @@
 #include <bspline_opt/bspline_optimizer.h>
 #include <path_searching/astar2.h>
 #include <path_searching/kinodynamic_astar.h>
+#include <path_searching/rrt_star.h>
 #include <path_searching/topo_prm.h>
 #include <plan_env/edt_environment.h>
 #include <ros/ros.h>
@@ -24,11 +25,13 @@ public:
   ~FastPlannerManager();
 
   /* main planning interface */
-  bool kinodynamicReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel,
-      const Eigen::Vector3d& start_acc, const Eigen::Vector3d& end_pt, const Eigen::Vector3d& end_vel,
+  bool sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
+      const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw, const double& time_lb = -1);
+  bool kinodynamicReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
+      const double start_yaw, const Eigen::Vector3d& end_pt, const Eigen::Vector3d& end_vel, const double end_yaw,
       const double& time_lb = -1);
-  void planExploreTraj(const vector<Eigen::Vector3d>& tour, const Eigen::Vector3d& cur_vel,
-      const Eigen::Vector3d& cur_acc, const double& time_lb = -1);
+  void planExploreTraj(const vector<Eigen::Vector3d>& tour, const Eigen::Vector3d& cur_vel, const Eigen::Vector3d& cur_acc,
+      const double& time_lb = -1);
   bool planGlobalTraj(const Eigen::Vector3d& start_pos);
   bool topoReplan(bool collide);
 
@@ -39,9 +42,16 @@ public:
   void setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints);
 
   bool checkTrajCollision(double& distance);
+  bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
+  bool checkTrajLocalizability(double& distance);
   void calcNextYaw(const double& last_yaw, double& yaw);
 
+  void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
+    feature_map_ = feature_map;
+  }
+
   PlanParameters pp_;
+
   LocalTrajData local_data_;
   GlobalTrajData global_data_;
   MidPlanData plan_data_;
@@ -52,8 +62,10 @@ public:
 private:
   /* main planning algorithms & modules */
   shared_ptr<SDFMap> sdf_map_;
+  shared_ptr<FeatureMap> feature_map_;
 
   unique_ptr<KinodynamicAstar> kino_path_finder_;
+  unique_ptr<RRTStar> sample_path_finder_;
   vector<BsplineOptimizer::Ptr> bspline_optimizers_;
 
   void updateTrajInfo();
@@ -69,8 +81,7 @@ private:
 
   void selectBestTraj(NonUniformBspline& traj);
   void refineTraj(NonUniformBspline& best_traj);
-  void reparamBspline(
-      NonUniformBspline& bspline, double ratio, Eigen::MatrixXd& ctrl_pts, double& dt, double& time_inc);
+  void reparamBspline(NonUniformBspline& bspline, double ratio, Eigen::MatrixXd& ctrl_pts, double& dt, double& time_inc);
 
   // Heading planning
 
@@ -92,8 +103,7 @@ private:
 
   // Benchmark method, local exploration
 public:
-  bool localExplore(
-      Eigen::Vector3d start_pt, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc, Eigen::Vector3d end_pt);
+  bool localExplore(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc, Eigen::Vector3d end_pt);
 
   // !SECTION
 };

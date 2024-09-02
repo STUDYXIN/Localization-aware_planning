@@ -42,6 +42,8 @@ struct FSMParam {
   double replan_thresh2_;
   double replan_thresh3_;
   double replan_time_;  // second
+
+  int min_feature_num_;
 };
 
 struct ExplorationData {

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(path_searching)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++14")
+set(CMAKE_CXX_FLAGS "-std=c++17")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall")
 
 find_package(Eigen3 REQUIRED)
@@ -37,6 +37,7 @@ add_library( path_searching
     src/kinodynamic_astar.cpp 
     # src/astar.cpp
     src/astar2.cpp
+    src/rrt_star.cpp
     src/topo_prm.cpp
     )
 target_link_libraries( path_searching

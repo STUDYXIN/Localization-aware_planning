@@ -32,7 +32,7 @@ struct FSMParam;
 struct FSMData;
 struct M2GData;
 
-enum FSM_EXEC_STATE { INIT, WAIT_TARGET, PLAN_TO_NEXT_GOAL, PUB_TRAJ, MOVE_TO_NEXT_GOAL };
+enum FSM_EXEC_STATE { INIT, WAIT_TARGET, PLAN_TO_NEXT_GOAL, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
 
 class PAExplorationFSM : public std::enable_shared_from_this<PAExplorationFSM> {
 public:
@@ -68,7 +68,7 @@ public:
 
   ros::Timer exec_timer_, safety_timer_, vis_timer_, frontier_timer_;
 
-  ros::Publisher replan_pub_, new_pub_, bspline_pub_;
+  ros::Publisher replan_pub_, new_pub_, bspline_pub_, emergency_stop_pub_;
 
   ros::Subscriber odom_sub_;
   ros::Subscriber waypoint_sub_;

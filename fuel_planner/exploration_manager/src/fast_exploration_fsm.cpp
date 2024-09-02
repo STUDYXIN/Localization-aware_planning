@@ -48,7 +48,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   trigger_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &FastExplorationFSM::triggerCallback, this);
   odom_sub_ = nh.subscribe("/odom_world", 1, &FastExplorationFSM::odometryCallback, this);
 
-  replan_pub_ = nh.advertise<std_msgs::Empty>("/planning/replan", 10);
+    replan_pub_ = nh.advertise<std_msgs::Empty>("/planning/replan", 10);
   new_pub_ = nh.advertise<std_msgs::Empty>("/planning/new", 10);
   bspline_pub_ = nh.advertise<bspline::Bspline>("/planning/bspline", 10);
 }
@@ -253,8 +253,8 @@ void FastExplorationFSM::visualize() {
   // Draw frontier
   static int last_ftr_num = 0;
   for (int i = 0; i < ed_ptr->frontiers_.size(); ++i) {
-    visualization_->drawCubes(ed_ptr->frontiers_[i], 0.1,
-        visualization_->getColor(double(i) / ed_ptr->frontiers_.size(), 0.4), "frontier", i, 4);
+    visualization_->drawCubes(
+        ed_ptr->frontiers_[i], 0.1, visualization_->getColor(double(i) / ed_ptr->frontiers_.size(), 0.4), "frontier", i, 4);
     // visualization_->drawBox(ed_ptr->frontier_boxes_[i].first, ed_ptr->frontier_boxes_[i].second,
     //                         Vector4d(0.5, 0, 1, 0.3), "frontier_boxes", i, 4);
   }

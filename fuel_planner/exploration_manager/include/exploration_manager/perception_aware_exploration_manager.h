@@ -56,6 +56,7 @@ private:
       vector<double>& refined_yaws);
 
   void shortenPath(vector<Vector3d>& path);
+  bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
 
 public:
   typedef shared_ptr<PAExplorationManager> Ptr;

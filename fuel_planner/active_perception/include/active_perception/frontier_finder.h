@@ -61,17 +61,16 @@ public:
   void getFrontiers(vector<vector<Vector3d>>& clusters);
   void getDormantFrontiers(vector<vector<Vector3d>>& clusters);
   void getFrontierBoxes(vector<pair<Vector3d, Vector3d>>& boxes);
+  int getVisibleFrontiersNum(const Vector3d& pos, const double& yaw);
   // Get viewpoint with highest coverage for each frontier
-  void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws,
-      vector<Vector3d>& averages, vector<size_t>& visb_num);
+  void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages,
+      vector<size_t>& visb_num);
   // Get several viewpoints for a subset of frontiers
   void getViewpointsInfo(const Vector3d& cur_pos, const vector<int>& ids, const int& view_num, const double& max_decay,
       vector<vector<Vector3d>>& points, vector<vector<double>>& yaws);
   void updateFrontierCostMatrix();
-  void getFullCostMatrix(
-      const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw, Eigen::MatrixXd& mat);
+  void getFullCostMatrix(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw, Eigen::MatrixXd& mat);
   void getPathForTour(const Vector3d& pos, const vector<int>& frontier_ids, vector<Vector3d>& path);
-
   void setNextFrontier(const int& id);
   bool isFrontierCovered();
   void wrapYaw(double& yaw);

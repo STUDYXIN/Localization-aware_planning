@@ -49,8 +49,8 @@ public:
     if (nh.getParam("feature/cam02body", cam02body)) {
       if (cam02body.size() == 16) {
         sensor2body << cam02body[0], cam02body[1], cam02body[2], cam02body[3], cam02body[4], cam02body[5], cam02body[6],
-            cam02body[7], cam02body[8], cam02body[9], cam02body[10], cam02body[11], cam02body[12], cam02body[13],
-            cam02body[14], cam02body[15];
+            cam02body[7], cam02body[8], cam02body[9], cam02body[10], cam02body[11], cam02body[12], cam02body[13], cam02body[14],
+            cam02body[15];
       } else {
         ROS_ERROR("Parameter 'feature/cam02body' size is incorrect. Expected 16 values.");
       }
@@ -116,14 +116,13 @@ public:
   void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
   void sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pose);
   void pubDebugmsg(int debugMode = 0);
-  int get_NumCloud_using_CamPosOrient(
-      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res);
+  int get_NumCloud_using_CamPosOrient(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res);
   int get_NumCloud_using_CamPosOrient(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
-  int get_NumCloud_using_Odom(
-      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res);
+  int get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res);
   int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<Eigen::Vector3d>& res);
   int get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
   int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg);
+  int get_NumCloud_using_justpos(const Eigen::Vector3d& pos);
   void getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw);
   Config config_;
   shared_ptr<SDFMap> sdf_map;

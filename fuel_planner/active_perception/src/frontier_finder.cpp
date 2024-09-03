@@ -138,8 +138,7 @@ void FrontierFinder::expandFrontier(const Eigen::Vector3i& first) {
     for (auto nbr : nbrs) {
       // Qualified cell should be inside bounding box and frontier cell not clustered
       int adr = toadr(nbr);
-      if (frontier_flag_[adr] == 1 || !edt_env_->sdf_map_->isInBox(nbr) || !(knownfree(nbr) && isNeighborUnknown(nbr)))
-        continue;
+      if (frontier_flag_[adr] == 1 || !edt_env_->sdf_map_->isInBox(nbr) || !(knownfree(nbr) && isNeighborUnknown(nbr))) continue;
 
       edt_env_->sdf_map_->indexToPos(nbr, pos);
       if (pos[2] < 0.4) continue;  // Remove noise close to ground
@@ -337,8 +336,7 @@ bool FrontierFinder::canBeMerged(const Frontier& ftr1, const Frontier& ftr2) {
   return true;
 }
 
-bool FrontierFinder::haveOverlap(
-    const Vector3d& min1, const Vector3d& max1, const Vector3d& min2, const Vector3d& max2) {
+bool FrontierFinder::haveOverlap(const Vector3d& min1, const Vector3d& max1, const Vector3d& min2, const Vector3d& max2) {
   // Check if two box have overlap part
   Vector3d bmin, bmax;
   for (int i = 0; i < 3; ++i) {
@@ -405,8 +403,8 @@ void FrontierFinder::computeFrontiersToVisit() {
   std::cout << "to visit: " << frontiers_.size() << ", dormant: " << dormant_frontiers_.size() << std::endl;
 }
 
-void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points,
-    vector<double>& yaws, vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num) {
+void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points, vector<double>& yaws,
+    vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num) {
   points.clear();
   yaws.clear();
   averages.clear();
@@ -490,6 +488,15 @@ void FrontierFinder::getFrontierBoxes(vector<pair<Eigen::Vector3d, Eigen::Vector
   }
 }
 
+int FrontierFinder::getVisibleFrontiersNum(const Vector3d& pos, const double& yaw) {
+  int visib_num = 0;
+  for (auto frontier : frontiers_) {
+    auto& cells = frontier.filtered_cells_;
+    visib_num += countVisibleCells(pos, yaw, cells);
+  }
+  return visib_num;
+}
+
 void FrontierFinder::getPathForTour(const Vector3d& pos, const vector<int>& frontier_ids, vector<Vector3d>& path) {
   // Make an frontier_indexer to access the frontier list easier
   vector<list<Frontier>::iterator> frontier_indexer;
@@ -569,8 +576,7 @@ void FrontierFinder::getFullCostMatrix(
 }
 
 void FrontierFinder::findViewpoints(const Vector3d& sample, const Vector3d& ftr_avg, vector<Viewpoint>& vps) {
-  if (!edt_env_->sdf_map_->isInBox(sample) || edt_env_->sdf_map_->getInflateOccupancy(sample) == 1 ||
-      isNearUnknown(sample))
+  if (!edt_env_->sdf_map_->isInBox(sample) || edt_env_->sdf_map_->getInflateOccupancy(sample) == 1 || isNearUnknown(sample))
     return;
 
   double left_angle_, right_angle_, vertical_angle_, ray_length_;
@@ -631,8 +637,8 @@ void FrontierFinder::findViewpoints(const Vector3d& sample, const Vector3d& ftr_
 // Sample viewpoints around frontier's average position, check coverage to the frontier cells
 void FrontierFinder::sampleViewpoints(Frontier& frontier) {
   // Evaluate sample viewpoints on circles, find ones that cover most cells
-  for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_;
-       rc <= candidate_rmax_ + 1e-3; rc += dr)
+  for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_; rc <= candidate_rmax_ + 1e-3;
+       rc += dr)
     for (double phi = -M_PI; phi < M_PI; phi += candidate_dphi_) {
       const Vector3d sample_pos = frontier.average_ + rc * Vector3d(cos(phi), sin(phi), 0);
 
@@ -699,8 +705,7 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
   return false;
 }
 
-int FrontierFinder::countVisibleCells(
-    const Eigen::Vector3d& pos, const double& yaw, const vector<Eigen::Vector3d>& cluster) {
+int FrontierFinder::countVisibleCells(const Eigen::Vector3d& pos, const double& yaw, const vector<Eigen::Vector3d>& cluster) {
   percep_utils_->setPose(pos, yaw);
   int visib_num = 0;
   Eigen::Vector3i idx;
@@ -712,8 +717,7 @@ int FrontierFinder::countVisibleCells(
     raycaster_->input(cell, pos);
     bool visib = true;
     while (raycaster_->nextId(idx)) {
-      if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 ||
-          edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+      if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
         visib = false;
         break;
       }

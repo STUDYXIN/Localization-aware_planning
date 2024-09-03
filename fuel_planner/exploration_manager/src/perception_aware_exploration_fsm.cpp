@@ -188,7 +188,10 @@ int PAExplorationFSM::callExplorationPlanner() {
 
   if (res == NO_FRONTIER || res == NO_AVAILABLE_FRONTIER) return res;
 
+  // visualization_->drawNextGoal(expl_manager_->ed_->points_.back(), 0.3, Eigen::Vector4d(0, 0, 1, 1.0)); //添加的新viewpoint
   visualization_->drawNextGoal(next_pos, 0.3, Eigen::Vector4d(0, 0, 1, 1.0));
+  // Draw astar
+  visualization_->drawLines(expl_manager_->ed_->path_next_goal_, 0.15, Vector4d(0, 0, 0, 1), "next_goal", 1, 6);
 
   auto info = &planner_manager_->local_data_;
   info->start_time_ = (ros::Time::now() - time_r).toSec() > 0 ? ros::Time::now() : time_r;
@@ -233,21 +236,10 @@ void PAExplorationFSM::visualize() {
   // visualization_->drawBox((bmin + bmax) / 2.0, bmax - bmin, Vector4d(0, 1, 0, 0.3), "updated_box", 0,
   // 4);
 
-  // Draw frontier
-  static int last_ftr_num = 0;
-  for (int i = 0; i < ed_ptr->frontiers_.size(); ++i) {
-    visualization_->drawCubes(
-        ed_ptr->frontiers_[i], 0.1, visualization_->getColor(double(i) / ed_ptr->frontiers_.size(), 0.4), "frontier", i, 4);
-  }
-
-  for (int i = ed_ptr->frontiers_.size(); i < last_ftr_num; ++i) {
-    visualization_->drawCubes({}, 0.1, Vector4d(0, 0, 0, 1), "frontier", i, 4);
-  }
-
-  last_ftr_num = ed_ptr->frontiers_.size();
-
   visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
   visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
+
+  // ROS_WARN("[PAExplorationFSM] path_next_goal_ SIZE: %zu", ed_ptr->path_next_goal_.size());
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
@@ -256,7 +248,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
     return;
   }
 
-  if (exec_state_ == WAIT_TARGET) {
+  if (true) {
     auto ft = expl_manager_->frontier_finder_;
     auto ed = expl_manager_->ed_;
 
@@ -265,16 +257,22 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
 
     ft->getFrontiers(ed->frontiers_);
     ft->getFrontierBoxes(ed->frontier_boxes_);
+    ft->getTopViewpointsInfo(odom_pos_, ed->points_, ed->yaws_, ed->averages_, ed->visb_num_);
 
     // Draw frontier and bounding box
+    static int last_ftr_num = 0;
     for (int i = 0; i < ed->frontiers_.size(); ++i) {
       visualization_->drawCubes(
           ed->frontiers_[i], 0.1, visualization_->getColor(double(i) / ed->frontiers_.size(), 0.4), "frontier", i, 4);
     }
 
-    for (int i = ed->frontiers_.size(); i < 50; ++i) {
+    for (int i = ed->frontiers_.size(); i < last_ftr_num; ++i) {
       visualization_->drawCubes({}, 0.1, Vector4d(0, 0, 0, 1), "frontier", i, 4);
     }
+
+    last_ftr_num = ed->frontiers_.size();
+
+    visualization_->displaySphereList(ed->points_, 0.15, Eigen::Vector4d(0, 0, 0, 1.0), 2);
   }
 }
 
@@ -287,12 +285,12 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
   //   return;
   // }
 
-  if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_)) {
-    ROS_WARN("Replan: Too few features detected==================================");
-    emergency_stop_pub_.publish(std_msgs::Empty());
-    transitState(EMERGENCY_STOP, "safetyCallback");
-    return;
-  }
+  // if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_)) {
+  //   ROS_WARN("Replan: Too few features detected==================================");
+  //   emergency_stop_pub_.publish(std_msgs::Empty());
+  //   transitState(EMERGENCY_STOP, "safetyCallback");
+  //   return;
+  // }
 
   if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
     // Check safety and trigger replan if necessary

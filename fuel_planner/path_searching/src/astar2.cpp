@@ -19,6 +19,7 @@ void Astar::init(ros::NodeHandle& nh, const EDTEnvironment::Ptr& env) {
   nh.param("astar/lambda_heu", lambda_heu_, -1.0);
   nh.param("astar/max_search_time", max_search_time_, -1.0);
   nh.param("astar/allocate_num", allocate_num_, -1);
+  nh.param("astar/isplan2unknow", isplan2unknow, false);
 
   tie_breaker_ = 1.0 + 1.0 / 1000;
 
@@ -75,6 +76,7 @@ int Astar::search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt
     if ((ros::Time::now() - t1).toSec() > max_search_time_) {
       // std::cout << "early";
       early_terminate_cost_ = cur_node->g_score + getDiagHeu(cur_node->position, end_pt);
+      ROS_ERROR("[Astar] NO_PATH-----------out of max_search_time_");
       return NO_PATH;
     }
 
@@ -95,18 +97,19 @@ int Astar::search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt
           nbr_pos = cur_pos + step;
           // Check safety
           if (!edt_env_->sdf_map_->isInBox(nbr_pos)) continue;
-          if (edt_env_->sdf_map_->getInflateOccupancy(nbr_pos) == 1 ||
-              edt_env_->sdf_map_->getOccupancy(nbr_pos) == SDFMap::UNKNOWN)
-            continue;
-
+          if (edt_env_->sdf_map_->getInflateOccupancy(nbr_pos) == 1) continue;
+          if (!isplan2unknow && edt_env_->sdf_map_->getOccupancy(nbr_pos) == SDFMap::UNKNOWN) continue;
           bool safe = true;
           Vector3d dir = nbr_pos - cur_pos;
           double len = dir.norm();
           dir.normalize();
           for (double l = 0.1; l < len; l += 0.1) {
             Vector3d ckpt = cur_pos + l * dir;
-            if (edt_env_->sdf_map_->getInflateOccupancy(ckpt) == 1 ||
-                edt_env_->sdf_map_->getOccupancy(ckpt) == SDFMap::UNKNOWN) {
+            if (edt_env_->sdf_map_->getInflateOccupancy(ckpt) == 1) {
+              safe = false;
+              break;
+            }
+            if (!isplan2unknow && edt_env_->sdf_map_->getOccupancy(ckpt) == SDFMap::UNKNOWN) {
               safe = false;
               break;
             }
@@ -126,6 +129,7 @@ int Astar::search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt
             use_node_num_ += 1;
             if (use_node_num_ == allocate_num_) {
               cout << "run out of node pool." << endl;
+              ROS_ERROR("[Astar] NO_PATH-----------run out of node pool");
               return NO_PATH;
             }
             neighbor->index = nbr_idx;
@@ -145,6 +149,7 @@ int Astar::search(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt
   // cout << "open set empty, no path!" << endl;
   // cout << "use node num: " << use_node_num_ << endl;
   // cout << "iter num: " << iter_num_ << endl;
+  ROS_ERROR("[Astar] NO_PATH-----------open set empty, no path!");
   return NO_PATH;
 }
 

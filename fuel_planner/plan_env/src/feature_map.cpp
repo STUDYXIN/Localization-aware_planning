@@ -300,17 +300,43 @@ void FeatureMap::getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_m
 
   vector<int> pointIdxRadiusSearch;
   vector<float> pointRadiusSquaredDistance;
-  features_kdtree_.radiusSearch(
-      searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if (camera_param.is_depth_useful(pos, f) &&
-        !sdf_map->checkObstacleBetweenPoints(
-            pos, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+        !sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
     {
     }
   }
 }
 
+int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos) {
+  Matrix4d Pose_receive = Matrix4d::Identity();
+  Pose_receive.block<3, 1>(0, 3) = pos;
+  Matrix4d camera_pose = Pose_receive * camera_param.sensor2body;
+  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
+  if (features_cloud_.empty()) return 0;
+  int feature_num = 0;
+  pcl::PointXYZ searchPoint;
+  searchPoint.x = pos_transformed(0);
+  searchPoint.y = pos_transformed(1);
+  searchPoint.z = pos_transformed(2);
+
+  vector<int> pointIdxRadiusSearch;
+  vector<float> pointRadiusSquaredDistance;
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+
+  for (const auto& index : pointIdxRadiusSearch) {
+    Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (camera_param.is_depth_useful(pos, f) &&
+        !sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+    {
+      if ((pos - f).norm() > 0.5) {  // 太近的特征点不算，防止规划到障碍物上
+        feature_num++;
+      }
+    }
+  }
+  return feature_num;
+}
 }  // namespace fast_planner

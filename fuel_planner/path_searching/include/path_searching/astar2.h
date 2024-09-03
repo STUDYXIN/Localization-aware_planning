@@ -80,6 +80,7 @@ private:
   double tie_breaker_;
   double resolution_, inv_resolution_;
   Eigen::Vector3d map_size_3d_, origin_;
+  bool isplan2unknow;
 };
 
 }  // namespace fast_planner

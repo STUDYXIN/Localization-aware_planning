@@ -159,13 +159,9 @@
 
   然而由于没有考虑动力学，使用RRT*规划飞行的效果不是很好，并且在waypoint数量只有2个时会导致程序崩溃，懒得修，目前暂时还是采用混合Astar
 
-  
-
 - 将混合Astar的状态中加入了yaw维度，输入中加入了yaw_rate维度，目前只是简单将FOV里特征点少于阈值的节点视为Invalid，目前单次search的时间可达几百ms，后面需要优化过程减少耗时
 
 - 后端轨迹优化暂时还没有把APACE揉进去
-
-  
 
 **`exploration_manager`功能包：**
 
@@ -210,6 +206,101 @@
   }
   ```
 
-  
-
 - 预留了重规划的状态机定义，但是还没有写跳转
+
+### 9月3日更新
+
+- **为了便于viewpoint的调试，本次conmit注注释掉了：**
+
+  ```C++
+  void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
+    ...
+    if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_)) {
+      ROS_WARN("Replan: Too few features detected==================================");
+      emergency_stop_pub_.publish(std_msgs::Empty());
+      transitState(EMERGENCY_STOP, "safetyCallback");
+      return;
+    }
+    ...
+  }
+  ```
+
+  ```C++
+  int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, const Vector3d& start_a, const double start_yaw,
+      const Vector3d& end_pt, const Vector3d& end_v, const double end_yaw) {
+
+    ...
+    if (!checkLocalizability(cur_node->state)) {
+      ROS_ERROR("Start point is not localizable!!!");
+      return NO_PATH;
+    }
+    ...
+  }
+  ```
+
+- **核心功能是在`perception_aware_exploration_manager`文件增加了以下部分**
+
+  ```C++
+  NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& next_yaw) {
+    ...
+    // 使用A*算法搜索一个的点，这个点事这条路径上靠近终点且在free区域的最后一个点
+    planner_manager_->path_finder_->reset();
+    if (planner_manager_->path_finder_->search(start_pos, final_goal) == Astar::REACH_END) {
+      ed_->path_next_goal_ = planner_manager_->path_finder_->getPath();
+      Vector3d junction_pos;
+      double junction_yaw;
+      if (findJunction(ed_->path_next_goal_, junction_pos, junction_yaw)) {
+        ed_->points_.push_back(junction_pos);
+        ed_->yaws_.push_back(junction_yaw);
+        cout << "[PAExplorationManager] ADD point: " << junction_pos << " yaw: " << junction_yaw << endl;
+        ed_->visb_num_.push_back(frontier_finder_->getVisibleFrontiersNum(junction_pos, junction_yaw));
+      }
+    }
+    ...
+  ```
+
+  - 这一部分是把A*算法搜索的点直接加入viewpoint中作为备选
+
+  ```C++
+    ...
+    // Select point with highest score
+    const double dg = (final_goal - start_pos).norm();
+    vector<pair<size_t, double>> gains;
+    for (size_t i = 0; i < ed_->points_.size(); ++i) {
+      double visb_score = static_cast<double>(ed_->visb_num_[i]) / static_cast<double>(ep_->visb_max);
+      double goal_score = (dg - (final_goal - ed_->points_[i]).norm()) / dg;
+      double feature_score = static_cast<double>(feature_map_->get_NumCloud_using_justpos(ed_->points_[i])) /
+                            static_cast<double>(ep_->feature_num_max);
+      double motioncons_score =
+          std::sin((ed_->points_[i] - start_pos).dot(start_vel) / ((ed_->points_[i] - start_pos).norm() * start_vel.norm())) /
+          (M_PI / 2);
+      double score = ep_->we * visb_score + ep_->wg * goal_score + ep_->wf * feature_score + ep_->wc * motioncons_score;
+      cout << "[PAExplorationManager] SCORE DEUBUG NUM: " << i << " visb_score: " << visb_score << " goal_score: " << goal_score
+          << " feature_score: " << feature_score << " score: " << score << " motioncons_score: " << motioncons_score << endl;
+      gains.emplace_back(i, score);
+    }
+    ...
+  }
+  ```
+
+  - 修改了`score`的构成，四个量都被归一化，其中`wc`的范围是(-1,1)
+  - 对应的`algorithm.xml`文件增加了以下调参内容
+
+    ```xml
+    <param name="exploration/feature_num_max" value="200" type="int"/>
+    <param name="exploration/visb_max" value="200" type="int"/>
+    <param name="exploration/we" value="0.2" type="double"/>
+    <param name="exploration/wg" value="1.0" type="double"/>
+    <param name="exploration/wf" value="1.0" type="double"/>
+    <param name="exploration/wc" value="0.2" type="double"/>
+    ```
+
+    - 其中 we约束这个viewpoint可以看到的frontier点数
+    - 其中 wg约束到目标的距离
+    - 其中 wf约束可见特征点数量（不考虑YAW）
+    - 其中 we约束运动一致性（防止无人机来回移动）
+
+  - 相应的，在`path_searching`,`active_perception`,`plan_env`都有所修改，主要目的是增加`A*`和`feature_score`的接口。  
+
+-**TODO**
+  还未找到解决报错的办法

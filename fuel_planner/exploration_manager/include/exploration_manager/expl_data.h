@@ -84,6 +84,14 @@ struct ExplorationParam {
   string tsp_dir_;  // resource dir of tsp solver
   double relax_time_;
   bool using_feature;
+
+  // search viewpoint param
+  int feature_num_max;
+  int visb_max;
+  double we;
+  double wg;
+  double wf;
+  double wc;
 };
 
 }  // namespace fast_planner

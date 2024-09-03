@@ -66,6 +66,13 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   nh.param("exploration/ydd", ViewNode::ydd_, -1.0);
   nh.param("exploration/w_dir", ViewNode::w_dir_, -1.0);
 
+  nh.param("exploration/feature_num_max", ep_->feature_num_max, -1);
+  nh.param("exploration/visb_max", ep_->visb_max, -1);
+  nh.param("exploration/we", ep_->we, -1.0);
+  nh.param("exploration/wg", ep_->wg, -1.0);
+  nh.param("exploration/wf", ep_->wf, -1.0);
+  nh.param("exploration/wc", ep_->wc, -1.0);
+
   ViewNode::astar_.reset(new Astar);
   ViewNode::astar_->init(nh, edt_environment_);
   ViewNode::map_ = sdf_map_;
@@ -122,22 +129,45 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
 
   frontier_finder_->getTopViewpointsInfo(start_pos, ed_->points_, ed_->yaws_, ed_->averages_, ed_->visb_num_);
 
+  // 使用A*算法搜索一个的点，这个点事这条路径上靠近终点且在free区域的最后一个点
+  planner_manager_->path_finder_->reset();
+  if (planner_manager_->path_finder_->search(start_pos, final_goal) == Astar::REACH_END) {
+    ed_->path_next_goal_ = planner_manager_->path_finder_->getPath();
+    Vector3d junction_pos;
+    double junction_yaw;
+    if (findJunction(ed_->path_next_goal_, junction_pos, junction_yaw)) {
+      ed_->points_.push_back(junction_pos);
+      ed_->yaws_.push_back(junction_yaw);
+      cout << "[PAExplorationManager] ADD point: " << junction_pos << " yaw: " << junction_yaw << endl;
+      ed_->visb_num_.push_back(frontier_finder_->getVisibleFrontiersNum(junction_pos, junction_yaw));
+    }
+  }
   // Select point with highest score
-  const double radius1 = 3.5;
-
-  const double dg = (final_goal - start_pos).norm() + radius1;
-  const double we = 1.0;
-  const double wg = 1000.0;
-
+  const double dg = (final_goal - start_pos).norm();
   vector<pair<size_t, double>> gains;
-  for (size_t i = 0; i < ed_->points_.size(); ++i)
-    gains.emplace_back(i, we * ed_->visb_num_[i] + wg * (dg - (final_goal - ed_->points_[i]).norm()) / dg);
+  for (size_t i = 0; i < ed_->points_.size(); ++i) {
+    double visb_score = static_cast<double>(ed_->visb_num_[i]) / static_cast<double>(ep_->visb_max);
+    double goal_score = (dg - (final_goal - ed_->points_[i]).norm()) / dg;
+    double feature_score = static_cast<double>(feature_map_->get_NumCloud_using_justpos(ed_->points_[i])) /
+                           static_cast<double>(ep_->feature_num_max);
+    double motioncons_score =
+        std::sin((ed_->points_[i] - start_pos).dot(start_vel) / ((ed_->points_[i] - start_pos).norm() * start_vel.norm())) /
+        (M_PI / 2);
+    double score = ep_->we * visb_score + ep_->wg * goal_score + ep_->wf * feature_score + ep_->wc * motioncons_score;
+    cout << "[PAExplorationManager] SCORE DEUBUG NUM: " << i << " visb_score: " << visb_score << " goal_score: " << goal_score
+         << " feature_score: " << feature_score << " score: " << score << " motioncons_score: " << motioncons_score << endl;
+    gains.emplace_back(i, score);
+  }
 
   // auto best_idx = std::max_element(gains.begin(), gains.end(), [&](const auto &a, const auto &b)
   //                                  { return a.second < b.second; });
 
   std::sort(gains.begin(), gains.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
-
+  // for (size_t i = 0; i < gains.size(); i++) {
+  //   size_t idx = gains[i].first;
+  //   cout << "[PAExplorationManager] number: " << i
+  //        << " feature_num: " << feature_map_->get_NumCloud_using_justpos(ed_->points_[idx]) << endl;
+  // }
   // 按序遍历前沿点，直到找到一个可以规划成功的点
   for (size_t i = 0; i < gains.size(); i++) {
     size_t idx = gains[i].first;
@@ -440,6 +470,33 @@ void PAExplorationManager::refineLocalTour(const Vector3d& cur_pos, const Vector
 
   parse_time = (ros::Time::now() - t1).toSec();
   // ROS_WARN("create: %lf, search: %lf, parse: %lf", create_time, search_time, parse_time);
+}
+
+bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw) {
+  if (path.empty()) {
+    ROS_ERROR("[PAExplorationManager] Empty path provided to find junction");
+    return false;
+  }
+
+  for (int i = path.size() - 1; i >= 0; --i) {
+    if (edt_environment_->sdf_map_->getOccupancy(path[i]) == SDFMap::FREE) {  // FREE point
+      point = path[i];
+      cout << "[PAExplorationManager] find Junction points: " << point.transpose() << endl;
+      if (i == path.size() - 1 && i > 0) {  // goal is in FREE
+        Eigen::Vector3d direction = path[i] - path[i - 1];
+        yaw = atan2(direction.y(), direction.x());
+      } else if (i == path.size() - 1 && i == 0) {
+        return false;
+      } else {
+        Eigen::Vector3d direction = path[i + 1] - path[i];
+        yaw = atan2(direction.y(), direction.x());
+      }
+      return true;
+    }
+  }
+  ROS_ERROR("[PAExplorationManager] No free point found, defaulting to path's start point.");
+  point = path.front();
+  return false;
 }
 
 }  // namespace fast_planner

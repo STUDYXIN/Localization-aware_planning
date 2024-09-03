@@ -155,7 +155,7 @@
         <param name="exploration/we" value="0.2" type="double"/>
         <param name="exploration/wg" value="1.0" type="double"/>
         <param name="exploration/wf" value="1.0" type="double"/>
-        <param name="exploration/wc" value="0.2" type="double"/>
+        <param name="exploration/wc" value="0.5" type="double"/>
 
         <param name="frontier/cluster_min" value="100" type="int"/>
         <param name="frontier/cluster_size_xy" value="2.0" type="double"/>
@@ -173,7 +173,7 @@
         <param name="frontier/min_view_finish_fraction" value="0.2" type="double"/>
 ;
 
-                                                                                                    <!-- Perception utils -->
+                                                                                                            <!-- Perception utils -->
         <param name="perception_utils/top_angle" value="0.56125" type="double"/>
 ;
         <param name="perception_utils/left_angle" value="0.69222" type="double"/>

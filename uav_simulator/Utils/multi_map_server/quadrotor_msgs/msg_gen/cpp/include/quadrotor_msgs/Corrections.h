@@ -119,8 +119,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::Corrections_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(
-      Stream& s, const std::string& indent, const ::quadrotor_msgs::Corrections_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::Corrections_<ContainerAllocator>& v) {
     s << indent << "kf_correction: ";
     Printer<double>::stream(s, indent + "  ", v.kf_correction);
     s << indent << "angle_corrections[]" << std::endl;

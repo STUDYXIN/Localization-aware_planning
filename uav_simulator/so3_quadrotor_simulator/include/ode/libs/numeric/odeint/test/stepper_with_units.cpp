@@ -224,15 +224,14 @@ void check_dense_output_stepper(Stepper& stepper) {
   stepper.calc_state(dt / 2.0, x2);
 }
 
-class stepper_types
-  : public mpl::vector<euler<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-        runge_kutta4<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-        runge_kutta4_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-        runge_kutta_cash_karp54<state_type, value_type, deriv_type, time_type, fusion_algebra>,
-        runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
-        // don't run rk78 test - gcc requires > 5GB RAM to compile this
-        //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
-        > {};
+class stepper_types : public mpl::vector<euler<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+                          runge_kutta4<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+                          runge_kutta4_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+                          runge_kutta_cash_karp54<state_type, value_type, deriv_type, time_type, fusion_algebra>,
+                          runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
+                          // don't run rk78 test - gcc requires > 5GB RAM to compile this
+                          //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
+                          > {};
 
 class fsal_stepper_types
   : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
@@ -246,8 +245,8 @@ class fsal_error_stepper_types
   : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
 
 class controlled_stepper_types
-  : public mpl::vector<controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type,
-                           time_type, fusion_algebra> >,
+  : public mpl::vector<
+        controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
         controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
         bulirsch_stoer<state_type, value_type, deriv_type, time_type, fusion_algebra>
         // rk78 with units needs up to 3GB memory to compile - disable testing...

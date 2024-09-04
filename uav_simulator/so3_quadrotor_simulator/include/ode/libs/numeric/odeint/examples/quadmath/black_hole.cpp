@@ -118,8 +118,7 @@ int main(int argc, char** argv) {
   typedef controlled_runge_kutta<dopri5_type> controlled_dopri5_type;
   typedef dense_output_runge_kutta<controlled_dopri5_type> dense_output_dopri5_type;
 
-  dense_output_dopri5_type dopri5(
-      controlled_dopri5_type(default_error_checker<my_float>(abs_err, rel_err, a_x, a_dxdt)));
+  dense_output_dopri5_type dopri5(controlled_dopri5_type(default_error_checker<my_float>(abs_err, rel_err, a_x, a_dxdt)));
 
   std::for_each(make_adaptive_time_iterator_begin(dopri5, radMod(omega, ell), x, start, end, dt),
       make_adaptive_time_iterator_end(dopri5, radMod(omega, ell), x),

@@ -152,9 +152,8 @@ public:
 
   // input : position of waypoints, start/end vel and acc, segment time
   // Pos: Nx3
-  static void waypointsTraj(const Eigen::MatrixXd& positions, const Eigen::Vector3d& start_vel,
-      const Eigen::Vector3d& end_vel, const Eigen::Vector3d& start_acc, const Eigen::Vector3d& end_acc,
-      const Eigen::VectorXd& times, PolynomialTraj& poly_traj);
+  static void waypointsTraj(const Eigen::MatrixXd& positions, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& end_vel,
+      const Eigen::Vector3d& start_acc, const Eigen::Vector3d& end_acc, const Eigen::VectorXd& times, PolynomialTraj& poly_traj);
 
 private:
   vector<Polynomial> segments_;
@@ -166,8 +165,7 @@ private:
   double length_;
 };
 
-PolynomialTraj fastLine4deg(
-    Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc, double max_jerk);
+PolynomialTraj fastLine4deg(Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc, double max_jerk);
 PolynomialTraj fastLine3deg(Eigen::Vector3d start, Eigen::Vector3d end, double max_vel, double max_acc);
 }  // namespace fast_planner
 

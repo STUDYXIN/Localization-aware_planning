@@ -117,11 +117,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(runge_kutta_stepper_test, Stepper, stepper_types) 
 }
 
 /* check controlled steppers */
-typedef mpl::vector<controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, state_type,
-                        value_type, vector_space_algebra> >,
+typedef mpl::vector<controlled_runge_kutta<
+                        runge_kutta_cash_karp54_classic<state_type, value_type, state_type, value_type, vector_space_algebra> >,
     controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, state_type, value_type, vector_space_algebra> >,
-    controlled_runge_kutta<
-        runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra> >,
+    controlled_runge_kutta<runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra> >,
     bulirsch_stoer<state_type, value_type, state_type, value_type, vector_space_algebra> >
     controlled_stepper_types;
 

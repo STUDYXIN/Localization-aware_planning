@@ -3,8 +3,8 @@
 #include <Eigen/Eigen>
 
 struct AlignError {
-  AlignError(const Eigen::Quaterniond camera_pose, const Eigen::Vector3d camera_trans,
-      const Eigen::Quaterniond velodyne_pose, const Eigen::Vector3d velodyne_trans) {
+  AlignError(const Eigen::Quaterniond camera_pose, const Eigen::Vector3d camera_trans, const Eigen::Quaterniond velodyne_pose,
+      const Eigen::Vector3d velodyne_trans) {
     camera_q[0] = camera_pose.x();
     camera_q[1] = camera_pose.y();
     camera_q[2] = camera_pose.z();

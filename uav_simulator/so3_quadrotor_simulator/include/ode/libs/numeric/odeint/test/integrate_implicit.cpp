@@ -108,8 +108,7 @@ struct perform_integrate_adaptive_test {
 
     std::vector<value_type> times;
 
-    size_t steps =
-        integrate_adaptive(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, t_end, dt, push_back_time(times));
+    size_t steps = integrate_adaptive(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, t_end, dt, push_back_time(times));
 
     BOOST_CHECK_EQUAL(times.size(), steps + 1);
 
@@ -150,8 +149,7 @@ struct perform_integrate_n_steps_test {
     std::vector<double> times;
 
     // simple stepper
-    value_type end_time =
-        integrate_n_steps(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, dt, n, push_back_time(times));
+    value_type end_time = integrate_n_steps(Stepper(), std::make_pair(sys(), jacobi()), x, 0.0, dt, n, push_back_time(times));
 
     BOOST_CHECK_SMALL(end_time - n * dt, 3.0e-16);
     BOOST_CHECK_EQUAL(static_cast<int>(times.size()), n + 1);

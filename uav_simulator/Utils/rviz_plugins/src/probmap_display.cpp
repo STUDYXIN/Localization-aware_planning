@@ -63,12 +63,11 @@ ProbMapDisplay::ProbMapDisplay()
   , position_(Ogre::Vector3::ZERO)
   , orientation_(Ogre::Quaternion::IDENTITY)
   , new_map_(false) {
-  topic_property_ = new RosTopicProperty("Topic", "",
-      QString::fromStdString(ros::message_traits::datatype<nav_msgs::OccupancyGrid>()),
-      "nav_msgs::OccupancyGrid topic to subscribe to.", this, SLOT(updateTopic()));
+  topic_property_ =
+      new RosTopicProperty("Topic", "", QString::fromStdString(ros::message_traits::datatype<nav_msgs::OccupancyGrid>()),
+          "nav_msgs::OccupancyGrid topic to subscribe to.", this, SLOT(updateTopic()));
 
-  alpha_property_ =
-      new FloatProperty("Alpha", 0.7, "Amount of transparency to apply to the map.", this, SLOT(updateAlpha()));
+  alpha_property_ = new FloatProperty("Alpha", 0.7, "Amount of transparency to apply to the map.", this, SLOT(updateAlpha()));
   alpha_property_->setMin(0);
   alpha_property_->setMax(1);
 
@@ -86,8 +85,8 @@ ProbMapDisplay::ProbMapDisplay()
   height_property_ = new IntProperty("Height", 0, "Height of the map, in meters. (not editable)", this);
   height_property_->setReadOnly(true);
 
-  position_property_ = new VectorProperty("Position", Ogre::Vector3::ZERO,
-      "Position of the bottom left corner of the map, in meters. (not editable)", this);
+  position_property_ = new VectorProperty(
+      "Position", Ogre::Vector3::ZERO, "Position of the bottom left corner of the map, in meters. (not editable)", this);
   position_property_->setReadOnly(true);
 
   orientation_property_ =
@@ -104,8 +103,7 @@ void ProbMapDisplay::onInitialize() {
   static int count = 0;
   std::stringstream ss;
   ss << "MapObjectMaterial" << count++;
-  material_ =
-      Ogre::MaterialManager::getSingleton().create(ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+  material_ = Ogre::MaterialManager::getSingleton().create(ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
   material_->setReceiveShadows(false);
   material_->getTechnique(0)->setLightingEnabled(false);
   material_->setDepthBias(-16.0f, 0.0f);
@@ -304,9 +302,8 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
   std::stringstream ss;
   ss << "MapTexture" << tex_count++;
   try {
-    texture_ = Ogre::TextureManager::getSingleton().loadRawData(ss.str(),
-        Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, pixel_stream, width, height, Ogre::PF_L8,
-        Ogre::TEX_TYPE_2D, 0);
+    texture_ = Ogre::TextureManager::getSingleton().loadRawData(ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+        pixel_stream, width, height, Ogre::PF_L8, Ogre::TEX_TYPE_2D, 0);
 
     if (!map_status_set) {
       setStatus(StatusProperty::Ok, "Map", "Map OK");
@@ -328,8 +325,8 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
 
     {
       std::stringstream ss;
-      ss << "Map is larger than your graphics card supports.  Downsampled from [" << width << "x" << height << "] to ["
-         << fwidth << "x" << fheight << "]";
+      ss << "Map is larger than your graphics card supports.  Downsampled from [" << width << "x" << height << "] to [" << fwidth
+         << "x" << fheight << "]";
       setStatus(StatusProperty::Ok, "Map", QString::fromStdString(ss.str()));
     }
 
@@ -342,8 +339,8 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
     image.loadRawData(pixel_stream, width, height, Ogre::PF_L8);
     image.resize(fwidth, fheight, Ogre::Image::FILTER_NEAREST);
     ss << "Downsampled";
-    texture_ = Ogre::TextureManager::getSingleton().loadImage(
-        ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, image);
+    texture_ =
+        Ogre::TextureManager::getSingleton().loadImage(ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, image);
   }
 
   delete[] pixels;

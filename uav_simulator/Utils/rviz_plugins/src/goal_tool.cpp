@@ -40,8 +40,8 @@ namespace rviz {
 Goal3DTool::Goal3DTool() {
   shortcut_key_ = 'g';
 
-  topic_property_ = new StringProperty("Topic", "goal", "The topic on which to publish navigation goals.",
-      getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_ = new StringProperty(
+      "Topic", "goal", "The topic on which to publish navigation goals.", getPropertyContainer(), SLOT(updateTopic()), this);
 }
 
 void Goal3DTool::onInitialize() {

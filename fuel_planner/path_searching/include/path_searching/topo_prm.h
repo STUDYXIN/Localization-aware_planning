@@ -138,8 +138,7 @@ private:
   bool needConnection(GraphNode::Ptr g1, GraphNode::Ptr g2,
       Eigen::Vector3d pt);  // test redundancy with existing
                             // connection between two guard
-  bool lineVisib(
-      const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, double thresh, Eigen::Vector3d& pc, int caster_id = 0);
+  bool lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, double thresh, Eigen::Vector3d& pc, int caster_id = 0);
   bool triangleVisib(Eigen::Vector3d pt, Eigen::Vector3d p1, Eigen::Vector3d p2);
   void pruneGraph();
 

@@ -172,8 +172,8 @@ BOOST_AUTO_TEST_CASE(test_auto_initialization) {
   typedef boost::array<double, 3> state_type;
   state_type x = { { 10.0, 10.0, 10.0 } };
 
-  adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations,
-      initially_resizer, rk4_decorator<state_type> >
+  adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations, initially_resizer,
+      rk4_decorator<state_type> >
       adams;
 
   adams.initializing_stepper().do_count = 0;
@@ -197,8 +197,8 @@ BOOST_AUTO_TEST_CASE(test_manual_initialization) {
   typedef boost::array<double, 3> state_type;
   state_type x = { { 10.0, 10.0, 10.0 } };
 
-  adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations,
-      initially_resizer, rk4_decorator<state_type> >
+  adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations, initially_resizer,
+      rk4_decorator<state_type> >
       adams;
 
   adams.initializing_stepper().do_count = 0;

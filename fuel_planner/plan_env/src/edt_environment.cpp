@@ -30,8 +30,7 @@ double EDTEnvironment::distToBox(int idx, const Eigen::Vector3d& pos, const doub
   Eigen::Vector3d dist;
 
   for (int i = 0; i < 3; i++) {
-    dist(i) =
-        pos(i) >= box_min(i) && pos(i) <= box_max(i) ? 0.0 : min(fabs(pos(i) - box_min(i)), fabs(pos(i) - box_max(i)));
+    dist(i) = pos(i) >= box_min(i) && pos(i) <= box_max(i) ? 0.0 : min(fabs(pos(i) - box_min(i)), fabs(pos(i) - box_max(i)));
   }
 
   return dist.norm();

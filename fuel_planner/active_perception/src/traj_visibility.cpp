@@ -190,8 +190,8 @@ bool VisibilityUtil::findUnknownPoint(NonUniformBspline& traj, Eigen::Vector3d& 
   return true;
 }
 
-bool VisibilityUtil::findCriticalPoint(NonUniformBspline& traj, const Eigen::Vector3d& unknown_pt,
-    const double& unknown_t, Eigen::Vector3d& pc, double& tc) {
+bool VisibilityUtil::findCriticalPoint(
+    NonUniformBspline& traj, const Eigen::Vector3d& unknown_pt, const double& unknown_t, Eigen::Vector3d& pc, double& tc) {
   Eigen::Vector3d pt, pb;
   double tb = -10.0;
   // coarse finding backward
@@ -219,8 +219,8 @@ bool VisibilityUtil::findCriticalPoint(NonUniformBspline& traj, const Eigen::Vec
   return true;
 }
 
-bool VisibilityUtil::findDirAndIdx(NonUniformBspline& traj, const double& unknown_t, const double& crit_t,
-    Eigen::Vector3d& dir, int& idx, Eigen::Vector3d& min_pt) {
+bool VisibilityUtil::findDirAndIdx(NonUniformBspline& traj, const double& unknown_t, const double& crit_t, Eigen::Vector3d& dir,
+    int& idx, Eigen::Vector3d& min_pt) {
   // max speed to unknown pt
   // double mean_v = 0.0;
   // int num_v = 0;
@@ -381,8 +381,7 @@ vector<Eigen::Vector3d> VisibilityUtil::precomputeForVisibility(const vector<Eig
   return block_pts;
 }
 
-Eigen::Vector3d VisibilityUtil::getVirtualBlockPt(
-    const vector<Eigen::Vector3d>& q, int i, int j, const Eigen::Vector3d& min_pt) {
+Eigen::Vector3d VisibilityUtil::getVirtualBlockPt(const vector<Eigen::Vector3d>& q, int i, int j, const Eigen::Vector3d& min_pt) {
   Eigen::Vector3d qij = q[j] - q[i];
   Eigen::Vector3d qkm, qk;
   double min_dot = 1000;

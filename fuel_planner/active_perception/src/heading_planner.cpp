@@ -460,12 +460,10 @@ void HeadingPlanner::distToPathAndCurPos(
   for (int i = 0; i < idx; ++i) {
     dists.second += (ctrl_pts.row(i + 1) - ctrl_pts.row(i)).norm();
   }
-  if (debug)
-    std::cout << "pos: " << check_pt.transpose() << ", d1: " << dists.first << ", d2: " << dists.second << std::endl;
+  if (debug) std::cout << "pos: " << check_pt.transpose() << ", d1: " << dists.first << ", d2: " << dists.second << std::endl;
 }
 
-bool HeadingPlanner::insideFoV(
-    const Eigen::Vector3d& pw, const Eigen::Vector3d& pc, const vector<Eigen::Vector3d>& normals) {
+bool HeadingPlanner::insideFoV(const Eigen::Vector3d& pw, const Eigen::Vector3d& pc, const vector<Eigen::Vector3d>& normals) {
   Eigen::Vector3d dir = pw - pc;
   if (dir.norm() > far_) {
     return false;
@@ -504,8 +502,7 @@ void HeadingPlanner::setFrontier(const vector<vector<Eigen::Vector3d>>& frontier
   ft_kdtree_.setInputCloud(frontier_);
 }
 
-void HeadingPlanner::calcVisibFrontier(
-    const Eigen::Vector3d& pt, const double& yaw, unordered_map<int, int>& visib_idx) {
+void HeadingPlanner::calcVisibFrontier(const Eigen::Vector3d& pt, const double& yaw, unordered_map<int, int>& visib_idx) {
   auto t1 = ros::Time::now();
 
   // search relevant frontier points
@@ -585,8 +582,7 @@ void HeadingPlanner::showVisibFrontier(const vector<YawVertex::Ptr>& path) {
   frontier_pub_.publish(msg);
 }
 
-void HeadingPlanner::axisAlignedBoundingBox(
-    const vector<Eigen::Vector3d>& points, Eigen::Vector3d& lb, Eigen::Vector3d& ub) {
+void HeadingPlanner::axisAlignedBoundingBox(const vector<Eigen::Vector3d>& points, Eigen::Vector3d& lb, Eigen::Vector3d& ub) {
   lb = points.front();
   ub = points.front();
   for (auto p : points) {

@@ -23,8 +23,8 @@ double intbound(double s, double ds) {
   }
 }
 
-void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eigen::Vector3d& min,
-    const Eigen::Vector3d& max, int& output_points_cnt, Eigen::Vector3d* output) {
+void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eigen::Vector3d& min, const Eigen::Vector3d& max,
+    int& output_points_cnt, Eigen::Vector3d* output) {
   //    std::cout << start << ' ' << end << std::endl;
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
   // by John Amanatides and Andrew Woo, 1987
@@ -125,8 +125,8 @@ void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eig
   }
 }
 
-void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eigen::Vector3d& min,
-    const Eigen::Vector3d& max, std::vector<Eigen::Vector3d>* output) {
+void Raycast(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const Eigen::Vector3d& min, const Eigen::Vector3d& max,
+    std::vector<Eigen::Vector3d>* output) {
   //    std::cout << start << ' ' << end << std::endl;
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
   // by John Amanatides and Andrew Woo, 1987

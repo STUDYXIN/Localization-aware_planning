@@ -130,8 +130,7 @@ void renderSensedPoints(const ros::TimerEvent& event) {
   pointIdxRadiusSearch.clear();
   pointRadiusSquaredDistance.clear();
 
-  if (_kdtreeLocalMap.radiusSearch(searchPoint, sensing_horizon, pointIdxRadiusSearch, pointRadiusSquaredDistance) >
-      0) {
+  if (_kdtreeLocalMap.radiusSearch(searchPoint, sensing_horizon, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0) {
     for (size_t i = 0; i < pointIdxRadiusSearch.size(); ++i) {
       auto pt = cloud_all_map.points[pointIdxRadiusSearch[i]];
       Eigen::Vector3d pt3;

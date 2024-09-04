@@ -18,8 +18,7 @@ template <class ContainerAllocator>
 struct AuxCommand_ {
   typedef AuxCommand_<ContainerAllocator> Type;
 
-  AuxCommand_()
-    : current_yaw(0.0), kf_correction(0.0), angle_corrections(), enable_motors(false), use_external_yaw(false) {
+  AuxCommand_() : current_yaw(0.0), kf_correction(0.0), angle_corrections(), enable_motors(false), use_external_yaw(false) {
     angle_corrections.assign(0.0);
   }
 

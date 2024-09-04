@@ -27,8 +27,7 @@ const size_t stage_count = 4;
 
 class rt_generic_wrapper {
 public:
-  rt_generic_wrapper(
-      const double* const* a, const rk_stepper_type::coeff_b_type& b, const rk_stepper_type::coeff_c_type& c)
+  rt_generic_wrapper(const double* const* a, const rk_stepper_type::coeff_b_type& b, const rk_stepper_type::coeff_c_type& c)
     : m_stepper(stage_count, (rk_stepper_type::coeff_a_type)a, b, c) {
   }
 

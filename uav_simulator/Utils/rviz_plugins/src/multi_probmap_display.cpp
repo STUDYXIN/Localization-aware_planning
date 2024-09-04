@@ -196,8 +196,7 @@ void MultiProbMapDisplay::update(float wall_dt, float ros_dt) {
     Ogre::TexturePtr _texture_;
     // t[2] = ros::Time::now();
     _texture_ = Ogre::TextureManager::getSingleton().loadRawData(ss1.str(),
-        Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, pixel_stream, width, height, Ogre::PF_L8,
-        Ogre::TEX_TYPE_2D, 0);
+        Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, pixel_stream, width, height, Ogre::PF_L8, Ogre::TEX_TYPE_2D, 0);
     // t[3] = ros::Time::now();
     texture_.push_back(_texture_);
     delete[] pixels;
@@ -209,8 +208,7 @@ void MultiProbMapDisplay::update(float wall_dt, float ros_dt) {
     std::stringstream ss0;
     ss0 << "MultiMapObjectMaterial" << material_count++;
     Ogre::MaterialPtr _material_;
-    _material_ = Ogre::MaterialManager::getSingleton().create(
-        ss0.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+    _material_ = Ogre::MaterialManager::getSingleton().create(ss0.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
     _material_->setReceiveShadows(false);
     _material_->getTechnique(0)->setLightingEnabled(false);
     _material_->setDepthBias(-16.0f, 0.0f);

@@ -59,8 +59,8 @@ double ViewNode::searchPath(const Vector3d& p1, const Vector3d& p2, vector<Vecto
   return 1000;
 }
 
-double ViewNode::computeCost(const Vector3d& p1, const Vector3d& p2, const double& y1, const double& y2,
-    const Vector3d& v1, const double& yd1, vector<Vector3d>& path) {
+double ViewNode::computeCost(const Vector3d& p1, const Vector3d& p2, const double& y1, const double& y2, const Vector3d& v1,
+    const double& yd1, vector<Vector3d>& path) {
   // Cost of position change
   double pos_cost = ViewNode::searchPath(p1, p2, path) / vm_;
 

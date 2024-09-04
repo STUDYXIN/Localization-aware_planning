@@ -50,7 +50,6 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   }
 
   frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
-  // view_finder_.reset(new ViewFinder(edt_environment_, nh));
 
   nh.param("exploration/refine_local", ep_->refine_local_, true);
   nh.param("exploration/refined_num", ep_->refined_num_, -1);
@@ -192,71 +191,26 @@ bool PAExplorationManager::planToNextGoal(const Vector3d& next_pos, const double
   double diff = fabs(next_yaw - start_yaw[0]);
   double time_lb = min(diff, 2 * M_PI - diff) / ViewNode::yd_;
 
-  // Generate trajectory of x,y,z
-  // planner_manager_->path_finder_->reset();
-  // if (planner_manager_->path_finder_->search(start_pos, next_pos) != Astar::REACH_END) {
-  //   ROS_ERROR("No path to next viewpoint");
+  // if (!planner_manager_->kinodynamicReplan(
+  //         start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
   //   return false;
   // }
-
-  // ed_->path_next_goal_ = planner_manager_->path_finder_->getPath();
-  // shortenPath(ed_->path_next_goal_);
-
-  // const double radius_far = 5.0;
-  // const double radius_close = 1.5;
-  // const double len = Astar::pathLength(ed_->path_next_goal_);
-
-  // if (len < radius_close) {
-  //   // Next viewpoint is very close, no need to search kinodynamic path, just use waypoints-based
-  //   // optimization
-  //   planner_manager_->planExploreTraj(ed_->path_next_goal_, start_vel, start_acc, time_lb);
-  //   ed_->next_goal_ = next_pos;
-  // }
-
-  // else if (len > radius_far) {
-  //   // Next viewpoint is far away, select intermediate goal on geometric path (this also deal with
-  //   // dead end)
-  //   std::cout << "Far goal." << std::endl;
-  //   double len2 = 0.0;
-  //   vector<Eigen::Vector3d> truncated_path = { ed_->path_next_goal_.front() };
-  //   for (int i = 1; i < ed_->path_next_goal_.size() && len2 < radius_far; ++i) {
-  //     auto cur_pt = ed_->path_next_goal_[i];
-  //     len2 += (cur_pt - truncated_path.back()).norm();
-  //     truncated_path.push_back(cur_pt);
-  //   }
-  //   ed_->next_goal_ = truncated_path.back();
-  //   planner_manager_->planExploreTraj(truncated_path, start_vel, start_acc, time_lb);
-  // }
-
-  // else {
-  //   // Search kino path to exactly next viewpoint and optimize
-  //   std::cout << "Mid goal" << std::endl;
-  //   ed_->next_goal_ = next_pos;
-
-  //   // if (!planner_manager_->sampleBasedReplan(start_pos, start_vel, start_acc, start_yaw(0), ed_->next_goal_, next_yaw,
-  //   // time_lb)) {
-  //   //   return false;
-  //   // }
-
-  //   if (!planner_manager_->kinodynamicReplan(start_pos, start_vel, start_acc, ed_->next_goal_, Vector3d::Zero(), time_lb)) {
-  //     return false;
-  //   }
-  // }
-
-  if (!planner_manager_->kinodynamicReplan(
-          start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
-    return false;
-  }
 
   // if (!planner_manager_->sampleBasedReplan(start_pos, start_vel, start_acc, start_yaw(0), next_pos, next_yaw, time_lb)) {
   //   return false;
   // }
 
+  if (!planner_manager_->planPosPerceptionAware(
+          start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
+    return false;
+  }
+
   if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1) {
     ROS_ERROR("Lower bound not satified!");
   }
 
-  planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
+  // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
+  planner_manager_->planYawPerceptionAware(start_yaw, next_yaw);
 
   return true;
 }
@@ -297,179 +251,6 @@ void PAExplorationManager::shortenPath(vector<Vector3d>& path) {
   }
 
   path = short_tour;
-}
-
-void PAExplorationManager::findGlobalTour(
-    const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw, vector<int>& indices) {
-  auto t1 = ros::Time::now();
-
-  // Get cost matrix for current state and clusters
-  Eigen::MatrixXd cost_mat;
-  frontier_finder_->updateFrontierCostMatrix();
-  frontier_finder_->getFullCostMatrix(cur_pos, cur_vel, cur_yaw, cost_mat);
-  const int dimension = cost_mat.rows();
-
-  double mat_time = (ros::Time::now() - t1).toSec();
-  t1 = ros::Time::now();
-
-  // Write params and cost matrix to problem file
-  ofstream prob_file(ep_->tsp_dir_ + "/single.tsp");
-  // Problem specification part, follow the format of TSPLIB
-
-  string prob_spec = "NAME : single\nTYPE : ATSP\nDIMENSION : " + to_string(dimension) +
-                     "\nEDGE_WEIGHT_TYPE : "
-                     "EXPLICIT\nEDGE_WEIGHT_FORMAT : FULL_MATRIX\nEDGE_WEIGHT_SECTION\n";
-
-  // string prob_spec = "NAME : single\nTYPE : TSP\nDIMENSION : " + to_string(dimension) +
-  //     "\nEDGE_WEIGHT_TYPE : "
-  //     "EXPLICIT\nEDGE_WEIGHT_FORMAT : LOWER_ROW\nEDGE_WEIGHT_SECTION\n";
-
-  prob_file << prob_spec;
-  // prob_file << "TYPE : TSP\n";
-  // prob_file << "EDGE_WEIGHT_FORMAT : LOWER_ROW\n";
-  // Problem data part
-  const int scale = 100;
-  if (false) {
-    // Use symmetric TSP
-    for (int i = 1; i < dimension; ++i) {
-      for (int j = 0; j < i; ++j) {
-        int int_cost = cost_mat(i, j) * scale;
-        prob_file << int_cost << " ";
-      }
-      prob_file << "\n";
-    }
-  } else {
-    // Use Asymmetric TSP
-    for (int i = 0; i < dimension; ++i) {
-      for (int j = 0; j < dimension; ++j) {
-        int int_cost = cost_mat(i, j) * scale;
-        prob_file << int_cost << " ";
-      }
-      prob_file << "\n";
-    }
-  }
-
-  prob_file << "EOF";
-  prob_file.close();
-
-  // Call LKH TSP solver
-  solveTSPLKH((ep_->tsp_dir_ + "/single.par").c_str());
-
-  // Read optimal tour from the tour section of result file
-  ifstream res_file(ep_->tsp_dir_ + "/single.txt");
-  string res;
-  while (getline(res_file, res)) {
-    // Go to tour section
-    if (res.compare("TOUR_SECTION") == 0) break;
-  }
-
-  if (false) {
-    // Read path for Symmetric TSP formulation
-    getline(res_file, res);  // Skip current pose
-    getline(res_file, res);
-    int id = stoi(res);
-    bool rev = (id == dimension);  // The next node is virutal depot?
-
-    while (id != -1) {
-      indices.push_back(id - 2);
-      getline(res_file, res);
-      id = stoi(res);
-    }
-    if (rev) reverse(indices.begin(), indices.end());
-    indices.pop_back();  // Remove the depot
-  } else {
-    // Read path for ATSP formulation
-    while (getline(res_file, res)) {
-      // Read indices of frontiers in optimal tour
-      int id = stoi(res);
-      if (id == 1)  // Ignore the current state
-        continue;
-      if (id == -1) break;
-      indices.push_back(id - 2);  // Idx of solver-2 == Idx of frontier
-    }
-  }
-
-  res_file.close();
-
-  // Get the path of optimal tour from path matrix
-  frontier_finder_->getPathForTour(cur_pos, indices, ed_->global_tour_);
-
-  double tsp_time = (ros::Time::now() - t1).toSec();
-  ROS_WARN("Cost mat: %lf, TSP: %lf", mat_time, tsp_time);
-}
-
-void PAExplorationManager::refineLocalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d& cur_yaw,
-    const vector<vector<Vector3d>>& n_points, const vector<vector<double>>& n_yaws, vector<Vector3d>& refined_pts,
-    vector<double>& refined_yaws) {
-  double create_time, search_time, parse_time;
-  auto t1 = ros::Time::now();
-
-  // Create graph for viewpoints selection
-  GraphSearch<ViewNode> g_search;
-  vector<ViewNode::Ptr> last_group, cur_group;
-
-  // Add the current state
-  ViewNode::Ptr first(new ViewNode(cur_pos, cur_yaw[0]));
-  first->vel_ = cur_vel;
-  g_search.addNode(first);
-  last_group.push_back(first);
-  ViewNode::Ptr final_node;
-
-  // Add viewpoints
-  std::cout << "Local tour graph: ";
-  for (int i = 0; i < n_points.size(); ++i) {
-    // Create nodes for viewpoints of one frontier
-    for (int j = 0; j < n_points[i].size(); ++j) {
-      ViewNode::Ptr node(new ViewNode(n_points[i][j], n_yaws[i][j]));
-      g_search.addNode(node);
-      // Connect a node to nodes in last group
-      for (auto nd : last_group) g_search.addEdge(nd->id_, node->id_);
-      cur_group.push_back(node);
-
-      // Only keep the first viewpoint of the last local frontier
-      if (i == n_points.size() - 1) {
-        final_node = node;
-        break;
-      }
-    }
-    // Store nodes for this group for connecting edges
-    std::cout << cur_group.size() << ", ";
-    last_group = cur_group;
-    cur_group.clear();
-  }
-  std::cout << "" << std::endl;
-  create_time = (ros::Time::now() - t1).toSec();
-  t1 = ros::Time::now();
-
-  // Search optimal sequence
-  vector<ViewNode::Ptr> path;
-  g_search.DijkstraSearch(first->id_, final_node->id_, path);
-
-  search_time = (ros::Time::now() - t1).toSec();
-  t1 = ros::Time::now();
-
-  // Return searched sequence
-  for (int i = 1; i < path.size(); ++i) {
-    refined_pts.push_back(path[i]->pos_);
-    refined_yaws.push_back(path[i]->yaw_);
-  }
-
-  // Extract optimal local tour (for visualization)
-  ed_->refined_tour_.clear();
-  ed_->refined_tour_.push_back(cur_pos);
-  ViewNode::astar_->lambda_heu_ = 1.0;
-  ViewNode::astar_->setResolution(0.2);
-  for (auto pt : refined_pts) {
-    vector<Vector3d> path;
-    if (ViewNode::searchPath(ed_->refined_tour_.back(), pt, path))
-      ed_->refined_tour_.insert(ed_->refined_tour_.end(), path.begin(), path.end());
-    else
-      ed_->refined_tour_.push_back(pt);
-  }
-  ViewNode::astar_->lambda_heu_ = 10000;
-
-  parse_time = (ros::Time::now() - t1).toSec();
-  // ROS_WARN("create: %lf, search: %lf, parse: %lf", create_time, search_time, parse_time);
 }
 
 bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw) {

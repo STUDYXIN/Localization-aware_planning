@@ -2,10 +2,13 @@
 
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
+#include <plan_env/feature_map.h>
 
 #include <nlopt.hpp>
 #include <thread>
-// using namespace std;
+
+using namespace std;
+using namespace Eigen;
 
 namespace fast_planner {
 const int BsplineOptimizer::SMOOTHNESS = (1 << 0);
@@ -17,12 +20,14 @@ const int BsplineOptimizer::GUIDE = (1 << 5);
 const int BsplineOptimizer::WAYPOINTS = (1 << 6);
 const int BsplineOptimizer::VIEWCONS = (1 << 7);
 const int BsplineOptimizer::MINTIME = (1 << 8);
+const int BsplineOptimizer::PARALLAX = (1 << 9);
+const int BsplineOptimizer::VERTICALVISIBILITY = (1 << 10);
+const int BsplineOptimizer::YAWCOVISIBILITY = (1 << 11);
 
 const int BsplineOptimizer::GUIDE_PHASE =
     BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::GUIDE | BsplineOptimizer::START | BsplineOptimizer::END;
 const int BsplineOptimizer::NORMAL_PHASE = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::DISTANCE |
-                                           BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
-                                           BsplineOptimizer::END;
+                                           BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END;
 
 void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   nh.param("optimization/ld_smooth", ld_smooth_, -1.0);
@@ -34,12 +39,19 @@ void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   nh.param("optimization/ld_waypt", ld_waypt_, -1.0);
   nh.param("optimization/ld_view", ld_view_, -1.0);
   nh.param("optimization/ld_time", ld_time_, -1.0);
+  nh.param("optimization/ld_parallax", ld_parallax_, -1.0);
+  nh.param("optimization/ld_vertical_visibility", ld_vertical_visibility_, -1.0);
+  nh.param("optimization/ld_yaw_covisibility", ld_yaw_covisib_, -1.0);
 
   nh.param("optimization/dist0", dist0_, -1.0);
   nh.param("optimization/max_vel", max_vel_, -1.0);
   nh.param("optimization/max_acc", max_acc_, -1.0);
   nh.param("optimization/dlmin", dlmin_, -1.0);
   nh.param("optimization/wnl", wnl_, -1.0);
+
+  nh.param("optimization/parallax/estimator_freq", configPA_.estimator_freq_, -1.0);
+  nh.param("optimization/parallax/max_parallax", configPA_.max_parallax_, -1.0);
+  nh.param("optimization/parallax/pot_a", configPA_.pot_a_, -1.0);
 
   nh.param("optimization/max_iteration_num1", max_iteration_num_[0], -1);
   nh.param("optimization/max_iteration_num2", max_iteration_num_[1], -1);
@@ -76,6 +88,9 @@ void BsplineOptimizer::setCostFunction(const int& cost_code) {
   if (cost_function_ & WAYPOINTS) cost_str += " waypt |";
   if (cost_function_ & VIEWCONS) cost_str += " view  |";
   if (cost_function_ & MINTIME) cost_str += " time  |";
+  if (cost_function_ & PARALLAX) cost_str += " parallax | ";
+  if (cost_function_ & VERTICALVISIBILITY) cost_str += " veritcal_visibility | ";
+  if (cost_function_ & YAWCOVISIBILITY) cost_str += " yaw_covisibility | ";
 
   // ROS_INFO_STREAM("cost func: " << cost_str);
 }
@@ -103,20 +118,40 @@ void BsplineOptimizer::setBoundaryStates(const vector<Eigen::Vector3d>& start, c
   end_state_ = end;
 }
 
+void BsplineOptimizer::setBoundaryStates(
+    const vector<Vector3d>& start, const vector<Vector3d>& end, const vector<bool>& start_idx, const vector<bool>& end_idx) {
+  start_state_ = start;
+  end_state_ = end;
+  start_con_index_ = start_idx;
+  end_con_index_ = end_idx;
+}
+
 void BsplineOptimizer::setTimeLowerBound(const double& lb) {
   time_lb_ = lb;
 }
 
+// SECTION Perception Aware Optimization
+
+void BsplineOptimizer::setPosAndAcc(const vector<Vector3d>& pos, const vector<Vector3d>& acc, const vector<int>& idx) {
+  pos_ = pos;
+  acc_ = acc;
+  pos_idx_ = idx;
+}
+
+// !SECTION
+
 void BsplineOptimizer::optimize(
     Eigen::MatrixXd& points, double& dt, const int& cost_function, const int& max_num_id, const int& max_time_id) {
+
   if (start_state_.empty()) {
     ROS_ERROR("Initial state undefined!");
     return;
   }
+
   control_points_ = points;
   knot_span_ = dt;
-  max_num_id_ = max_num_id;
-  max_time_id_ = max_time_id;
+  // max_num_id_ = max_num_id;
+  // max_time_id_ = max_time_id;
   setCostFunction(cost_function);
 
   // Set necessary data and flag
@@ -137,7 +172,7 @@ void BsplineOptimizer::optimize(
   for (int i = 0; i < control_points_.rows() - 1; ++i) {
     pt_dist_ += (control_points_.row(i + 1) - control_points_.row(i)).norm();
   }
-  pt_dist_ /= double(point_num_);
+  pt_dist_ /= point_num_;
 
   iter_num_ = 0;
   min_cost_ = std::numeric_limits<double>::max();
@@ -151,6 +186,8 @@ void BsplineOptimizer::optimize(
   g_waypoints_.resize(point_num_);
   g_view_.resize(point_num_);
   g_time_.resize(point_num_);
+  g_parallax_.resize(point_num_);
+  g_yaw_covisibility_.resize(point_num_);
 
   comb_time = 0.0;
 
@@ -159,38 +196,33 @@ void BsplineOptimizer::optimize(
   points = control_points_;
   dt = knot_span_;
   start_state_.clear();
+  start_con_index_.clear();
+  end_con_index_.clear();
   time_lb_ = -1;
 }
 
 void BsplineOptimizer::optimize() {
   // Optimize all control points and maybe knot span dt
   // Use NLopt solver
+
+  // Step1：初始化NLopt非线性优化器
   nlopt::opt opt(nlopt::algorithm(isQuadratic() ? algorithm1_ : algorithm2_), variable_num_);
   opt.set_min_objective(BsplineOptimizer::costFunction, this);
-  opt.set_maxeval(max_iteration_num_[max_num_id_]);
-  opt.set_maxtime(max_iteration_time_[max_time_id_]);
-  opt.set_xtol_rel(1e-5);
+  opt.set_xtol_rel(1e-4);
+
+  // opt.set_maxeval(max_iteration_num_[max_num_id_]);
+  // opt.set_maxtime(max_iteration_time_[max_time_id_]);
+  // opt.set_xtol_rel(1e-5);
 
   // Set axis aligned bounding box for optimization
+
+  // Step2：把control_points_的数据搬运到q中，记得考虑上下限
   Eigen::Vector3d bmin, bmax;
   edt_environment_->sdf_map_->getBox(bmin, bmax);
   for (int k = 0; k < 3; ++k) {
     bmin[k] += 0.1;
     bmax[k] -= 0.1;
   }
-  // Deprecated: does not optimize start and end control points
-  // for (int i = order_; i < pt_num; ++i)
-  // {
-  //   if (!(cost_function_ & BOUNDARY) && i >= pt_num - order_)
-  //     continue;
-  //   for (int j = 0; j < dim_; j++)
-  //   {
-  //     double cij = control_points_(i, j);
-  //     if (dim_ != 1)
-  //       cij = max(min(cij, bmax[j % 3]), bmin[j % 3]);
-  //     q[dim_ * (i - order_) + j] = cij;
-  //   }
-  // }
 
   vector<double> q(variable_num_);
   // Variables for control points
@@ -203,6 +235,7 @@ void BsplineOptimizer::optimize() {
   // Variables for knot span
   if (optimize_time_) q[variable_num_ - 1] = knot_span_;
 
+  // Step3：为NLopt优化器设置优化的上下限
   if (dim_ != 1) {
     vector<double> lb(variable_num_), ub(variable_num_);
     const double bound = 10.0;
@@ -220,81 +253,63 @@ void BsplineOptimizer::optimize() {
     opt.set_upper_bounds(ub);
   }
 
+  // Step4：正式进行优化
   auto t1 = ros::Time::now();
-  try {
-    double final_cost;
-    nlopt::result result = opt.optimize(q, final_cost);
-  } catch (std::exception& e) {
-    cout << e.what() << endl;
-  }
+  double final_cost;
+  nlopt::result result = opt.optimize(q, final_cost);
+  // try {
+  //   double final_cost;
+  //   nlopt::result result = opt.optimize(q, final_cost);
+  // }
+
+  // catch (std::exception& e) {
+  //   cout << e.what() << endl;
+  // }
+
+  // Step5：把优化变量反写回control_points_和knot_span_
+  // Note：best_variable_在优化过程中就不断更新
   for (int i = 0; i < point_num_; ++i)
     for (int j = 0; j < dim_; ++j) control_points_(i, j) = best_variable_[dim_ * i + j];
   if (optimize_time_) knot_span_ = best_variable_[variable_num_ - 1];
 
   if (cost_function_ & MINTIME) {
-    std::cout << "Iter num: " << iter_num_ << ", time: " << (ros::Time::now() - t1).toSec()
-              << ", point num: " << point_num_ << ", comb time: " << comb_time << std::endl;
+    std::cout << "Iter num: " << iter_num_ << ", time: " << (ros::Time::now() - t1).toSec() << ", point num: " << point_num_
+              << ", comb time: " << comb_time << std::endl;
   }
-
-  // Deprecated
-  // for (int i = order_; i < control_points_.rows(); ++i)
-  // {
-  //   if (!(cost_function_ & BOUNDARY) && i >= pt_num - order_)
-  //     continue;
-  //   for (int j = 0; j < dim_; j++)
-  //   {
-  //     control_points_(i, j) = best_variable_[dim_ * (i - order_) + j];
-  //   }
-  // }
-
-  // if (!(cost_function_ & GUIDE))
-  //   ROS_INFO_STREAM("iter num: " << iter_num_);
 }
 
-void BsplineOptimizer::calcSmoothnessCost(
-    const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt) {
+void BsplineOptimizer::calcSmoothnessCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
   Eigen::Vector3d jerk, temp_j;
 
   for (int i = 0; i < q.size() - 3; i++) {
+    /* evaluate jerk */
+    // 3-rd order derivative = 1/(ts)^3*(q[i + 3] - 3 * q[i + 2] + 3 * q[i + 1] - q[i])
+
     // Test jerk cost
     Eigen::Vector3d ji = (q[i + 3] - 3 * q[i + 2] + 3 * q[i + 1] - q[i]) / pt_dist_;
     cost += ji.squaredNorm();
     temp_j = 2 * ji / pt_dist_;
 
-    // /* evaluate jerk */
-    // jerk = q[i + 3] - 3 * q[i + 2] + 3 * q[i + 1] - q[i];
-    // cost += jerk.squaredNorm();
-    // temp_j = 2.0 * jerk;
-    // /* jerk gradient_q */
-
     gradient_q[i + 0] += -temp_j;
     gradient_q[i + 1] += 3.0 * temp_j;
     gradient_q[i + 2] += -3.0 * temp_j;
     gradient_q[i + 3] += temp_j;
-    // if (optimize_time_)
-    //   gt += -6 * ji.dot(ji) / dt;
   }
 }
 
-void BsplineOptimizer::calcDistanceCost(
-    const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
+void BsplineOptimizer::calcDistanceCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
 
   double dist;
-  Eigen::Vector3d dist_grad, g_zero(0, 0, 0);
+  Eigen::Vector3d dist_grad;
   for (int i = 0; i < q.size(); i++) {
-    if (!dynamic_) {
-      edt_environment_->evaluateEDTWithGrad(q[i], -1.0, dist, dist_grad);
-      if (dist_grad.norm() > 1e-4) dist_grad.normalize();
-    } else {
-      double time = double(i + 2 - order_) * knot_span_ + start_time_;
-      edt_environment_->evaluateEDTWithGrad(q[i], time, dist, dist_grad);
-    }
+    edt_environment_->evaluateEDTWithGrad(q[i], -1.0, dist, dist_grad);
+    if (dist_grad.norm() > 1e-4) dist_grad.normalize();
 
     if (dist < dist0_) {
       cost += pow(dist - dist0_, 2);
@@ -304,7 +319,8 @@ void BsplineOptimizer::calcDistanceCost(
 }
 
 void BsplineOptimizer::calcFeasibilityCost(
-    const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt) {
+    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt) {
+
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
@@ -350,7 +366,10 @@ void BsplineOptimizer::calcFeasibilityCost(
 }
 
 void BsplineOptimizer::calcStartCost(
-    const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt) {
+    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt) {
+
+  if (start_con_index_.size() != 3) ROS_ERROR("Start state constraint is not set!");
+
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   // std::fill(gradient_q.begin(), gradient_q.end(), zero);
@@ -363,31 +382,46 @@ void BsplineOptimizer::calcStartCost(
   q3 = q[2];
 
   // Start position
-  static const double w_pos = 10.0;
-  dq = 1 / 6.0 * (q1 + 4 * q2 + q3) - start_state_[0];
-  cost += w_pos * dq.squaredNorm();
-  gradient_q[0] += w_pos * 2 * dq * (1 / 6.0);
-  gradient_q[1] += w_pos * 2 * dq * (4 / 6.0);
-  gradient_q[2] += w_pos * 2 * dq * (1 / 6.0);
+  if (start_con_index_[0]) {
+    if (start_state_.size() < 1) ROS_ERROR("(start pos),start state size: %d", start_state_.size());
+
+    static const double w_pos = 10.0;
+    dq = 1 / 6.0 * (q1 + 4 * q2 + q3) - start_state_[0];
+    cost += w_pos * dq.squaredNorm();
+    gradient_q[0] += w_pos * 2 * dq * (1 / 6.0);
+    gradient_q[1] += w_pos * 2 * dq * (4 / 6.0);
+    gradient_q[2] += w_pos * 2 * dq * (1 / 6.0);
+  }
 
   // Start velocity
-  dq = 1 / (2 * dt) * (q3 - q1) - start_state_[1];
-  cost += dq.squaredNorm();
-  gradient_q[0] += 2 * dq * (-1.0) / (2 * dt);
-  gradient_q[2] += 2 * dq * 1.0 / (2 * dt);
-  if (optimize_time_) gt += dq.dot(q3 - q1) / (-dt * dt);
+  if (start_con_index_[1]) {
+    if (start_state_.size() < 2) ROS_ERROR("(start vel),start state size: %d", start_state_.size());
+
+    dq = 1 / (2 * dt) * (q3 - q1) - start_state_[1];
+    cost += dq.squaredNorm();
+    gradient_q[0] += 2 * dq * (-1.0) / (2 * dt);
+    gradient_q[2] += 2 * dq * 1.0 / (2 * dt);
+    if (optimize_time_) gt += dq.dot(q3 - q1) / (-dt * dt);
+  }
 
   // Start acceleration
-  dq = 1 / (dt * dt) * (q1 - 2 * q2 + q3) - start_state_[2];
-  cost += dq.squaredNorm();
-  gradient_q[0] += 2 * dq * 1.0 / (dt * dt);
-  gradient_q[1] += 2 * dq * (-2.0) / (dt * dt);
-  gradient_q[2] += 2 * dq * 1.0 / (dt * dt);
-  if (optimize_time_) gt += dq.dot(q1 - 2 * q2 + q3) / (-dt * dt * dt);
+  if (start_con_index_[2]) {
+    if (start_state_.size() < 3) ROS_ERROR("(start acc),start state size: %d", start_state_.size());
+
+    dq = 1 / (dt * dt) * (q1 - 2 * q2 + q3) - start_state_[2];
+    cost += dq.squaredNorm();
+    gradient_q[0] += 2 * dq * 1.0 / (dt * dt);
+    gradient_q[1] += 2 * dq * (-2.0) / (dt * dt);
+    gradient_q[2] += 2 * dq * 1.0 / (dt * dt);
+    if (optimize_time_) gt += dq.dot(q1 - 2 * q2 + q3) / (-dt * dt * dt);
+  }
 }
 
 void BsplineOptimizer::calcEndCost(
-    const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt) {
+    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt) {
+
+  if (end_con_index_.size() != 3) ROS_ERROR("End state constraint is not set!");
+
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   // std::fill(gradient_q.begin(), gradient_q.end(), zero);
@@ -400,22 +434,31 @@ void BsplineOptimizer::calcEndCost(
   q_1 = q[q.size() - 1];
 
   // End position
-  dq = 1 / 6.0 * (q_1 + 4 * q_2 + q_3) - end_state_[0];
-  cost += dq.squaredNorm();
-  gradient_q[q.size() - 1] += 2 * dq * (1 / 6.0);
-  gradient_q[q.size() - 2] += 2 * dq * (4 / 6.0);
-  gradient_q[q.size() - 3] += 2 * dq * (1 / 6.0);
+  if (end_con_index_[0]) {
+    if (end_state_.size() < 1) ROS_ERROR("(end pos),end state size: %d", end_state_.size());
 
-  if (end_state_.size() >= 2) {
-    // End velocity
+    dq = 1 / 6.0 * (q_1 + 4 * q_2 + q_3) - end_state_[0];
+    cost += dq.squaredNorm();
+    gradient_q[q.size() - 1] += 2 * dq * (1 / 6.0);
+    gradient_q[q.size() - 2] += 2 * dq * (4 / 6.0);
+    gradient_q[q.size() - 3] += 2 * dq * (1 / 6.0);
+  }
+
+  // End velocity
+  if (end_con_index_[1]) {
+    if (end_state_.size() < 2) ROS_ERROR("(end vel),end state size: %d", end_state_.size());
+
     dq = 1 / (2 * dt) * (q_1 - q_3) - end_state_[1];
     cost += dq.squaredNorm();
     gradient_q[q.size() - 1] += 2 * dq * 1.0 / (2 * dt);
     gradient_q[q.size() - 3] += 2 * dq * (-1.0) / (2 * dt);
     if (optimize_time_) gt += dq.dot(q_1 - q_3) / (-dt * dt);
   }
-  if (end_state_.size() == 3) {
-    // End acceleration
+
+  // End acceleration
+  if (end_con_index_[2]) {
+    if (end_state_.size() < 3) ROS_ERROR("(end acc),end state size: %d", end_state_.size());
+
     dq = 1 / (dt * dt) * (q_1 - 2 * q_2 + q_3) - end_state_[2];
     cost += dq.squaredNorm();
     gradient_q[q.size() - 1] += 2 * dq * 1.0 / (dt * dt);
@@ -425,17 +468,16 @@ void BsplineOptimizer::calcEndCost(
   }
 }
 
-void BsplineOptimizer::calcWaypointsCost(
-    const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
+void BsplineOptimizer::calcWaypointsCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
 
-  Eigen::Vector3d q1, q2, q3, dq;
+  Vector3d q1, q2, q3, dq;
 
   // for (auto wp : waypoints_) {
   for (int i = 0; i < waypoints_.size(); ++i) {
-    Eigen::Vector3d waypt = waypoints_[i];
+    Vector3d waypt = waypoints_[i];
     int idx = waypt_idx_[i];
 
     q1 = q[idx];
@@ -454,8 +496,7 @@ void BsplineOptimizer::calcWaypointsCost(
 /* use the uniformly sampled points on a geomertic path to guide the
  * trajectory. For each control points to be optimized, it is assigned a
  * guiding point on the path and the distance between them is penalized */
-void BsplineOptimizer::calcGuideCost(
-    const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
+void BsplineOptimizer::calcGuideCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
@@ -469,8 +510,7 @@ void BsplineOptimizer::calcGuideCost(
   }
 }
 
-void BsplineOptimizer::calcViewCost(
-    const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
+void BsplineOptimizer::calcViewCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q) {
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
@@ -509,6 +549,387 @@ void BsplineOptimizer::calcTimeCost(const double& dt, double& cost, double& gt) 
     gt += w_lb * 2 * (duration - time_lb_) * (point_num_ - order_);
   }
 }
+
+// SECTION Perception Aware Optimization
+
+void BsplineOptimizer::calcParaValueAndGradients(const Eigen::Vector3d v1, const Eigen::Vector3d v2, double& parallax,
+    bool calc_grad, Eigen::Vector3d& dpara_dv1, Eigen::Vector3d& dpara_dv2) {
+
+  parallax = acos(v1.dot(v2) / (v1.norm() * v2.norm()));
+
+  // Calculate gradients dpara_dv1 and dpara_dv2
+  if (!calc_grad) {
+    double v1_norm_inv = 1 / v1.norm();
+    double v2_norm_inv = 1 / v2.norm();
+
+    // Use chain rule
+    double u = v1.dot(v2) / (v1.norm() * v2.norm());
+    double dpara_du = -1 / sqrt(1 - pow(u, 2));
+
+    // Compute directly
+    Eigen::Vector3d du_dv1 = v2_norm_inv * (v1_norm_inv * v2 - v1.dot(v2) * pow(v1_norm_inv, 3) * v1);
+    Eigen::Vector3d du_dv2 = v1_norm_inv * (v2_norm_inv * v1 - v1.dot(v2) * pow(v2_norm_inv, 3) * v2);
+
+    dpara_dv1 = dpara_du * du_dv1;
+    dpara_dv2 = dpara_du * du_dv2;
+  }
+}
+
+void BsplineOptimizer::calcParaPotentialAndGradients(
+    const double parallax, const double dt, double& para_pot, double& dpot_dpara) {
+  // Potential func: f(x) = 0 if x < max; f(x) = a(x-max)^2 otherwise
+  double max_para_btw_knots = configPA_.max_parallax_ * configPA_.estimator_freq_ * dt;
+  // ROS_INFO("max_para_btw_knots: %f", max_para_btw_knots);
+  if (parallax < max_para_btw_knots) {
+    para_pot = 0;
+    dpot_dpara = 0;
+  }
+
+  else {
+    para_pot = configPA_.pot_a_ * pow(parallax - max_para_btw_knots, 2);
+    dpot_dpara = 2 * configPA_.pot_a_ * (parallax - max_para_btw_knots);
+  }
+}
+
+double BsplineOptimizer::calcVCWeight(const Eigen::Vector3d& knot, const Eigen::Vector3d& f, const Eigen::Vector3d& thrust_dir) {
+  double weight = 0.0;
+
+  Eigen::Vector3d v = f - knot;
+  double sin_theta = v.cross(thrust_dir).norm() / v.norm();
+  // 经典垂直视场角alpha_v直接写死，跟论文对不上
+  double fov_vertical = M_PI / 3.0;
+  double sin_alpha = sin((M_PI - fov_vertical) / 2.0);
+  weight = 1.0 / (1 + exp(-60 * (sin_theta - sin_alpha)));
+
+  return weight;
+}
+
+void BsplineOptimizer::calcParaCostAndGradientsKnots(
+    const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq) {
+
+  if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
+
+  cost = 0;
+  dcost_dq.clear();
+  for (int i = 0; i < 4; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
+
+  Vector3d knot_pos1 = (q[0] + 4 * q[1] + q[2]) / 6;
+  Vector3d knot_pos2 = (q[1] + 4 * q[2] + q[3]) / 6;
+  Vector3d knot_pos_mid = 0.5 * (knot_pos1 + knot_pos2);
+  Vector3d acc1 = (q[2] - 2 * q[1] + q[0]) / pow(dt, 2);
+  Vector3d thrust_dir1 = getThrustDirection(acc1);
+  Vector3d acc2 = (q[3] - 2 * q[2] + q[1]) / pow(dt, 2);
+  Vector3d thrust_dir2 = getThrustDirection(acc2);
+  Vector3d thrust_mid = 0.5 * (thrust_dir1 + thrust_dir2);
+
+  double total_weight = 0.0;
+  for (const auto& f : features) {
+    Vector3d v1 = knot_pos1 - f;
+    Vector3d v2 = knot_pos2 - f;
+
+    // 对应论文公式(13)
+    // parallax就是论文里的视差角parallax angle
+    double parallax;
+    Vector3d dpara_dv1, dpara_dv2;
+    calcParaValueAndGradients(v1, v2, parallax, true, dpara_dv1, dpara_dv2);
+
+    // 对应论文公式(15)
+    // 经典超过一定阈值就给惩罚
+    double para_pot, dpot_dpara;
+    calcParaPotentialAndGradients(parallax, dt, para_pot, dpot_dpara);
+
+    // 对应论文公式(14)里出现的权重
+    double w = calcVCWeight(knot_pos_mid, f, thrust_mid);
+
+    // 这什么阴间加权方式
+    cost = (cost * total_weight + para_pot * w) / (total_weight + w);
+
+    vector<Vector3d> dpot_dq_cur;
+    dpot_dq_cur.push_back(w * dpot_dpara * dpara_dv1 / 6);
+    dpot_dq_cur.push_back(w * dpot_dpara * (dpara_dv1 * 4 / 6 + dpara_dv2 / 6));
+    dpot_dq_cur.push_back(w * dpot_dpara * (dpara_dv1 / 6 + dpara_dv2 * 4 / 6));
+    dpot_dq_cur.push_back(w * dpot_dpara * dpara_dv2 / 6);
+
+    for (int i = 0; i < 4; i++) dcost_dq[i] = (dcost_dq[i] * total_weight + dpot_dq_cur[i]) / (total_weight + w);
+
+    total_weight += w;
+  }
+}
+
+void BsplineOptimizer::calcVVValueAndGradients(const Eigen::Vector3d a, const Eigen::Vector3d b, double& cos_theta,
+    bool calc_grad, Eigen::Vector3d& dcos_theta_da, Eigen::Vector3d& dcos_theta_db) {
+  cos_theta = a.dot(b) / (a.norm() * b.norm());
+
+  // Calculate gradients dcos_theta_da and dcos_theta_db
+  if (calc_grad) {
+    double a_norm_inv = 1 / a.norm();
+    double b_norm_inv = 1 / b.norm();
+
+    // Compute directly
+    dcos_theta_da = b_norm_inv * (a_norm_inv * b - a.dot(b) * pow(a_norm_inv, 3) * a);
+    dcos_theta_db = a_norm_inv * (b_norm_inv * a - a.dot(b) * pow(b_norm_inv, 3) * b);
+  }
+}
+
+void BsplineOptimizer::calcVVPotentialAndGradients(const double cos_theta, double& cos_theta_pot, double& dpot_dcos_theta) {
+
+  double max = cos(M_PI / 3.0);
+  double min = cos(M_PI - M_PI / 3.0);
+
+  double a = 10;
+  if (cos_theta > max) {
+    cos_theta_pot = a * pow(cos_theta - max, 2);
+    dpot_dcos_theta = 2 * a * (cos_theta - max);
+  }
+
+  else if (cos_theta < min) {
+    cos_theta_pot = a * pow(cos_theta - min, 2);
+    dpot_dcos_theta = 2 * a * (cos_theta - min);
+  }
+
+  else {
+    cos_theta_pot = 0;
+    dpot_dcos_theta = 0;
+  }
+}
+
+void BsplineOptimizer::calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span,
+    const vector<Vector3d> features, double& cost, vector<Vector3d>& dcost_dq) {
+
+  if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
+
+  cost = 0.0;
+  dcost_dq.clear();
+  for (int i = 0; i < 4; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
+
+  double knot_span_inv2 = 1 / pow(knot_span, 2);
+  Eigen::Vector3d gravity(0, 0, -9.81);
+
+  double total_weight = 0.0;
+  for (const auto& f : features) {
+    double w = 1.0;
+
+    vector<double> cos_theta_pot_vec;
+    vector<vector<Eigen::Vector3d>> dpoti_dqj_vec;
+
+    // Calculate visibility cost and gradients for each knot
+    for (int i = 0; i < 2; i++) {
+      // Calculate vector a,b and their gradients
+      Eigen::Vector3d acc = knot_span_inv2 * (q[i] - 2 * q[i + 1] + q[i + 2]);
+      Eigen::Vector3d a = acc - gravity;  // thrust
+      Eigen::Vector3d knot = (q[i] + 4 * q[i + 1] + q[i + 2]) / 6;
+      Eigen::Vector3d b = f - knot;
+
+      Eigen::Vector4d da_dq = Eigen::Vector4d::Zero();
+      da_dq.segment(i, 3) << 1, -2, 1;
+      da_dq.segment(i, 3) *= knot_span_inv2;
+
+      Eigen::Vector4d db_dq = Eigen::Vector4d::Zero();
+      db_dq.segment(i, 3) << -1 / 6.0, -4 / 6.0, -1 / 6.0;
+
+      // Calculate cos_theta
+      // 对应论文公式(10)
+      // 与论文有出入，这里包括下面的公式(12)用来作对比的是cos值，而不是论文里的角度值
+      double cos_theta;
+      Eigen::Vector3d dcos_theta_da, dcos_theta_db;
+      calcVVValueAndGradients(a, b, cos_theta, true, dcos_theta_da, dcos_theta_db);
+
+      // Calculate potential cost function
+      // 对应论文公式(12)，这里cos_theta_pot对应着等式左侧的g
+      double cos_theta_pot, dpot_dcos_theta;
+      calcVVPotentialAndGradients(cos_theta, cos_theta_pot, dpot_dcos_theta);
+
+      cos_theta_pot_vec.push_back(cos_theta_pot);
+
+      // Calculate gradients of potential cost
+      vector<Eigen::Vector3d> dpot_dqj;
+      for (int j = 0; j < 4; j++) {
+        Eigen::Vector3d dpoti_dqj = w * dpot_dcos_theta * (dcos_theta_da * da_dq[j] + dcos_theta_db * db_dq[j]);
+        dpot_dqj.push_back(dpoti_dqj);
+      }
+      dpoti_dqj_vec.push_back(dpot_dqj);
+    }
+
+    // Calculate co-visbility potential cost function and its gradient
+    // f_cov(theta_1, theta_2) = (f_v(theta_1) + 1)(f_v(theta_2) + 1) - 1
+    // 对应论文公式(11)
+    double covisib_pot = (cos_theta_pot_vec[0] + 1) * (cos_theta_pot_vec[1] + 1) - 1;
+
+    // 怎么又是你这种阴间加权方式
+    cost = (cost * total_weight + covisib_pot * w) / (total_weight + w);
+
+    for (int j = 0; j < 4; j++) {
+      Eigen::Vector3d dcovisb_pot_dq_cur =
+          dpoti_dqj_vec[0][j] * (cos_theta_pot_vec[1] + 1) + dpoti_dqj_vec[1][j] * (cos_theta_pot_vec[0] + 1);
+      dcost_dq[j] = (dcost_dq[j] * total_weight + dcovisb_pot_dq_cur) / (total_weight + w);
+    }
+
+    total_weight += w;
+  }
+}
+
+void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
+    const double ld_para, const double ld_vcv) {
+
+  cost = 0.0;
+  Eigen::Vector3d zero(0, 0, 0);
+  std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+  double cost_para, cost_vcv;
+  vector<Vector3d> dcost_para_dq, dcost_vcv_dq;
+
+  cout << "q size: " << q.size() << endl;
+  for (int i = 0; i < q.size() - 3; ++i) {
+    // For (q0, q1, q2, q3)->(knot1, knot2), calculate the parallax cost and gradient
+    vector<Vector3d> q_cur;
+    for (int j = 0; j < 4; j++) {
+      q_cur.push_back(q[i + j]);
+      // cout << "j: " << j << endl;
+      // cout << "q[i+j]: " << q[i + j].transpose() << endl;
+    }
+
+    Vector3d knot_mid = ((q_cur[0] + 4 * q_cur[1] + q_cur[2]) + (q_cur[1] + 4 * q_cur[2] + q_cur[3])) / 12.0;
+    vector<Vector3d> features;
+    feature_map_->getFeatures(knot_mid, features);
+
+    // 对应论文第5章B节计算视差cost部分
+    calcParaCostAndGradientsKnots(q_cur, dt, features, cost_para, dcost_para_dq);
+    // 对应论文第5章B节计算垂直共视性(vertical covisibility)cost部分
+    calcVCVCostAndGradientsKnots(q_cur, dt, features, cost_vcv, dcost_vcv_dq);
+
+    cost += ld_para * cost_para;
+    cost += ld_vcv * cost_vcv;
+    for (int j = 0; j < 4; j++) {
+      gradient_q[i + j] += ld_para * dcost_para_dq[j];
+      gradient_q[i + j] += ld_vcv * dcost_vcv_dq[j];
+    }
+  }
+}
+
+void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
+    const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq) {
+
+  if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
+
+  pot_cost = 0;
+  dpot_dq.clear();
+  for (int i = 0; i < 4; i++) dpot_dq.push_back(Vector3d::Zero());
+
+  Eigen::Vector3d gravity(0, 0, -9.81);
+  double total_weight = 0.0;
+  for (const auto& f : features) {
+    double w = 1.0;
+    vector<double> v3_theta3_vec, v1v2_vec;
+    vector<vector<Eigen::Vector3d>> dv3_dyaw_vec;
+
+    // Calculate visibility cost and gradients for each knot
+    for (int i = 0; i < 2; i++) {
+      Eigen::Vector3d yaw_knot = (q[i] + 4 * q[i + 1] + q[i + 2]) / 6;
+      double yaw = yaw_knot(0);
+
+      // Calculate vectors n1, ny, n3 ,b and their gradients
+      Eigen::Vector3d n1, ny, n3, n2, b;
+      n1 = knots_acc[i] - gravity;  // thrust
+      ny << cos(yaw), sin(yaw), 0;
+      n3 = n1.cross(ny);
+      n2 = n3.cross(n1);
+      b = f - knots_pos[i];
+
+      Eigen::Vector3d dn3_dyaw;
+      dn3_dyaw << -n1(2) * cos(yaw), -n1(2) * sin(yaw), n1(1) * sin(yaw) + n1(0) * cos(yaw);
+
+      Eigen::Vector4d dyaw_dq = Eigen::Vector4d::Zero();
+      dyaw_dq.segment(i, 3) = Eigen::Vector3d(1 / 6.0, 4 / 6.0, 1 / 6.0);
+
+      // Calculate v1 * v2
+      double sin_theta1, v1_theta1, cos_theta2, v2_theta2, v1v2;
+      double k1 = 40;
+      double k2 = 10;
+      double fov_vertical = M_PI / 3.0;
+      sin_theta1 = n1.cross(b).norm() / (n1.norm() * b.norm());
+      v1_theta1 = 1 / (1 + exp(-k1 * (sin_theta1 - sin((M_PI - fov_vertical) / 2.0))));
+      cos_theta2 = n2.dot(b) / (n2.norm() * b.norm());
+      v2_theta2 = 1 / (1 + std::exp(-k2 * cos_theta2));
+      v1v2 = v1_theta1 * v2_theta2;
+
+      // Calculate v3(theta3) and gradients
+      double sin_theta3, v3_theta3;
+      double k3 = 20;
+      double fov_horizontal = M_PI / 2.0;
+      sin_theta3 = n3.cross(b).norm() / (n3.norm() * b.norm());
+      v3_theta3 = 1 / (1 + exp(-k3 * (sin_theta3 - sin((M_PI - fov_horizontal) / 2.0))));
+
+      Eigen::Vector3d dsin_theta3_dn3;
+      Eigen::Vector3d c = n3.cross(b);
+      double n3_norm, b_norm, c_norm;
+      n3_norm = n3.norm();
+      b_norm = b.norm();
+      c_norm = c.norm();
+      dsin_theta3_dn3 = (pow(-n3_norm, 2) * b.cross(c) - pow(c_norm, 2) * n3) / (pow(n3_norm, 3) * b_norm * c_norm);
+      double dv3_dsin_theta3 = k3 * exp(-k3 * (sin_theta3 - sin((M_PI - fov_horizontal) / 2.0))) * pow(v3_theta3, 2);
+
+      // Combine gradients using chain rule
+      double dv3_dyaw = dv3_dsin_theta3 * dsin_theta3_dn3.dot(dn3_dyaw);
+
+      // Store results
+      v1v2_vec.push_back(v1v2);
+      v3_theta3_vec.push_back(v3_theta3);
+      vector<Eigen::Vector3d> dv3_dyaw_i;
+      for (int j = 0; j < 4; j++) {
+        Eigen::Vector3d dv3_dqj = Eigen::Vector3d(dv3_dyaw, 0, 0) * dyaw_dq[j];
+        dv3_dyaw_i.push_back(dv3_dqj);
+      }
+      dv3_dyaw_vec.push_back(dv3_dyaw_i);
+    }
+
+    // Calculate co-visbility potential cost function and its gradient
+    double covisibility_cost = -(v1v2_vec[0] * v1v2_vec[1] * v3_theta3_vec[0] * v3_theta3_vec[1]);
+    pot_cost = (pot_cost * total_weight + covisibility_cost * w) / (total_weight + w);
+
+    for (int j = 0; j < 4; j++) {
+      Vector3d dcovisb_pot_dq_cur =
+          -v1v2_vec[0] * v1v2_vec[1] * (dv3_dyaw_vec[0][j] * v3_theta3_vec[1] + v3_theta3_vec[0] * dv3_dyaw_vec[1][j]);
+      dpot_dq[j] = (dpot_dq[j] * total_weight + dcovisb_pot_dq_cur) / (total_weight + w);
+    }
+
+    total_weight += w;
+  }
+}
+
+void BsplineOptimizer::calcYawCoVisbilityCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
+  // q.size = n+1, pos_.size = n-p+2 = (n+1) - 2, where p = 3
+
+  if (q.size() - 2 != pos_.size()) ROS_ERROR("q and pos_ have incompatible size!");
+
+  cost = 0.0;
+  Vector3d zero(0, 0, 0);
+  std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+  double pot_cost;
+  vector<Eigen::Vector3d> dpot_dq;
+  for (int i = 0; i < q.size() - 3; ++i) {
+    // For (q0, q1, q2, q3)->(knot1, knot2), calculate the covisibility cost and gradient
+    vector<Eigen::Vector3d> q_cur;
+    for (int j = 0; j < 4; j++) q_cur.push_back(q[i + j]);
+
+    vector<Eigen::Vector3d> knots_pos, knots_acc;
+    for (int j = 0; j < 2; j++) {
+      knots_pos.push_back(pos_[i + j]);
+      knots_acc.push_back(acc_[i + j]);
+    }
+
+    Vector3d knot_mid = 0.5 * (pos_[i] + pos_[i + 1]);
+    vector<Vector3d> features;
+    feature_map_->getFeatures(knot_mid, features);
+
+    calcYawCVCostAndGradientsKnots(q_cur, knots_pos, knots_acc, features, pot_cost, dpot_dq);
+
+    cost += pot_cost;
+    for (int j = 0; j < 4; j++) gradient_q[i + j] += dpot_dq[j];
+  }
+}
+
+// !SECTION
 
 void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<double>& grad, double& f_combine) {
   {
@@ -560,22 +981,32 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
   grad.resize(variable_num_);
   fill(grad.begin(), grad.end(), 0.0);
 
+  // Cost1：平滑度约束
   if (cost_function_ & SMOOTHNESS) {
-    double f_smoothness = 0.0, gt_smoothness = 0.0;
-    calcSmoothnessCost(g_q_, dt, f_smoothness, g_smoothness_, gt_smoothness);
+    // ROS_WARN("calc smoothness cost");
+
+    double f_smoothness = 0.0;
+    calcSmoothnessCost(g_q_, f_smoothness, g_smoothness_);
     f_combine += ld_smooth_ * f_smoothness;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_smooth_ * g_smoothness_[i](j);
-    if (optimize_time_) grad[variable_num_ - 1] += ld_smooth_ * gt_smoothness;
   }
+
+  // Cost2：避障约束
   if (cost_function_ & DISTANCE) {
+    // ROS_WARN("calc distance cost");
+
     double f_distance = 0.0;
     calcDistanceCost(g_q_, f_distance, g_distance_);
     f_combine += ld_dist_ * f_distance;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_dist_ * g_distance_[i](j);
   }
+
+  // Cost3：动力学可行性约束
   if (cost_function_ & FEASIBILITY) {
+    // ROS_WARN("calc feasibility");
+
     double f_feasibility = 0.0, gt_feasibility = 0.0;
     calcFeasibilityCost(g_q_, dt, f_feasibility, g_feasibility_, gt_feasibility);
     f_combine += ld_feasi_ * f_feasibility;
@@ -583,7 +1014,11 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_feasi_ * g_feasibility_[i](j);
     if (optimize_time_) grad[variable_num_ - 1] += ld_feasi_ * gt_feasibility;
   }
+
+  // Cost4：起始状态约束
   if (cost_function_ & START) {
+    // ROS_WARN("calc start");
+
     double f_start = 0.0, gt_start = 0.0;
     calcStartCost(g_q_, dt, f_start, g_start_, gt_start);
     f_combine += ld_start_ * f_start;
@@ -591,87 +1026,85 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_start_ * g_start_[i](j);
     if (optimize_time_) grad[variable_num_ - 1] += ld_start_ * gt_start;
   }
+
+  // Cost5：终止状态约束
   if (cost_function_ & END) {
+
+    // ROS_WARN("calc end");
     double f_end = 0.0, gt_end = 0.0;
     calcEndCost(g_q_, dt, f_end, g_end_, gt_end);
     f_combine += ld_end_ * f_end;
     for (int i = point_num_ - 3; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_end_ * g_end_[i](j);
+
     if (optimize_time_) grad[variable_num_ - 1] += ld_end_ * gt_end;
   }
+
+  // Cost6：引导约束
   if (cost_function_ & GUIDE) {
+    // ROS_WARN("calc guide");
     double f_guide = 0.0;
     calcGuideCost(g_q_, f_guide, g_guide_);
     f_combine += ld_guide_ * f_guide;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_guide_ * g_guide_[i](j);
   }
+
+  // Cost7：同样是引导约束，不过是使用waypoints，具体方式与上面的引导约束差不多，懒得细分
   if (cost_function_ & WAYPOINTS) {
+    // ROS_WARN("calc waypoints");
     double f_waypoints = 0.0;
     calcWaypointsCost(g_q_, f_waypoints, g_waypoints_);
     f_combine += ld_waypt_ * f_waypoints;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_waypt_ * g_waypoints_[i](j);
   }
+
   if (cost_function_ & VIEWCONS) {
+    // ROS_WARN("calcViwcons");
     double f_view = 0.0;
     calcViewCost(g_q_, f_view, g_view_);
     f_combine += ld_view_ * f_view;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_view_ * g_view_[i](j);
   }
+
+  // Cost8：最小化时间约束
   if (cost_function_ & MINTIME) {
+    // ROS_WARN("calc min time");
     double f_time = 0.0, gt_time = 0.0;
     calcTimeCost(dt, f_time, gt_time);
     f_combine += ld_time_ * f_time;
     grad[variable_num_ - 1] += ld_time_ * gt_time;
   }
 
+  // SECTION Perception Aware Optimization
+
+  /// APACE新加的
+  /// 用于Position Trajectory Optimization阶段
+  /// Cost9：视差约束和垂直共视性约束
+  if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY)) {
+    double f_parallax = 0.0;
+    calcPerceptionCost(g_q_, dt, f_parallax, g_parallax_, ld_parallax_, ld_vertical_visibility_);
+    f_combine += f_parallax;
+    for (int i = 0; i < point_num_; i++) {
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
+    }
+  }
+  /// 用于Yaw Trajectory Optimization阶段
+  /// Cost10：yaw共视性约束
+  if (cost_function_ & YAWCOVISIBILITY) {
+    double f_yaw_covisibility = 0.0;
+    calcYawCoVisbilityCost(g_q_, dt, f_yaw_covisibility, g_yaw_covisibility_);
+    f_combine += ld_yaw_covisib_ * f_yaw_covisibility;
+    for (int i = 0; i < point_num_; i++) {
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_yaw_covisib_ * g_yaw_covisibility_[i](j);
+    }
+  }
+
+  // !SECTION
+
   comb_time += (ros::Time::now() - t1).toSec();
-
-  // // Join thread and retrive cost/gradient
-  // for (int i = 0; i < cost_thread.size(); ++i)
-  //   cost_thread[i].join();
-
-  // if (cost_function_ & SMOOTHNESS)
-  // {
-  //   f_combine += ld_smooth_ * f_smoothness;
-  //   for (int i = 0; i < point_num_; i++)
-  //     for (int j = 0; j < dim_; j++)
-  //       grad[dim_ * i + j] += ld_smooth_ * g_smoothness_[i](j);
-  //   if (optimize_time_)
-  //     grad[variable_num_ - 1] += ld_smooth_ * gt_smoothness;
-  // }
-  // if (cost_function_ & DISTANCE)
-  // {
-  //   f_combine += ld_dist_ * f_distance;
-  //   for (int i = 0; i < point_num_; i++)
-  //     for (int j = 0; j < dim_; j++)
-  //       grad[dim_ * i + j] += ld_dist_ * g_distance_[i](j);
-  // }
-  // if (cost_function_ & FEASIBILITY)
-  // {
-  //   f_combine += ld_feasi_ * f_feasibility;
-  //   for (int i = 0; i < point_num_; i++)
-  //     for (int j = 0; j < dim_; j++)
-  //       grad[dim_ * i + j] += ld_feasi_ * g_feasibility_[i](j);
-  //   if (optimize_time_)
-  //     grad[variable_num_ - 1] += ld_feasi_ * gt_feasibility;
-  // }
-
-  /*  print cost  */
-  // if ((cost_function_ & WAYPOINTS) && iter_num_ % 10 == 0) {
-  //   cout << iter_num_ << ", total: " << f_combine << ", acc: " << ld_view_ * f_view
-  //        << ", waypt: " << ld_waypt_ * f_waypoints << endl;
-  // }
-
-  // if (optimization_phase_ == SECOND_PHASE) {
-  //  << ", smooth: " << ld_smooth_ * f_smoothness
-  //  << " , dist:" << ld_dist_ * f_distance
-  //  << ", fea: " << ld_feasi_ * f_feasibility << endl;
-  // << ", end: " << ld_bound_ * f_endpoint
-  // << ", guide: " << ld_guide_ * f_guide
-  // }
 }
 
 double BsplineOptimizer::costFunction(const std::vector<double>& x, std::vector<double>& grad, void* func_data) {
@@ -684,26 +1117,8 @@ double BsplineOptimizer::costFunction(const std::vector<double>& x, std::vector<
   if (cost < opt->min_cost_) {
     opt->min_cost_ = cost;
     opt->best_variable_ = x;
-    // std::cout << cost << ", ";
   }
   return cost;
-
-  // /* evaluation */
-  // ros::Time te1 = ros::Time::now();
-  // double time_now = (te1 - opt->time_start_).toSec();
-  // opt->vec_time_.push_back(time_now);
-  // if (opt->vec_cost_.size() == 0)
-  // {
-  //   opt->vec_cost_.push_back(f_combine);
-  // }
-  // else if (opt->vec_cost_.back() > f_combine)
-  // {
-  //   opt->vec_cost_.push_back(f_combine);
-  // }
-  // else
-  // {
-  //   opt->vec_cost_.push_back(opt->vec_cost_.back());
-  // }
 }
 
 vector<Eigen::Vector3d> BsplineOptimizer::matrixToVectors(const Eigen::MatrixXd& ctrl_pts) {

@@ -35,12 +35,10 @@ struct SparseMap3D_ {
   ::nav_msgs::MapMetaData_<ContainerAllocator> info;
 
   typedef std::vector< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>,
-      typename ContainerAllocator::template rebind<
-          ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
+      typename ContainerAllocator::template rebind< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
       _lists_type;
   std::vector< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>,
-      typename ContainerAllocator::template rebind<
-          ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
+      typename ContainerAllocator::template rebind< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::other>
       lists;
 
   typedef boost::shared_ptr< ::multi_map_server::SparseMap3D_<ContainerAllocator> > Ptr;
@@ -199,8 +197,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::multi_map_server::SparseMap3D_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(
-      Stream& s, const std::string& indent, const ::multi_map_server::SparseMap3D_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::multi_map_server::SparseMap3D_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);
@@ -212,8 +209,7 @@ struct Printer< ::multi_map_server::SparseMap3D_<ContainerAllocator> > {
       s << indent << "  lists[" << i << "]: ";
       s << std::endl;
       s << indent;
-      Printer< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::stream(
-          s, indent + "    ", v.lists[i]);
+      Printer< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::stream(s, indent + "    ", v.lists[i]);
     }
   }
 };

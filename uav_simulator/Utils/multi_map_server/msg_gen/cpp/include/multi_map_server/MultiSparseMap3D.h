@@ -197,8 +197,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::multi_map_server::MultiSparseMap3D_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(
-      Stream& s, const std::string& indent, const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::multi_map_server::MultiSparseMap3D_<ContainerAllocator>& v) {
     s << indent << "maps[]" << std::endl;
     for (size_t i = 0; i < v.maps.size(); ++i) {
       s << indent << "  maps[" << i << "]: ";

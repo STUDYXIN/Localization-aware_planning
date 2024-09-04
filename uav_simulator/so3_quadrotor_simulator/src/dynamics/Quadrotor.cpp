@@ -155,8 +155,7 @@ void Quadrotor::operator()(const Quadrotor::InternalState& x, Quadrotor::Interna
     vnorm.normalize();
   }
   x_dot = cur_state.v;
-  v_dot = -Eigen::Vector3d(0, 0, g_) + thrust * R.col(2) / mass_ + external_force_ / mass_ /*; //*/ -
-          resistance * vnorm / mass_;
+  v_dot = -Eigen::Vector3d(0, 0, g_) + thrust * R.col(2) / mass_ + external_force_ / mass_ /*; //*/ - resistance * vnorm / mass_;
 
   acc_ = v_dot;
   //  acc_[2] = -acc_[2]; // to NED

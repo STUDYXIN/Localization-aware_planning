@@ -69,8 +69,7 @@ int main(int argc, char** argv) {
   X(2) = 10.0;
 
   // create a stepper
-  runge_kutta4<state_type, double, state_type, double, odeint::vector_space_algebra, odeint::default_operations>
-      stepper;
+  runge_kutta4<state_type, double, state_type, double, odeint::vector_space_algebra, odeint::default_operations> stepper;
 
   // solve the system
   integrate_const(stepper, sys_func(R), X, 0.0, t_max, dt);

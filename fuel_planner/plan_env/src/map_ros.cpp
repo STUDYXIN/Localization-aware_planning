@@ -126,8 +126,8 @@ void MapROS::depthPoseCallback(const sensor_msgs::ImageConstPtr& img, const geom
   if (!map_->isInMap(camera_pos_))  // exceed mapped region
     return;
 
-  camera_q_ = Eigen::Quaterniond(
-      pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
+  camera_q_ =
+      Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
   cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, img->encoding);
   if (img->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
     (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, k_depth_scaling_factor_);
@@ -152,13 +152,12 @@ void MapROS::depthPoseCallback(const sensor_msgs::ImageConstPtr& img, const geom
     ROS_WARN("Fusion t: cur: %lf, avg: %lf, max: %lf", (t2 - t1).toSec(), fuse_time_ / fuse_num_, max_fuse_time_);
 }
 
-void MapROS::cloudPoseCallback(
-    const sensor_msgs::PointCloud2ConstPtr& msg, const geometry_msgs::PoseStampedConstPtr& pose) {
+void MapROS::cloudPoseCallback(const sensor_msgs::PointCloud2ConstPtr& msg, const geometry_msgs::PoseStampedConstPtr& pose) {
   camera_pos_(0) = pose->pose.position.x;
   camera_pos_(1) = pose->pose.position.y;
   camera_pos_(2) = pose->pose.position.z;
-  camera_q_ = Eigen::Quaterniond(
-      pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
+  camera_q_ =
+      Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
   pcl::PointCloud<pcl::PointXYZ> cloud;
   pcl::fromROSMsg(*msg, cloud);
   int num = cloud.points.size();
@@ -411,12 +410,10 @@ void MapROS::publishESDF() {
   const double min_dist = 0.0;
   const double max_dist = 3.0;
 
-  Eigen::Vector3i min_cut =
-      map_->md_->local_bound_min_ -
-      Eigen::Vector3i(map_->mp_->local_map_margin_, map_->mp_->local_map_margin_, map_->mp_->local_map_margin_);
-  Eigen::Vector3i max_cut =
-      map_->md_->local_bound_max_ +
-      Eigen::Vector3i(map_->mp_->local_map_margin_, map_->mp_->local_map_margin_, map_->mp_->local_map_margin_);
+  Eigen::Vector3i min_cut = map_->md_->local_bound_min_ - Eigen::Vector3i(map_->mp_->local_map_margin_,
+                                                              map_->mp_->local_map_margin_, map_->mp_->local_map_margin_);
+  Eigen::Vector3i max_cut = map_->md_->local_bound_max_ + Eigen::Vector3i(map_->mp_->local_map_margin_,
+                                                              map_->mp_->local_map_margin_, map_->mp_->local_map_margin_);
   map_->boundIndex(min_cut);
   map_->boundIndex(max_cut);
 

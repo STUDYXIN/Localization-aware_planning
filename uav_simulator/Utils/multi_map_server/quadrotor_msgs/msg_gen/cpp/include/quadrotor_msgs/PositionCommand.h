@@ -190,8 +190,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::PositionCommand_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(
-      Stream& s, const std::string& indent, const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::PositionCommand_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

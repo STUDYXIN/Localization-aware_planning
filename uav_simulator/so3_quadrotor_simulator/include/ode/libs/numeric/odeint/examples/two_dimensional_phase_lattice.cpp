@@ -113,8 +113,7 @@ int main(int argc, char** argv) {
   state_type x(size1, size2, 0.0);
 
   for (size_t i = (size1 / 2 - 10); i < (size1 / 2 + 10); ++i)
-    for (size_t j = (size2 / 2 - 10); j < (size2 / 2 + 10); ++j)
-      x(i, j) = static_cast<double>(rand()) / RAND_MAX * 2.0 * M_PI;
+    for (size_t j = (size2 / 2 - 10); j < (size2 / 2 + 10); ++j) x(i, j) = static_cast<double>(rand()) / RAND_MAX * 2.0 * M_PI;
 
   write_snapshots snapshots;
   snapshots.snapshots().insert(make_pair(size_t(0), string("lat_0000.dat")));

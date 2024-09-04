@@ -11,8 +11,13 @@
 // Input: a signed distance field and a sequence of points
 // Output: the optimized sequence of points
 // The format of points: N x 3 matrix, each row is a point
+
+using std::vector;
+
+using Eigen::Vector3d;
 namespace fast_planner {
 class EDTEnvironment;
+class FeatureMap;
 
 class BsplineOptimizer {
 public:
@@ -25,34 +30,46 @@ public:
   static const int WAYPOINTS;
   static const int VIEWCONS;
   static const int MINTIME;
+  static const int PARALLAX;
+  static const int VERTICALVISIBILITY;
+  static const int YAWCOVISIBILITY;
 
   static const int GUIDE_PHASE;
   static const int NORMAL_PHASE;
 
-  BsplineOptimizer() {
-  }
-  ~BsplineOptimizer() {
-  }
+  struct PerceptionAwareConfig {
+    double estimator_freq_;  // frequency of consecutive frames in hz
+    double max_parallax_;    // max parallax angle between consecutive frames in rad
+    double pot_a_;           // potential func: a(x-max_parallax_)^2
+  };
+
+  PerceptionAwareConfig configPA_;
 
   /* main API */
   void setEnvironment(const shared_ptr<EDTEnvironment>& env);
   void setParam(ros::NodeHandle& nh);
-  void optimize(
-      Eigen::MatrixXd& points, double& dt, const int& cost_function, const int& max_num_id, const int& max_time_id);
+  void optimize(Eigen::MatrixXd& points, double& dt, const int& cost_function, const int& max_num_id, const int& max_time_id);
 
   /* helper function */
 
   // required inputs
   void setCostFunction(const int& cost_function);
-  void setBoundaryStates(const vector<Eigen::Vector3d>& start, const vector<Eigen::Vector3d>& end);
+  void setBoundaryStates(const vector<Vector3d>& start, const vector<Vector3d>& end);
+  void setBoundaryStates(
+      const vector<Vector3d>& start, const vector<Vector3d>& end, const vector<bool>& start_idx, const vector<bool>& end_idx);
   void setTimeLowerBound(const double& lb);
 
   // optional inputs
-  void setGuidePath(const vector<Eigen::Vector3d>& guide_pt);
-  void setWaypoints(const vector<Eigen::Vector3d>& waypts,
-      const vector<int>& waypt_idx);  // N-2 constraints at most
+  void setGuidePath(const vector<Vector3d>& guide_pt);
+  void setWaypoints(const vector<Vector3d>& waypts, const vector<int>& waypt_idx);  // N-2 constraints at most
   void setViewConstraint(const ViewConstraint& vc);
   void enableDynamic(double time_start);
+
+  // SECTION Perception Aware Optimization
+
+  void setPosAndAcc(const vector<Vector3d>& pos, const vector<Vector3d>& acc, const vector<int>& idx = vector<int>());
+
+  // !SECTION
 
   void optimize();
 
@@ -65,22 +82,55 @@ private:
   void combineCost(const std::vector<double>& x, vector<double>& grad, double& cost);
 
   // Cost functions, q: control points, dt: knot span
-  void calcSmoothnessCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-      vector<Eigen::Vector3d>& gradient_q, double& gt);
+  void calcSmoothnessCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
   void calcDistanceCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
-  void calcFeasibilityCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-      vector<Eigen::Vector3d>& gradient_q, double& gt);
-  void calcStartCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-      vector<Eigen::Vector3d>& gradient_q, double& gt);
-  void calcEndCost(const vector<Eigen::Vector3d>& q, const double& dt, double& cost,
-      vector<Eigen::Vector3d>& gradient_q, double& gt);
+  void calcFeasibilityCost(
+      const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt);
+  void calcStartCost(
+      const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt);
+  void calcEndCost(
+      const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt);
   void calcGuideCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcWaypointsCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcViewCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcTimeCost(const double& dt, double& cost, double& gt);
+
+  // SECTION Perception Aware Optimization
+  void calcParaValueAndGradients(const Vector3d v1, const Vector3d v2, double& parallax, bool calc_grad,
+      Eigen::Vector3d& dpara_dv1, Eigen::Vector3d& dpara_dv2);
+  void calcParaPotentialAndGradients(const double parallax, const double dt, double& para_pot, double& dpot_dpara);
+
+  double calcVCWeight(const Vector3d& knot, const Vector3d& f, const Vector3d& thrust_dir);
+
+  void calcVVValueAndGradients(const Eigen::Vector3d a, const Eigen::Vector3d b, double& cos_theta, bool calc_grad,
+      Eigen::Vector3d& dcos_theta_da, Eigen::Vector3d& dcos_theta_db);
+  void calcVVPotentialAndGradients(const double cos_theta, double& cos_theta_pot, double& dpot_dcos_theta);
+
+  void calcParaCostAndGradientsKnots(
+      const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
+
+  void calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span, const vector<Vector3d> features,
+      double& cost, vector<Vector3d>& dcost_dq);
+
+  void calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
+      const double ld_para, const double ld_vcv);
+
+  void calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
+      const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq);
+
+  void calcYawCoVisbilityCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q);
+
+  static Vector3d getThrustDirection(const Vector3d& acc) {
+    Vector3d gravity(0, 0, -9.81);
+    Vector3d thrust_dir = (acc - gravity).normalized();
+    return thrust_dir;
+  }
+  // !SECTION
+
   bool isQuadratic();
 
   shared_ptr<EDTEnvironment> edt_environment_;
+  shared_ptr<FeatureMap> feature_map_;
 
   // Optimized variables
   Eigen::MatrixXd control_points_;  // B-spline control points, N x dim
@@ -89,8 +139,9 @@ private:
   // Input to solver
   int dim_;  // dimension of the B-spline
   vector<Eigen::Vector3d> start_state_, end_state_;
-  vector<Eigen::Vector3d> guide_pts_;  // geometric guiding path points, N-6
-  vector<Eigen::Vector3d> waypoints_;  // waypts constraints
+  vector<bool> start_con_index_, end_con_index_;  // whether constraint on (pos, vel, acc)
+  vector<Eigen::Vector3d> guide_pts_;             // geometric guiding path points, N-6
+  vector<Eigen::Vector3d> waypoints_;             // waypts constraints
   vector<int> waypt_idx_;
   int max_num_id_, max_time_id_;  // stopping criteria
   int cost_function_;
@@ -102,6 +153,18 @@ private:
   int order_;  // bspline degree
   int bspline_degree_;
   double ld_smooth_, ld_dist_, ld_feasi_, ld_start_, ld_end_, ld_guide_, ld_waypt_, ld_view_, ld_time_;
+
+  // SECTION Perception Aware Optimization
+  double ld_parallax_;
+  double ld_vertical_visibility_;
+  double ld_yaw_covisib_;
+
+  vector<Eigen::Vector3d> pos_, acc_;                 // knot points position and acceleration
+  vector<vector<Eigen::Vector3d>> knot_nn_features_;  // neighboring features at each knot midpoint
+  vector<int> pos_idx_;
+
+  // !SECTION
+
   double dist0_;              // safe distance
   double max_vel_, max_acc_;  // dynamic limits
   double wnl_, dlmin_;
@@ -111,8 +174,14 @@ private:
   double max_iteration_time_[4];  // stopping criteria that can be used
 
   // Data of opt
-  vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_start_, g_end_, g_guide_, g_waypoints_,
-      g_view_, g_time_;
+  vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_start_, g_end_, g_guide_, g_waypoints_, g_view_,
+      g_time_;
+
+  // SECTION Perception Aware Optimization
+  vector<Vector3d> g_parallax_;
+  vector<Vector3d> g_yaw_covisibility_;
+
+  // !SECTION
 
   int variable_num_;  // optimization variables
   int point_num_;
@@ -128,6 +197,10 @@ public:
   vector<double> vec_cost_;
   vector<double> vec_time_;
   ros::Time time_start_;
+
+  void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
+    feature_map_ = feature_map;
+  }
 
   void getCostCurve(vector<double>& cost, vector<double>& time) {
     cost = vec_cost_;

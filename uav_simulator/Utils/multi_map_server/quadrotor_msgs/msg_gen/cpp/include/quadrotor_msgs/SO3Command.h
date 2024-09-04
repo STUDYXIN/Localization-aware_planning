@@ -27,8 +27,7 @@ struct SO3Command_ {
     kOm.assign(0.0);
   }
 
-  SO3Command_(const ContainerAllocator& _alloc)
-    : header(_alloc), force(_alloc), orientation(_alloc), kR(), kOm(), aux(_alloc) {
+  SO3Command_(const ContainerAllocator& _alloc) : header(_alloc), force(_alloc), orientation(_alloc), kR(), kOm(), aux(_alloc) {
     kR.assign(0.0);
     kOm.assign(0.0);
   }

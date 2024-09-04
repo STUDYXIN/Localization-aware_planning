@@ -39,8 +39,7 @@ int main(int argc, char** argv) {
     quad.step(dt);
     Eigen::Vector3d euler = state.R.eulerAngles(2, 1, 0);
     std::cout << i * dt << ", " << state.x(2) << ", " << euler(0) << ", " << euler(1) << ", " << euler(2) << ", "
-              << state.omega(0) << ", " << state.omega(1) << ", " << state.omega(2) << ", " << state.motor_rpm(0)
-              << std::endl;
+              << state.omega(0) << ", " << state.omega(1) << ", " << state.omega(2) << ", " << state.motor_rpm(0) << std::endl;
 
     clock_gettime(CLOCK_MONOTONIC, &ts2);
     time_taken += ((ts2.tv_sec - ts1.tv_sec) * 1000000000UL + (ts2.tv_nsec - ts1.tv_nsec));
@@ -53,8 +52,8 @@ int main(int argc, char** argv) {
     }
   }
   clock_gettime(CLOCK_MONOTONIC, &ts_end);
-  std::cerr << "Time: " << (ts_end.tv_sec - ts_start.tv_sec) * 1e6 + (ts_end.tv_nsec - ts_start.tv_nsec) / 1e3
-            << " usec" << std::endl;
+  std::cerr << "Time: " << (ts_end.tv_sec - ts_start.tv_sec) * 1e6 + (ts_end.tv_nsec - ts_start.tv_nsec) / 1e3 << " usec"
+            << std::endl;
 
   return 0;
 }

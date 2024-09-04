@@ -42,10 +42,10 @@ target_link_libraries( traj_utils
     ${catkin_LIBRARIES} 
     )  
 
-add_executable(process_msg 
-    src/process_msg.cpp
-)
-target_link_libraries( process_msg
-    ${catkin_LIBRARIES} 
-    ${PCL_LIBRARIES}
-    )  
+# add_executable(process_msg 
+#     src/process_msg.cpp
+# )
+# target_link_libraries( process_msg
+#     ${catkin_LIBRARIES} 
+#     ${PCL_LIBRARIES}
+#     )  

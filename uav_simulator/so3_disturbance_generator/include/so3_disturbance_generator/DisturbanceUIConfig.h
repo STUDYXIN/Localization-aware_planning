@@ -71,10 +71,8 @@ public:
       edit_method = e;
     }
 
-    virtual void clamp(
-        DisturbanceUIConfig& config, const DisturbanceUIConfig& max, const DisturbanceUIConfig& min) const = 0;
-    virtual void calcLevel(
-        uint32_t& level, const DisturbanceUIConfig& config1, const DisturbanceUIConfig& config2) const = 0;
+    virtual void clamp(DisturbanceUIConfig& config, const DisturbanceUIConfig& max, const DisturbanceUIConfig& min) const = 0;
+    virtual void calcLevel(uint32_t& level, const DisturbanceUIConfig& config1, const DisturbanceUIConfig& config2) const = 0;
     virtual void fromServer(const ros::NodeHandle& nh, DisturbanceUIConfig& config) const = 0;
     virtual void toServer(const ros::NodeHandle& nh, const DisturbanceUIConfig& config) const = 0;
     virtual bool fromMessage(const dynamic_reconfigure::Config& msg, DisturbanceUIConfig& config) const = 0;
@@ -88,22 +86,20 @@ public:
   template <class T>
   class ParamDescription : public AbstractParamDescription {
   public:
-    ParamDescription(std::string name, std::string type, uint32_t level, std::string description,
-        std::string edit_method, T DisturbanceUIConfig::*f)
+    ParamDescription(std::string name, std::string type, uint32_t level, std::string description, std::string edit_method,
+        T DisturbanceUIConfig::*f)
       : AbstractParamDescription(name, type, level, description, edit_method), field(f) {
     }
 
     T(DisturbanceUIConfig::*field);
 
-    virtual void clamp(
-        DisturbanceUIConfig& config, const DisturbanceUIConfig& max, const DisturbanceUIConfig& min) const {
+    virtual void clamp(DisturbanceUIConfig& config, const DisturbanceUIConfig& max, const DisturbanceUIConfig& min) const {
       if (config.*field > max.*field) config.*field = max.*field;
 
       if (config.*field < min.*field) config.*field = min.*field;
     }
 
-    virtual void calcLevel(
-        uint32_t& comb_level, const DisturbanceUIConfig& config1, const DisturbanceUIConfig& config2) const {
+    virtual void calcLevel(uint32_t& comb_level, const DisturbanceUIConfig& config1, const DisturbanceUIConfig& config2) const {
       if (config1.*field != config2.*field) comb_level |= level;
     }
 
@@ -226,8 +222,7 @@ public:
     }
 
     void setParams(DisturbanceUIConfig& config, const std::vector<AbstractParamDescriptionConstPtr> params) {
-      for (std::vector<AbstractParamDescriptionConstPtr>::const_iterator _i = params.begin(); _i != params.end();
-           ++_i) {
+      for (std::vector<AbstractParamDescriptionConstPtr>::const_iterator _i = params.begin(); _i != params.end(); ++_i) {
         boost::any val;
         (*_i)->getValue(config, val);
 
@@ -501,13 +496,11 @@ class DisturbanceUIConfigStatics {
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
     __default__.fxy = 0.0;
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
-    Default.abstract_parameters.push_back(
-        DisturbanceUIConfig::AbstractParamDescriptionConstPtr(new DisturbanceUIConfig::ParamDescription<double>(
-            "fxy", "double", 0, "Force XY", "", &DisturbanceUIConfig::fxy)));
+    Default.abstract_parameters.push_back(DisturbanceUIConfig::AbstractParamDescriptionConstPtr(
+        new DisturbanceUIConfig::ParamDescription<double>("fxy", "double", 0, "Force XY", "", &DisturbanceUIConfig::fxy)));
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
-    __param_descriptions__.push_back(
-        DisturbanceUIConfig::AbstractParamDescriptionConstPtr(new DisturbanceUIConfig::ParamDescription<double>(
-            "fxy", "double", 0, "Force XY", "", &DisturbanceUIConfig::fxy)));
+    __param_descriptions__.push_back(DisturbanceUIConfig::AbstractParamDescriptionConstPtr(
+        new DisturbanceUIConfig::ParamDescription<double>("fxy", "double", 0, "Force XY", "", &DisturbanceUIConfig::fxy)));
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
     __min__.stdfxy = 0.0;
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
@@ -541,13 +534,11 @@ class DisturbanceUIConfigStatics {
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
     __default__.stdfz = 0.0;
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
-    Default.abstract_parameters.push_back(
-        DisturbanceUIConfig::AbstractParamDescriptionConstPtr(new DisturbanceUIConfig::ParamDescription<double>(
-            "stdfz", "double", 0, "Std Force Z", "", &DisturbanceUIConfig::stdfz)));
+    Default.abstract_parameters.push_back(DisturbanceUIConfig::AbstractParamDescriptionConstPtr(
+        new DisturbanceUIConfig::ParamDescription<double>("stdfz", "double", 0, "Std Force Z", "", &DisturbanceUIConfig::stdfz)));
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
-    __param_descriptions__.push_back(
-        DisturbanceUIConfig::AbstractParamDescriptionConstPtr(new DisturbanceUIConfig::ParamDescription<double>(
-            "stdfz", "double", 0, "Std Force Z", "", &DisturbanceUIConfig::stdfz)));
+    __param_descriptions__.push_back(DisturbanceUIConfig::AbstractParamDescriptionConstPtr(
+        new DisturbanceUIConfig::ParamDescription<double>("stdfz", "double", 0, "Std Force Z", "", &DisturbanceUIConfig::stdfz)));
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
     __min__.mrp = -0.1;
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
@@ -583,13 +574,11 @@ class DisturbanceUIConfigStatics {
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
     __default__.myaw = 0.0;
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
-    Default.abstract_parameters.push_back(
-        DisturbanceUIConfig::AbstractParamDescriptionConstPtr(new DisturbanceUIConfig::ParamDescription<double>(
-            "myaw", "double", 0, "Moment Yaw", "", &DisturbanceUIConfig::myaw)));
+    Default.abstract_parameters.push_back(DisturbanceUIConfig::AbstractParamDescriptionConstPtr(
+        new DisturbanceUIConfig::ParamDescription<double>("myaw", "double", 0, "Moment Yaw", "", &DisturbanceUIConfig::myaw)));
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
-    __param_descriptions__.push_back(
-        DisturbanceUIConfig::AbstractParamDescriptionConstPtr(new DisturbanceUIConfig::ParamDescription<double>(
-            "myaw", "double", 0, "Moment Yaw", "", &DisturbanceUIConfig::myaw)));
+    __param_descriptions__.push_back(DisturbanceUIConfig::AbstractParamDescriptionConstPtr(
+        new DisturbanceUIConfig::ParamDescription<double>("myaw", "double", 0, "Moment Yaw", "", &DisturbanceUIConfig::myaw)));
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
     __min__.stdmyaw = 0.0;
     //#line 259 "/opt/ros/indigo/lib/python2.7/dist-packages/dynamic_reconfigure/parameter_generator.py"
@@ -797,8 +786,7 @@ class DisturbanceUIConfigStatics {
         new DisturbanceUIConfig::GroupDescription<DisturbanceUIConfig::DEFAULT, DisturbanceUIConfig>(Default)));
     //#line 390 "/opt/ros/indigo/share/dynamic_reconfigure/templates/ConfigType.h.template"
 
-    for (std::vector<DisturbanceUIConfig::AbstractGroupDescriptionConstPtr>::const_iterator i =
-             __group_descriptions__.begin();
+    for (std::vector<DisturbanceUIConfig::AbstractGroupDescriptionConstPtr>::const_iterator i = __group_descriptions__.begin();
          i != __group_descriptions__.end(); ++i) {
       __description_message__.groups.push_back(**i);
     }
@@ -839,13 +827,11 @@ inline const DisturbanceUIConfig& DisturbanceUIConfig::__getMin__() {
   return __get_statics__()->__min__;
 }
 
-inline const std::vector<DisturbanceUIConfig::AbstractParamDescriptionConstPtr>&
-DisturbanceUIConfig::__getParamDescriptions__() {
+inline const std::vector<DisturbanceUIConfig::AbstractParamDescriptionConstPtr>& DisturbanceUIConfig::__getParamDescriptions__() {
   return __get_statics__()->__param_descriptions__;
 }
 
-inline const std::vector<DisturbanceUIConfig::AbstractGroupDescriptionConstPtr>&
-DisturbanceUIConfig::__getGroupDescriptions__() {
+inline const std::vector<DisturbanceUIConfig::AbstractGroupDescriptionConstPtr>& DisturbanceUIConfig::__getGroupDescriptions__() {
   return __get_statics__()->__group_descriptions__;
 }
 

@@ -23,8 +23,7 @@ struct TRPYCommand_ {
   TRPYCommand_() : header(), thrust(0.0), roll(0.0), pitch(0.0), yaw(0.0), aux() {
   }
 
-  TRPYCommand_(const ContainerAllocator& _alloc)
-    : header(_alloc), thrust(0.0), roll(0.0), pitch(0.0), yaw(0.0), aux(_alloc) {
+  TRPYCommand_(const ContainerAllocator& _alloc) : header(_alloc), thrust(0.0), roll(0.0), pitch(0.0), yaw(0.0), aux(_alloc) {
   }
 
   typedef ::std_msgs::Header_<ContainerAllocator> _header_type;
@@ -168,8 +167,7 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::quadrotor_msgs::TRPYCommand_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(
-      Stream& s, const std::string& indent, const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>& v) {
+  static void stream(Stream& s, const std::string& indent, const ::quadrotor_msgs::TRPYCommand_<ContainerAllocator>& v) {
     s << indent << "header: ";
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);

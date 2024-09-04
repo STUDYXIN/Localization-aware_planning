@@ -5,6 +5,8 @@
 namespace fast_planner {
 
 FeatureMap::FeatureMap() {
+  config_.depth_min_ = 0.2;
+  config_.depth_max_ = 5.0;
 }
 
 FeatureMap::~FeatureMap() {

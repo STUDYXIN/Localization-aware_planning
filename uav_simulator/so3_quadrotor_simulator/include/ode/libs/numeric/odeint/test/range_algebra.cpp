@@ -103,8 +103,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(for_each8, algebra_type, algebra_types) {
   algebra_type algebra;
   boost::array<double, 2> x1 = { { 1.0, 1.0 } }, x2 = { { 2.0, 2.0 } }, x3 = { { 3.0, 3.0 } }, x4 = { { 4.0, 4.0 } },
                           x5 = { { 5.0, 5.0 } }, x6 = { { 6.0, 6.0 } }, x7 = { { 7.0, 7.0 } }, x8 = { { 8.0, 8.0 } };
-  algebra.for_each8(
-      x1, x2, x3, x4, x5, x6, x7, x8, default_operations::scale_sum7<>(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0));
+  algebra.for_each8(x1, x2, x3, x4, x5, x6, x7, x8, default_operations::scale_sum7<>(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0));
   BOOST_CHECK_CLOSE(x1[0], 168.0, 1.0e-10);
   BOOST_CHECK_CLOSE(x1[1], 168.0, 1.0e-10);
 }
@@ -151,8 +150,7 @@ BOOST_AUTO_TEST_CASE(reduce3) {
 
 BOOST_AUTO_TEST_CASE(reduce4) {
   range_algebra algebra;
-  boost::array<double, 2> x1 = { { 1.25, 2.25 } }, x2 = { { 0.5, -1.0 } }, x3 = { { 5.0, 10.0 } },
-                          x4 = { { 2.0, -1.0 } };
+  boost::array<double, 2> x1 = { { 1.25, 2.25 } }, x2 = { { 0.5, -1.0 } }, x3 = { { 5.0, 10.0 } }, x4 = { { 2.0, -1.0 } };
   double sum = algebra.reduce4(x1, x2, x3, x4, adder(), 0.0);
   BOOST_CHECK_CLOSE(sum, 19.0, 1.0e-10);
 }

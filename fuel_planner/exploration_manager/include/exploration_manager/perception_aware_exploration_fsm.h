@@ -62,6 +62,7 @@ public:
   bool classic_;
 
   Eigen::Vector3d final_goal_;
+  double last_arrive_goal_time_;
 
   /* ROS utils */
   ros::NodeHandle node_;

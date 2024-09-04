@@ -205,12 +205,10 @@ public:
     // Merge map
     for (int x = 0; x < mx; x++) {
       for (int y = 0; y < my; y++) {
-        int xn =
-            (cyaw * (x * map.info.resolution) - syaw * (y * map.info.resolution) + ox - map.info.origin.position.x) /
-            map.info.resolution;
-        int yn =
-            (syaw * (x * map.info.resolution) + cyaw * (y * map.info.resolution) + oy - map.info.origin.position.y) /
-            map.info.resolution;
+        int xn = (cyaw * (x * map.info.resolution) - syaw * (y * map.info.resolution) + ox - map.info.origin.position.x) /
+                 map.info.resolution;
+        int yn = (syaw * (x * map.info.resolution) + cyaw * (y * map.info.resolution) + oy - map.info.origin.position.y) /
+                 map.info.resolution;
         if (abs((int)(map.data[yn * map.info.width + xn]) + (int)(m.data[y * mx + x])) <= 127)
           map.data[yn * map.info.width + xn] += m.data[y * mx + x];
       }

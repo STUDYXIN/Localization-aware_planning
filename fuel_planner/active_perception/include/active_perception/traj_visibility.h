@@ -49,15 +49,15 @@ public:
 private:
   Eigen::Vector3d getMinDistVoxel(
       const Eigen::Vector3d& q1, const Eigen::Vector3d& q2, const Eigen::Vector3d& offset, const double& res);
-  Eigen::Vector3d getMinDistVoxelOnLine(const Eigen::Vector3d& q1, const Eigen::Vector3d& q2,
-      const Eigen::Vector3d& offset, const double& res, int& state, Eigen::Vector3d& block);
+  Eigen::Vector3d getMinDistVoxelOnLine(const Eigen::Vector3d& q1, const Eigen::Vector3d& q2, const Eigen::Vector3d& offset,
+      const double& res, int& state, Eigen::Vector3d& block);
   Eigen::Vector3d getVirtualBlockPt(const vector<Eigen::Vector3d>& q, int i, int j, const Eigen::Vector3d& min_pt);
   bool lineVisib(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, Eigen::Vector3d& pc);
   bool findUnknownPoint(NonUniformBspline& traj, Eigen::Vector3d& point, double& time);
-  bool findCriticalPoint(NonUniformBspline& traj, const Eigen::Vector3d& unknown_pt, const double& unknown_t,
-      Eigen::Vector3d& pc, double& tc);
-  bool findDirAndIdx(NonUniformBspline& traj, const double& unknown_t, const double& crit_t, Eigen::Vector3d& dir,
-      int& idx, Eigen::Vector3d& min_pt);
+  bool findCriticalPoint(
+      NonUniformBspline& traj, const Eigen::Vector3d& unknown_pt, const double& unknown_t, Eigen::Vector3d& pc, double& tc);
+  bool findDirAndIdx(NonUniformBspline& traj, const double& unknown_t, const double& crit_t, Eigen::Vector3d& dir, int& idx,
+      Eigen::Vector3d& min_pt);
 };
 
 }  // namespace fast_planner

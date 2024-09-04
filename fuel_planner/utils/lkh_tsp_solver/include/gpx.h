@@ -58,8 +58,7 @@ int* alloc_vectori(int lines);
 int** alloc_matrixi(int lines, int collums);
 void dealloc_matrixi(int** Matrix, int lines);
 int weight(int i, int j);
-int d4_vertices_id(
-    int* solution_blue, int* solution_red, int* d4_vertices, int* common_edges_blue, int* common_edges_red);
+int d4_vertices_id(int* solution_blue, int* solution_red, int* d4_vertices, int* common_edges_blue, int* common_edges_red);
 void insert_ghost(int* solution, int* solution_p2, int* d4_vertices, int* label_list_inv);
 void tourTable(int* solution_blue_p2, int* solution_red_p2, int* solution_red, int* label_list, int* label_list_inv,
     int* vector_comp, int n_new, int* common_edges_blue_p2, int* common_edges_red_p2);

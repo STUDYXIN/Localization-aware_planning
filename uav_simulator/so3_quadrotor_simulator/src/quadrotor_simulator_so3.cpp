@@ -98,12 +98,9 @@ static Control getControl(const QuadrotorSimulator::Quadrotor& quad, const Comma
   float eOm2 = Om2;
   float eOm3 = Om3;
 
-  float in1 =
-      Om2 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3) - Om3 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3);
-  float in2 =
-      Om3 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3) - Om1 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3);
-  float in3 =
-      Om1 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3) - Om2 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3);
+  float in1 = Om2 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3) - Om3 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3);
+  float in2 = Om3 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3) - Om1 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3);
+  float in3 = Om1 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3) - Om2 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3);
   /*
     // Robust Control --------------------------------------------
     float c2       = 0.6;
@@ -178,8 +175,7 @@ int main(int argc, char** argv) {
   ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 100);
   ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu", 10);
   ros::Subscriber cmd_sub = n.subscribe("cmd", 100, &cmd_callback, ros::TransportHints().tcpNoDelay());
-  ros::Subscriber f_sub =
-      n.subscribe("force_disturbance", 100, &force_disturbance_callback, ros::TransportHints().tcpNoDelay());
+  ros::Subscriber f_sub = n.subscribe("force_disturbance", 100, &force_disturbance_callback, ros::TransportHints().tcpNoDelay());
   ros::Subscriber m_sub =
       n.subscribe("moment_disturbance", 100, &moment_disturbance_callback, ros::TransportHints().tcpNoDelay());
 

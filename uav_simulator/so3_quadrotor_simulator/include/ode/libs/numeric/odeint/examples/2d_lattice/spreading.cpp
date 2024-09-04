@@ -60,8 +60,8 @@ typedef vector<vector<double> > state_type;
 
 // the stepper, choose a symplectic one to account for hamiltonian structure
 // use nested_range_algebra for calculations on vector< vector< ... > >
-typedef boost::numeric::odeint::symplectic_rkn_sb3a_mclachlan<state_type, state_type, double, state_type, state_type,
-    double, nested_range_algebra<boost::numeric::odeint::range_algebra>, boost::numeric::odeint::default_operations>
+typedef boost::numeric::odeint::symplectic_rkn_sb3a_mclachlan<state_type, state_type, double, state_type, state_type, double,
+    nested_range_algebra<boost::numeric::odeint::range_algebra>, boost::numeric::odeint::default_operations>
     stepper_type;
 
 double time_diff_in_ms(timeval& t1, timeval& t2) {

@@ -137,18 +137,15 @@ int main() {
       rotate(state.first.begin(), state.first.end() - 20, state.first.end());
       rotate(state.second.begin(), state.second.end() - 20, state.second.end());
       lattice.change_pot_start(-20);
-      cout << t << ": resized left to " << distr.size() << ", energy = " << lattice.energy(state.first, state.second)
-           << endl;
+      cout << t << ": resized left to " << distr.size() << ", energy = " << lattice.energy(state.first, state.second) << endl;
     }
     if (distr[distr.size() - 10] > 1E-150) {
       do_resize(state.first, state.second, distr, state.first.size() + 20);
-      cout << t << ": resized right to " << distr.size() << ", energy = " << lattice.energy(state.first, state.second)
-           << endl;
+      cout << t << ": resized right to " << distr.size() << ", energy = " << lattice.energy(state.first, state.second) << endl;
     }
     t += dt;
   }
   //]
 
-  cout << "final lattice size: " << distr.size() << ", final energy: " << lattice.energy(state.first, state.second)
-       << endl;
+  cout << "final lattice size: " << distr.size() << ", final energy: " << lattice.energy(state.first, state.second) << endl;
 }

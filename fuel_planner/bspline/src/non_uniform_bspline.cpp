@@ -43,6 +43,14 @@ void NonUniformBspline::getTimeSpan(double& um, double& um_p) {
   um_p = u_(m_ - p_);
 }
 
+void NonUniformBspline::getKnotPoint(vector<Eigen::Vector3d>& knot_pt) {
+  for (int i = p_; i <= m_ - p_; i++) {
+    Eigen::VectorXd result = evaluateDeBoor(u_[i]);
+    Eigen::Vector3d knot = result.size() == 1 ? Eigen::Vector3d(result(0), 0, 0) : result.head(3);
+    knot_pt.push_back(knot);
+  }
+}
+
 Eigen::MatrixXd NonUniformBspline::getControlPoint() {
   return control_points_;
 }
@@ -102,6 +110,7 @@ NonUniformBspline NonUniformBspline::getDerivative() {
 
 void NonUniformBspline::getBoundaryStates(
     const int& ks, const int& ke, vector<Eigen::Vector3d>& start, vector<Eigen::Vector3d>& end) {
+
   vector<NonUniformBspline> ders;
   computeDerivatives(max(ks, ke), ders);
   double duration = getTimeSum();

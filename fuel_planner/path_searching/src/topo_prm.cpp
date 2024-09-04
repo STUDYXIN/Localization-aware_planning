@@ -278,8 +278,8 @@ void TopologyPRM::pruneGraph() {
       if ((*iter1)->neighbors_.size() <= 1) {
         // delete this node from others' neighbor
         for (list<GraphNode::Ptr>::iterator iter2 = graph_.begin(); iter2 != graph_.end(); ++iter2) {
-          for (vector<GraphNode::Ptr>::iterator it_nb = (*iter2)->neighbors_.begin();
-               it_nb != (*iter2)->neighbors_.end(); ++it_nb) {
+          for (vector<GraphNode::Ptr>::iterator it_nb = (*iter2)->neighbors_.begin(); it_nb != (*iter2)->neighbors_.end();
+               ++it_nb) {
             if ((*it_nb)->id_ == (*iter1)->id_) {
               (*iter2)->neighbors_.erase(it_nb);
               break;
@@ -372,8 +372,7 @@ vector<vector<Eigen::Vector3d>> TopologyPRM::selectShortPaths(vector<vector<Eige
   return short_paths;
 }
 
-bool TopologyPRM::sameTopoPath(
-    const vector<Eigen::Vector3d>& path1, const vector<Eigen::Vector3d>& path2, double thresh) {
+bool TopologyPRM::sameTopoPath(const vector<Eigen::Vector3d>& path1, const vector<Eigen::Vector3d>& path2, double thresh) {
   // calc the length
   double len1 = pathLength(path1);
   double len2 = pathLength(path2);

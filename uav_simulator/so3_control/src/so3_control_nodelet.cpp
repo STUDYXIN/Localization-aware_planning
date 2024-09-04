@@ -167,13 +167,13 @@ void SO3ControlNodelet::onInit(void) {
   so3_command_pub_ = n.advertise<quadrotor_msgs::SO3Command>("so3_cmd", 10);
 
   odom_sub_ = n.subscribe("odom", 10, &SO3ControlNodelet::odom_callback, this, ros::TransportHints().tcpNoDelay());
-  position_cmd_sub_ = n.subscribe(
-      "position_cmd", 10, &SO3ControlNodelet::position_cmd_callback, this, ros::TransportHints().tcpNoDelay());
+  position_cmd_sub_ =
+      n.subscribe("position_cmd", 10, &SO3ControlNodelet::position_cmd_callback, this, ros::TransportHints().tcpNoDelay());
 
   enable_motors_sub_ =
       n.subscribe("motors", 2, &SO3ControlNodelet::enable_motors_callback, this, ros::TransportHints().tcpNoDelay());
-  corrections_sub_ = n.subscribe(
-      "corrections", 10, &SO3ControlNodelet::corrections_callback, this, ros::TransportHints().tcpNoDelay());
+  corrections_sub_ =
+      n.subscribe("corrections", 10, &SO3ControlNodelet::corrections_callback, this, ros::TransportHints().tcpNoDelay());
 
   imu_sub_ = n.subscribe("imu", 10, &SO3ControlNodelet::imu_callback, this, ros::TransportHints().tcpNoDelay());
 }

@@ -72,8 +72,8 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
   std::vector<double> times;
 
   // simple stepper
-  integrate_times(runge_kutta4<state_type>(), lorenz, x, boost::counting_iterator<int>(0),
-      boost::counting_iterator<int>(10), dt, push_back_time(times));
+  integrate_times(runge_kutta4<state_type>(), lorenz, x, boost::counting_iterator<int>(0), boost::counting_iterator<int>(10), dt,
+      push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -81,8 +81,8 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
   times.clear();
 
   // controlled stepper
-  integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type> >(), lorenz, x,
-      boost::counting_iterator<int>(0), boost::counting_iterator<int>(10), dt, push_back_time(times));
+  integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type> >(), lorenz, x, boost::counting_iterator<int>(0),
+      boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
   times.clear();
 
   // another controlled stepper
-  integrate_times(bulirsch_stoer<state_type>(), lorenz, x, boost::counting_iterator<int>(0),
-      boost::counting_iterator<int>(10), dt, push_back_time(times));
+  integrate_times(bulirsch_stoer<state_type>(), lorenz, x, boost::counting_iterator<int>(0), boost::counting_iterator<int>(10),
+      dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
     // check if observer was called at times 0,1,2,...

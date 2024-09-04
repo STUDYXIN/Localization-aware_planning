@@ -26,8 +26,7 @@ using namespace cv;
 using namespace std;
 using namespace Eigen;
 
-typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::TransformStamped>
-    approx_policy;
+typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::TransformStamped> approx_policy;
 
 int* depth_hostptr;
 cv::Mat depth_mat;
@@ -281,11 +280,10 @@ int main(int argc, char** argv) {
   else
     printf("do not need to rectify.\n");
 
-  vicon2body << 0.33638, -0.01749, 0.94156, 0.06901, -0.02078, -0.99972, -0.01114, -0.02781, 0.94150, -0.01582,
-      -0.33665, -0.12395, 0.0, 0.0, 0.0, 1.0;
+  vicon2body << 0.33638, -0.01749, 0.94156, 0.06901, -0.02078, -0.99972, -0.01114, -0.02781, 0.94150, -0.01582, -0.33665,
+      -0.12395, 0.0, 0.0, 0.0, 1.0;
   cam02body << 0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975, 0.999557249008, 0.0149672133247,
-      0.025715529948, -0.064676986768, -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949, 0.0, 0.0,
-      0.0, 1.0;
+      0.025715529948, -0.064676986768, -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949, 0.0, 0.0, 0.0, 1.0;
   cam2world = Matrix4d::Identity();
 
   string cloud_path;

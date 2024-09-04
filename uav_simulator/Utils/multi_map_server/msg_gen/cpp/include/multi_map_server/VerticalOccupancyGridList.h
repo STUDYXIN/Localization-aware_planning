@@ -22,8 +22,7 @@ struct VerticalOccupancyGridList_ {
   VerticalOccupancyGridList_() : x(0.0), y(0.0), upper(), lower(), mass() {
   }
 
-  VerticalOccupancyGridList_(const ContainerAllocator& _alloc)
-    : x(0.0), y(0.0), upper(_alloc), lower(_alloc), mass(_alloc) {
+  VerticalOccupancyGridList_(const ContainerAllocator& _alloc) : x(0.0), y(0.0), upper(_alloc), lower(_alloc), mass(_alloc) {
   }
 
   typedef float _x_type;
@@ -51,8 +50,7 @@ typedef boost::shared_ptr< ::multi_map_server::VerticalOccupancyGridList const> 
 
 template <typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::stream(
-      s, "", v);
+  ros::message_operations::Printer< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> >::stream(s, "", v);
   return s;
 }
 
@@ -134,8 +132,8 @@ namespace message_operations {
 template <class ContainerAllocator>
 struct Printer< ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator> > {
   template <typename Stream>
-  static void stream(Stream& s, const std::string& indent,
-      const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>& v) {
+  static void stream(
+      Stream& s, const std::string& indent, const ::multi_map_server::VerticalOccupancyGridList_<ContainerAllocator>& v) {
     s << indent << "x: ";
     Printer<float>::stream(s, indent + "  ", v.x);
     s << indent << "y: ";

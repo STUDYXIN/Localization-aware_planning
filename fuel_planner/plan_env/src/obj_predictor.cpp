@@ -71,8 +71,7 @@ void ObjPredictor::init() {
     pose_subs_.push_back(pose_sub);
   }
 
-  marker_sub_ =
-      node_handle_.subscribe<visualization_msgs::Marker>("/dynamic/obj", 10, &ObjPredictor::markerCallback, this);
+  marker_sub_ = node_handle_.subscribe<visualization_msgs::Marker>("/dynamic/obj", 10, &ObjPredictor::markerCallback, this);
 
   /* update prediction */
   predict_timer_ = node_handle_.createTimer(ros::Duration(1 / predict_rate_), &ObjPredictor::predictCallback, this);
@@ -125,12 +124,12 @@ void ObjPredictor::predictPolyFit() {
         4 * pow(t1, 5) - 4 * pow(t2, 5);
     A.row(3) += -12 * lambda_ * temp.transpose();
 
-    temp << 0.0, 0.0, 20 * pow(t1, 3) - 20 * pow(t2, 3), 45 * pow(t1, 4) - 45 * pow(t2, 4),
-        72 * pow(t1, 5) - 72 * pow(t2, 5), 100 * pow(t1, 6) - 100 * pow(t2, 6);
+    temp << 0.0, 0.0, 20 * pow(t1, 3) - 20 * pow(t2, 3), 45 * pow(t1, 4) - 45 * pow(t2, 4), 72 * pow(t1, 5) - 72 * pow(t2, 5),
+        100 * pow(t1, 6) - 100 * pow(t2, 6);
     A.row(4) += -4.0 / 5.0 * lambda_ * temp.transpose();
 
-    temp << 0.0, 0.0, 35 * pow(t1, 4) - 35 * pow(t2, 4), 84 * pow(t1, 5) - 84 * pow(t2, 5),
-        140 * pow(t1, 6) - 140 * pow(t2, 6), 200 * pow(t1, 7) - 200 * pow(t2, 7);
+    temp << 0.0, 0.0, 35 * pow(t1, 4) - 35 * pow(t2, 4), 84 * pow(t1, 5) - 84 * pow(t2, 5), 140 * pow(t1, 6) - 140 * pow(t2, 6),
+        200 * pow(t1, 7) - 200 * pow(t2, 7);
     A.row(5) += -4.0 / 7.0 * lambda_ * temp.transpose();
 
     /* ---------- solve ---------- */

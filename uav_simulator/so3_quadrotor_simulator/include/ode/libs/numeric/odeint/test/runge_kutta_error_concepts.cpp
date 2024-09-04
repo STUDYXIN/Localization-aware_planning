@@ -97,8 +97,7 @@ struct perform_error_stepper_test<Stepper, vector_space_type> {
     vector_space_type x, xerr;
     x.m_x = 2.0;
     Stepper stepper;
-    check_error_stepper_concept(
-        stepper, constant_system_vector_space<vector_space_type, vector_space_type, double>, x, xerr);
+    check_error_stepper_concept(stepper, constant_system_vector_space<vector_space_type, vector_space_type, double>, x, xerr);
     check_error_stepper_concept(stepper, boost::cref(constant_system_functor_vector_space()), x, xerr);
     BOOST_CHECK_SMALL(fabs(x.m_x - result), eps);
   }
@@ -118,15 +117,14 @@ struct perform_error_stepper_test<Stepper, array_type> {
 
 template <class State>
 class error_stepper_methods
-  : public mpl::vector<
-        runge_kutta_cash_karp54_classic<State, double, State, double, typename algebra_dispatcher<State>::type>,
+  : public mpl::vector<runge_kutta_cash_karp54_classic<State, double, State, double, typename algebra_dispatcher<State>::type>,
         runge_kutta_cash_karp54<State, double, State, double, typename algebra_dispatcher<State>::type>,
         runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type>,
         runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type> > {};
 
 typedef mpl::copy<container_types,
-    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, error_stepper_methods<mpl::_2> > > >::
-    type all_error_stepper_methods;
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, error_stepper_methods<mpl::_2> > > >::type
+    all_error_stepper_methods;
 
 BOOST_AUTO_TEST_SUITE(runge_kutta_error_concept_test)
 

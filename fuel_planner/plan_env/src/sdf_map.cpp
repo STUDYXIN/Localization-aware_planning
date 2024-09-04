@@ -169,8 +169,7 @@ void SDFMap::updateESDF3d() {
         fillESDF(
             [&](int z) {
               int adr = toAddress(x, y, z);
-              return (md_->occupancy_buffer_inflate_[adr] == 1 ||
-                         md_->occupancy_buffer_[adr] < mp_->clamp_min_log_ - 1e-3) ?
+              return (md_->occupancy_buffer_inflate_[adr] == 1 || md_->occupancy_buffer_[adr] < mp_->clamp_min_log_ - 1e-3) ?
                          0 :
                          std::numeric_limits<double>::max();
             },
@@ -186,8 +185,8 @@ void SDFMap::updateESDF3d() {
   for (int y = min_esdf[1]; y <= max_esdf[1]; y++)
     for (int z = min_esdf[2]; z <= max_esdf[2]; z++) {
       fillESDF([&](int x) { return md_->tmp_buffer2_[toAddress(x, y, z)]; },
-          [&](int x, double val) { md_->distance_buffer_[toAddress(x, y, z)] = mp_->resolution_ * std::sqrt(val); },
-          min_esdf[0], max_esdf[0], 0);
+          [&](int x, double val) { md_->distance_buffer_[toAddress(x, y, z)] = mp_->resolution_ * std::sqrt(val); }, min_esdf[0],
+          max_esdf[0], 0);
     }
 
   if (mp_->signed_dist_) {
@@ -211,9 +210,7 @@ void SDFMap::updateESDF3d() {
     for (int y = min_esdf[1]; y <= max_esdf[1]; y++)
       for (int z = min_esdf[2]; z <= max_esdf[2]; z++) {
         fillESDF([&](int x) { return md_->tmp_buffer2_[toAddress(x, y, z)]; },
-            [&](int x, double val) {
-              md_->distance_buffer_neg_[toAddress(x, y, z)] = mp_->resolution_ * std::sqrt(val);
-            },
+            [&](int x, double val) { md_->distance_buffer_neg_[toAddress(x, y, z)] = mp_->resolution_ * std::sqrt(val); },
             min_esdf[0], max_esdf[0], 0);
       }
     // Merge negative distance with positive

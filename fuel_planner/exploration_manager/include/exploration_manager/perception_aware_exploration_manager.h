@@ -47,14 +47,6 @@ private:
   shared_ptr<SDFMap> sdf_map_, global_sdf_map_;
   shared_ptr<FeatureMap> feature_map_;
 
-  // Find optimal tour for coarse viewpoints of all frontiers
-  void findGlobalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d cur_yaw, vector<int>& indices);
-
-  // Refine local tour for next few frontiers, using more diverse viewpoints
-  void refineLocalTour(const Vector3d& cur_pos, const Vector3d& cur_vel, const Vector3d& cur_yaw,
-      const vector<vector<Vector3d>>& n_points, const vector<vector<double>>& n_yaws, vector<Vector3d>& refined_pts,
-      vector<double>& refined_yaws);
-
   void shortenPath(vector<Vector3d>& path);
   bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
 

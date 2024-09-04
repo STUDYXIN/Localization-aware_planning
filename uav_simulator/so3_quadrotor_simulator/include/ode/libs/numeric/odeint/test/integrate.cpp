@@ -148,8 +148,7 @@ struct perform_integrate_times_test {
     std::vector<double> times;
 
     std::vector<double> obs_times(abs(n));
-    for (int i = 0; boost::numeric::odeint::detail::less_with_sign(i, static_cast<int>(obs_times.size()), dt);
-         i += dn) {
+    for (int i = 0; boost::numeric::odeint::detail::less_with_sign(i, static_cast<int>(obs_times.size()), dt); i += dn) {
       obs_times[i] = i;
     }
     // simple stepper
@@ -199,8 +198,7 @@ struct perform_integrate_n_steps_test {
 class stepper_methods
   : public mpl::vector<euler<state_type>, modified_midpoint<state_type>, runge_kutta4<state_type>,
         runge_kutta_cash_karp54<state_type>, runge_kutta_dopri5<state_type>, runge_kutta_fehlberg78<state_type>,
-        controlled_runge_kutta<runge_kutta_cash_karp54<state_type> >,
-        controlled_runge_kutta<runge_kutta_dopri5<state_type> >,
+        controlled_runge_kutta<runge_kutta_cash_karp54<state_type> >, controlled_runge_kutta<runge_kutta_dopri5<state_type> >,
         controlled_runge_kutta<runge_kutta_fehlberg78<state_type> >, bulirsch_stoer<state_type>,
         dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > >
         // bulirsch_stoer_dense_out< state_type >

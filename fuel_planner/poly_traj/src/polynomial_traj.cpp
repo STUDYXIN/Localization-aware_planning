@@ -105,8 +105,7 @@ void PolynomialTraj::waypointsTraj(const Eigen::MatrixXd& positions, const Eigen
   for (int k = 0; k < seg_num; k++)
     for (int i = 3; i < 6; i++)
       for (int j = 3; j < 6; j++) {
-        Q(k * 6 + i, k * 6 + j) =
-            i * (i - 1) * (i - 2) * j * (j - 1) * (j - 2) / (i + j - 5) * pow(times(k), (i + j - 5));
+        Q(k * 6 + i, k * 6 + j) = i * (i - 1) * (i - 2) * j * (j - 1) * (j - 2) / (i + j - 5) * pow(times(k), (i + j - 5));
       }
 
   // Matrix that maps d'=[df,dp] to jerk

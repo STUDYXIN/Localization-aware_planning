@@ -18,7 +18,6 @@ catkin_package(
 )
 
 include_directories(
-# include
   ${catkin_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include
   ${EIGEN3_INCLUDE_DIR}
 )

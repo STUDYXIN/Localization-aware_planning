@@ -178,8 +178,7 @@ void testRidiculouslyMassiveArray(int size) {
   double endtime = 10.0;
 
   clock_t tstart_mtl4 = clock();
-  size_t num_of_steps_mtl4 =
-      integrate_const(mtl4stepper(), make_pair(system1_mtl4(), jacobi1_mtl4()), x, 0.0, endtime, dt);
+  size_t num_of_steps_mtl4 = integrate_const(mtl4stepper(), make_pair(system1_mtl4(), jacobi1_mtl4()), x, 0.0, endtime, dt);
   clock_t tend_mtl4 = clock();
 
   clog << x[0] << endl;
@@ -211,8 +210,7 @@ void testRidiculouslyMassiveArray2(int size) {
   double endtime = 10.0;
 
   clock_t tstart_mtl4 = clock();
-  size_t num_of_steps_mtl4 =
-      integrate_const(mtl4stepper(), make_pair(system1_mtl4(), jacobi1_mtl4()), x, 0.0, endtime, dt);
+  size_t num_of_steps_mtl4 = integrate_const(mtl4stepper(), make_pair(system1_mtl4(), jacobi1_mtl4()), x, 0.0, endtime, dt);
 
   clock_t tend_mtl4 = clock();
 

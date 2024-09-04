@@ -57,9 +57,8 @@
 #define Swap1(a1, a2, a3) FLIP(a1, a2, a3, 0)
 #define Swap2(a1, a2, a3, b1, b2, b3) (Swap1(a1, a2, a3), Swap1(b1, b2, b3))
 #define Swap3(a1, a2, a3, b1, b2, b3, c1, c2, c3) (Swap2(a1, a2, a3, b1, b2, b3), Swap1(c1, c2, c3))
-#define Swap4(a1, a2, a3, b1, b2, b3, c1, c2, c3, d1, d2, d3)                                                          \
-  (Swap3(a1, a2, a3, b1, b2, b3, c1, c2, c3), Swap1(d1, d2, d3))
-#define Swap5(a1, a2, a3, b1, b2, b3, c1, c2, c3, d1, d2, d3, e1, e2, e3)                                              \
+#define Swap4(a1, a2, a3, b1, b2, b3, c1, c2, c3, d1, d2, d3) (Swap3(a1, a2, a3, b1, b2, b3, c1, c2, c3), Swap1(d1, d2, d3))
+#define Swap5(a1, a2, a3, b1, b2, b3, c1, c2, c3, d1, d2, d3, e1, e2, e3)                                                        \
   (Swap4(a1, a2, a3, b1, b2, b3, c1, c2, c3, d1, d2, d3), Swap1(e1, e2, e3))
 
 #endif

@@ -17,8 +17,7 @@
 #include <boost/numeric/odeint.hpp>
 
 //[point3D
-class point3D
-  : boost::additive1<point3D, boost::additive2<point3D, double, boost::multiplicative2<point3D, double> > > {
+class point3D : boost::additive1<point3D, boost::additive2<point3D, double, boost::multiplicative2<point3D, double> > > {
 public:
   double x, y, z;
 

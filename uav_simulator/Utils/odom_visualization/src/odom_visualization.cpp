@@ -361,10 +361,8 @@ void odom_callback(const nav_msgs::Odometry::ConstPtr& msg) {
 
     broadcaster->sendTransform(tf::StampedTransform(transform, msg->header.stamp, string("world"), string("/base")));
     broadcaster->sendTransform(tf::StampedTransform(transform45, msg->header.stamp, string("/base"), string("/laser")));
-    broadcaster->sendTransform(
-        tf::StampedTransform(transform45, msg->header.stamp, string("/base"), string("/vision")));
-    broadcaster->sendTransform(
-        tf::StampedTransform(transform90, msg->header.stamp, string("/base"), string("/height")));
+    broadcaster->sendTransform(tf::StampedTransform(transform45, msg->header.stamp, string("/base"), string("/vision")));
+    broadcaster->sendTransform(tf::StampedTransform(transform90, msg->header.stamp, string("/base"), string("/height")));
   }
 }
 

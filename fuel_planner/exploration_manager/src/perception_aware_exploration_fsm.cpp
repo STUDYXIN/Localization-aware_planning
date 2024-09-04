@@ -75,6 +75,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         return;
       }
 
+      last_arrive_goal_time_ = ros::Time::now().toSec();
       transitState(WAIT_TARGET, "FSM");
       break;
     }
@@ -85,6 +86,10 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     }
 
     case PLAN_TO_NEXT_GOAL: {
+      if (ros::Time::now().toSec() - last_arrive_goal_time_ < 1.0) return;
+
+      static_state_ = true;
+
       if (static_state_) {
         // Plan from static state (hover)
         start_pos_ = odom_pos_;
@@ -93,7 +98,9 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
         start_yaw_.setZero();
         start_yaw_(0) = odom_yaw_;
-      } else {
+      }
+
+      else {
         LocalTrajData& info = planner_manager_->local_data_;
         double t_r = (ros::Time::now() - info.start_time_).toSec() + fp_->replan_time_;
 
@@ -111,7 +118,9 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       const auto res = callExplorationPlanner();
       if (res == REACH_END || res == SEARCH_FRONTIER) {
         transitState(PUB_TRAJ, "FSM");
-      } else if (res == NO_FRONTIER || res == NO_AVAILABLE_FRONTIER) {
+      }
+
+      else if (res == NO_FRONTIER || res == NO_AVAILABLE_FRONTIER) {
         // Still in PLAN_TRAJ state, keep replanning
         ROS_WARN("No frontier available=================================");
         static_state_ = true;
@@ -141,9 +150,13 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       if (time_to_end < fp_->replan_thresh1_) {
         if (checkReachFinalGoal()) {
           transitState(WAIT_TARGET, "FSM");
+          last_arrive_goal_time_ = ros::Time::now().toSec();
           ROS_WARN("Replan: reach final goal=================================");
-        } else {
+        }
+
+        else {
           transitState(PLAN_TO_NEXT_GOAL, "FSM");
+          last_arrive_goal_time_ = ros::Time::now().toSec();
           ROS_WARN("Replan: reach tmp viewpoint=================================");
         }
       }
@@ -156,7 +169,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     }
 
     case EMERGENCY_STOP: {
-      ROS_ERROR("Emergency Stop.");
+      ROS_WARN_THROTTLE(1.0, "Emergency Stop.");
       break;
     }
   }
@@ -237,7 +250,7 @@ void PAExplorationFSM::visualize() {
   // 4);
 
   visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
-  visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
+  visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->position_traj_.getKnotSpan());
 
   // ROS_WARN("[PAExplorationFSM] path_next_goal_ SIZE: %zu", ed_ptr->path_next_goal_.size());
 }
@@ -285,22 +298,23 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
   //   return;
   // }
 
-  // if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_)) {
-  //   ROS_WARN("Replan: Too few features detected==================================");
-  //   emergency_stop_pub_.publish(std_msgs::Empty());
-  //   transitState(EMERGENCY_STOP, "safetyCallback");
-  //   return;
-  // }
-
-  if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
-    // Check safety and trigger replan if necessary
-    double dist;
-    bool safe = planner_manager_->checkTrajLocalizability(dist);
-    if (!safe) {
-      ROS_WARN("Replan: Poor localizability detected==================================");
-      transitState(PLAN_TO_NEXT_GOAL, "safetyCallback");
-    }
+  int feature_num;
+  if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_, feature_num)) {
+    ROS_WARN("Replan: Too few features detected,feature num: %d==================================", feature_num);
+    emergency_stop_pub_.publish(std_msgs::Empty());
+    transitState(EMERGENCY_STOP, "safetyCallback");
+    return;
   }
+
+  // if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
+  //   // Check safety and trigger replan if necessary
+  //   double dist;
+  //   bool safe = planner_manager_->checkTrajLocalizability(dist);
+  //   if (!safe) {
+  //     ROS_WARN("Replan: Poor localizability detected==================================");
+  //     transitState(PLAN_TO_NEXT_GOAL, "safetyCallback");
+  //   }
+  // }
 
   if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
     // Check safety and trigger replan if necessary

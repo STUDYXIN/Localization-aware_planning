@@ -225,8 +225,7 @@ mat Jplus1(const colvec& X1, const colvec& X2) {
   double Marr[9] = { -(X3(2 - 1) - X1(2 - 1)), (X3(3 - 1) - X1(3 - 1)) * cos(X1(4 - 1)),
     a1(1 - 1) * X2(2 - 1) - o1(1 - 1) * X2(3 - 1), X3(1 - 1) - X1(1 - 1), (X3(3 - 1) - X1(3 - 1)) * sin(X1(4 - 1)),
     a1(2 - 1) * X2(2 - 1) - o1(2 - 1) * X2(3 - 1), 0,
-    -X2(1 - 1) * cos(X1(5 - 1)) - X2(2 - 1) * sin(X1(5 - 1)) * sin(X1(6 - 1)) -
-        X2(3 - 1) * sin(X1(5 - 1)) * cos(X1(6 - 1)),
+    -X2(1 - 1) * cos(X1(5 - 1)) - X2(2 - 1) * sin(X1(5 - 1)) * sin(X1(6 - 1)) - X2(3 - 1) * sin(X1(5 - 1)) * cos(X1(6 - 1)),
     a1(3 - 1) * X2(2 - 1) - o1(3 - 1) * X2(3 - 1) };
   mat M(3, 3);
   for (int i = 0; i < 9; i++) M(i) = Marr[i];
@@ -256,9 +255,9 @@ mat Jplus2(const colvec& X1, const colvec& X2) {
 
   mat Z = zeros<mat>(3, 3);
 
-  double K2arr[9] = { cos(X2(5 - 1)) * cos(X3(6 - 1) - X2(6 - 1)) / cos(X3(5 - 1)),
-    sin(X3(6 - 1) - X2(6 - 1)) / cos(X3(5 - 1)), 0, -cos(X2(5 - 1)) * sin(X3(6 - 1) - X2(6 - 1)),
-    cos(X3(6 - 1) - X2(6 - 1)), 0, (a1(1 - 1) * cos(X3(4 - 1)) + a1(2 - 1) * sin(X3(4 - 1))) / cos(X3(5 - 1)),
+  double K2arr[9] = { cos(X2(5 - 1)) * cos(X3(6 - 1) - X2(6 - 1)) / cos(X3(5 - 1)), sin(X3(6 - 1) - X2(6 - 1)) / cos(X3(5 - 1)),
+    0, -cos(X2(5 - 1)) * sin(X3(6 - 1) - X2(6 - 1)), cos(X3(6 - 1) - X2(6 - 1)), 0,
+    (a1(1 - 1) * cos(X3(4 - 1)) + a1(2 - 1) * sin(X3(4 - 1))) / cos(X3(5 - 1)),
     sin(X3(5 - 1)) * sin(X3(6 - 1) - X2(6 - 1)) / cos(X3(5 - 1)), 1 };
   mat K2(3, 3);
   for (int i = 0; i < 9; i++) K2(i) = K2arr[i];
@@ -322,16 +321,14 @@ mat jacobianF(const colvec& X, const colvec& U, double dt) {
   F(0, 0) = 1;
   F(0, 1) = 0;
   F(0, 2) = 0;
-  F(0, 3) = (dt * dt *
-                (ay * (sin(ro) * sin(ya) + cos(ro) * cos(ya) * sin(pt)) +
-                    az * (cos(ro) * sin(ya) - cos(ya) * sin(pt) * sin(ro)))) /
-            2,
-       F(0, 4) =
-           (dt * dt * (az * cos(pt) * cos(ro) * cos(ya) - ax * cos(ya) * sin(pt) + ay * cos(pt) * cos(ya) * sin(ro))) /
-           2;
+  F(0, 3) =
+      (dt * dt *
+          (ay * (sin(ro) * sin(ya) + cos(ro) * cos(ya) * sin(pt)) + az * (cos(ro) * sin(ya) - cos(ya) * sin(pt) * sin(ro)))) /
+      2,
+       F(0, 4) = (dt * dt * (az * cos(pt) * cos(ro) * cos(ya) - ax * cos(ya) * sin(pt) + ay * cos(pt) * cos(ya) * sin(ro))) / 2;
   F(0, 5) = -(dt * dt *
-                (ay * (cos(ro) * cos(ya) + sin(pt) * sin(ro) * sin(ya)) -
-                    az * (cos(ya) * sin(ro) - cos(ro) * sin(pt) * sin(ya)) + ax * cos(pt) * sin(ya))) /
+                (ay * (cos(ro) * cos(ya) + sin(pt) * sin(ro) * sin(ya)) - az * (cos(ya) * sin(ro) - cos(ro) * sin(pt) * sin(ya)) +
+                    ax * cos(pt) * sin(ya))) /
             2;
   F(0, 6) = dt;
   F(0, 7) = 0;
@@ -340,15 +337,14 @@ mat jacobianF(const colvec& X, const colvec& U, double dt) {
   F(1, 0) = 0;
   F(1, 1) = 1;
   F(1, 2) = 0;
-  F(1, 3) = -(dt * dt *
-                (ay * (cos(ya) * sin(ro) - cos(ro) * sin(pt) * sin(ya)) +
-                    az * (cos(ro) * cos(ya) + sin(pt) * sin(ro) * sin(ya)))) /
-            2;
-  F(1, 4) =
-      (dt * dt * (az * cos(pt) * cos(ro) * sin(ya) - ax * sin(pt) * sin(ya) + ay * cos(pt) * sin(ro) * sin(ya))) / 2;
+  F(1, 3) =
+      -(dt * dt *
+          (ay * (cos(ya) * sin(ro) - cos(ro) * sin(pt) * sin(ya)) + az * (cos(ro) * cos(ya) + sin(pt) * sin(ro) * sin(ya)))) /
+      2;
+  F(1, 4) = (dt * dt * (az * cos(pt) * cos(ro) * sin(ya) - ax * sin(pt) * sin(ya) + ay * cos(pt) * sin(ro) * sin(ya))) / 2;
   F(1, 5) = (dt * dt *
-                (az * (sin(ro) * sin(ya) + cos(ro) * cos(ya) * sin(pt)) -
-                    ay * (cos(ro) * sin(ya) - cos(ya) * sin(pt) * sin(ro)) + ax * cos(pt) * cos(ya))) /
+                (az * (sin(ro) * sin(ya) + cos(ro) * cos(ya) * sin(pt)) - ay * (cos(ro) * sin(ya) - cos(ya) * sin(pt) * sin(ro)) +
+                    ax * cos(pt) * cos(ya))) /
             2;
   F(1, 6) = 0;
   F(1, 7) = dt;
@@ -366,12 +362,12 @@ mat jacobianF(const colvec& X, const colvec& U, double dt) {
   F(3, 0) = 0;
   F(3, 1) = 0;
   F(3, 2) = 0;
-  F(3, 3) = 1 - dt * ((wz * (cos(pt - ro) / 2 - cos(pt + ro) / 2)) / cos(pt) -
-                         (wy * (sin(pt - ro) / 2 + sin(pt + ro) / 2)) / cos(pt));
-  F(3, 4) = dt * ((wz * (cos(pt - ro) / 2 + cos(pt + ro) / 2)) / cos(pt) -
-                     (wy * (sin(pt - ro) / 2 - sin(pt + ro) / 2)) / cos(pt) +
-                     (wy * sin(pt) * (cos(pt - ro) / 2 - cos(pt + ro) / 2)) / (cos(pt) * cos(pt)) +
-                     (wz * sin(pt) * (sin(pt - ro) / 2 + sin(pt + ro) / 2)) / (cos(pt) * cos(pt)));
+  F(3, 3) =
+      1 - dt * ((wz * (cos(pt - ro) / 2 - cos(pt + ro) / 2)) / cos(pt) - (wy * (sin(pt - ro) / 2 + sin(pt + ro) / 2)) / cos(pt));
+  F(3, 4) =
+      dt * ((wz * (cos(pt - ro) / 2 + cos(pt + ro) / 2)) / cos(pt) - (wy * (sin(pt - ro) / 2 - sin(pt + ro) / 2)) / cos(pt) +
+               (wy * sin(pt) * (cos(pt - ro) / 2 - cos(pt + ro) / 2)) / (cos(pt) * cos(pt)) +
+               (wz * sin(pt) * (sin(pt - ro) / 2 + sin(pt + ro) / 2)) / (cos(pt) * cos(pt)));
   F(3, 5) = 0;
   F(3, 6) = 0;
   F(3, 7) = 0;
@@ -400,8 +396,8 @@ mat jacobianF(const colvec& X, const colvec& U, double dt) {
   F(6, 0) = 0;
   F(6, 1) = 0;
   F(6, 2) = 0;
-  F(6, 3) = dt * (ay * (sin(ro) * sin(ya) + cos(ro) * cos(ya) * sin(pt)) +
-                     az * (cos(ro) * sin(ya) - cos(ya) * sin(pt) * sin(ro)));
+  F(6, 3) =
+      dt * (ay * (sin(ro) * sin(ya) + cos(ro) * cos(ya) * sin(pt)) + az * (cos(ro) * sin(ya) - cos(ya) * sin(pt) * sin(ro)));
   F(6, 4) = dt * (az * cos(pt) * cos(ro) * cos(ya) - ax * cos(ya) * sin(pt) + ay * cos(pt) * cos(ya) * sin(ro));
   F(6, 5) = -dt * (ay * (cos(ro) * cos(ya) + sin(pt) * sin(ro) * sin(ya)) -
                       az * (cos(ya) * sin(ro) - cos(ro) * sin(pt) * sin(ya)) + ax * cos(pt) * sin(ya));
@@ -412,8 +408,8 @@ mat jacobianF(const colvec& X, const colvec& U, double dt) {
   F(7, 0) = 0;
   F(7, 1) = 0;
   F(7, 2) = 0;
-  F(7, 3) = -dt * (ay * (cos(ya) * sin(ro) - cos(ro) * sin(pt) * sin(ya)) +
-                      az * (cos(ro) * cos(ya) + sin(pt) * sin(ro) * sin(ya)));
+  F(7, 3) =
+      -dt * (ay * (cos(ya) * sin(ro) - cos(ro) * sin(pt) * sin(ya)) + az * (cos(ro) * cos(ya) + sin(pt) * sin(ro) * sin(ya)));
   F(7, 4) = dt * (az * cos(pt) * cos(ro) * sin(ya) - ax * sin(pt) * sin(ya) + ay * cos(pt) * sin(ro) * sin(ya));
   F(7, 5) = dt * (az * (sin(ro) * sin(ya) + cos(ro) * cos(ya) * sin(pt)) -
                      ay * (cos(ro) * sin(ya) - cos(ya) * sin(pt) * sin(ro)) + ax * cos(pt) * cos(ya));

@@ -189,12 +189,12 @@ typedef boost::numeric::odeint::controlled_runge_kutta<dopri5_type> controlled_d
 typedef boost::numeric::odeint::dense_output_runge_kutta<euler_type> dense_output_euler_type;
 typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_dopri5_type> dense_output_dopri5_type;
 
-#define CHECK_COUNTERS(c1, c2, c3, c4, c5, c6)                                                                         \
-  BOOST_CHECK_EQUAL(construct_count, size_t(c1));                                                                      \
-  BOOST_CHECK_EQUAL(construct2_count, size_t(c2));                                                                     \
-  BOOST_CHECK_EQUAL(destruct_count, size_t(c3));                                                                       \
-  BOOST_CHECK_EQUAL(destruct2_count, size_t(c4));                                                                      \
-  BOOST_CHECK_EQUAL(copy_count, size_t(c5));                                                                           \
+#define CHECK_COUNTERS(c1, c2, c3, c4, c5, c6)                                                                                   \
+  BOOST_CHECK_EQUAL(construct_count, size_t(c1));                                                                                \
+  BOOST_CHECK_EQUAL(construct2_count, size_t(c2));                                                                               \
+  BOOST_CHECK_EQUAL(destruct_count, size_t(c3));                                                                                 \
+  BOOST_CHECK_EQUAL(destruct2_count, size_t(c4));                                                                                \
+  BOOST_CHECK_EQUAL(copy_count, size_t(c5));                                                                                     \
   BOOST_CHECK_EQUAL(copy2_count, size_t(c6))
 
 BOOST_AUTO_TEST_SUITE(stepper_copying)
@@ -607,8 +607,7 @@ BOOST_AUTO_TEST_CASE(controlled_dopri5_assign) {
     controlled_dopri5_type dopri5_2;
     dopri5_2 = dopri5;
   }
-  CHECK_COUNTERS(
-      4 * 1 + 2 * 2, 4 * (1 + 6) + 2 * 2, 4 * 1 + 2 * 2, 4 * (1 + 6) + 2 * 2, 2 * 1 + 1 + 2, 2 * (6 + 1) + 1 + 6 + 2);
+  CHECK_COUNTERS(4 * 1 + 2 * 2, 4 * (1 + 6) + 2 * 2, 4 * 1 + 2 * 2, 4 * (1 + 6) + 2 * 2, 2 * 1 + 1 + 2, 2 * (6 + 1) + 1 + 6 + 2);
 }
 
 /*
@@ -702,8 +701,8 @@ BOOST_AUTO_TEST_CASE(dense_output_euler_assign) {
 BOOST_AUTO_TEST_CASE(dense_output_dopri5_construct) {
   reset_counter();
   { dense_output_dopri5_type dopri5; }
-  CHECK_COUNTERS(3 * 1 + 2 * 2 + 2, 3 * (1 + 6) + 2 * 2 + 2, 3 * 1 + 2 * 2 + 2, 3 * (1 + 6) + 2 * 2 + 2, 2 * 1 + 2,
-      2 * (1 + 6) + 2);
+  CHECK_COUNTERS(
+      3 * 1 + 2 * 2 + 2, 3 * (1 + 6) + 2 * 2 + 2, 3 * 1 + 2 * 2 + 2, 3 * (1 + 6) + 2 * 2 + 2, 2 * 1 + 2, 2 * (1 + 6) + 2);
 }
 
 /*

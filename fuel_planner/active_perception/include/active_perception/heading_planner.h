@@ -168,12 +168,11 @@ private:
   bool insideFoV(const Eigen::Vector4d& pw);
 
   // iterate within volume and check visibility, voexl are weighted by distance
-  double calcInformationGain(
-      const Eigen::Vector3d& pt, const double& yaw, const Eigen::MatrixXd& ctrl_pts, const int& task_id);
+  double calcInformationGain(const Eigen::Vector3d& pt, const double& yaw, const Eigen::MatrixXd& ctrl_pts, const int& task_id);
   // iterate within volume and check visibility, voexl are weighted uniformly
   bool insideFoV(const Eigen::Vector3d& pw, const Eigen::Vector3d& pc, const vector<Eigen::Vector3d>& normals);
-  void distToPathAndCurPos(const Eigen::Vector3d& check_pt, const Eigen::MatrixXd& ctrl_pts,
-      std::pair<double, double>& dists, bool debug = false);
+  void distToPathAndCurPos(
+      const Eigen::Vector3d& check_pt, const Eigen::MatrixXd& ctrl_pts, std::pair<double, double>& dists, bool debug = false);
   void axisAlignedBoundingBox(const vector<Eigen::Vector3d>& points, Eigen::Vector3d& lb, Eigen::Vector3d& ub);
   void visualizeBox(const Eigen::Vector3d& lb, const Eigen::Vector3d& ub);
   void calcFovAABB(const Eigen::Matrix3d& R_wc, const Eigen::Vector3d& t_wc, Eigen::Vector3i& lb, Eigen::Vector3i& ub);

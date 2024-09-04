@@ -61,14 +61,14 @@ GameLikeInput::GameLikeInput()
   shortcut_key_ = 'z';
   access_all_keys_ = true;
 
-  topic_property_wp_ = new rviz::StringProperty("TopicPoint", "point_list",
-      "The topic on which to publish navigation goals.", getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_wp_ = new rviz::StringProperty("TopicPoint", "point_list", "The topic on which to publish navigation goals.",
+      getPropertyContainer(), SLOT(updateTopic()), this);
 
-  topic_property_drone_ = new rviz::StringProperty("TopicSelect", "select_list",
-      "The topic on which to publish select drone id.", getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_drone_ = new rviz::StringProperty("TopicSelect", "select_list", "The topic on which to publish select drone id.",
+      getPropertyContainer(), SLOT(updateTopic()), this);
 
-  topic_property_swarm_ = new rviz::StringProperty("TopicSwarm", "swarm",
-      "The topic on which to publish swarm command.", getPropertyContainer(), SLOT(updateTopic()), this);
+  topic_property_swarm_ = new rviz::StringProperty(
+      "TopicSwarm", "swarm", "The topic on which to publish swarm command.", getPropertyContainer(), SLOT(updateTopic()), this);
 
   property_z_max = new rviz::FloatProperty("RangeZ_max", 1.7, "", getPropertyContainer(), SLOT(updateTopic()), this);
   property_z_min = new rviz::FloatProperty("RangeZ_min", 0.8, "", getPropertyContainer(), SLOT(updateTopic()), this);
@@ -244,8 +244,7 @@ int GameLikeInput::processMouseEvent(rviz::ViewportMouseEvent& event) {
       sel_manager->select(event.viewport, this->sel_start_x_, this->sel_start_y_, event.x, event.y, type);
       selection = sel_manager->getSelection();
 
-      rviz::MarkerSelectionHandler* cmp =
-          new rviz::MarkerSelectionHandler(nullptr, std::pair<std::string, int32_t>(), context_);
+      rviz::MarkerSelectionHandler* cmp = new rviz::MarkerSelectionHandler(nullptr, std::pair<std::string, int32_t>(), context_);
 
       for (auto it = selection.begin(); it != selection.end();) {
         rviz::Picked p = it->second;

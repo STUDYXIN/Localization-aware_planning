@@ -26,6 +26,7 @@ public:
   Eigen::MatrixXd getControlPoint();
   double getKnotSpan();
   void getTimeSpan(double& um, double& um_p);
+  void getKnotPoint(vector<Eigen::Vector3d>& knot_pt);
 
   // compute position / derivative
 

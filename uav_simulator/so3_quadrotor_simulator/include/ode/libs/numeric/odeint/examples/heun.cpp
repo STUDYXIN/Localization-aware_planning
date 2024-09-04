@@ -62,11 +62,9 @@ struct heun_c : boost::array<Value, 3> {
 
 //[ heun_stepper_definition
 template <class State, class Value = double, class Deriv = State, class Time = Value,
-    class Algebra = boost::numeric::odeint::range_algebra,
-    class Operations = boost::numeric::odeint::default_operations,
+    class Algebra = boost::numeric::odeint::range_algebra, class Operations = boost::numeric::odeint::default_operations,
     class Resizer = boost::numeric::odeint::initially_resizer>
-class heun
-  : public boost::numeric::odeint::explicit_generic_rk<3, 3, State, Value, Deriv, Time, Algebra, Operations, Resizer> {
+class heun : public boost::numeric::odeint::explicit_generic_rk<3, 3, State, Value, Deriv, Time, Algebra, Operations, Resizer> {
 
 public:
   typedef boost::numeric::odeint::explicit_generic_rk<3, 3, State, Value, Deriv, Time, Algebra, Operations, Resizer>
@@ -84,8 +82,7 @@ public:
   typedef typename stepper_base_type::stepper_type stepper_type;
 
   heun(const algebra_type& algebra = algebra_type())
-    : stepper_base_type(
-          fusion::make_vector(heun_a1<Value>(), heun_a2<Value>()), heun_b<Value>(), heun_c<Value>(), algebra) {
+    : stepper_base_type(fusion::make_vector(heun_a1<Value>(), heun_a2<Value>()), heun_b<Value>(), heun_c<Value>(), algebra) {
   }
 };
 //]

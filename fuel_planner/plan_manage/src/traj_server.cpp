@@ -290,16 +290,6 @@ void cmdCallback(const ros::TimerEvent& e) {
     emergency_stop_cmd.trajectory_id = ++traj_id_;
     pos_cmd_pub.publish(emergency_stop_cmd);
 
-    // cout << "target pos: " << emergency_stop_cmd.position.x << ", " << emergency_stop_cmd.position.y << ", "
-    //      << emergency_stop_cmd.position.z << endl;
-
-    // cout << "target vel: " << emergency_stop_cmd.velocity.x << ", " << emergency_stop_cmd.velocity.y << ", "
-    //      << emergency_stop_cmd.velocity.z << endl;
-
-    // cout << "target acc: " << emergency_stop_cmd.acceleration.x << ", " << emergency_stop_cmd.acceleration.y << ", "
-    //      << emergency_stop_cmd.acceleration.z << endl;
-
-    ROS_WARN("Publish emergency stop cmd");
     return;
   }
 

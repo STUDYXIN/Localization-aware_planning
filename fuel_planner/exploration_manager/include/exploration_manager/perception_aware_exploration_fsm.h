@@ -64,6 +64,10 @@ public:
   Eigen::Vector3d final_goal_;
   double last_arrive_goal_time_;
 
+  /* Debug utils */
+  vector<int> last_viewpoint_line, last_feature_line;
+  bool draw_line2feature;
+
   /* ROS utils */
   ros::NodeHandle node_;
 

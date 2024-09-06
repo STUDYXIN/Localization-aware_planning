@@ -47,6 +47,7 @@ void SDFMap::initMap(ros::NodeHandle& nh) {
   nh.param("sdf_map/p_occ", mp_->p_occ_, 0.80);
   nh.param("sdf_map/max_ray_length", mp_->max_ray_length_, -0.1);
   nh.param("sdf_map/virtual_ceil_height", mp_->virtual_ceil_height_, -0.1);
+  nh.param("feature/occupied_thr", mp_->occupied_thr, -1);
 
   auto logit = [](const double& x) { return log(x / (1 - x)); };
   mp_->prob_hit_log_ = logit(mp_->p_hit_);
@@ -525,16 +526,38 @@ double SDFMap::getDistWithGrad(const Eigen::Vector3d& pos, Eigen::Vector3d& grad
 bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
   caster_->input(start, end);
   Eigen::Vector3i idx;
+  int occupied_count = 0;  //由于特征点是附着在表面的，可能会出现误判断的行为，这里取消检测后n个体素
   while (caster_->nextId(idx)) {
-    if (getOccupancy(idx) == OCCUPIED)  //多投射一次
-    {
-      if (caster_->nextId(idx))  //还没有到达终点
-        return true;             // 检测到障碍物
-      else
-        return false;
+    if (getOccupancy(idx) == OCCUPIED) {  //找到第一个占据点
+      while (caster_->nextId(idx)) {
+        if (occupied_count < mp_->occupied_thr)  //忽略前mp_->occupied_thr个元素
+        {
+          occupied_count++;
+          continue;
+        } else {  //依然没有结束
+          return true;
+        }
+      }
+      return false;  // 没有检测到障碍物
     }
   }
   return false;  // 没有检测到障碍物
 }
+
+// 原先的逻辑，只检查最后两个点，这样侧面的特征点会看不到
+// bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+//   caster_->input(start, end);
+//   Eigen::Vector3i idx;
+//   while (caster_->nextId(idx)) {
+//     if (getOccupancy(idx) == OCCUPIED)  //多投射一次
+//     {
+//       if (caster_->nextId(idx))  //还没有到达终点
+//         return true;             // 检测到障碍物
+//       else
+//         return false;
+//     }
+//   }
+//   return false;  // 没有检测到障碍物
+// }
 }  // namespace fast_planner
 // SDFMap

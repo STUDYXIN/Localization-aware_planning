@@ -21,7 +21,7 @@ class RayCaster;
 namespace fast_planner {
 class EDTEnvironment;
 class PerceptionUtils;
-
+class FeatureMap;
 // Viewpoint to cover a frontier cluster
 struct Viewpoint {
   // Position and heading
@@ -54,6 +54,7 @@ struct Frontier {
 class FrontierFinder {
 public:
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, ros::NodeHandle& nh);
+  FrontierFinder(const shared_ptr<EDTEnvironment>& edt, const shared_ptr<FeatureMap>& fea, ros::NodeHandle& nh);
 
   void searchFrontiers();
   void computeFrontiersToVisit();
@@ -65,6 +66,8 @@ public:
   // Get viewpoint with highest coverage for each frontier
   void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages,
       vector<size_t>& visb_num);
+  // get frontiers near new point
+  bool getBestViewpointinPath(Viewpoint& refactorViewpoint, vector<Vector3d>& path);
   // Get several viewpoints for a subset of frontiers
   void getViewpointsInfo(const Vector3d& cur_pos, const vector<int>& ids, const int& view_num, const double& max_decay,
       vector<vector<Vector3d>>& points, vector<vector<double>>& yaws);
@@ -86,6 +89,7 @@ private:
   void computeFrontierInfo(Frontier& frontier);
   void downsample(const vector<Vector3d>& cluster_in, vector<Vector3d>& cluster_out);
   void sampleViewpoints(Frontier& frontier);
+  void sampleBetterViewpoints(Frontier& frontier);
 
   int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
   bool isNearUnknown(const Vector3d& pos);
@@ -116,14 +120,16 @@ private:
   // Params
   int cluster_min_;
   double cluster_size_xy_, cluster_size_z_;
-  double candidate_rmax_, candidate_rmin_, candidate_dphi_, min_candidate_dist_, min_candidate_clearance_;
-  int down_sample_;
+  double candidate_rmax_, candidate_rmin_, candidate_dphi_, min_candidate_dist_, min_candidate_clearance_, feature_sample_dphi;
+  int down_sample_, min_view_feature_num_of_viewpoint;
+  bool using_feature_threshold_compute_viewpoint;
   double min_view_finish_fraction_, resolution_;
   int min_visib_num_, candidate_rnum_;
 
   // Utils
   shared_ptr<EDTEnvironment> edt_env_;
   unique_ptr<RayCaster> raycaster_;
+  shared_ptr<FeatureMap> feature_map_;
 };
 
 }  // namespace fast_planner

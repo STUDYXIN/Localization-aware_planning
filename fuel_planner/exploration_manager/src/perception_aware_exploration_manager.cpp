@@ -47,9 +47,10 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
     feature_map_->initMap(nh);
 
     planner_manager_->setFeatureMap(feature_map_);
-  }
-
-  frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
+    planner_manager_->setFrontierFinder(frontier_finder_);
+    frontier_finder_.reset(new FrontierFinder(edt_environment_, feature_map_, nh));
+  } else
+    frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
 
   nh.param("exploration/refine_local", ep_->refine_local_, true);
   nh.param("exploration/refined_num", ep_->refined_num_, -1);
@@ -110,14 +111,7 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
 
   // 使用混合A*算法搜索最优路径
 
-  // Search frontiers and group them into clusters
-  frontier_finder_->searchFrontiers();
-
-  // Find viewpoints (x,y,z,start_yaw) for all frontier clusters and get visible ones' info
-  frontier_finder_->computeFrontiersToVisit();
-  frontier_finder_->getFrontiers(ed_->frontiers_);
-  frontier_finder_->getFrontierBoxes(ed_->frontier_boxes_);
-  frontier_finder_->getDormantFrontiers(ed_->dead_frontiers_);
+  // Search frontiers and group them into clusters 在fsm中的frontier定时器里实时更新
 
   if (reach_end_flag) return REACH_END;
 
@@ -126,21 +120,6 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
     return NO_AVAILABLE_FRONTIER;
   }
 
-  frontier_finder_->getTopViewpointsInfo(start_pos, ed_->points_, ed_->yaws_, ed_->averages_, ed_->visb_num_);
-
-  // 使用A*算法搜索一个的点，这个点事这条路径上靠近终点且在free区域的最后一个点
-  planner_manager_->path_finder_->reset();
-  if (planner_manager_->path_finder_->search(start_pos, final_goal) == Astar::REACH_END) {
-    ed_->path_next_goal_ = planner_manager_->path_finder_->getPath();
-    Vector3d junction_pos;
-    double junction_yaw;
-    if (findJunction(ed_->path_next_goal_, junction_pos, junction_yaw)) {
-      ed_->points_.push_back(junction_pos);
-      ed_->yaws_.push_back(junction_yaw);
-      cout << "[PAExplorationManager] ADD point: " << junction_pos << " yaw: " << junction_yaw << endl;
-      ed_->visb_num_.push_back(frontier_finder_->getVisibleFrontiersNum(junction_pos, junction_yaw));
-    }
-  }
   // Select point with highest score
   const double dg = (final_goal - start_pos).norm();
   vector<pair<size_t, double>> gains;

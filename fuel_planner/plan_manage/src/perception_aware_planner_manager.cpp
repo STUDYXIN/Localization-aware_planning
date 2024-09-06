@@ -80,9 +80,6 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
   }
 
   if (use_active_perception) {
-    frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
-    // heading_planner_.reset(new HeadingPlanner(nh));
-    // heading_planner_->setMap(sdf_map_);
     visib_util_.reset(new VisibilityUtil(nh));
     visib_util_->setEDTEnvironment(edt_environment_);
     plan_data_.view_cons_.idx_ = -1;
@@ -240,16 +237,18 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   bspline_optimizers_[0]->setBoundaryStates(start, end, start_idx, end_idx);
   if (time_lb > 0) bspline_optimizers_[0]->setTimeLowerBound(time_lb);
 
-  // 这里使用了平滑约束、动力学可行性约束、起点约束、终点约束、避障约束、
+  // 这里使用了平滑约束、动力学可行性约束、起点约束、终点约束、避障约束、视差约束、垂直可见性
+  // **增加了未知区域可见性约束FRONTIERVISIBILITY
   int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END |
                   BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
-                  BsplineOptimizer::VERTICALVISIBILITY;
+                  BsplineOptimizer::VERTICALVISIBILITY | BsplineOptimizer::FRONTIERVISIBILITY;
 
   // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
   // BsplineOptimizer::END |
   //                 BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE;
 
   bspline_optimizers_[0]->setFeatureMap(feature_map_);
+  bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
   local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
 
@@ -684,7 +683,7 @@ void FastPlannerManager::planYawPerceptionAware(const Eigen::Vector3d& start_yaw
   vector<double> yaw_waypoints;
   yaw_initial_planner_->setFeatureMap(feature_map_);
   yaw_initial_planner_->searchPathOfYaw(knot_pos, knot_acc, dt_yaw, yaw_waypoints);
-
+  if (yaw_waypoints.back() == 0) yaw_waypoints.back() = 10e-1;  //不科学！！！但是设置成这样避免末端采样为0的时候造成报错
   // for (auto& yaw : yaw_waypoints) yaw = 0.0;
 
   cout << "yaw_waypoints: " << endl;

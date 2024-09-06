@@ -49,13 +49,17 @@ public:
     feature_map_ = feature_map;
   }
 
+  void setFrontierFinder(shared_ptr<FrontierFinder> frontier_finder) {
+    frontier_finder_ = frontier_finder;
+  }
+
   PlanParameters pp_;
 
   LocalTrajData local_data_;
   GlobalTrajData global_data_;
   MidPlanData plan_data_;
   EDTEnvironment::Ptr edt_environment_;
-  unique_ptr<Astar> path_finder_;
+  shared_ptr<Astar> path_finder_;
   unique_ptr<TopologyPRM> topo_prm_;
 
 private:
@@ -65,6 +69,7 @@ private:
 
   unique_ptr<KinodynamicAstar> kino_path_finder_;
   unique_ptr<RRTStar> sample_path_finder_;
+  shared_ptr<FrontierFinder> frontier_finder_;
   vector<BsplineOptimizer::Ptr> bspline_optimizers_;
 
   void updateTrajInfo();
@@ -85,7 +90,6 @@ public:
   void searchFrontier(const Eigen::Vector3d& p);
 
 private:
-  unique_ptr<FrontierFinder> frontier_finder_;
   // unique_ptr<HeadingPlanner> heading_planner_;
   unique_ptr<VisibilityUtil> visib_util_;
 

@@ -1,6 +1,6 @@
 feature:
-  feature_visual_max: 30.0
-  feature_visual_min: 0.1
+  feature_visual_max: 6.0
+  feature_visual_min: 0.3
   cam_cx: 321.04638671875
   cam_cy: 243.44969177246094
   cam_fx: 387.229248046875

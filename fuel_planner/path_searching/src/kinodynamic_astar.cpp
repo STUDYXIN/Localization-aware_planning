@@ -162,10 +162,10 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
   cur_node->state(6) = start_yaw;
   cur_node->index = stateToIndex(cur_node->state);
   cur_node->g_score = 0.0;
-  // if (!checkLocalizability(cur_node->state)) {
-  //   ROS_ERROR("Start point is not localizable!!!");
-  //   return NO_PATH;
-  // }
+  if (!checkLocalizability(cur_node->state)) {
+    ROS_ERROR("Start point is not localizable!!!");
+    return NO_PATH;
+  }
 
   PVYawState end_state;
   end_state.head(3) = end_pt;
@@ -299,9 +299,9 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
 
         // Check localizability
         // ros::Time t1 = ros::Time::now();
-        // if (!checkLocalizability(pro_state)) {
-        //   continue;
-        // }
+        if (!checkLocalizability(pro_state)) {
+          continue;
+        }
         // double t2 = (ros::Time::now() - t1).toSec();
         // cout << "checkLocalizability time: " << t2 << endl;
 

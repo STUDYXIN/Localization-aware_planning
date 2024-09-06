@@ -18,6 +18,7 @@ using Eigen::Vector3d;
 namespace fast_planner {
 class EDTEnvironment;
 class FeatureMap;
+class FrontierFinder;
 
 class BsplineOptimizer {
 public:
@@ -33,6 +34,7 @@ public:
   static const int PARALLAX;
   static const int VERTICALVISIBILITY;
   static const int YAWCOVISIBILITY;
+  static const int FRONTIERVISIBILITY;
 
   static const int GUIDE_PHASE;
   static const int NORMAL_PHASE;
@@ -109,11 +111,17 @@ private:
   void calcParaCostAndGradientsKnots(
       const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
 
+  void calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features,
+      const vector<Vector3d>& frontiers, double& cost, vector<Vector3d>& dcost_dq);
+
   void calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span, const vector<Vector3d> features,
       double& cost, vector<Vector3d>& dcost_dq);
 
   void calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
       const double ld_para, const double ld_vcv);
+
+  void calcViewFrontierCost(
+      const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, const double ld_fvb);
 
   void calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
       const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq);
@@ -131,6 +139,7 @@ private:
 
   shared_ptr<EDTEnvironment> edt_environment_;
   shared_ptr<FeatureMap> feature_map_;
+  shared_ptr<FrontierFinder> frontier_finder_;
 
   // Optimized variables
   Eigen::MatrixXd control_points_;  // B-spline control points, N x dim
@@ -157,6 +166,7 @@ private:
   // SECTION Perception Aware Optimization
   double ld_parallax_;
   double ld_vertical_visibility_;
+  double ld_frontier_visibility_;
   double ld_yaw_covisib_;
 
   vector<Eigen::Vector3d> pos_, acc_;                 // knot points position and acceleration
@@ -179,6 +189,7 @@ private:
 
   // SECTION Perception Aware Optimization
   vector<Vector3d> g_parallax_;
+  vector<Vector3d> g_frontier_visibility_;
   vector<Vector3d> g_yaw_covisibility_;
 
   // !SECTION
@@ -200,6 +211,10 @@ public:
 
   void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
     feature_map_ = feature_map;
+  }
+
+  void setFrontierFinder(shared_ptr<FrontierFinder> frontier_finder) {
+    frontier_finder_ = frontier_finder;
   }
 
   void getCostCurve(vector<double>& cost, vector<double>& time) {

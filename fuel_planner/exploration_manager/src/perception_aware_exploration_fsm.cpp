@@ -5,7 +5,7 @@
 #include <plan_env/sdf_map.h>
 #include <plan_manage/perception_aware_planner_manager.h>
 #include <traj_utils/planning_visualization.h>
-
+#include <chrono>
 using Eigen::Vector4d;
 
 namespace fast_planner {
@@ -19,6 +19,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/replan_time", fp_->replan_time_, -1.0);
 
   nh.param("fsm/min_feature_num", fp_->min_feature_num_, -1);
+  nh.param("fsm/draw_line2feature", draw_line2feature, false);
 
   /* Initialize main modules */
   expl_manager_ = make_shared<PAExplorationManager>(shared_from_this());
@@ -28,11 +29,10 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   visualization_.reset(new PlanningVisualization(nh));
 
   state_str_ = { "INIT", "WAIT_TARGET", "PLAN_TO_NEXT_GOAL", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP" };
-
   /* Ros sub, pub and timer */
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &PAExplorationFSM::FSMCallback, this);
   safety_timer_ = nh.createTimer(ros::Duration(0.05), &PAExplorationFSM::safetyCallback, this);
-  frontier_timer_ = nh.createTimer(ros::Duration(0.5), &PAExplorationFSM::frontierCallback, this);
+  frontier_timer_ = nh.createTimer(ros::Duration(0.1), &PAExplorationFSM::frontierCallback, this);
 
   odom_sub_ = nh.subscribe("/odom_world", 1, &PAExplorationFSM::odometryCallback, this);
   waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &PAExplorationFSM::waypointCallback, this);
@@ -177,7 +177,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
 bool PAExplorationFSM::checkReachFinalGoal() {
   const auto& sdf_map = planner_manager_->edt_environment_->sdf_map_;
-
   if ((odom_pos_ - final_goal_).norm() < 0.2 && sdf_map->getOccupancy(final_goal_) == SDFMap::FREE &&
       sdf_map->getDistance(final_goal_) > 0.2) {
     return true;
@@ -204,7 +203,6 @@ int PAExplorationFSM::callExplorationPlanner() {
   // visualization_->drawNextGoal(expl_manager_->ed_->points_.back(), 0.3, Eigen::Vector4d(0, 0, 1, 1.0)); //添加的新viewpoint
   visualization_->drawNextGoal(next_pos, 0.3, Eigen::Vector4d(0, 0, 1, 1.0));
   // Draw astar
-  visualization_->drawLines(expl_manager_->ed_->path_next_goal_, 0.15, Vector4d(0, 0, 0, 1), "next_goal", 1, 6);
 
   auto info = &planner_manager_->local_data_;
   info->start_time_ = (ros::Time::now() - time_r).toSec() > 0 ? ros::Time::now() : time_r;
@@ -256,37 +254,99 @@ void PAExplorationFSM::visualize() {
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
+  // auto start = std::chrono::high_resolution_clock::now();
+
   static int delay = 0;
   if (++delay < 5) {
     return;
   }
 
-  if (true) {
-    auto ft = expl_manager_->frontier_finder_;
-    auto ed = expl_manager_->ed_;
+  auto ft = expl_manager_->frontier_finder_;
+  auto ed = expl_manager_->ed_;
+  auto pa = expl_manager_->planner_manager_->path_finder_;
 
-    ft->searchFrontiers();
-    ft->computeFrontiersToVisit();
+  ft->searchFrontiers();
+  ft->computeFrontiersToVisit();
 
-    ft->getFrontiers(ed->frontiers_);
-    ft->getFrontierBoxes(ed->frontier_boxes_);
-    ft->getTopViewpointsInfo(odom_pos_, ed->points_, ed->yaws_, ed->averages_, ed->visb_num_);
+  ft->getFrontiers(ed->frontiers_);
+  ft->getFrontierBoxes(ed->frontier_boxes_);
+  ft->getTopViewpointsInfo(odom_pos_, ed->points_, ed->yaws_, ed->averages_, ed->visb_num_);
 
-    // Draw frontier and bounding box
-    static int last_ftr_num = 0;
-    for (int i = 0; i < ed->frontiers_.size(); ++i) {
-      visualization_->drawCubes(
-          ed->frontiers_[i], 0.1, visualization_->getColor(double(i) / ed->frontiers_.size(), 0.4), "frontier", i, 4);
+  // 使用A*算法搜索一个的点，这个点事这条路径上靠近终点且在free区域的最后一个点
+  pa->reset();
+  if (have_target_ && pa->search(odom_pos_, final_goal_) == Astar::REACH_END) {
+    ed->path_next_goal_ = pa->getPath();
+    Vector4d black_color(0.0, 0.0, 0.0, 1.0);
+    visualization_->drawLines(ed->path_next_goal_, 0.02, black_color, "path_2_next_goal", 1, 1);
+    Viewpoint best_viewpoint;
+    if (ft->getBestViewpointinPath(best_viewpoint, ed->path_next_goal_)) {
+      ed->points_.push_back(best_viewpoint.pos_);
+      ed->yaws_.push_back(best_viewpoint.yaw_);
+      ed->visb_num_.push_back(best_viewpoint.visib_num_);
+      //可视化这个点
+      vector<Vector3d> thisviewpoint, viewpoint_line;
+      thisviewpoint.push_back(best_viewpoint.pos_);
+      Eigen::Vector3d direction(cos(best_viewpoint.yaw_), sin(best_viewpoint.yaw_), 0.0);
+      Eigen::Vector3d end_point = best_viewpoint.pos_ + direction * 1.0;
+      viewpoint_line.push_back(best_viewpoint.pos_);
+      viewpoint_line.push_back(end_point);
+      visualization_->displaySphereList(thisviewpoint, 0.15, black_color, 648);
+      visualization_->drawLines(viewpoint_line, 0.05, black_color, "viewpoint_vectoer_line", 9, 1);
     }
-
-    for (int i = ed->frontiers_.size(); i < last_ftr_num; ++i) {
-      visualization_->drawCubes({}, 0.1, Vector4d(0, 0, 0, 1), "frontier", i, 4);
-    }
-
-    last_ftr_num = ed->frontiers_.size();
-
-    visualization_->displaySphereList(ed->points_, 0.15, Eigen::Vector4d(0, 0, 0, 1.0), 2);
   }
+
+  // 绘制 frontier 和 bounding box
+  static int last_ftr_num = 0;
+  // cout << "[PAExplorationFSM::frontierCallback] debug: " << endl;
+  if (draw_line2feature) {
+    // 删除上次绘制的曲线
+    for (auto& id : last_viewpoint_line) visualization_->clearLines("viewpoint_vectoer_line", id, 1);
+    for (auto& id : last_feature_line) visualization_->clearLines("feature_line", id, 1);
+    last_feature_line.clear();
+  }
+  // if (last_viewpoint_line.size() > ed->frontiers_.size())  //上次数量多，无法覆盖，手动删除多的
+  // {
+  //   for (int overflow = ed->frontiers_.size(); overflow < last_viewpoint_line.size(); ++overflow)
+  //     visualization_->clearLines("viewpoint_vectoer_line", overflow + 10, 6);
+  // }
+  // last_viewpoint_line.clear();
+
+  for (int i = 0; i < ed->frontiers_.size(); ++i) {
+    Vector4d color = visualization_->getColor(double(i) / ed->frontiers_.size(), 0.4);
+    visualization_->drawCubes(ed->frontiers_[i], 0.1, color, "frontier", i, 4);
+    vector<Vector3d> thisviewpoint, viewpoint_line;
+    thisviewpoint.push_back(ed->points_[i]);
+    Eigen::Vector3d direction(cos(ed->yaws_[i]), sin(ed->yaws_[i]), 0.0);
+    Eigen::Vector3d end_point = ed->points_[i] + direction * 1.0;
+    viewpoint_line.push_back(ed->points_[i]);
+    viewpoint_line.push_back(end_point);
+    color(3) = 1.0;
+    visualization_->displaySphereList(thisviewpoint, 0.15, color, i + 1000);
+    visualization_->drawLines(viewpoint_line, 0.05, color, "viewpoint_vectoer_line", i + 10, 1);
+    // last_viewpoint_line.push_back(i + 10);
+    if (draw_line2feature) {
+      //画出实际特征点连线
+      vector<Eigen::Vector3d> res;
+      int feature_num = expl_manager_->feature_map_->get_NumCloud_using_Odom(
+          ed->points_[i], Eigen::Quaterniond(Eigen::AngleAxisd(ed->yaws_[i], Eigen::Vector3d::UnitZ())), res);
+      // cout << " point: " << ed->points_[i].transpose() << " yaw: " << ed->yaws_[i] << " visb_num_: " << ed->visb_num_[i]
+      //      << " truth_feature_num: " << feature_num << endl;
+      int j = 0;
+      for (auto& fpoint : res) {
+        j++;
+        vector<Vector3d> feature_line;
+        feature_line.push_back(ed->points_[i]);
+        feature_line.push_back(fpoint);
+        visualization_->drawLines(feature_line, 0.01, color, "feature_line", 100 * (i + 1) + j, 1);
+        last_feature_line.push_back(100 * (i + 1) + j);
+      }
+    }
+  }
+
+  // auto end = std::chrono::high_resolution_clock::now();
+  // std::chrono::duration<double> elapsed = end - start;
+  // // 输出持续时间（以毫秒为单位）
+  // ROS_INFO_STREAM("[PAExplorationFSM::frontierCallback]  elapsed time: " << elapsed.count() << " seconds.");
 }
 
 void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
@@ -345,6 +405,20 @@ void PAExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
   odom_yaw_ = atan2(rot_x(1), rot_x(0));
 
   have_odom_ = true;
+  int feature_view_num = expl_manager_->feature_map_->get_NumCloud_using_Odom(msg);
+  std::string text = "feature_view: " + std::to_string(feature_view_num);
+  Eigen::Vector4d color;
+  if (feature_view_num < fp_->min_feature_num_) {
+    // 小于 threshold 时显示红色
+    color = Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+  } else {
+    // 大于 threshold 时从红色逐渐过渡到绿色
+    double ratio = std::min(1.0, double(feature_view_num - fp_->min_feature_num_) / (2.0 * fp_->min_feature_num_));
+    color = Eigen::Vector4d(1.0 - ratio, ratio, 0.0, 1.0);
+  }
+  Eigen::Vector3d show_pos = odom_pos_;
+  show_pos(2) += 1.0;
+  visualization_->displayText(show_pos, text, color, 0.3, 0, 7);
 }
 
 void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string& pos_call) {

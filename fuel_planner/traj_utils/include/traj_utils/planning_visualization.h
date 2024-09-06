@@ -32,6 +32,7 @@ private:
   ros::Publisher frontier_pub_;   // 4, frontier searching
   ros::Publisher yaw_pub_;        // 5, yaw trajectory
   ros::Publisher viewpoint_pub_;  // 6, viewpoint planning
+  ros::Publisher text_pub_;       // 7, pub_text
   vector<ros::Publisher> pubs_;   //
 
   //   int last_topo_path1_num_;
@@ -58,6 +59,7 @@ public:
       const Eigen::Vector4d& color, const string& ns, const int& id, const int& pub_id);
   void drawLines(const vector<Eigen::Vector3d>& list, const double& scale, const Eigen::Vector4d& color, const string& ns,
       const int& id, const int& pub_id);
+  void clearLines(const string& ns, const int& id, const int& pub_id);
   void drawBox(const Eigen::Vector3d& center, const Eigen::Vector3d& scale, const Eigen::Vector4d& color, const string& ns,
       const int& id, const int& pub_id);
 
@@ -80,6 +82,8 @@ public:
 
   void drawGoal(Eigen::Vector3d goal, double resolution, const Eigen::Vector4d& color, int id = 0);
   void drawNextGoal(Eigen::Vector3d goal, double resolution, const Eigen::Vector4d& color, int id = 0);
+  void displayText(
+      const Eigen::Vector3d& position, const std::string& text, const Eigen::Vector4d& color, double scale, int id, int pub_id);
 
   Eigen::Vector4d getColor(const double& h, double alpha = 1.0);
 

@@ -23,6 +23,7 @@ const int BsplineOptimizer::MINTIME = (1 << 8);
 const int BsplineOptimizer::PARALLAX = (1 << 9);
 const int BsplineOptimizer::VERTICALVISIBILITY = (1 << 10);
 const int BsplineOptimizer::YAWCOVISIBILITY = (1 << 11);
+const int BsplineOptimizer::FRONTIERVISIBILITY = (1 << 12);
 
 const int BsplineOptimizer::GUIDE_PHASE =
     BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::GUIDE | BsplineOptimizer::START | BsplineOptimizer::END;
@@ -40,6 +41,7 @@ void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   nh.param("optimization/ld_view", ld_view_, -1.0);
   nh.param("optimization/ld_time", ld_time_, -1.0);
   nh.param("optimization/ld_parallax", ld_parallax_, -1.0);
+  nh.param("optimization/ld_frontier_visibility", ld_frontier_visibility_, -1.0);
   nh.param("optimization/ld_vertical_visibility", ld_vertical_visibility_, -1.0);
   nh.param("optimization/ld_yaw_covisibility", ld_yaw_covisib_, -1.0);
 
@@ -91,6 +93,7 @@ void BsplineOptimizer::setCostFunction(const int& cost_code) {
   if (cost_function_ & PARALLAX) cost_str += " parallax | ";
   if (cost_function_ & VERTICALVISIBILITY) cost_str += " veritcal_visibility | ";
   if (cost_function_ & YAWCOVISIBILITY) cost_str += " yaw_covisibility | ";
+  if (cost_function_ & FRONTIERVISIBILITY) cost_str += " frontier_covisibility | ";
 
   // ROS_INFO_STREAM("cost func: " << cost_str);
 }
@@ -172,6 +175,7 @@ void BsplineOptimizer::optimize(
   for (int i = 0; i < control_points_.rows() - 1; ++i) {
     pt_dist_ += (control_points_.row(i + 1) - control_points_.row(i)).norm();
   }
+  //得到控制点的平均距离
   pt_dist_ /= point_num_;
 
   iter_num_ = 0;
@@ -187,6 +191,7 @@ void BsplineOptimizer::optimize(
   g_view_.resize(point_num_);
   g_time_.resize(point_num_);
   g_parallax_.resize(point_num_);
+  g_frontier_visibility_.resize(point_num_);
   g_yaw_covisibility_.resize(point_num_);
 
   comb_time = 0.0;
@@ -656,6 +661,58 @@ void BsplineOptimizer::calcParaCostAndGradientsKnots(
   }
 }
 
+void BsplineOptimizer::calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features,
+    const vector<Vector3d>& frontiers, double& cost, vector<Vector3d>& dcost_dq) {
+
+  if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
+
+  cost = 0;
+  dcost_dq.clear();
+  for (int i = 0; i < 4; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
+
+  Vector3d knot_pos1 = (q[0] + 4 * q[1] + q[2]) / 6;
+  Vector3d knot_pos2 = (q[1] + 4 * q[2] + q[3]) / 6;
+  Vector3d knot_pos_mid = 0.5 * (knot_pos1 + knot_pos2);
+  Vector3d acc1 = (q[2] - 2 * q[1] + q[0]) / pow(dt, 2);
+  Vector3d thrust_dir1 = getThrustDirection(acc1);
+  Vector3d acc2 = (q[3] - 2 * q[2] + q[1]) / pow(dt, 2);
+  Vector3d thrust_dir2 = getThrustDirection(acc2);
+  Vector3d thrust_mid = 0.5 * (thrust_dir1 + thrust_dir2);
+
+  double total_weight = 0.0;
+  for (const auto& f : features) {
+    Vector3d v1 = knot_pos1 - f;
+    Vector3d v2 = knot_pos2 - f;
+
+    // 对应论文公式(13)
+    // parallax就是论文里的视差角parallax angle
+    double parallax;
+    Vector3d dpara_dv1, dpara_dv2;
+    calcParaValueAndGradients(v1, v2, parallax, true, dpara_dv1, dpara_dv2);
+
+    // 对应论文公式(15)
+    // 经典超过一定阈值就给惩罚
+    double para_pot, dpot_dpara;
+    calcParaPotentialAndGradients(parallax, dt, para_pot, dpot_dpara);
+
+    // 对应论文公式(14)里出现的权重
+    double w = calcVCWeight(knot_pos_mid, f, thrust_mid);
+
+    // 这什么阴间加权方式
+    cost = (cost * total_weight + para_pot * w) / (total_weight + w);
+
+    vector<Vector3d> dpot_dq_cur;
+    dpot_dq_cur.push_back(w * dpot_dpara * dpara_dv1 / 6);
+    dpot_dq_cur.push_back(w * dpot_dpara * (dpara_dv1 * 4 / 6 + dpara_dv2 / 6));
+    dpot_dq_cur.push_back(w * dpot_dpara * (dpara_dv1 / 6 + dpara_dv2 * 4 / 6));
+    dpot_dq_cur.push_back(w * dpot_dpara * dpara_dv2 / 6);
+
+    for (int i = 0; i < 4; i++) dcost_dq[i] = (dcost_dq[i] * total_weight + dpot_dq_cur[i]) / (total_weight + w);
+
+    total_weight += w;
+  }
+}
+
 void BsplineOptimizer::calcVVValueAndGradients(const Eigen::Vector3d a, const Eigen::Vector3d b, double& cos_theta,
     bool calc_grad, Eigen::Vector3d& dcos_theta_da, Eigen::Vector3d& dcos_theta_db) {
   cos_theta = a.dot(b) / (a.norm() * b.norm());
@@ -806,6 +863,45 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
   }
 }
 
+void BsplineOptimizer::calcViewFrontierCost(
+    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, const double ld_fvb) {
+  cost = 0.0;
+  Eigen::Vector3d zero(0, 0, 0);
+  std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+  double cost_fvb;
+  vector<Vector3d> dcost_fvb_dq;
+
+  cout << "q size: " << q.size() << endl;
+  for (int i = 0; i < q.size() - 3; ++i) {
+    // For (q0, q1, q2, q3)->(knot1, knot2), calculate the parallax cost and gradient
+    vector<Vector3d> q_cur;
+    for (int j = 0; j < 4; j++) {
+      q_cur.push_back(q[i + j]);
+      // cout << "j: " << j << endl;
+      // cout << "q[i+j]: " << q[i + j].transpose() << endl;
+    }
+
+    Vector3d knot_mid = ((q_cur[0] + 4 * q_cur[1] + q_cur[2]) + (q_cur[1] + 4 * q_cur[2] + q_cur[3])) / 12.0;
+
+    vector<Vector3d> features;
+    feature_map_->getFeatures(knot_mid, features);
+
+    //   // 对应论文第5章B节计算视差cost部分
+    //   calcParaCostAndGradientsKnots(q_cur, dt, features, cost_para, dcost_para_dq);
+    //   // 对应论文第5章B节计算垂直共视性(vertical covisibility)cost部分
+    //   calcVCVCostAndGradientsKnots(q_cur, dt, features, cost_vcv, dcost_vcv_dq);
+
+    //   cost += ld_para * cost_para;
+    //   cost += ld_vcv * cost_vcv;
+    //   for (int j = 0; j < 4; j++) {
+    //     gradient_q[i + j] += ld_para * dcost_para_dq[j];
+    //     gradient_q[i + j] += ld_vcv * dcost_vcv_dq[j];
+    //   }
+    // }
+  }
+}
+
 void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
     const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq) {
 
@@ -896,7 +992,8 @@ void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q,
   }
 }
 
-void BsplineOptimizer::calcYawCoVisbilityCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
+void BsplineOptimizer::calcYawCoVisbilityCost(
+    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
   // q.size = n+1, pos_.size = n-p+2 = (n+1) - 2, where p = 3
 
   if (q.size() - 2 != pos_.size()) ROS_ERROR("q and pos_ have incompatible size!");
@@ -1089,6 +1186,15 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
     f_combine += f_parallax;
     for (int i = 0; i < point_num_; i++) {
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
+    }
+  }
+  // Cost11：FRONTIER可见性约束
+  if ((cost_function_ & FRONTIERVISIBILITY)) {
+    double f_frontier_visibility_ = 0.0;
+    calcViewFrontierCost(g_q_, dt, f_frontier_visibility_, g_frontier_visibility_, ld_frontier_visibility_);
+    f_combine += f_frontier_visibility_;
+    for (int i = 0; i < point_num_; i++) {
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_frontier_visibility_[i](j);
     }
   }
   /// 用于Yaw Trajectory Optimization阶段

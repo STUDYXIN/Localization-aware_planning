@@ -61,6 +61,7 @@ public:
   EDTEnvironment::Ptr edt_environment_;
   shared_ptr<Astar> path_finder_;
   unique_ptr<TopologyPRM> topo_prm_;
+  shared_ptr<FrontierFinder> frontier_finder_;
 
 private:
   /* main planning algorithms & modules */
@@ -69,7 +70,6 @@ private:
 
   unique_ptr<KinodynamicAstar> kino_path_finder_;
   unique_ptr<RRTStar> sample_path_finder_;
-  shared_ptr<FrontierFinder> frontier_finder_;
   vector<BsplineOptimizer::Ptr> bspline_optimizers_;
 
   void updateTrajInfo();

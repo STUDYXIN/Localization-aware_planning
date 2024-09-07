@@ -43,6 +43,9 @@ public:
     double estimator_freq_;  // frequency of consecutive frames in hz
     double max_parallax_;    // max parallax angle between consecutive frames in rad
     double pot_a_;           // potential func: a(x-max_parallax_)^2
+    double max_feature_and_frontier_convisual_angle_;
+    double min_frontier_see_feature_num_;
+    double pot_fafv_;
   };
 
   PerceptionAwareConfig configPA_;
@@ -98,11 +101,16 @@ private:
   void calcTimeCost(const double& dt, double& cost, double& gt);
 
   // SECTION Perception Aware Optimization
-  void calcParaValueAndGradients(const Vector3d v1, const Vector3d v2, double& parallax, bool calc_grad,
+  void calcParaValueAndGradients(const Vector3d vfea, const Vector3d vfron, double& parallax, bool calc_grad,
       Eigen::Vector3d& dpara_dv1, Eigen::Vector3d& dpara_dv2);
   void calcParaPotentialAndGradients(const double parallax, const double dt, double& para_pot, double& dpot_dpara);
 
   double calcVCWeight(const Vector3d& knot, const Vector3d& f, const Vector3d& thrust_dir);
+
+  // frontier
+  void calcFVBValueAndGradients(const Vector3d& node_pos, const Vector3d& feature, const Vector3d& frontier,
+      double& convisual_angle, bool calc_grad, Eigen::Vector3d& dfvb_dq);
+  void calcFVBPotentialAndGradients(const double convisual_angle, const double dt, double& fvb_pot, double& dpot_dfvb);
 
   void calcVVValueAndGradients(const Eigen::Vector3d a, const Eigen::Vector3d b, double& cos_theta, bool calc_grad,
       Eigen::Vector3d& dcos_theta_da, Eigen::Vector3d& dcos_theta_db);
@@ -111,17 +119,13 @@ private:
   void calcParaCostAndGradientsKnots(
       const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
 
-  void calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features,
-      const vector<Vector3d>& frontiers, double& cost, vector<Vector3d>& dcost_dq);
-
   void calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span, const vector<Vector3d> features,
       double& cost, vector<Vector3d>& dcost_dq);
 
   void calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
       const double ld_para, const double ld_vcv);
 
-  void calcViewFrontierCost(
-      const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, const double ld_fvb);
+  void calcViewFrontierCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q);
 
   void calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
       const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq);

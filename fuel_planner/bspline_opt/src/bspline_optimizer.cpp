@@ -3,6 +3,7 @@
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
 #include <plan_env/feature_map.h>
+#include <active_perception/frontier_finder.h>
 
 #include <nlopt.hpp>
 #include <thread>
@@ -54,6 +55,9 @@ void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   nh.param("optimization/parallax/estimator_freq", configPA_.estimator_freq_, -1.0);
   nh.param("optimization/parallax/max_parallax", configPA_.max_parallax_, -1.0);
   nh.param("optimization/parallax/pot_a", configPA_.pot_a_, -1.0);
+  nh.param("optimization/max_feature_and_frontier_convisual_angle", configPA_.max_feature_and_frontier_convisual_angle_, -1.0);
+  nh.param("optimization/min_frontier_see_feature_num", configPA_.min_frontier_see_feature_num_, -1.0);
+  nh.param("optimization/pot_fafv", configPA_.pot_fafv_, -1.0);
 
   nh.param("optimization/max_iteration_num1", max_iteration_num_[0], -1);
   nh.param("optimization/max_iteration_num2", max_iteration_num_[1], -1);
@@ -580,6 +584,44 @@ void BsplineOptimizer::calcParaValueAndGradients(const Eigen::Vector3d v1, const
   }
 }
 
+void BsplineOptimizer::calcFVBValueAndGradients(const Vector3d& node_pos, const Vector3d& feature, const Vector3d& frontier,
+    double& convisual_angle, bool calc_grad, Eigen::Vector3d& dfvb_dq) {
+
+  Vector3d v1 = node_pos - feature;
+  Vector3d v2 = node_pos - frontier;
+  double v1_norm = v1.norm();
+  double v2_norm = v2.norm();
+
+  // 如果 v1 或 v2 的模长接近零，如果位置非常接近，夹角设为 0 或 π，梯度设为小值
+  if (v1_norm < 1e-6 || v2_norm < 1e-6) {
+    convisual_angle = (v1_norm < 1e-6 && v2_norm < 1e-6) ? 0.0 : M_PI;
+    dfvb_dq = Eigen::Vector3d::Zero();
+    return;
+  }
+
+  double u = v1.dot(v2) / (v1_norm * v2_norm);
+  // 计算视差角
+  convisual_angle = acos(u);
+
+  if (!calc_grad) {
+    return;
+  }
+
+  // 当 u 等于 1 或 -1 时，梯度设为 0
+  if (fabs(u) >= 1.0) {
+    dfvb_dq = Eigen::Vector3d::Zero();
+    return;
+  }
+
+  // 计算 dfvb/du
+  double dconvisual_du = -1 / sqrt(1 - u * u);
+  // 计算 du/dP
+  Eigen::Vector3d du_dP =
+      (v2 / (v1_norm * v2_norm)) + (v1 / (v1_norm * v2_norm)) - u * ((v1 / pow(v1_norm, 3)) + (v2 / pow(v2_norm, 3)));
+  // 计算 dfvb/dq
+  dfvb_dq = dconvisual_du * du_dP;
+}
+
 void BsplineOptimizer::calcParaPotentialAndGradients(
     const double parallax, const double dt, double& para_pot, double& dpot_dpara) {
   // Potential func: f(x) = 0 if x < max; f(x) = a(x-max)^2 otherwise
@@ -611,58 +653,6 @@ double BsplineOptimizer::calcVCWeight(const Eigen::Vector3d& knot, const Eigen::
 
 void BsplineOptimizer::calcParaCostAndGradientsKnots(
     const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq) {
-
-  if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
-
-  cost = 0;
-  dcost_dq.clear();
-  for (int i = 0; i < 4; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
-
-  Vector3d knot_pos1 = (q[0] + 4 * q[1] + q[2]) / 6;
-  Vector3d knot_pos2 = (q[1] + 4 * q[2] + q[3]) / 6;
-  Vector3d knot_pos_mid = 0.5 * (knot_pos1 + knot_pos2);
-  Vector3d acc1 = (q[2] - 2 * q[1] + q[0]) / pow(dt, 2);
-  Vector3d thrust_dir1 = getThrustDirection(acc1);
-  Vector3d acc2 = (q[3] - 2 * q[2] + q[1]) / pow(dt, 2);
-  Vector3d thrust_dir2 = getThrustDirection(acc2);
-  Vector3d thrust_mid = 0.5 * (thrust_dir1 + thrust_dir2);
-
-  double total_weight = 0.0;
-  for (const auto& f : features) {
-    Vector3d v1 = knot_pos1 - f;
-    Vector3d v2 = knot_pos2 - f;
-
-    // 对应论文公式(13)
-    // parallax就是论文里的视差角parallax angle
-    double parallax;
-    Vector3d dpara_dv1, dpara_dv2;
-    calcParaValueAndGradients(v1, v2, parallax, true, dpara_dv1, dpara_dv2);
-
-    // 对应论文公式(15)
-    // 经典超过一定阈值就给惩罚
-    double para_pot, dpot_dpara;
-    calcParaPotentialAndGradients(parallax, dt, para_pot, dpot_dpara);
-
-    // 对应论文公式(14)里出现的权重
-    double w = calcVCWeight(knot_pos_mid, f, thrust_mid);
-
-    // 这什么阴间加权方式
-    cost = (cost * total_weight + para_pot * w) / (total_weight + w);
-
-    vector<Vector3d> dpot_dq_cur;
-    dpot_dq_cur.push_back(w * dpot_dpara * dpara_dv1 / 6);
-    dpot_dq_cur.push_back(w * dpot_dpara * (dpara_dv1 * 4 / 6 + dpara_dv2 / 6));
-    dpot_dq_cur.push_back(w * dpot_dpara * (dpara_dv1 / 6 + dpara_dv2 * 4 / 6));
-    dpot_dq_cur.push_back(w * dpot_dpara * dpara_dv2 / 6);
-
-    for (int i = 0; i < 4; i++) dcost_dq[i] = (dcost_dq[i] * total_weight + dpot_dq_cur[i]) / (total_weight + w);
-
-    total_weight += w;
-  }
-}
-
-void BsplineOptimizer::calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features,
-    const vector<Vector3d>& frontiers, double& cost, vector<Vector3d>& dcost_dq) {
 
   if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
 
@@ -856,6 +846,7 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
 
     cost += ld_para * cost_para;
     cost += ld_vcv * cost_vcv;
+
     for (int j = 0; j < 4; j++) {
       gradient_q[i + j] += ld_para * dcost_para_dq[j];
       gradient_q[i + j] += ld_vcv * dcost_vcv_dq[j];
@@ -864,42 +855,74 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
 }
 
 void BsplineOptimizer::calcViewFrontierCost(
-    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, const double ld_fvb) {
+    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
+  ros::Time start_time = ros::Time::now();
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
 
-  double cost_fvb;
-  vector<Vector3d> dcost_fvb_dq;
-
-  cout << "q size: " << q.size() << endl;
-  for (int i = 0; i < q.size() - 3; ++i) {
-    // For (q0, q1, q2, q3)->(knot1, knot2), calculate the parallax cost and gradient
-    vector<Vector3d> q_cur;
-    for (int j = 0; j < 4; j++) {
-      q_cur.push_back(q[i + j]);
-      // cout << "j: " << j << endl;
-      // cout << "q[i+j]: " << q[i + j].transpose() << endl;
-    }
-
-    Vector3d knot_mid = ((q_cur[0] + 4 * q_cur[1] + q_cur[2]) + (q_cur[1] + 4 * q_cur[2] + q_cur[3])) / 12.0;
-
-    vector<Vector3d> features;
-    feature_map_->getFeatures(knot_mid, features);
-
-    //   // 对应论文第5章B节计算视差cost部分
-    //   calcParaCostAndGradientsKnots(q_cur, dt, features, cost_para, dcost_para_dq);
-    //   // 对应论文第5章B节计算垂直共视性(vertical covisibility)cost部分
-    //   calcVCVCostAndGradientsKnots(q_cur, dt, features, cost_vcv, dcost_vcv_dq);
-
-    //   cost += ld_para * cost_para;
-    //   cost += ld_vcv * cost_vcv;
-    //   for (int j = 0; j < 4; j++) {
-    //     gradient_q[i + j] += ld_para * dcost_para_dq[j];
-    //     gradient_q[i + j] += ld_vcv * dcost_vcv_dq[j];
-    //   }
-    // }
+  // 遍历每个控制点 q[i]
+  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---Begin Compute "
+           "ViewFrontierCost!",
+      q.size(), ld_frontier_visibility_);
+  vector<Vector3d> frontiers;
+  frontier_finder_->getLatestFrontier(frontiers);  //仅先考虑看向前沿frontiers
+  if (frontiers.size() == 0) {
+    ROS_ERROR("[BsplineOptimizer::calcViewFrontierCost] NO Frontiers!!!!");
+    return;
   }
+  for (int i = 0; i < q.size(); i++) {
+    Vector3d node_pos = q[i];  // 当前控制点的位置
+    vector<Vector3d> features;
+    feature_map_->getFeatures(node_pos, features);  //得到feature
+    if (features.size() == 0) {
+      std::cout << "Knot number " << i << "no feature..........." << endl;
+      gradient_q[i] = zero;
+      continue;
+    }
+    // 遍历每个特征点和前沿点
+    double good_frontier_num = 0;
+    Vector3d good_frontier_gradient = zero;
+    for (const auto& frontier : frontiers) {
+      double frontier_visual_feature_num = 0;
+      Vector3d frontier_visual_feature_gradient = zero;
+      for (const auto& feature : features) {
+        // 计算 convisual_angle：当前控制点看到特征点和前沿点的夹角
+        double convisual_angle;
+        Vector3d convisual_angle_gradient;
+        calcFVBValueAndGradients(node_pos, feature, frontier, convisual_angle, true, convisual_angle_gradient);
+
+        // 计算代价函数和梯度
+        double is_feature_good, is_feature_good_gradient;
+        double k1 = 10;
+        is_feature_good =
+            1.0 /
+            (1.0 + std::exp(-k1 * (std::cos(convisual_angle) - std::cos(configPA_.max_feature_and_frontier_convisual_angle_))));
+        is_feature_good_gradient = is_feature_good * (1.0 - is_feature_good) * k1 * std::sin(convisual_angle);
+
+        //计算每个frontier可视的feature的数量
+        frontier_visual_feature_num += is_feature_good;
+        frontier_visual_feature_gradient += is_feature_good_gradient * convisual_angle_gradient;
+      }
+      // std::cout << "   frontier_visual_feature_num " << frontier_visual_feature_num << endl;
+      double is_frontier_good, is_frontier_good_gradient;
+      double k2 = 20;
+      is_frontier_good = 1.0 / (1.0 + std::exp(-k2 * (frontier_visual_feature_num - configPA_.min_frontier_see_feature_num_)));
+      is_frontier_good_gradient = is_frontier_good * (1.0 - is_frontier_good) * k2;
+      good_frontier_num += is_frontier_good;
+      good_frontier_gradient += is_frontier_good_gradient * frontier_visual_feature_gradient;
+    }
+    // std::cout << "    good_frontier_num " << good_frontier_num << " frontiers.size() " << frontiers.size() << endl;
+    double good_frontier_percentage = good_frontier_num / frontiers.size();
+    Vector3d good_frontier_percentage_gradient = good_frontier_gradient / frontiers.size();
+
+    cost += 1 - good_frontier_percentage;
+    gradient_q[i] = -1 * good_frontier_percentage_gradient;
+    std::cout << "Knot number " << i << ": cost_sum " << cost << " gradient_q: " << gradient_q[i].transpose() << endl;
+  }
+  ros::Time end_time = ros::Time::now();
+  ros::Duration elapsed_time = end_time - start_time;
+  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Execution time: %.6f seconds", elapsed_time.toSec());
 }
 
 void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
@@ -1191,8 +1214,8 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<dou
   // Cost11：FRONTIER可见性约束
   if ((cost_function_ & FRONTIERVISIBILITY)) {
     double f_frontier_visibility_ = 0.0;
-    calcViewFrontierCost(g_q_, dt, f_frontier_visibility_, g_frontier_visibility_, ld_frontier_visibility_);
-    f_combine += f_frontier_visibility_;
+    calcViewFrontierCost(g_q_, dt, f_frontier_visibility_, g_frontier_visibility_);
+    f_combine += ld_frontier_visibility_ * f_frontier_visibility_;
     for (int i = 0; i < point_num_; i++) {
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_frontier_visibility_[i](j);
     }

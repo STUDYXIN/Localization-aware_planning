@@ -47,8 +47,8 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
     feature_map_->initMap(nh);
 
     planner_manager_->setFeatureMap(feature_map_);
-    planner_manager_->setFrontierFinder(frontier_finder_);
     frontier_finder_.reset(new FrontierFinder(edt_environment_, feature_map_, nh));
+    planner_manager_->setFrontierFinder(frontier_finder_);
   } else
     frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
 
@@ -151,7 +151,6 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
     size_t idx = gains[i].first;
     next_pos = ed_->points_[idx];
     next_yaw = ed_->yaws_[idx];
-
     if (planToNextGoal(next_pos, next_yaw)) return SEARCH_FRONTIER;
   }
 
@@ -178,7 +177,6 @@ bool PAExplorationManager::planToNextGoal(const Vector3d& next_pos, const double
   // if (!planner_manager_->sampleBasedReplan(start_pos, start_vel, start_acc, start_yaw(0), next_pos, next_yaw, time_lb)) {
   //   return false;
   // }
-
   if (!planner_manager_->planPosPerceptionAware(
           start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
     return false;

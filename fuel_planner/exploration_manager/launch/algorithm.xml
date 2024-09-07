@@ -146,7 +146,7 @@
                 <param name="exploration/relax_time" value="1.0" type="double"/>
                 <param name="exploration/feature_num_max" value="200" type="int"/>
                 <param name="exploration/visb_max" value="200" type="int"/>
-                <param name="exploration/we" value="0.2" type="double"/>
+                <param name="exploration/we" value="0.8" type="double"/>
                 <param name="exploration/wg" value="1.0" type="double"/>
                 <param name="exploration/wf" value="0.8" type="double"/>
                 <param name="exploration/wc" value="0.5" type="double"/>
@@ -163,7 +163,7 @@
                 <param name="frontier/down_sample" value="3" type="int"/>
                 <param name="frontier/min_visib_num" value="15" type="int"/>
                 <param name="frontier/min_view_finish_fraction" value="0.2" type="double"/>
-                <param name="frontier/min_view_feature_num_of_viewpoint" value="25" type="int"/>
+                <param name="frontier/min_view_feature_num_of_viewpoint" value="20" type="int"/>
                 <param name="frontier/feature_sample_dphi" value="$(eval 5 * 3.1415926 / 180.0)" type="double"/>
 
                 <!-- Perception utils -->
@@ -271,7 +271,7 @@
                 <param name="optimization/ld_time" value="1.0" type="double"/>
                 <param name="optimization/ld_parallax" value="5.0" type="double"/>
                 <param name="optimization/ld_vertical_visibility" value="5.0" type="double"/>
-                <param name="optimization/ld_frontier_visibility" value="5.0" type="double"/>
+                <param name="optimization/ld_frontier_visibility" value="100.0" type="double"/>
                 <param name="optimization/ld_yaw_covisibility" value="0.5" type="double"/>
 
                 <!-- <arg name="ld_smooth" value="25.0"/>
@@ -304,6 +304,11 @@
                 <param name="optimization/parallax/estimator_freq" value="10.0" type="double"/>
                 <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)" type="double"/>
                 <param name="optimization/parallax/pot_a" value="20.0" type="double"/>
+
+                <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 60 * 3.1415926 / 180.0)" type="double"/>
+                <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double"/>
+                <param name="optimization/pot_fafv" value="20.0" type="double"/>
+
 
 
                 <param name="bspline/limit_vel" value="$(arg max_vel)" type="double"/>

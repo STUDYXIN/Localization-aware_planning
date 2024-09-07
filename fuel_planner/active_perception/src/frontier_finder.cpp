@@ -895,6 +895,30 @@ void FrontierFinder::wrapYaw(double& yaw) {
   while (yaw > M_PI) yaw -= 2 * M_PI;
 }
 
+void FrontierFinder::getLatestFrontier(vector<Vector3d>& latest_frontier) {
+  // ROS_ERROR("[FrontierFinder::getLatestFrontier] DEBUG1");
+  // std::cout << "[FrontierFinder::getLatestFrontier] pos " << latest_viewpoint_.pos_.transpose();
+  // std::cout << " yaw " << latest_viewpoint_.yaw_ << std::endl;
+  // ROS_ERROR("[FrontierFinder::getLatestFrontier] DEBUG2");
+  percep_utils_->setPose(latest_viewpoint_.pos_, latest_viewpoint_.yaw_);
+  for (auto frontier : frontiers_) {
+    Eigen::Vector3i idx;
+    for (auto cell : frontier.filtered_cells_) {
+      if (!percep_utils_->insideFOV(cell)) continue;
+      // Check if frontier cell is visible (not occulded by obstacles)
+      raycaster_->input(cell, latest_viewpoint_.pos_);
+      bool visib = true;
+      while (raycaster_->nextId(idx)) {
+        if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+          visib = false;
+          break;
+        }
+      }
+      if (visib) latest_frontier.push_back(cell);
+    }
+  }
+}
+
 Eigen::Vector3i FrontierFinder::searchClearVoxel(const Eigen::Vector3i& pt) {
   queue<Eigen::Vector3i> init_que;
   vector<Eigen::Vector3i> nbrs;

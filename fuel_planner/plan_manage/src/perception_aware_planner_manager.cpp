@@ -178,7 +178,7 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   std::cout << "[Kino replan]: end pos: " << end_pt.transpose() << endl;
   std::cout << "[Kino replan]: end vel: " << end_vel.transpose() << endl;
   std::cout << "[Kino replan]: end yaw: " << end_yaw << endl;
-
+  frontier_finder_->setLatestViewpoint(end_pt, end_yaw, 0);
   if ((start_pt - end_pt).norm() < 1e-2) {
     cout << "Close goal" << endl;
     return false;
@@ -246,7 +246,6 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
   // BsplineOptimizer::END |
   //                 BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE;
-
   bspline_optimizers_[0]->setFeatureMap(feature_map_);
   bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);

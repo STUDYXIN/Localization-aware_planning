@@ -77,8 +77,17 @@ public:
   void setNextFrontier(const int& id);
   bool isFrontierCovered();
   void wrapYaw(double& yaw);
+  void setLatestViewpoint(const Viewpoint& viewpoint) {
+    latest_viewpoint_ = viewpoint;
+  }
+  void setLatestViewpoint(const Vector3d& pos, const double& yaw, const int& visib_num) {
+    latest_viewpoint_ = { pos, yaw, visib_num };
+  }
+  void getLatestFrontier(vector<Vector3d>& latest_frontier);
 
   shared_ptr<PerceptionUtils> percep_utils_;
+  Viewpoint latest_viewpoint_;
+  vector<Vector3d> latest_frontier_;
 
 private:
   void splitLargeFrontiers(list<Frontier>& frontiers);

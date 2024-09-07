@@ -33,7 +33,7 @@ public:
   void initialize(ros::NodeHandle& nh);
 
   NEXT_GOAL_TYPE selectNextGoal(Vector3d& next_pos, double& next_yaw);
-  bool planToNextGoal(const Vector3d& next_pos, const double& next_yaw);
+  bool planToNextGoal(const Vector3d& next_pos, const double& next_yaw,const vector<Vector3d>& frontire_cells);
 
   weak_ptr<PAExplorationFSM> expl_fsm_;
 

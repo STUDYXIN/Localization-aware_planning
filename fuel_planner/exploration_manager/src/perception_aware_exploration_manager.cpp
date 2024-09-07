@@ -99,10 +99,13 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
 
     next_yaw = 0.0;
 
-    if (planToNextGoal(next_pos, next_yaw)) {
+    vector<Vector3d> empty;
+    if (planToNextGoal(next_pos, next_yaw, empty)) {
       ROS_INFO("Successfully planned to final goal.");
       reach_end_flag = true;
-    } else
+    }
+
+    else
       ROS_INFO("Failed to plan to final goal.Try to search frontier.");
   }
 
@@ -126,21 +129,22 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
     return NO_AVAILABLE_FRONTIER;
   }
 
-  frontier_finder_->getTopViewpointsInfo(start_pos, ed_->points_, ed_->yaws_, ed_->averages_, ed_->visb_num_);
+  frontier_finder_->getTopViewpointsInfo(
+      start_pos, ed_->points_, ed_->yaws_, ed_->averages_, ed_->visb_num_, ed_->frontier_cells_);
 
   // 使用A*算法搜索一个的点，这个点事这条路径上靠近终点且在free区域的最后一个点
-  planner_manager_->path_finder_->reset();
-  if (planner_manager_->path_finder_->search(start_pos, final_goal) == Astar::REACH_END) {
-    ed_->path_next_goal_ = planner_manager_->path_finder_->getPath();
-    Vector3d junction_pos;
-    double junction_yaw;
-    if (findJunction(ed_->path_next_goal_, junction_pos, junction_yaw)) {
-      ed_->points_.push_back(junction_pos);
-      ed_->yaws_.push_back(junction_yaw);
-      cout << "[PAExplorationManager] ADD point: " << junction_pos << " yaw: " << junction_yaw << endl;
-      ed_->visb_num_.push_back(frontier_finder_->getVisibleFrontiersNum(junction_pos, junction_yaw));
-    }
-  }
+  // planner_manager_->path_finder_->reset();
+  // if (planner_manager_->path_finder_->search(start_pos, final_goal) == Astar::REACH_END) {
+  //   ed_->path_next_goal_ = planner_manager_->path_finder_->getPath();
+  //   Vector3d junction_pos;
+  //   double junction_yaw;
+  //   if (findJunction(ed_->path_next_goal_, junction_pos, junction_yaw)) {
+  //     ed_->points_.push_back(junction_pos);
+  //     ed_->yaws_.push_back(junction_yaw);
+  //     cout << "[PAExplorationManager] ADD point: " << junction_pos << " yaw: " << junction_yaw << endl;
+  //     ed_->visb_num_.push_back(frontier_finder_->getVisibleFrontiersNum(junction_pos, junction_yaw));
+  //   }
+  // }
   // Select point with highest score
   const double dg = (final_goal - start_pos).norm();
   vector<pair<size_t, double>> gains;
@@ -158,28 +162,23 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
     gains.emplace_back(i, score);
   }
 
-  // auto best_idx = std::max_element(gains.begin(), gains.end(), [&](const auto &a, const auto &b)
-  //                                  { return a.second < b.second; });
-
   std::sort(gains.begin(), gains.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
-  // for (size_t i = 0; i < gains.size(); i++) {
-  //   size_t idx = gains[i].first;
-  //   cout << "[PAExplorationManager] number: " << i
-  //        << " feature_num: " << feature_map_->get_NumCloud_using_justpos(ed_->points_[idx]) << endl;
-  // }
+
   // 按序遍历前沿点，直到找到一个可以规划成功的点
   for (size_t i = 0; i < gains.size(); i++) {
     size_t idx = gains[i].first;
     next_pos = ed_->points_[idx];
     next_yaw = ed_->yaws_[idx];
+    vector<Vector3d> next_frontier_cells = ed_->frontier_cells_[idx];
 
-    if (planToNextGoal(next_pos, next_yaw)) return SEARCH_FRONTIER;
+    if (planToNextGoal(next_pos, next_yaw, next_frontier_cells)) return SEARCH_FRONTIER;
   }
 
   return NO_AVAILABLE_FRONTIER;
 }
 
-bool PAExplorationManager::planToNextGoal(const Vector3d& next_pos, const double& next_yaw) {
+bool PAExplorationManager::planToNextGoal(
+    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells) {
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -210,7 +209,7 @@ bool PAExplorationManager::planToNextGoal(const Vector3d& next_pos, const double
   }
 
   // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
-  planner_manager_->planYawPerceptionAware(start_yaw, next_yaw);
+  planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells);
 
   return true;
 }

@@ -18,6 +18,8 @@ void KinodynamicAstarVisualizer::init(ros::NodeHandle& nh) {
 void KinodynamicAstarVisualizer::visPath(const vector<PathNodePtr>& path) {
   cout << "input path size: " << path.size() << endl;
 
+  static size_t max_arrow_id = 0;
+
   visualization_msgs::Marker Points;
   Points.header.frame_id = "world";
   Points.header.stamp = ros::Time::now();
@@ -31,6 +33,7 @@ void KinodynamicAstarVisualizer::visPath(const vector<PathNodePtr>& path) {
   visualization_msgs::MarkerArray Arrows;
 
   if (!path.empty()) {
+    max_arrow_id = max(max_arrow_id, path.size());
     for (size_t i = 0; i < path.size(); i++) {
       const auto& node = path[i];
 
@@ -61,15 +64,36 @@ void KinodynamicAstarVisualizer::visPath(const vector<PathNodePtr>& path) {
       arrow.color.b = 127;
       arrow.color.a = 1;
       arrow.id = i;
+
       arrow.points.push_back(start_pt);
       arrow.points.push_back(end_pt);
 
       Arrows.markers.push_back(arrow);
     }
+
+    for (size_t i = path.size(); i < max_arrow_id; i++) {
+      visualization_msgs::Marker arrow;
+      arrow.header.frame_id = "world";
+      arrow.header.stamp = ros::Time::now();
+      arrow.id = i;
+      arrow.type = visualization_msgs::Marker::ARROW;
+      arrow.action = visualization_msgs::Marker::DELETE;
+      Arrows.markers.push_back(arrow);
+    }
   }
 
-  else
+  else {
     Points.action = visualization_msgs::Marker::DELETEALL;
+    for (size_t i = 0; i < max_arrow_id; i++) {
+      visualization_msgs::Marker arrow;
+      arrow.header.frame_id = "world";
+      arrow.header.stamp = ros::Time::now();
+      arrow.id = i;
+      arrow.type = visualization_msgs::Marker::ARROW;
+      arrow.action = visualization_msgs::Marker::DELETE;
+      Arrows.markers.push_back(arrow);
+    }
+  }
 
   if (pos_vis_pub_.getNumSubscribers() > 0) pos_vis_pub_.publish(Points);
 

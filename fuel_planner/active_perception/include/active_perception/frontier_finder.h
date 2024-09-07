@@ -64,7 +64,7 @@ public:
   int getVisibleFrontiersNum(const Vector3d& pos, const double& yaw);
   // Get viewpoint with highest coverage for each frontier
   void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages,
-      vector<size_t>& visb_num);
+      vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells);
   // Get several viewpoints for a subset of frontiers
   void getViewpointsInfo(const Vector3d& cur_pos, const vector<int>& ids, const int& view_num, const double& max_decay,
       vector<vector<Vector3d>>& points, vector<vector<double>>& yaws);

@@ -11,6 +11,7 @@
 
 #include <thread>
 
+using namespace std;
 using namespace Eigen;
 
 namespace fast_planner {
@@ -195,9 +196,7 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   kino_path_finder_->setFeatureMap(feature_map_);
   kino_path_finder_->reset();
 
-  ROS_INFO("Start search");
   int status = kino_path_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
-  ROS_INFO("End search");
   if (status == KinodynamicAstar::NO_PATH) {
     ROS_ERROR("Kinodynamic A* search fail");
     return false;
@@ -566,7 +565,7 @@ void FastPlannerManager::planYaw(const Eigen::Vector3d& start_yaw) {
 }
 
 void FastPlannerManager::planYawExplore(
-    const Eigen::Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time) {
+    const Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time) {
   const int seg_num = 12;
   double dt_yaw = local_data_.duration_ / seg_num;  // time of B-spline segment
   Eigen::Vector3d start_yaw3d = start_yaw;
@@ -656,7 +655,8 @@ void FastPlannerManager::planYawExplore(
   plan_data_.dt_yaw_ = dt_yaw;
 }
 
-void FastPlannerManager::planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw) {
+void FastPlannerManager::planYawPerceptionAware(
+    const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells) {
 
   // Yaw b-spline has same segment number as position b-spline
   Eigen::MatrixXd position_ctrl_pts = local_data_.position_traj_.getControlPoint();
@@ -740,19 +740,22 @@ void FastPlannerManager::planYawPerceptionAware(const Eigen::Vector3d& start_yaw
 
   // Step2: 调用B样条曲线优化器优化yaw轨迹
   // 这里使用了平滑约束、路径点约束、起点约束、终点约束、主要就是添加了yaw共视约束
+  // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::END
+  // |
+  //                 BsplineOptimizer::YAWCOVISIBILITY | BsplineOptimizer::FRONTIERVISIBILITY;
+
   int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::END |
-                  BsplineOptimizer::YAWCOVISIBILITY;
+                  BsplineOptimizer::FRONTIERVISIBILITY;
 
-  // int cost_func =
-  //     BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::YAWCOVISIBILITY;
-
-  // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::END;
-
-  if (cost_func & BsplineOptimizer::YAWCOVISIBILITY) {
+  if (cost_func & BsplineOptimizer::YAWCOVISIBILITY || cost_func & BsplineOptimizer::FRONTIERVISIBILITY) {
     vector<Vector3d> pos_knots, acc_knots;
     local_data_.position_traj_.getKnotPoint(pos_knots);
     local_data_.acceleration_traj_.getKnotPoint(acc_knots);
     bspline_optimizers_[1]->setPosAndAcc(pos_knots, acc_knots);
+
+    if (cost_func & BsplineOptimizer::FRONTIERVISIBILITY) {
+      bspline_optimizers_[1]->setFrontierCells(frontier_cells);
+    }
   }
 
   bspline_optimizers_[1]->setBoundaryStates(start, end, start_idx, end_idx);

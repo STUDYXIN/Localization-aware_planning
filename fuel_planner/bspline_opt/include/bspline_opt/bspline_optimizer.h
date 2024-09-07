@@ -33,6 +33,7 @@ public:
   static const int PARALLAX;
   static const int VERTICALVISIBILITY;
   static const int YAWCOVISIBILITY;
+  static const int FRONTIERVISIBILITY;
 
   static const int GUIDE_PHASE;
   static const int NORMAL_PHASE;
@@ -84,41 +85,47 @@ private:
   // Cost functions, q: control points, dt: knot span
   void calcSmoothnessCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
   void calcDistanceCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
-  void calcFeasibilityCost(
-      const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt);
-  void calcStartCost(
-      const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt);
-  void calcEndCost(
-      const vector<Eigen::Vector3d>& q, const double& dt, double& cost, vector<Eigen::Vector3d>& gradient_q, double& gt);
+  void calcFeasibilityCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt);
+  void calcStartCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt);
+  void calcEndCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt);
   void calcGuideCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcWaypointsCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcViewCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcTimeCost(const double& dt, double& cost, double& gt);
 
   // SECTION Perception Aware Optimization
-  void calcParaValueAndGradients(const Vector3d v1, const Vector3d v2, double& parallax, bool calc_grad,
-      Eigen::Vector3d& dpara_dv1, Eigen::Vector3d& dpara_dv2);
+  void calcParaValueAndGradients(
+      const Vector3d& v1, const Vector3d& v2, double& parallax, bool calc_grad, Vector3d& dpara_dv1, Vector3d& dpara_dv2);
+
   void calcParaPotentialAndGradients(const double parallax, const double dt, double& para_pot, double& dpot_dpara);
 
   double calcVCWeight(const Vector3d& knot, const Vector3d& f, const Vector3d& thrust_dir);
 
-  void calcVVValueAndGradients(const Eigen::Vector3d a, const Eigen::Vector3d b, double& cos_theta, bool calc_grad,
-      Eigen::Vector3d& dcos_theta_da, Eigen::Vector3d& dcos_theta_db);
-  void calcVVPotentialAndGradients(const double cos_theta, double& cos_theta_pot, double& dpot_dcos_theta);
-
+  // 计算单个pos knot视差cost
   void calcParaCostAndGradientsKnots(
       const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
 
+  void calcVVValueAndGradients(
+      const Vector3d& a, const Vector3d& b, double& cos_theta, bool calc_grad, Vector3d& dcos_theta_da, Vector3d& dcos_theta_db);
+
+  void calcVVPotentialAndGradients(const double cos_theta, double& cos_theta_pot, double& dpot_dcos_theta);
+
+  // 计算单个pos knot垂直共视性cost
   void calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span, const vector<Vector3d> features,
       double& cost, vector<Vector3d>& dcost_dq);
 
+  // 计算整条位置轨迹的percpetion aware cost，包含视差和垂直共视性cost
   void calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
       const double ld_para, const double ld_vcv);
 
+  // 计算单个yaw knot共视性
   void calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
       const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq);
 
-  void calcYawCoVisbilityCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q);
+  // 计算整条yaw轨迹的共视性
+  void calcYawCoVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
+
+  void calcFrontierVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
   static Vector3d getThrustDirection(const Vector3d& acc) {
     Vector3d gravity(0, 0, -9.81);
@@ -130,7 +137,6 @@ private:
   bool isQuadratic();
 
   shared_ptr<EDTEnvironment> edt_environment_;
-  shared_ptr<FeatureMap> feature_map_;
 
   // Optimized variables
   Eigen::MatrixXd control_points_;  // B-spline control points, N x dim
@@ -158,6 +164,7 @@ private:
   double ld_parallax_;
   double ld_vertical_visibility_;
   double ld_yaw_covisib_;
+  double ld_frontier_visibility_;
 
   vector<Eigen::Vector3d> pos_, acc_;                 // knot points position and acceleration
   vector<vector<Eigen::Vector3d>> knot_nn_features_;  // neighboring features at each knot midpoint
@@ -180,6 +187,7 @@ private:
   // SECTION Perception Aware Optimization
   vector<Vector3d> g_parallax_;
   vector<Vector3d> g_yaw_covisibility_;
+  vector<Vector3d> g_frontier_visibility_;
 
   // !SECTION
 
@@ -198,9 +206,19 @@ public:
   vector<double> vec_time_;
   ros::Time time_start_;
 
+  // SECTION Perception Aware Optimization
+  shared_ptr<FeatureMap> feature_map_;
+
   void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
     feature_map_ = feature_map;
   }
+
+  vector<Vector3d> frontier_cells_;
+  void setFrontierCells(const vector<Vector3d>& frontier_cells) {
+    frontier_cells_ = frontier_cells;
+  }
+
+  // !SECTION
 
   void getCostCurve(vector<double>& cost, vector<double>& time) {
     cost = vec_cost_;

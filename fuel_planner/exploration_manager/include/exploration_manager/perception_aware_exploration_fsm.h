@@ -1,6 +1,8 @@
 #ifndef _PERCEPTION_AWARE_EXPLORATION_FSM_H_
 #define _PERCEPTION_AWARE_EXPLORATION_FSM_H_
 
+#include <exploration_manager/perception_aware_exploration_manager.h>
+
 #include <bspline/Bspline.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
@@ -63,6 +65,7 @@ public:
 
   Eigen::Vector3d final_goal_;
   double last_arrive_goal_time_;
+  int next_goal_;
 
   /* ROS utils */
   ros::NodeHandle node_;

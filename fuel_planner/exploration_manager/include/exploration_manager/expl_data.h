@@ -57,6 +57,8 @@ struct ExplorationData {
   vector<size_t> visb_num_;
   vector<Vector3d> global_tour_;
 
+  vector<vector<Vector3d>> frontier_cells_;
+
   vector<int> refined_ids_;
   vector<vector<Vector3d>> n_points_;
   vector<Vector3d> unrefined_points_;

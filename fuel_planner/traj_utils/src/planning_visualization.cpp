@@ -34,8 +34,9 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle& nh) {
   last_frontier_num_ = 0;
 }
 
-void PlanningVisualization::fillBasicInfo(visualization_msgs::Marker& mk, const Eigen::Vector3d& scale,
-    const Eigen::Vector4d& color, const string& ns, const int& id, const int& shape) {
+void PlanningVisualization::fillBasicInfo(visualization_msgs::Marker& mk, const Vector3d& scale, const Vector4d& color,
+    const string& ns, const int& id, const int& shape) {
+
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
   mk.id = id;
@@ -286,13 +287,20 @@ void PlanningVisualization::displayLineList(const vector<Eigen::Vector3d>& list1
   ros::Duration(0.0005).sleep();
 }
 
-void PlanningVisualization::displayArrowList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2,
-    double line_width, const Eigen::Vector4d& color, int id, int pub_id) {
+void PlanningVisualization::displayArrowList(
+    const vector<Vector3d>& list1, const vector<Vector3d>& list2, double line_width, const Vector4d& color, int id, int pub_id) {
   if (pubs_[pub_id].getNumSubscribers() == 0) return;
+
+  ROS_ASSERT(list1.size() == list2.size());
+
+  static size_t max_id = 0;
 
   visualization_msgs::MarkerArray markerArray;
 
+  max_id = max(max_id, list1.size());
   for (size_t i = 0; i < list1.size(); ++i) {
+    // max_id = max(max_id, i);
+
     visualization_msgs::Marker mk;
     mk.header.frame_id = "world";
     mk.header.stamp = ros::Time::now();
@@ -320,10 +328,23 @@ void PlanningVisualization::displayArrowList(const vector<Eigen::Vector3d>& list
 
     markerArray.markers.push_back(mk);
   }
+  for (size_t i = list1.size(); i < max_id; ++i) {
+    visualization_msgs::Marker mk;
+    mk.header.frame_id = "world";
+    mk.header.stamp = ros::Time::now();
+    mk.id = i;
+    mk.type = visualization_msgs::Marker::ARROW;
+    mk.action = visualization_msgs::Marker::DELETE;
+    markerArray.markers.push_back(mk);
+  }
 
   pubs_[pub_id].publish(markerArray);
 
   // ros::Duration(0.0005).sleep();
+}
+
+void PlanningVisualization::drawGeometricPath(const vector<Vector3d>& path, double resolution, const Vector4d& color, int id) {
+  displaySphereList(path, resolution, color, PATH + id % 100);
 }
 
 void PlanningVisualization::drawBspline(NonUniformBspline& bspline, double size, const Eigen::Vector4d& color, bool show_ctrl_pts,

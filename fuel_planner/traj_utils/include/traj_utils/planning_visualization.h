@@ -34,10 +34,6 @@ private:
   ros::Publisher viewpoint_pub_;  // 6, viewpoint planning
   vector<ros::Publisher> pubs_;   //
 
-  //   int last_topo_path1_num_;
-  //   int last_topo_path2_num_;
-  //   int last_bspline_phase1_num_;
-  //   int last_bspline_phase2_num_;
   int last_frontier_num_;
 
 public:
@@ -71,7 +67,8 @@ public:
       const Eigen::Vector4d& color, int id, int pub_id = 0);
   void displayArrowList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2, double line_width,
       const Eigen::Vector4d& color, int id, int pub_id);
-
+  // draw a piece-wise straight line path
+  void drawGeometricPath(const vector<Eigen::Vector3d>& path, double resolution, const Eigen::Vector4d& color, int id = 0);
   // draw a polynomial trajectory
   void drawPolynomialTraj(PolynomialTraj poly_traj, double resolution, const Eigen::Vector4d& color, int id = 0);
   // draw a bspline trajectory

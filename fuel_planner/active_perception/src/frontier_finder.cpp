@@ -404,7 +404,7 @@ void FrontierFinder::computeFrontiersToVisit() {
 }
 
 void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points, vector<double>& yaws,
-    vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num) {
+    vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells) {
   points.clear();
   yaws.clear();
   averages.clear();
@@ -430,6 +430,7 @@ void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen:
     const auto& view = frontier.viewpoints_[add_idx];
     points.push_back(view.pos_);
     yaws.push_back(view.yaw_);
+    frontier_cells.push_back(frontier.filtered_cells_);
     averages.push_back(frontier.average_);
     visb_num.push_back(view.visib_num_);
   }
@@ -470,7 +471,7 @@ void FrontierFinder::getViewpointsInfo(const Vector3d& cur_pos, const vector<int
 
 void FrontierFinder::getFrontiers(vector<vector<Eigen::Vector3d>>& clusters) {
   clusters.clear();
-  for (auto frontier : frontiers_) clusters.push_back(frontier.cells_);
+  for (const auto& frontier : frontiers_) clusters.push_back(frontier.cells_);
   // clusters.push_back(frontier.filtered_cells_);
 }
 

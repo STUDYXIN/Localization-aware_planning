@@ -1,6 +1,6 @@
 #include <exploration_manager/expl_data.h>
 #include <exploration_manager/perception_aware_exploration_fsm.h>
-#include <exploration_manager/perception_aware_exploration_manager.h>
+
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
 #include <plan_manage/perception_aware_planner_manager.h>
@@ -115,12 +115,12 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // Inform traj_server the replanning
       replan_pub_.publish(std_msgs::Empty());
 
-      const auto res = callExplorationPlanner();
-      if (res == REACH_END || res == SEARCH_FRONTIER) {
+      next_goal_ = callExplorationPlanner();
+      if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         transitState(PUB_TRAJ, "FSM");
       }
 
-      else if (res == NO_FRONTIER || res == NO_AVAILABLE_FRONTIER) {
+      else if (next_goal_ == NO_FRONTIER || next_goal_ == NO_AVAILABLE_FRONTIER) {
         // Still in PLAN_TRAJ state, keep replanning
         ROS_WARN("No frontier available=================================");
         static_state_ = true;
@@ -148,7 +148,15 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // Replan if traj is almost fully executed
       double time_to_end = info->duration_ - t_cur;
       if (time_to_end < fp_->replan_thresh1_) {
-        if (checkReachFinalGoal()) {
+        cout << "goal dist: " << (odom_pos_ - final_goal_).norm() << endl;
+
+        if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
+          ROS_ERROR("Invalid goal next goal type!!!");
+          ROS_BREAK();
+        }
+
+        if (next_goal_ == REACH_END) {
+          // if (checkReachFinalGoal()) {
           transitState(WAIT_TARGET, "FSM");
           last_arrive_goal_time_ = ros::Time::now().toSec();
           ROS_WARN("Replan: reach final goal=================================");
@@ -249,7 +257,11 @@ void PAExplorationFSM::visualize() {
   // visualization_->drawBox((bmin + bmax) / 2.0, bmax - bmin, Vector4d(0, 1, 0, 0.3), "updated_box", 0,
   // 4);
 
+  // 可视化混合A*搜索到的路径
+  visualization_->drawGeometricPath(plan_data->kino_path_, 0.075, Eigen::Vector4d(1, 1, 0, 0.4));
+  // 可视化位置轨迹
   visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
+  // 在位置轨迹的knot point上可视化对应时间的yaw
   visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->position_traj_.getKnotSpan());
 
   // ROS_WARN("[PAExplorationFSM] path_next_goal_ SIZE: %zu", ed_ptr->path_next_goal_.size());
@@ -270,7 +282,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
 
     ft->getFrontiers(ed->frontiers_);
     ft->getFrontierBoxes(ed->frontier_boxes_);
-    ft->getTopViewpointsInfo(odom_pos_, ed->points_, ed->yaws_, ed->averages_, ed->visb_num_);
+    ft->getTopViewpointsInfo(odom_pos_, ed->points_, ed->yaws_, ed->averages_, ed->visb_num_, ed->frontier_cells_);
 
     // Draw frontier and bounding box
     static int last_ftr_num = 0;
@@ -298,13 +310,13 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
   //   return;
   // }
 
-  int feature_num;
-  if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_, feature_num)) {
-    ROS_WARN("Replan: Too few features detected,feature num: %d==================================", feature_num);
-    emergency_stop_pub_.publish(std_msgs::Empty());
-    transitState(EMERGENCY_STOP, "safetyCallback");
-    return;
-  }
+  // int feature_num;
+  // if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_, feature_num)) {
+  //   ROS_WARN("Replan: Too few features detected,feature num: %d==================================", feature_num);
+  //   emergency_stop_pub_.publish(std_msgs::Empty());
+  //   transitState(EMERGENCY_STOP, "safetyCallback");
+  //   return;
+  // }
 
   // if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
   //   // Check safety and trigger replan if necessary

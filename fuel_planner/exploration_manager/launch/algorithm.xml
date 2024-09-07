@@ -275,7 +275,8 @@
       <param name="optimization/ld_time" value="1.0" type="double"/>
       <param name="optimization/ld_parallax" value="5.0" type="double"/>
       <param name="optimization/ld_vertical_visibility" value="5.0" type="double"/>
-      <param name="optimization/ld_yaw_covisibility" value="0.5" type="double"/>
+      <param name="optimization/ld_yaw_covisibility" value="100.0" type="double"/>
+      <param name="optimization/ld_frontier_visibility" value="0.5" type="double"/>
 
           <!-- <arg name="ld_smooth" value="25.0"/>
     <arg name="ld_dist" value="20.0"/>

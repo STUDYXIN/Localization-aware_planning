@@ -35,7 +35,7 @@ public:
 
   void planYaw(const Eigen::Vector3d& start_yaw);
   void planYawExplore(const Eigen::Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time);
-  void planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw);
+  void planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells);
 
   void initPlanModules(ros::NodeHandle& nh);
   void setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints);

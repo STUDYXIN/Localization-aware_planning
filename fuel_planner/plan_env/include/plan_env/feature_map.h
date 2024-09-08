@@ -15,6 +15,7 @@
 #include <memory>
 #include <pcl/search/impl/kdtree.hpp>
 
+using std::pair;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
@@ -138,6 +139,14 @@ public:
   int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg);
   int get_NumCloud_using_justpos(const Eigen::Vector3d& pos);
   int get_NumCloud_using_justpos(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>& res);
+
+  //增加三个重载，用于返回id和feature的pair
+  int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<pair<int, Eigen::Vector3d>>& res);
+  int get_NumCloud_using_Odom(
+      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
+  int get_NumCloud_using_CamPosOrient(
+      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
+
   void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num);
   void getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw);
   shared_ptr<SDFMap> sdf_map;

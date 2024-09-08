@@ -34,7 +34,6 @@ void FeatureMap::initMap(ros::NodeHandle& nh) {
 void FeatureMap::loadMap(const string& filename) {
   features_cloud_.clear();
   bool use_simple_features = (filename == "");
-
   if (use_simple_features) {
     // Features at the central of the wall
     for (double y = 3.0; y < 17.0; y += 0.2) {
@@ -255,6 +254,54 @@ int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, v
   Eigen::Quaterniond orient(
       msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
   return get_NumCloud_using_Odom(pos, orient, res);
+}
+
+//增加新的接口，用于返回唯一ID和feature的pair
+int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<pair<int, Eigen::Vector3d>>& res) {
+  Eigen::Vector3d pos(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+  Eigen::Quaterniond orient(
+      msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
+  return get_NumCloud_using_Odom(pos, orient, res);
+}
+
+int FeatureMap::get_NumCloud_using_Odom(
+    const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res) {
+  Matrix4d Pose_receive = Matrix4d::Identity();
+  Pose_receive.block<3, 3>(0, 0) = orient.toRotationMatrix();
+  Pose_receive.block<3, 1>(0, 3) = pos;
+  Matrix4d camera_pose = Pose_receive * camera_param.sensor2body;
+  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
+  Eigen::Matrix3d cam_rot_matrix = camera_pose.block<3, 3>(0, 0);
+  Eigen::Quaterniond orient_transformed(cam_rot_matrix);
+
+  return get_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed, res);
+}
+
+int FeatureMap::get_NumCloud_using_CamPosOrient(
+    const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res) {
+  if (features_cloud_.empty()) return 0;
+
+  res.clear();
+
+  pcl::PointXYZ searchPoint;
+  searchPoint.x = pos(0);
+  searchPoint.y = pos(1);
+  searchPoint.z = pos(2);
+
+  vector<int> pointIdxRadiusSearch;
+  vector<float> pointRadiusSquaredDistance;
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+
+  for (const auto& index : pointIdxRadiusSearch) {
+    Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (camera_param.is_in_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
+    {
+      if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
+        res.push_back(make_pair(index, f));
+    }
+  }
+
+  return res.size();
 }
 
 int FeatureMap::get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient) {

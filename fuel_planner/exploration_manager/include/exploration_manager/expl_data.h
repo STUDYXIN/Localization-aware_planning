@@ -41,6 +41,7 @@ struct FSMParam {
   double replan_thresh1_;
   double replan_thresh2_;
   double replan_thresh3_;
+  double replan_thresh_replan_viewpoint_length_;
   double replan_time_;  // second
 
   int min_feature_num_;
@@ -56,6 +57,7 @@ struct ExplorationData {
   vector<double> yaws_;
   vector<size_t> visb_num_;
   vector<Vector3d> global_tour_;
+  vector<int> frontier_ids_;
 
   vector<vector<Vector3d>> frontier_cells_;
 

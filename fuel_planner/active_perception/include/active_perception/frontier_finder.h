@@ -67,6 +67,8 @@ public:
   // Get viewpoint with highest coverage for each frontier
   void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages,
       vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells);
+  void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages,
+      vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells, vector<int>& idx);
   // get frontiers near new point
   bool getBestViewpointinPath(Viewpoint& refactorViewpoint, vector<Vector3d>& path);
   // Get several viewpoints for a subset of frontiers
@@ -128,6 +130,7 @@ public:
   vector<int> removed_ids_;
   list<Frontier>::iterator first_new_ftr_;
   Frontier next_frontier_;
+  int frontier_id_count;
 
   // Params
   int cluster_min_;

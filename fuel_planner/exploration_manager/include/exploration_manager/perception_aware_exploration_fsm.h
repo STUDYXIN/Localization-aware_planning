@@ -20,6 +20,7 @@
 #include <vector>
 
 using Eigen::Vector3d;
+using std::pair;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
@@ -60,8 +61,10 @@ public:
   Eigen::Vector3d end_pt_, end_vel_;                               // start state
   vector<Eigen::Vector3d> start_poss;
   bspline::Bspline newest_traj_;
-
+  vector<pair<size_t, double>> gains_;  // gains for viewpoint
   FSM_EXEC_STATE exec_state_ = FSM_EXEC_STATE::INIT;
+  Eigen::Vector3d last_used_viewpoint_pos;
+  int best_frontier_id;
 
   bool classic_;
 

@@ -129,7 +129,7 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
 
   // Step2: 使用dijkstra算法对yaw图进行搜索
   vector<YawVertex::Ptr> vert_path;
-  yaw_graph.dijkstraSearch(0, gid - 1, vert_path);
+  if (!yaw_graph.dijkstraSearch(0, gid - 1, vert_path)) return false;
 
   // Step3: 将存储在vert_path中的yaw角数值提取出来
   for (const auto& vert : vert_path) path.push_back(vert->yaw_);

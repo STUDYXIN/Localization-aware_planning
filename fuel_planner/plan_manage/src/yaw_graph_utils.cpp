@@ -35,7 +35,7 @@ double Graph::penal(const double& diff) {
     return pow(yr - max_yaw_rate_, 2);
 }
 
-void Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::Ptr>& path) {
+bool Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::Ptr>& path) {
   YawVertex::Ptr start_v = vertice_[start];
   YawVertex::Ptr end_v = vertice_[goal];
   start_v->g_value_ = 0.0;
@@ -66,7 +66,7 @@ void Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::
         vit = vit->parent_;
       }
       reverse(path.begin(), path.end());
-      return;
+      return true;
     }
 
     for (YawEdge::Ptr e : vc->edges_) {
@@ -79,8 +79,8 @@ void Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::
       if (open_set_map.find(vb->id_) == open_set_map.end()) {
         open_set_map[vb->id_] = 1;
         open_set.push(vb);
-      } 
-      
+      }
+
       else if (g_tmp > vb->g_value_)
         continue;
 
@@ -89,6 +89,7 @@ void Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::
     }
   }
 
-  ROS_ERROR("Dijkstra can't find path!");
+  ROS_ERROR("[Graph::dijkstraSearch] Dijkstra can't find path!");
+  return false;
 }
 }  // namespace fast_planner

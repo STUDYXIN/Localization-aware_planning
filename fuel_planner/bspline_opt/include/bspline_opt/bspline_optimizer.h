@@ -217,6 +217,7 @@ private:
 public:
   vector<double> vec_cost_;
   vector<double> vec_time_;
+  bool issuccess;
   ros::Time time_start_;
 
   // SECTION Perception Aware Optimization

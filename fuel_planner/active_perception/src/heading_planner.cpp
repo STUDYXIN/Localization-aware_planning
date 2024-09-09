@@ -98,7 +98,7 @@ void Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::
     }
   }
 
-  ROS_ERROR("Dijkstra can't find path!");
+  ROS_ERROR("[Graph::dijkstraSearch] Dijkstra can't find path!");
   ROS_ASSERT(false);
 }
 

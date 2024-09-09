@@ -78,6 +78,7 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
   edt_env_->sdf_map_->getRegion(origin, size);
   raycaster_->setParams(resolution_, origin);
   percep_utils_.reset(new PerceptionUtils(nh));
+  frontier_id_count = 0;
 }
 
 void FrontierFinder::searchFrontiers() {
@@ -98,7 +99,7 @@ void FrontierFinder::searchFrontiers() {
     iter = frontiers.erase(iter);
   };
 
-  std::cout << "Before remove: " << frontiers_.size() << std::endl;
+  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
 
   removed_ids_.clear();
   int rmv_idx = 0;
@@ -111,7 +112,7 @@ void FrontierFinder::searchFrontiers() {
       ++iter;
     }
   }
-  std::cout << "After remove: " << frontiers_.size() << std::endl;
+  // std::cout << "After remove: " << frontiers_.size() << std::endl;
   for (auto iter = dormant_frontiers_.begin(); iter != dormant_frontiers_.end();) {
     if (haveOverlap(iter->box_min_, iter->box_max_, update_min, update_max) && isFrontierChanged(*iter))
       resetFlag(iter, dormant_frontiers_);
@@ -450,6 +451,7 @@ void FrontierFinder::computeFrontiersToVisit() {
   // Reset indices of frontiers
   int idx = 0;
   for (auto& ft : frontiers_) ft.id_ = idx++;
+  // for (auto& ft : frontiers_) ft.id_ = frontier_id_count++;
 
   // std::cout << "new num: " << new_num << ", new dormant: " << new_dormant_num << std::endl;
   // std::cout << "to visit: " << frontiers_.size() << ", dormant: " << dormant_frontiers_.size() << std::endl;
@@ -481,6 +483,37 @@ void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen:
     frontier_cells.push_back(frontier.filtered_cells_);
     averages.push_back(frontier.average_);
     visb_num.push_back(view.visib_num_);
+  }
+}
+
+void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points, vector<double>& yaws,
+    vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells, vector<int>& idx) {
+  points.clear();
+  yaws.clear();
+  averages.clear();
+  visb_num.clear();
+  frontier_cells.clear();
+  idx.clear();
+
+  for (const auto& frontier : frontiers_) {
+    // bool no_view = true;
+    size_t add_idx = 0;
+    // for (const auto &view : frontier.viewpoints_)
+    for (size_t i = 0; i < frontier.viewpoints_.size(); i++) {
+      // Retrieve the first viewpoint that is far enough and has highest coverage
+      if ((frontier.viewpoints_[i].pos_ - cur_pos).norm() < min_candidate_dist_) continue;
+
+      add_idx = i;
+      break;
+    }
+
+    const auto& view = frontier.viewpoints_[add_idx];
+    points.push_back(view.pos_);
+    yaws.push_back(view.yaw_);
+    frontier_cells.push_back(frontier.filtered_cells_);
+    averages.push_back(frontier.average_);
+    visb_num.push_back(view.visib_num_);
+    idx.push_back(frontier.id_);
   }
 }
 

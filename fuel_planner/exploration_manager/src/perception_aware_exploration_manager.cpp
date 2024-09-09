@@ -101,6 +101,10 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
   const auto& start_yaw = expl_fsm_.lock()->start_yaw_;
   const auto& final_goal = expl_fsm_.lock()->final_goal_;
+  const auto& gains = expl_fsm_.lock()->gains_;
+  const auto& points = ed_->points_;
+  const auto& yaws = ed_->yaws_;
+  const auto& frontier_cells = ed_->frontier_cells_;
 
   bool reach_end_flag = false;
 
@@ -152,34 +156,37 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   }
 
   // Select point with highest score
-  const double dg = (final_goal - start_pos).norm();
-  vector<pair<size_t, double>> gains;
-  for (size_t i = 0; i < ed_->points_.size(); ++i) {
-    double visb_score = static_cast<double>(ed_->visb_num_[i]) / static_cast<double>(ep_->visb_max);
-    double goal_score = (dg - (final_goal - ed_->points_[i]).norm()) / dg;
-    double feature_score = static_cast<double>(feature_map_->get_NumCloud_using_justpos(ed_->points_[i])) /
-                           static_cast<double>(ep_->feature_num_max);
-    double motioncons_score =
-        std::sin((ed_->points_[i] - start_pos).dot(start_vel) / ((ed_->points_[i] - start_pos).norm() * start_vel.norm())) /
-        (M_PI / 2);
-    double score = ep_->we * visb_score + ep_->wg * goal_score + ep_->wf * feature_score + ep_->wc * motioncons_score;
-    cout << "[PAExplorationManager] SCORE DEUBUG NUM: " << i << " visb_score: " << visb_score << " goal_score: " << goal_score
-         << " feature_score: " << feature_score << " score: " << score << " motioncons_score: " << motioncons_score << endl;
-    gains.emplace_back(i, score);
-  }
+  // const double dg = (final_goal - start_pos).norm();
+  // vector<pair<size_t, double>> gains;
+  // for (size_t i = 0; i < ed_->points_.size(); ++i) {
+  //   double visb_score = static_cast<double>(ed_->visb_num_[i]) / static_cast<double>(ep_->visb_max);
+  //   double goal_score = (dg - (final_goal - ed_->points_[i]).norm()) / dg;
+  //   double feature_score = static_cast<double>(feature_map_->get_NumCloud_using_justpos(ed_->points_[i])) /
+  //                          static_cast<double>(ep_->feature_num_max);
+  //   double motioncons_score =
+  //       std::sin((ed_->points_[i] - start_pos).dot(start_vel) / ((ed_->points_[i] - start_pos).norm() * start_vel.norm())) /
+  //       (M_PI / 2);
+  //   double score = ep_->we * visb_score + ep_->wg * goal_score + ep_->wf * feature_score + ep_->wc * motioncons_score;
+  //   // cout << "[PAExplorationManager] SCORE DEUBUG NUM: " << i << " visb_score: " << visb_score << " goal_score: " <<
+  //   goal_score
+  //   //      << " feature_score: " << feature_score << " score: " << score << " motioncons_score: " << motioncons_score << endl;
+  //   gains.emplace_back(i, score);
+  // }
 
-  std::sort(gains.begin(), gains.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
+  // std::sort(gains.begin(), gains.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
 
   // 按序遍历前沿点，直到找到一个可以规划成功的点
-  for (size_t i = 0; i < gains.size(); i++) {
-    size_t idx = gains[i].first;
-    next_pos = ed_->points_[idx];
-    next_yaw = ed_->yaws_[idx];
-    vector<Vector3d> next_frontier_cells = ed_->frontier_cells_[idx];
 
-    if (planToNextGoal(next_pos, next_yaw, next_frontier_cells)) return SEARCH_FRONTIER;
+  // expl_fsm_.lock()->best_frontier_id默认是0，但是若是失败会外部递增
+  size_t idx = gains[expl_fsm_.lock()->best_frontier_id].first;
+  next_pos = points[idx];
+  next_yaw = yaws[idx];
+  vector<Vector3d> next_frontier_cells = frontier_cells[idx];
+  if (planToNextGoal(next_pos, next_yaw, next_frontier_cells)) {
+    expl_fsm_.lock()->last_used_viewpoint_pos = next_pos;
+    return SEARCH_FRONTIER;
   }
-
+  ROS_ERROR("[PAExplorationManager::selectNextGoal] The best Viewpoint can't be reached!!!!");
   return NO_AVAILABLE_FRONTIER;
 }
 

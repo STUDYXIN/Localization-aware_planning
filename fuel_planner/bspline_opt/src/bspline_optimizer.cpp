@@ -272,25 +272,25 @@ void BsplineOptimizer::optimize() {
   // Step4：正式进行优化
   auto t1 = ros::Time::now();
   double final_cost;
-  nlopt::result result = opt.optimize(q, final_cost);
-  // try {
-  //   double final_cost;
-  //   nlopt::result result = opt.optimize(q, final_cost);
-  // }
+  // nlopt::result result = opt.optimize(q, final_cost);
+  try {
+    double final_cost;
+    nlopt::result result = opt.optimize(q, final_cost);
+    for (int i = 0; i < point_num_; ++i)
+      for (int j = 0; j < dim_; ++j) control_points_(i, j) = best_variable_[dim_ * i + j];
+    if (optimize_time_) knot_span_ = best_variable_[variable_num_ - 1];
 
-  // catch (std::exception& e) {
-  //   cout << e.what() << endl;
-  // }
+    if (cost_function_ & MINTIME) {
+      std::cout << "Iter num: " << iter_num_ << ", time: " << (ros::Time::now() - t1).toSec() << ", point num: " << point_num_
+                << ", comb time: " << comb_time << std::endl;
+    }
+    issuccess = true;
+  }
 
-  // Step5：把优化变量反写回control_points_和knot_span_
-  // Note：best_variable_在优化过程中就不断更新
-  for (int i = 0; i < point_num_; ++i)
-    for (int j = 0; j < dim_; ++j) control_points_(i, j) = best_variable_[dim_ * i + j];
-  if (optimize_time_) knot_span_ = best_variable_[variable_num_ - 1];
-
-  if (cost_function_ & MINTIME) {
-    std::cout << "Iter num: " << iter_num_ << ", time: " << (ros::Time::now() - t1).toSec() << ", point num: " << point_num_
-              << ", comb time: " << comb_time << std::endl;
+  catch (std::exception& e) {
+    cout << e.what() << endl;
+    ROS_ERROR("[BsplineOptimizer::optimize] Optimized_fail!!!!!!!");
+    issuccess = false;
   }
 }
 
@@ -866,9 +866,9 @@ void BsplineOptimizer::calcViewFrontierCost(
   // 遍历每个控制点 q[i]
   vector<Vector3d> frontiers;
   frontier_finder_->getLatestFrontier(frontiers);  // 仅先考虑看向前沿frontiers
-  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---frontier_this: %zu "
-           "---Begin Compute ViewFrontierCost!",
-      q.size(), ld_frontier_visibility_pos_, frontiers.size());
+  // ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---frontier_this: %zu "
+  //          "---Begin Compute ViewFrontierCost!",
+  // q.size(), ld_frontier_visibility_pos_, frontiers.size());
   if (frontiers.size() == 0) {
     ROS_ERROR("[BsplineOptimizer::calcViewFrontierCost] NO Frontiers!!!!");
     return;
@@ -920,11 +920,11 @@ void BsplineOptimizer::calcViewFrontierCost(
 
     cost += 1 - good_frontier_percentage;
     gradient_q[i] = -1 * good_frontier_percentage_gradient;
-    std::cout << "Knot number " << i << ": cost_sum " << cost << " gradient_q: " << gradient_q[i].transpose() << endl;
+    // std::cout << "Knot number " << i << ": cost_sum " << cost << " gradient_q: " << gradient_q[i].transpose() << endl;
   }
   ros::Time end_time = ros::Time::now();
   ros::Duration elapsed_time = end_time - start_time;
-  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Execution time: %.6f seconds", elapsed_time.toSec());
+  // ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Execution time: %.6f seconds", elapsed_time.toSec());
 }
 
 void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
@@ -1178,20 +1178,20 @@ void BsplineOptimizer::calcFrontierVisbilityCost(const vector<Vector3d>& q, doub
   vector<Vector3d> dcost_dq_i;
   // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] Begin!: " << endl;
 
-  // for (size_t i = 0; i < q.size() - 2; ++i) {
-  //   vector<Vector3d> q_cur;
-  //   for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
+  for (size_t i = 0; i < q.size() - 2; ++i) {
+    vector<Vector3d> q_cur;
+    for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
 
-  //   Vector3d knots_pos = pos_[i];
-  //   Vector3d knots_acc = acc_[i];
+    Vector3d knots_pos = pos_[i];
+    Vector3d knots_acc = acc_[i];
 
-  //   calcFrontierVisibilityCostAndGradientsKnots(q_cur, knots_pos, knots_acc, frontier_cells_, cost_i, dcost_dq_i);
+    calcFrontierVisibilityCostAndGradientsKnots(q_cur, knots_pos, knots_acc, frontier_cells_, cost_i, dcost_dq_i);
 
-  //   // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] frontier_cells_.size: " << frontier_cells_.size() << endl;
+    // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] frontier_cells_.size: " << frontier_cells_.size() << endl;
 
-  //   cost += cost_i;
-  //   for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dq_i[j];
-  // }
+    cost += cost_i;
+    for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dq_i[j];
+  }
 }
 
 // !SECTION

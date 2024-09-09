@@ -178,13 +178,13 @@ bool FastPlannerManager::checkTrajLocalizability(double& distance) {
 
 bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
     const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb) {
-  std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
-  std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
-  std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
-  std::cout << "[Kino replan]: start yaw: " << start_yaw << endl;
-  std::cout << "[Kino replan]: end pos: " << end_pt.transpose() << endl;
-  std::cout << "[Kino replan]: end vel: " << end_vel.transpose() << endl;
-  std::cout << "[Kino replan]: end yaw: " << end_yaw << endl;
+  // std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
+  // std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
+  // std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
+  // std::cout << "[Kino replan]: start yaw: " << start_yaw << endl;
+  // std::cout << "[Kino replan]: end pos: " << end_pt.transpose() << endl;
+  // std::cout << "[Kino replan]: end vel: " << end_vel.transpose() << endl;
+  // std::cout << "[Kino replan]: end yaw: " << end_yaw << endl;
 
   frontier_finder_->setLatestViewpoint(end_pt, end_yaw, 0);
   if ((start_pt - end_pt).norm() < 1e-2) {
@@ -259,8 +259,8 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   bspline_optimizers_[0]->setFeatureMap(feature_map_);
   bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
+  if (!bspline_optimizers_[0]->issuccess) return false;
   local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
-
   // cout << "pos control point after optimize: " << endl << ctrl_pts << endl;
 
   double time_opt = (ros::Time::now() - time_start_2).toSec();
@@ -498,7 +498,7 @@ void FastPlannerManager::planYawExplore(
   const int seg_num = 12;
   double dt_yaw = local_data_.duration_ / seg_num;  // time of B-spline segment
   Eigen::Vector3d start_yaw3d = start_yaw;
-  std::cout << "dt_yaw: " << dt_yaw << ", start yaw: " << start_yaw3d.transpose() << ", end: " << end_yaw << std::endl;
+  // std::cout << "dt_yaw: " << dt_yaw << ", start yaw: " << start_yaw3d.transpose() << ", end: " << end_yaw << std::endl;
 
   while (start_yaw3d[0] < -M_PI) start_yaw3d[0] += 2 * M_PI;
   while (start_yaw3d[0] > M_PI) start_yaw3d[0] -= 2 * M_PI;
@@ -547,17 +547,17 @@ void FastPlannerManager::planYawExplore(
   calcNextYaw(last_yaw, end_yaw3d(0));
   yaw.block<3, 1>(seg_num, 0) = states2pts * end_yaw3d;
 
-  cout << "states2pts * start_yaw3d: " << (states2pts * start_yaw3d).transpose() << endl;
-  cout << "yaw waypts: " << endl;
-  for (const auto& waypt : waypts) cout << "yaw: " << waypt[0] << endl;
-  cout << "dt_yaw: " << dt_yaw << endl;
-  cout << "states2pts * end_yaw3d: " << (states2pts * end_yaw3d).transpose() << endl;
+  // cout << "states2pts * start_yaw3d: " << (states2pts * start_yaw3d).transpose() << endl;
+  // cout << "yaw waypts: " << endl;
+  // for (const auto& waypt : waypts) cout << "yaw: " << waypt[0] << endl;
+  // cout << "dt_yaw: " << dt_yaw << endl;
+  // cout << "states2pts * end_yaw3d: " << (states2pts * end_yaw3d).transpose() << endl;
 
   // Debug rapid change of yaw
-  if (fabs(start_yaw3d[0] - end_yaw3d[0]) >= M_PI) {
-    ROS_ERROR("Yaw change rapidly!");
-    std::cout << "start yaw: " << start_yaw3d[0] << ", " << end_yaw3d[0] << std::endl;
-  }
+  // if (fabs(start_yaw3d[0] - end_yaw3d[0]) >= M_PI) {
+  //   ROS_ERROR("Yaw change rapidly!");
+  //   std::cout << "start yaw: " << start_yaw3d[0] << ", " << end_yaw3d[0] << std::endl;
+  // }
 
   // Call B-spline optimization solver
   // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::START | BsplineOptimizer::END | BsplineOptimizer::WAYPOINTS;
@@ -574,7 +574,7 @@ void FastPlannerManager::planYawExplore(
   bspline_optimizers_[1]->setFeatureMap(feature_map_);
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
 
-  cout << "yaw after optimize: " << endl;
+  // cout << "yaw after optimize: " << endl;
   cout << yaw << endl;
 
   // Update traj info
@@ -623,8 +623,8 @@ bool FastPlannerManager::planYawPerceptionAware(
   // if (yaw_waypoints.back() == 0) yaw_waypoints.back() = 10e-1;  // 不科学！！！但是设置成这样避免末端采样为0的时候造成报错
   //  for (auto& yaw : yaw_waypoints) yaw = 0.0;
 
-  cout << "yaw_waypoints: " << endl;
-  for (const auto& yaw : yaw_waypoints) cout << "yaw: " << yaw << endl;
+  // cout << "yaw_waypoints: " << endl;
+  // for (const auto& yaw : yaw_waypoints) cout << "yaw: " << yaw << endl;
 
   // 后面优化选项选择了WAYPOINTS，所以这里需要把waypoints设置好
   vector<Vector3d> waypts;
@@ -640,7 +640,7 @@ bool FastPlannerManager::planYawPerceptionAware(
   }
 
   double time_yaw_inital_planner = (ros::Time::now() - time_start).toSec();
-  ROS_WARN("Time cost of yaw inital planner: %lf(sec)", time_yaw_inital_planner);
+  // ROS_WARN("Time cost of yaw inital planner: %lf(sec)", time_yaw_inital_planner);
 
   //  Initial state
   Vector3d start_yaw3d = start_yaw;
@@ -662,8 +662,8 @@ bool FastPlannerManager::planYawPerceptionAware(
 
   const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
 
-  cout << "start_yaw3d: " << start_yaw3d.transpose() << endl;
-  cout << "end_yaw3d: " << end_yaw3d.transpose() << endl;
+  // cout << "start_yaw3d: " << start_yaw3d.transpose() << endl;
+  // cout << "end_yaw3d: " << end_yaw3d.transpose() << endl;
 
   vector<Vector3d> start = { Vector3d(start_yaw3d[0], 0, 0), Vector3d(start_yaw3d[1], 0, 0), Vector3d(start_yaw3d[2], 0, 0) };
   vector<Vector3d> end = { Vector3d(end_yaw3d[0], 0, 0), zero, zero };
@@ -676,9 +676,11 @@ bool FastPlannerManager::planYawPerceptionAware(
 
   // Step2: 调用B样条曲线优化器优化yaw轨迹
   // 这里使用了平滑约束、路径点约束、起点约束、终点约束、主要就是添加了yaw共视约束
+  // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::END
+  // |
+  //                 BsplineOptimizer::YAWCOVISIBILITY | BsplineOptimizer::FRONTIERVISIBILITY_YAW;
   int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::END |
-                  BsplineOptimizer::YAWCOVISIBILITY | BsplineOptimizer::FRONTIERVISIBILITY_YAW;
-
+                  BsplineOptimizer::YAWCOVISIBILITY;
   // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::WAYPOINTS | BsplineOptimizer::START | BsplineOptimizer::END
   // |
   //                 BsplineOptimizer::FRONTIERVISIBILITY_YAW;
@@ -698,13 +700,13 @@ bool FastPlannerManager::planYawPerceptionAware(
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
   bspline_optimizers_[1]->setFeatureMap(feature_map_);
 
-  cout << "yaw control point before optimize: " << yaw << endl;
-  cout << "dt_yaw: " << dt_yaw << endl;
+  // cout << "yaw control point before optimize: " << yaw << endl;
+  // cout << "dt_yaw: " << dt_yaw << endl;
 
   // Add noise to yaw if variance is too small
   double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
   if (yaw_variance < 1e-4) {
-    cout << "add gaussian noise to yaw control points" << endl;
+    // cout << "add gaussian noise to yaw control points" << endl;
 
     double sigma = 0.1;  // adjust the noise level as needed
 
@@ -716,14 +718,14 @@ bool FastPlannerManager::planYawPerceptionAware(
       double noise = distribution(gen);  // 生成一个符合正态分布的随机数
       yaw(i, 0) += noise;
     }
-    cout << "yaw control point before optimize(add noise): " << yaw << endl;
+    // cout << "yaw control point before optimize(add noise): " << yaw << endl;
   }
-  cout << "[FastPlannerManager::planYawPerceptionAware] Begin yaw optimize!!!!!" << endl;
+  // cout << "[FastPlannerManager::planYawPerceptionAware] Begin yaw optimize!!!!!" << endl;
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
-  cout << "[FastPlannerManager::planYawPerceptionAware] yaw control point after optimize: " << yaw << endl;
+  // cout << "[FastPlannerManager::planYawPerceptionAware] yaw control point after optimize: " << yaw << endl;
 
   double time_opt = (ros::Time::now() - time_start_2).toSec();
-  ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
+  // ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
 
   // Update traj info
   // Step3: 更新yaw及其导数的轨迹W
@@ -737,11 +739,11 @@ bool FastPlannerManager::planYawPerceptionAware(
     knot_yaw.emplace_back(local_data_.yaw_traj_.evaluateDeBoorT(t)[0]);
   }
 
-  ROS_INFO("Compare knot point of yaw");
+  // ROS_INFO("Compare knot point of yaw");
   ROS_ASSERT(knot_yaw.size() == yaw_waypoints.size());
-  for (size_t i = 0; i < knot_yaw.size(); ++i) {
-    cout << "knot_yaw: " << knot_yaw[i] << ", yaw_waypoints: " << yaw_waypoints[i] << endl;
-  }
+  // for (size_t i = 0; i < knot_yaw.size(); ++i) {
+  //   cout << "knot_yaw: " << knot_yaw[i] << ", yaw_waypoints: " << yaw_waypoints[i] << endl;
+  // }
 
   return true;
 }

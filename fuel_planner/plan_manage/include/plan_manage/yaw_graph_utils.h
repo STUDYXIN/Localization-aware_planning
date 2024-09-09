@@ -112,7 +112,7 @@ public:
   void addEdge(const int& from, const int& to, const double& gain);
 
   void setParams(const double& w, const double& my, const double& dt);
-  void dijkstraSearch(const int& start, const int& goal, vector<YawVertex::Ptr>& path);
+  bool dijkstraSearch(const int& start, const int& goal, vector<YawVertex::Ptr>& path);
 
 public:
   double penal(const double& diff);

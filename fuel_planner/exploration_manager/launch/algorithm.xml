@@ -192,8 +192,7 @@
     <param name="yaw_initial/max_yaw_rate" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
     <param name="yaw_initial/w" value="0.0" type="double" />
     <param name="yaw_initial/min_feature_num" value="$(arg min_feature_num)" type="double" />
-    <param name="yaw_initial/min_covisible_feature_num" value="$(arg min_covisible_feature_num)"
-      type="double" />
+    <param name="yaw_initial/min_covisible_feature_num" value="$(arg min_covisible_feature_num)" type="double" />
 
     <!-- planner manager -->
     <!-- <param name="manager/max_vel" value="$(arg max_vel)" type="double"/> -->
@@ -265,9 +264,9 @@
     <param name="optimization/ld_time" value="1.0" type="double" />
     <param name="optimization/ld_parallax" value="5.0" type="double" />
     <param name="optimization/ld_vertical_visibility" value="5.0" type="double" />
-    <param name="optimization/ld_frontier_visibility" value="100.0" type="double" />
     <param name="optimization/ld_yaw_covisibility" value="100.0" type="double" />
-    <param name="optimization/ld_frontier_visibility" value="0.5" type="double" />
+    <param name="optimization/ld_frontier_visibility_pos" value="100.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_yaw" value="0.5" type="double" />
 
     <param name="optimization/dist0" value="0.7" type="double" />
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double" />
@@ -285,12 +284,10 @@
     <param name="optimization/max_iteration_time4" value="0.003" type="double" />
 
     <param name="optimization/parallax/estimator_freq" value="10.0" type="double" />
-    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)"
-      type="double" />
+    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/parallax/pot_a" value="20.0" type="double" />
 
-    <param name="optimization/max_feature_and_frontier_convisual_angle"
-      value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />
 

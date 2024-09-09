@@ -131,8 +131,14 @@ bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Q
   if (feature_map_ == nullptr) return true;
 
   feature_num = feature_map_->get_NumCloud_using_Odom(pos, orient);
+  static int error_times = 0;
+  if (feature_num <= pp_.min_feature_num_) {
+    ROS_ERROR("ERROR STATE with feature: %d", feature_num);
+    error_times++;
+  } else
+    error_times = 0;
 
-  return feature_num > pp_.min_feature_num_;
+  return feature_num > pp_.min_feature_num_ || error_times <= 10;
 }
 
 bool FastPlannerManager::checkTrajLocalizability(double& distance) {
@@ -712,16 +718,15 @@ bool FastPlannerManager::planYawPerceptionAware(
     }
     cout << "yaw control point before optimize(add noise): " << yaw << endl;
   }
-
+  cout << "[FastPlannerManager::planYawPerceptionAware] Begin yaw optimize!!!!!" << endl;
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
-
-  cout << "yaw control point after optimize: " << yaw << endl;
+  cout << "[FastPlannerManager::planYawPerceptionAware] yaw control point after optimize: " << yaw << endl;
 
   double time_opt = (ros::Time::now() - time_start_2).toSec();
   ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
 
   // Update traj info
-  // Step3: 更新yaw及其导数的轨迹
+  // Step3: 更新yaw及其导数的轨迹W
   local_data_.yaw_traj_.setUniformBspline(yaw, 3, dt_yaw);
   local_data_.yawdot_traj_ = local_data_.yaw_traj_.getDerivative();
   local_data_.yawdotdot_traj_ = local_data_.yawdot_traj_.getDerivative();

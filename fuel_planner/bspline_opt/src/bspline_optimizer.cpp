@@ -864,11 +864,11 @@ void BsplineOptimizer::calcViewFrontierCost(
   std::fill(gradient_q.begin(), gradient_q.end(), zero);
 
   // 遍历每个控制点 q[i]
-  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---Begin Compute "
-           "ViewFrontierCost!",
-      q.size(), ld_frontier_visibility_pos_);
   vector<Vector3d> frontiers;
   frontier_finder_->getLatestFrontier(frontiers);  // 仅先考虑看向前沿frontiers
+  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---frontier_this: %zu "
+           "---Begin Compute ViewFrontierCost!",
+      q.size(), ld_frontier_visibility_pos_, frontiers.size());
   if (frontiers.size() == 0) {
     ROS_ERROR("[BsplineOptimizer::calcViewFrontierCost] NO Frontiers!!!!");
     return;
@@ -1176,21 +1176,22 @@ void BsplineOptimizer::calcFrontierVisbilityCost(const vector<Vector3d>& q, doub
 
   double cost_i;
   vector<Vector3d> dcost_dq_i;
+  // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] Begin!: " << endl;
 
-  for (size_t i = 0; i < q.size() - 2; ++i) {
-    vector<Vector3d> q_cur;
-    for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
+  // for (size_t i = 0; i < q.size() - 2; ++i) {
+  //   vector<Vector3d> q_cur;
+  //   for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
 
-    Vector3d knots_pos = pos_[i];
-    Vector3d knots_acc = acc_[i];
+  //   Vector3d knots_pos = pos_[i];
+  //   Vector3d knots_acc = acc_[i];
 
-    calcFrontierVisibilityCostAndGradientsKnots(q_cur, knots_pos, knots_acc, frontier_cells_, cost_i, dcost_dq_i);
+  //   calcFrontierVisibilityCostAndGradientsKnots(q_cur, knots_pos, knots_acc, frontier_cells_, cost_i, dcost_dq_i);
 
-    // cout << "cost_i: " << cost_i << endl;
+  //   // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] frontier_cells_.size: " << frontier_cells_.size() << endl;
 
-    cost += cost_i;
-    for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dq_i[j];
-  }
+  //   cost += cost_i;
+  //   for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dq_i[j];
+  // }
 }
 
 // !SECTION

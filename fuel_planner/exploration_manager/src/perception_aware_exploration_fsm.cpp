@@ -305,28 +305,28 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   ft->getFrontierBoxes(ed->frontier_boxes_);
   ft->getTopViewpointsInfo(odom_pos_, ed->points_, ed->yaws_, ed->averages_, ed->visb_num_, ed->frontier_cells_);
 
-  // 使用A*算法搜索一个的点，这个点事这条路径上靠近终点且在free区域的最后一个点
-  pa->reset();
-  if (have_target_ && pa->search(odom_pos_, final_goal_) == Astar::REACH_END) {
-    ed->path_next_goal_ = pa->getPath();
-    Vector4d black_color(0.0, 0.0, 0.0, 1.0);
-    visualization_->drawLines(ed->path_next_goal_, 0.02, black_color, "path_2_next_goal", 1, 1);
-    Viewpoint best_viewpoint;
-    if (ft->getBestViewpointinPath(best_viewpoint, ed->path_next_goal_)) {
-      ed->points_.push_back(best_viewpoint.pos_);
-      ed->yaws_.push_back(best_viewpoint.yaw_);
-      ed->visb_num_.push_back(best_viewpoint.visib_num_);
-      // 可视化这个点
-      vector<Vector3d> thisviewpoint, viewpoint_line;
-      thisviewpoint.push_back(best_viewpoint.pos_);
-      Eigen::Vector3d direction(cos(best_viewpoint.yaw_), sin(best_viewpoint.yaw_), 0.0);
-      Eigen::Vector3d end_point = best_viewpoint.pos_ + direction * 1.0;
-      viewpoint_line.push_back(best_viewpoint.pos_);
-      viewpoint_line.push_back(end_point);
-      visualization_->displaySphereList(thisviewpoint, 0.15, black_color, 648);
-      visualization_->drawLines(viewpoint_line, 0.05, black_color, "viewpoint_vectoer_line", 9, 1);
-    }
-  }
+  // // 使用A*算法搜索一个的点，这个点事这条路径上靠近终点且在free区域的最后一个点
+  // pa->reset();
+  // if (have_target_ && pa->search(odom_pos_, final_goal_) == Astar::REACH_END) {
+  //   ed->path_next_goal_ = pa->getPath();
+  //   Vector4d black_color(0.0, 0.0, 0.0, 1.0);
+  //   visualization_->drawLines(ed->path_next_goal_, 0.02, black_color, "path_2_next_goal", 1, 1);
+  //   Viewpoint best_viewpoint;
+  //   if (ft->getBestViewpointinPath(best_viewpoint, ed->path_next_goal_)) {
+  //     ed->points_.push_back(best_viewpoint.pos_);
+  //     ed->yaws_.push_back(best_viewpoint.yaw_);
+  //     ed->visb_num_.push_back(best_viewpoint.visib_num_);
+  //     // 可视化这个点
+  //     vector<Vector3d> thisviewpoint, viewpoint_line;
+  //     thisviewpoint.push_back(best_viewpoint.pos_);
+  //     Eigen::Vector3d direction(cos(best_viewpoint.yaw_), sin(best_viewpoint.yaw_), 0.0);
+  //     Eigen::Vector3d end_point = best_viewpoint.pos_ + direction * 1.0;
+  //     viewpoint_line.push_back(best_viewpoint.pos_);
+  //     viewpoint_line.push_back(end_point);
+  //     visualization_->displaySphereList(thisviewpoint, 0.15, black_color, 648);
+  //     visualization_->drawLines(viewpoint_line, 0.05, black_color, "viewpoint_vectoer_line", 9, 1);
+  //   }
+  // }
 
   // 绘制 frontier 和 bounding box
   static int last_ftr_num = 0;

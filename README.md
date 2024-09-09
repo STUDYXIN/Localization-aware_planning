@@ -310,14 +310,14 @@
 - **增加位置轨迹约束：**
 
   ```C++
-
+  
   void BsplineOptimizer::calcViewFrontierCost(
       const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
     ros::Time start_time = ros::Time::now();
     cost = 0.0;
     Eigen::Vector3d zero(0, 0, 0);
     std::fill(gradient_q.begin(), gradient_q.end(), zero);
-
+  
     // 遍历每个控制点 q[i]
     ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---Begin Compute "
             "ViewFrontierCost!",
@@ -348,7 +348,7 @@
           double convisual_angle;
           Vector3d convisual_angle_gradient;
           calcFVBValueAndGradients(node_pos, feature, frontier, convisual_angle, true, convisual_angle_gradient);
-
+  
           // 计算代价函数和梯度
           double is_feature_good, is_feature_good_gradient;
           double k1 = 10;
@@ -356,7 +356,7 @@
               1.0 /
               (1.0 + std::exp(-k1 * (std::cos(convisual_angle) - std::cos(configPA_.max_feature_and_frontier_convisual_angle_))));
           is_feature_good_gradient = is_feature_good * (1.0 - is_feature_good) * k1 * std::sin(convisual_angle);
-
+  
           //计算每个frontier可视的feature的数量
           frontier_visual_feature_num += is_feature_good;
           frontier_visual_feature_gradient += is_feature_good_gradient * convisual_angle_gradient;
@@ -372,7 +372,7 @@
       // std::cout << "    good_frontier_num " << good_frontier_num << " frontiers.size() " << frontiers.size() << endl;
       double good_frontier_percentage = good_frontier_num / frontiers.size();
       Vector3d good_frontier_percentage_gradient = good_frontier_gradient / frontiers.size();
-
+  
       cost += 1 - good_frontier_percentage;
       gradient_q[i] = -1 * good_frontier_percentage_gradient;
       std::cout << "Knot number " << i << ": cost_sum " << cost << " gradient_q: " << gradient_q[i].transpose() << endl;
@@ -381,7 +381,7 @@
     ros::Duration elapsed_time = end_time - start_time;
     ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Execution time: %.6f seconds", elapsed_time.toSec());
   } 
-
+  
   ```
 
   - 原理比较绕，大致流程如下：
@@ -392,3 +392,64 @@
     - 计算`good_frontier`的比例`good_frontier_percentage`，优化目标是最小化"1-good_frontier_percentage";
   - 这个原理的合理性在于位置轨迹会向着有能力看到特征点，且能看到更多frontier的地方优化。
   - 实测一点效果没有，乐。
+
+## 9月9日更新
+
+小打小闹的改动比较多
+
+- 像fast_planner一样增加选择目标点的方式，在exploration.launch中定义
+
+  ```xml
+      <!-- 1: use 2D Nav Goal to select goal  -->
+      <!-- 2: use global waypoints below  -->
+      <arg name="flight_type" value="2" />
+  
+      <arg name="point_num" value="4" />
+  
+      <arg name="point0_x" value="-10.0" />
+      <arg name="point0_y" value="-2.0" />
+      <arg name="point0_z" value="2.0" />
+  
+      <arg name="point1_x" value="-8.0" />
+      <arg name="point1_y" value="-1.5" />
+      <arg name="point1_z" value="1.0" />
+  
+      <arg name="point2_x" value="-6.0" />
+      <arg name="point2_y" value="-1.7" />
+      <arg name="point2_z" value="1.0" />
+  
+      <arg name="point3_x" value="-3.0" />
+      <arg name="point3_y" value="0.0" />
+      <arg name="point3_z" value="1.0" />
+  ```
+
+- 修改或增添了b样条优化器里YAWCOVISIBILITY和FRONTIERVISIBILITY_YAW（在位置轨迹考虑的宏定义改成了FRONTIERVISIBILITY_POS）相关的cost计算方式，yaw轨迹对feature的共视性在cost部分加入了类似硬约束的阈值，对Frontier的可见性参考APACE中的计算方式（v1 x v2 x v3）
+
+- yaw_initial_planner的cost计算方式选择最大化每个点看到frontier的数目，可见特征点少于阈值的yaw节点直接剔除，共视特征点数目少于阈值的两个yaw节点不能连成边
+
+  ```xml
+      <arg name="min_feature_num" value="10" />
+      <arg name="min_covisible_feature_num" value="6" />
+  ```
+
+- 在yaw轨迹优化前检查控制点的方差，如果太小就添加高斯噪声（避免全为0优化失败的情况）
+
+
+
+存在的问题：
+
+- b样条优化器经常不能很好的约束住yaw轨迹的末端指向预定的end yaw
+- 感觉看不太出优化完的yaw轨迹有很倾向于frontier
+- 需要对目标的frontier和目标末端状态用更显眼的方式可视化出来（现在经常搞不清它目标的frontier是哪一簇）
+
+致命bug：
+
+- 在优化器的yaw轨迹规划部分经常报failure
+
+- 有时候FSM从PLAN_TO_NEXT_GOAL跳转到PUB_TRAJ后就“死掉”了（再也没有打印消息，但也没有崩溃）
+
+- 在selectNextGoal函数里会崩溃
+
+- <div align="center">
+  <img src="img/bug1.png" alt="cover" width="640"/>
+  </div>

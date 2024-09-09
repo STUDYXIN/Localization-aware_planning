@@ -6,7 +6,7 @@ BASEDIR=$(dirname "${FILEDIR}")
 SETUP_FILE="${BASEDIR}/../../devel/setup.bash"
 SETUP_DIR=$(dirname "${SETUP_FILE}")
 # 第一个地图的参数
-PLY_NAME=right_corner_sample5.ply
+PLY_NAME=right_corner_sample25.ply
 FEATURE_NAME=feature_map_sample1.ply
 INIT_Y=0.0
 # 第二个地图的参数

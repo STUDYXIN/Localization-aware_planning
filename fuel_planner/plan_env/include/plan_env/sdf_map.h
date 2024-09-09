@@ -105,6 +105,7 @@ struct MapParam {
   double local_bound_inflate_;
   int local_map_margin_;
   double unknown_flag_;
+  int occupied_thr;
 };
 
 struct MapData {

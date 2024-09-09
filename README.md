@@ -304,3 +304,91 @@
 
 -**TODO**
   还未找到解决报错的办法
+
+### 9月7日更新
+
+- **增加位置轨迹约束：**
+
+  ```C++
+
+  void BsplineOptimizer::calcViewFrontierCost(
+      const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
+    ros::Time start_time = ros::Time::now();
+    cost = 0.0;
+    Eigen::Vector3d zero(0, 0, 0);
+    std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+    // 遍历每个控制点 q[i]
+    ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---Begin Compute "
+            "ViewFrontierCost!",
+        q.size(), ld_frontier_visibility_);
+    vector<Vector3d> frontiers;
+    frontier_finder_->getLatestFrontier(frontiers);  //仅先考虑看向前沿frontiers
+    if (frontiers.size() == 0) {
+      ROS_ERROR("[BsplineOptimizer::calcViewFrontierCost] NO Frontiers!!!!");
+      return;
+    }
+    for (int i = 0; i < q.size(); i++) {
+      Vector3d node_pos = q[i];  // 当前控制点的位置
+      vector<Vector3d> features;
+      feature_map_->getFeatures(node_pos, features);  //得到feature
+      if (features.size() == 0) {
+        std::cout << "Knot number " << i << "no feature..........." << endl;
+        gradient_q[i] = zero;
+        continue;
+      }
+      // 遍历每个特征点和前沿点
+      double good_frontier_num = 0;
+      Vector3d good_frontier_gradient = zero;
+      for (const auto& frontier : frontiers) {
+        double frontier_visual_feature_num = 0;
+        Vector3d frontier_visual_feature_gradient = zero;
+        for (const auto& feature : features) {
+          // 计算 convisual_angle：当前控制点看到特征点和前沿点的夹角
+          double convisual_angle;
+          Vector3d convisual_angle_gradient;
+          calcFVBValueAndGradients(node_pos, feature, frontier, convisual_angle, true, convisual_angle_gradient);
+
+          // 计算代价函数和梯度
+          double is_feature_good, is_feature_good_gradient;
+          double k1 = 10;
+          is_feature_good =
+              1.0 /
+              (1.0 + std::exp(-k1 * (std::cos(convisual_angle) - std::cos(configPA_.max_feature_and_frontier_convisual_angle_))));
+          is_feature_good_gradient = is_feature_good * (1.0 - is_feature_good) * k1 * std::sin(convisual_angle);
+
+          //计算每个frontier可视的feature的数量
+          frontier_visual_feature_num += is_feature_good;
+          frontier_visual_feature_gradient += is_feature_good_gradient * convisual_angle_gradient;
+        }
+        // std::cout << "   frontier_visual_feature_num " << frontier_visual_feature_num << endl;
+        double is_frontier_good, is_frontier_good_gradient;
+        double k2 = 20;
+        is_frontier_good = 1.0 / (1.0 + std::exp(-k2 * (frontier_visual_feature_num - configPA_.min_frontier_see_feature_num_)));
+        is_frontier_good_gradient = is_frontier_good * (1.0 - is_frontier_good) * k2;
+        good_frontier_num += is_frontier_good;
+        good_frontier_gradient += is_frontier_good_gradient * frontier_visual_feature_gradient;
+      }
+      // std::cout << "    good_frontier_num " << good_frontier_num << " frontiers.size() " << frontiers.size() << endl;
+      double good_frontier_percentage = good_frontier_num / frontiers.size();
+      Vector3d good_frontier_percentage_gradient = good_frontier_gradient / frontiers.size();
+
+      cost += 1 - good_frontier_percentage;
+      gradient_q[i] = -1 * good_frontier_percentage_gradient;
+      std::cout << "Knot number " << i << ": cost_sum " << cost << " gradient_q: " << gradient_q[i].transpose() << endl;
+    }
+    ros::Time end_time = ros::Time::now();
+    ros::Duration elapsed_time = end_time - start_time;
+    ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Execution time: %.6f seconds", elapsed_time.toSec());
+  } 
+
+  ```
+
+  - 原理比较绕，大致流程如下：
+    - 对每个节点，遍历相邻的feature和`要去的Viewpoint`对应的frontier降采样点。
+    - 计算节点与这两个点的连线之间的角度`convisual_angle`
+    - 给角度加个Sigmoid函数，将大于（60°）的`is_feature_good`置为0，小于为1，是`good feature`
+    - 得到每个frontier的`good feature`的数量，加上一层Sigmoid函数函数，意思是只有大于(15)的frontier才用，是`good_frontier`
+    - 计算`good_frontier`的比例`good_frontier_percentage`，优化目标是最小化"1-good_frontier_percentage";
+  - 这个原理的合理性在于位置轨迹会向着有能力看到特征点，且能看到更多frontier的地方优化。
+  - 实测一点效果没有，乐。

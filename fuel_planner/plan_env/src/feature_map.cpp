@@ -5,8 +5,6 @@
 namespace fast_planner {
 
 FeatureMap::FeatureMap() {
-  config_.depth_min_ = 0.2;
-  config_.depth_max_ = 5.0;
 }
 
 FeatureMap::~FeatureMap() {
@@ -60,11 +58,13 @@ void FeatureMap::loadMap(const string& filename) {
 }
 
 void FeatureMap::addFeatureCloud(const Eigen::Vector3d& pos, const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
+  Matrix4d Pose_receive = Matrix4d::Identity();
+  Pose_receive.block<3, 1>(0, 3) = pos;
+  Matrix4d camera_pose = Pose_receive * camera_param.sensor2body;
+  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
   for (const auto& pt : cloud->points) {
     Eigen::Vector3d pt_eigen(pt.x, pt.y, pt.z);
-    double dist = (pt_eigen - pos).norm();
-
-    if (dist > config_.depth_max_ || dist < config_.depth_min_) continue;
+    if (!camera_param.is_depth_useful(pos_transformed, pt_eigen)) continue;
 
     features_cloud_.push_back(pt);
   }
@@ -92,24 +92,8 @@ void FeatureMap::getFeatureCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud) {
 }
 
 void FeatureMap::getFeatures(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>& res) {
-  if (features_cloud_.points.empty()) return;
-
-  res.clear();
-
-  pcl::PointXYZ searchPoint;
-  searchPoint.x = pos(0);
-  searchPoint.y = pos(1);
-  searchPoint.z = pos(2);
-
-  vector<int> pointIdxRadiusSearch;
-  vector<float> pointRadiusSquaredDistance;
-
-  features_kdtree_.radiusSearch(searchPoint, config_.depth_max_, pointIdxRadiusSearch, pointRadiusSquaredDistance);
-
-  for (const auto& index : pointIdxRadiusSearch) {
-    Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
-    if ((f - pos).norm() > config_.depth_min_) res.push_back(f);
-  }
+  // 这是B样条优化那边的老接口，原本的没有考虑无人机到相机的旋转
+  get_NumCloud_using_justpos(pos, res);
 }
 
 void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
@@ -331,14 +315,85 @@ int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos) {
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
-    if (camera_param.is_depth_useful(pos, f) &&
-        !sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+    if (camera_param.is_depth_useful(pos_transformed, f) &&
+        !sdf_map->checkObstacleBetweenPoints(
+            pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+      feature_num++;
+  }
+  return feature_num;
+}
+
+int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>& res) {
+  if (features_cloud_.empty()) return 0;
+  res.clear();
+  Matrix4d Pose_receive = Matrix4d::Identity();
+  Pose_receive.block<3, 1>(0, 3) = pos;
+  Matrix4d camera_pose = Pose_receive * camera_param.sensor2body;
+  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
+  if (features_cloud_.empty()) return 0;
+  pcl::PointXYZ searchPoint;
+  searchPoint.x = pos_transformed(0);
+  searchPoint.y = pos_transformed(1);
+  searchPoint.z = pos_transformed(2);
+
+  vector<int> pointIdxRadiusSearch;
+  vector<float> pointRadiusSquaredDistance;
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+
+  for (const auto& index : pointIdxRadiusSearch) {
+    Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (camera_param.is_depth_useful(pos_transformed, f) &&
+        !sdf_map->checkObstacleBetweenPoints(
+            pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+      res.push_back(f);
+  }
+  return res.size();
+}
+
+void FeatureMap::get_YawRange_using_Pos(
+    const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num) {
+  Matrix4d Pose_receive = Matrix4d::Identity();
+  feature_visual_num.resize(sample_yaw.size());
+  std::fill(feature_visual_num.begin(), feature_visual_num.end(), 0);
+  Pose_receive.block<3, 1>(0, 3) = pos;
+  Matrix4d camera_pose = Pose_receive * camera_param.sensor2body;
+  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
+  if (features_cloud_.empty()) return;
+  int feature_num = 0;
+  pcl::PointXYZ searchPoint;
+  searchPoint.x = pos_transformed(0);
+  searchPoint.y = pos_transformed(1);
+  searchPoint.z = pos_transformed(2);
+
+  vector<int> pointIdxRadiusSearch;
+  vector<float> pointRadiusSquaredDistance;
+  features_kdtree_.radiusSearch(searchPoint, camera_param.feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+  // cout << " [FeatureMap::get_YawRange_using_Pos] debug yaw_range";
+  for (const auto& index : pointIdxRadiusSearch) {
+    Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (camera_param.is_depth_useful(pos_transformed, f) &&
+        !sdf_map->checkObstacleBetweenPoints(
+            pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
     {
-      if ((pos - f).norm() > 0.5) {  // 太近的特征点不算，防止规划到障碍物上
-        feature_num++;
+      Eigen::Vector2d yaw_range = camera_param.calculateYawRange(pos_transformed, f);
+      // cout << "  " << yaw_range.transpose();
+      for (size_t i = 0; i < sample_yaw.size(); ++i) {
+        double yaw = sample_yaw[i];
+        // 情况1：yaw_range(0) < yaw_range(1)，范围不跨越“π”
+        if (yaw_range(0) < yaw_range(1)) {
+          if (yaw >= yaw_range(0) && yaw <= yaw_range(1)) {
+            feature_visual_num[i] += 1;
+          }
+        }
+        // 情况2：yaw_range(0) > yaw_range(1)，范围跨越“π”
+        else {
+          if (yaw >= yaw_range(0) || yaw <= yaw_range(1)) {
+            feature_visual_num[i] += 1;
+          }
+        }
       }
     }
   }
-  return feature_num;
+  // cout << endl;
 }
 }  // namespace fast_planner

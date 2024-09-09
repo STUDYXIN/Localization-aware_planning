@@ -33,7 +33,8 @@ public:
   void initialize(ros::NodeHandle& nh);
 
   NEXT_GOAL_TYPE selectNextGoal(Vector3d& next_pos, double& next_yaw);
-  bool planToNextGoal(const Vector3d& next_pos, const double& next_yaw,const vector<Vector3d>& frontire_cells);
+  bool planToNextGoal(const Vector3d& next_pos, const double& next_yaw);
+  bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
 
   weak_ptr<PAExplorationFSM> expl_fsm_;
 
@@ -41,14 +42,13 @@ public:
   shared_ptr<ExplorationParam> ep_;
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FrontierFinder> frontier_finder_;
+  shared_ptr<FeatureMap> feature_map_;
 
 private:
   shared_ptr<EDTEnvironment> edt_environment_;
   shared_ptr<SDFMap> sdf_map_, global_sdf_map_;
-  shared_ptr<FeatureMap> feature_map_;
 
   void shortenPath(vector<Vector3d>& path);
-  bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
 
 public:
   typedef shared_ptr<PAExplorationManager> Ptr;

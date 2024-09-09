@@ -3,6 +3,7 @@
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
 #include <plan_env/feature_map.h>
+#include <active_perception/frontier_finder.h>
 
 #include <nlopt.hpp>
 #include <thread>
@@ -41,6 +42,7 @@ void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   nh.param("optimization/ld_view", ld_view_, -1.0);
   nh.param("optimization/ld_time", ld_time_, -1.0);
   nh.param("optimization/ld_parallax", ld_parallax_, -1.0);
+  nh.param("optimization/ld_frontier_visibility", ld_frontier_visibility_, -1.0);
   nh.param("optimization/ld_vertical_visibility", ld_vertical_visibility_, -1.0);
   nh.param("optimization/ld_yaw_covisibility", ld_yaw_covisib_, -1.0);
   nh.param("optimization/ld_frontier_visibility", ld_frontier_visibility_, -1.0);
@@ -54,6 +56,9 @@ void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   nh.param("optimization/parallax/estimator_freq", configPA_.estimator_freq_, -1.0);
   nh.param("optimization/parallax/max_parallax", configPA_.max_parallax_, -1.0);
   nh.param("optimization/parallax/pot_a", configPA_.pot_a_, -1.0);
+  nh.param("optimization/max_feature_and_frontier_convisual_angle", configPA_.max_feature_and_frontier_convisual_angle_, -1.0);
+  nh.param("optimization/min_frontier_see_feature_num", configPA_.min_frontier_see_feature_num_, -1.0);
+  nh.param("optimization/pot_fafv", configPA_.pot_fafv_, -1.0);
 
   nh.param("optimization/max_iteration_num1", max_iteration_num_[0], -1);
   nh.param("optimization/max_iteration_num2", max_iteration_num_[1], -1);
@@ -93,7 +98,7 @@ void BsplineOptimizer::setCostFunction(const int& cost_code) {
   if (cost_function_ & PARALLAX) cost_str += " parallax | ";
   if (cost_function_ & VERTICALVISIBILITY) cost_str += " veritcal_visibility | ";
   if (cost_function_ & YAWCOVISIBILITY) cost_str += " yaw_covisibility | ";
-  if (cost_function_ & FRONTIERVISIBILITY) cost_str += " frontier_visibility | ";
+  if (cost_function_ & FRONTIERVISIBILITY) cost_str += " frontier_covisibility | ";
 
   // ROS_INFO_STREAM("cost func: " << cost_str);
 }
@@ -175,6 +180,7 @@ void BsplineOptimizer::optimize(
   for (int i = 0; i < control_points_.rows() - 1; ++i) {
     pt_dist_ += (control_points_.row(i + 1) - control_points_.row(i)).norm();
   }
+  // 得到控制点的平均距离
   pt_dist_ /= point_num_;
 
   iter_num_ = 0;
@@ -190,6 +196,7 @@ void BsplineOptimizer::optimize(
   g_view_.resize(point_num_);
   g_time_.resize(point_num_);
   g_parallax_.resize(point_num_);
+  g_frontier_visibility_.resize(point_num_);
   g_yaw_covisibility_.resize(point_num_);
   g_frontier_visibility_.resize(point_num_);
 
@@ -582,6 +589,44 @@ void BsplineOptimizer::calcParaValueAndGradients(
   }
 }
 
+void BsplineOptimizer::calcFVBValueAndGradients(const Vector3d& node_pos, const Vector3d& feature, const Vector3d& frontier,
+    double& convisual_angle, bool calc_grad, Eigen::Vector3d& dfvb_dq) {
+
+  Vector3d v1 = node_pos - feature;
+  Vector3d v2 = node_pos - frontier;
+  double v1_norm = v1.norm();
+  double v2_norm = v2.norm();
+
+  // 如果 v1 或 v2 的模长接近零，如果位置非常接近，夹角设为 0 或 π，梯度设为小值
+  if (v1_norm < 1e-6 || v2_norm < 1e-6) {
+    convisual_angle = (v1_norm < 1e-6 && v2_norm < 1e-6) ? 0.0 : M_PI;
+    dfvb_dq = Eigen::Vector3d::Zero();
+    return;
+  }
+
+  double u = v1.dot(v2) / (v1_norm * v2_norm);
+  // 计算视差角
+  convisual_angle = acos(u);
+
+  if (!calc_grad) {
+    return;
+  }
+
+  // 当 u 等于 1 或 -1 时，梯度设为 0
+  if (fabs(u) >= 1.0) {
+    dfvb_dq = Eigen::Vector3d::Zero();
+    return;
+  }
+
+  // 计算 dfvb/du
+  double dconvisual_du = -1 / sqrt(1 - u * u);
+  // 计算 du/dP
+  Eigen::Vector3d du_dP =
+      (v2 / (v1_norm * v2_norm)) + (v1 / (v1_norm * v2_norm)) - u * ((v1 / pow(v1_norm, 3)) + (v2 / pow(v2_norm, 3)));
+  // 计算 dfvb/dq
+  dfvb_dq = dconvisual_du * du_dP;
+}
+
 void BsplineOptimizer::calcParaPotentialAndGradients(
     const double parallax, const double dt, double& para_pot, double& dpot_dpara) {
   // Potential func: f(x) = 0 if x < max; f(x) = a(x-max)^2 otherwise
@@ -801,11 +846,83 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
 
     cost += ld_para * cost_para;
     cost += ld_vcv * cost_vcv;
+
     for (int j = 0; j < 4; j++) {
       gradient_q[i + j] += ld_para * dcost_para_dq[j];
       gradient_q[i + j] += ld_vcv * dcost_vcv_dq[j];
     }
   }
+}
+
+void BsplineOptimizer::calcViewFrontierCost(
+    const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
+  ros::Time start_time = ros::Time::now();
+  cost = 0.0;
+  Eigen::Vector3d zero(0, 0, 0);
+  std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+  // 遍历每个控制点 q[i]
+  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Debug Message---knot_size: %zu ---ld_this: %.2f ---Begin Compute "
+           "ViewFrontierCost!",
+      q.size(), ld_frontier_visibility_);
+  vector<Vector3d> frontiers;
+  frontier_finder_->getLatestFrontier(frontiers);  // 仅先考虑看向前沿frontiers
+  if (frontiers.size() == 0) {
+    ROS_ERROR("[BsplineOptimizer::calcViewFrontierCost] NO Frontiers!!!!");
+    return;
+  }
+  for (int i = 0; i < q.size(); i++) {
+    Vector3d node_pos = q[i];  // 当前控制点的位置
+    vector<Vector3d> features;
+    feature_map_->getFeatures(node_pos, features);  // 得到feature
+    if (features.size() == 0) {
+      std::cout << "Knot number " << i << "no feature..........." << endl;
+      gradient_q[i] = zero;
+      continue;
+    }
+    // 遍历每个特征点和前沿点
+    double good_frontier_num = 0;
+    Vector3d good_frontier_gradient = zero;
+    for (const auto& frontier : frontiers) {
+      double frontier_visual_feature_num = 0;
+      Vector3d frontier_visual_feature_gradient = zero;
+      for (const auto& feature : features) {
+        // 计算 convisual_angle：当前控制点看到特征点和前沿点的夹角
+        double convisual_angle;
+        Vector3d convisual_angle_gradient;
+        calcFVBValueAndGradients(node_pos, feature, frontier, convisual_angle, true, convisual_angle_gradient);
+
+        // 计算代价函数和梯度
+        double is_feature_good, is_feature_good_gradient;
+        double k1 = 10;
+        is_feature_good =
+            1.0 /
+            (1.0 + std::exp(-k1 * (std::cos(convisual_angle) - std::cos(configPA_.max_feature_and_frontier_convisual_angle_))));
+        is_feature_good_gradient = is_feature_good * (1.0 - is_feature_good) * k1 * std::sin(convisual_angle);
+
+        // 计算每个frontier可视的feature的数量
+        frontier_visual_feature_num += is_feature_good;
+        frontier_visual_feature_gradient += is_feature_good_gradient * convisual_angle_gradient;
+      }
+      // std::cout << "   frontier_visual_feature_num " << frontier_visual_feature_num << endl;
+      double is_frontier_good, is_frontier_good_gradient;
+      double k2 = 20;
+      is_frontier_good = 1.0 / (1.0 + std::exp(-k2 * (frontier_visual_feature_num - configPA_.min_frontier_see_feature_num_)));
+      is_frontier_good_gradient = is_frontier_good * (1.0 - is_frontier_good) * k2;
+      good_frontier_num += is_frontier_good;
+      good_frontier_gradient += is_frontier_good_gradient * frontier_visual_feature_gradient;
+    }
+    // std::cout << "    good_frontier_num " << good_frontier_num << " frontiers.size() " << frontiers.size() << endl;
+    double good_frontier_percentage = good_frontier_num / frontiers.size();
+    Vector3d good_frontier_percentage_gradient = good_frontier_gradient / frontiers.size();
+
+    cost += 1 - good_frontier_percentage;
+    gradient_q[i] = -1 * good_frontier_percentage_gradient;
+    std::cout << "Knot number " << i << ": cost_sum " << cost << " gradient_q: " << gradient_q[i].transpose() << endl;
+  }
+  ros::Time end_time = ros::Time::now();
+  ros::Duration elapsed_time = end_time - start_time;
+  ROS_WARN("[BsplineOptimizer::calcViewFrontierCost] Execution time: %.6f seconds", elapsed_time.toSec());
 }
 
 void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
@@ -1016,258 +1133,269 @@ void calcFrontierVisibilityCostAndGradientsKnots(const vector<Vector3d>& q_cur, 
 }
 
 void BsplineOptimizer::calcYawCoVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
-  // q.size = n+1, pos_.size = n-p+2 = (n+1) - 2, where p = 3
+  void BsplineOptimizer::calcYawCoVisbilityCost(
+      const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
+    // q.size = n+1, pos_.size = n-p+2 = (n+1) - 2, where p = 3
 
-  if (q.size() - 2 != pos_.size()) ROS_ERROR("q and pos_ have incompatible size!");
+    if (q.size() - 2 != pos_.size()) ROS_ERROR("q and pos_ have incompatible size!");
 
-  cost = 0.0;
-  Vector3d zero(0, 0, 0);
-  std::fill(gradient_q.begin(), gradient_q.end(), zero);
+    cost = 0.0;
+    Vector3d zero(0, 0, 0);
+    std::fill(gradient_q.begin(), gradient_q.end(), zero);
 
-  double cost_i;
-  vector<Vector3d> dcost_dq_i;
-  for (size_t i = 0; i < q.size() - 3; ++i) {
-    // For (q0, q1, q2, q3)->(knot1, knot2), calculate the covisibility cost and gradient
-    vector<Vector3d> q_cur;
-    for (int j = 0; j < 4; j++) q_cur.push_back(q[i + j]);
+    double cost_i;
+    vector<Vector3d> dcost_dq_i;
+    for (size_t i = 0; i < q.size() - 3; ++i) {
+      // For (q0, q1, q2, q3)->(knot1, knot2), calculate the covisibility cost and gradient
+      vector<Vector3d> q_cur;
+      for (int j = 0; j < 4; j++) q_cur.push_back(q[i + j]);
 
-    vector<Vector3d> knots_pos, knots_acc;
-    for (int j = 0; j < 2; j++) {
-      knots_pos.push_back(pos_[i + j]);
-      knots_acc.push_back(acc_[i + j]);
-    }
+      vector<Vector3d> knots_pos, knots_acc;
+      for (int j = 0; j < 2; j++) {
+        knots_pos.push_back(pos_[i + j]);
+        knots_acc.push_back(acc_[i + j]);
+      }
 
-    Vector3d knot_mid = 0.5 * (pos_[i] + pos_[i + 1]);
-    vector<Vector3d> features;
-    feature_map_->getFeatures(knot_mid, features);
+      Vector3d knot_mid = 0.5 * (pos_[i] + pos_[i + 1]);
+      vector<Vector3d> features;
+      feature_map_->getFeatures(knot_mid, features);
 
-    calcYawCVCostAndGradientsKnots(q_cur, knots_pos, knots_acc, features, cost_i, dcost_dq_i);
+      calcYawCVCostAndGradientsKnots(q_cur, knots_pos, knots_acc, features, cost_i, dcost_dq_i);
 
-    cost += cost_i;
-    for (int j = 0; j < 4; j++) gradient_q[i + j] += dcost_dq_i[j];
-  }
-}
-
-void BsplineOptimizer::calcFrontierVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
-  ROS_INFO("calcFrontierVisbilityCost");
-
-  cost = 0.0;
-  Vector3d zero(0, 0, 0);
-  std::fill(gradient_q.begin(), gradient_q.end(), zero);
-
-  double cost_i;
-  vector<Vector3d> dcost_dq_i;
-
-  for (size_t i = 0; i < q.size() - 2; ++i) {
-    vector<Vector3d> q_cur;
-    for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
-
-    Vector3d knots_pos = pos_[i];
-    Vector3d knots_acc = acc_[i];
-
-    calcFrontierVisibilityCostAndGradientsKnots(q_cur, knots_pos, knots_acc, frontier_cells_, cost_i, dcost_dq_i);
-
-    cout << "cost_i: " << cost_i << endl;
-
-    cost += cost_i;
-    for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dq_i[j];
-  }
-}
-
-// !SECTION
-
-void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<double>& grad, double& f_combine) {
-
-  ros::Time t1 = ros::Time::now();
-
-  for (int i = 0; i < point_num_; ++i) {
-    for (int j = 0; j < dim_; ++j) g_q_[i][j] = x[dim_ * i + j];
-    for (int j = dim_; j < 3; ++j) g_q_[i][j] = 0.0;
-  }
-  const double dt = optimize_time_ ? x[variable_num_ - 1] : knot_span_;
-
-  f_combine = 0.0;
-  grad.resize(variable_num_);
-  fill(grad.begin(), grad.end(), 0.0);
-
-  // Cost1：平滑度约束
-  if (cost_function_ & SMOOTHNESS) {
-    // ROS_WARN("calc smoothness cost");
-
-    double f_smoothness = 0.0;
-    calcSmoothnessCost(g_q_, f_smoothness, g_smoothness_);
-    f_combine += ld_smooth_ * f_smoothness;
-    for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_smooth_ * g_smoothness_[i](j);
-  }
-
-  // Cost2：避障约束
-  if (cost_function_ & DISTANCE) {
-    // ROS_WARN("calc distance cost");
-
-    double f_distance = 0.0;
-    calcDistanceCost(g_q_, f_distance, g_distance_);
-    f_combine += ld_dist_ * f_distance;
-    for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_dist_ * g_distance_[i](j);
-  }
-
-  // Cost3：动力学可行性约束
-  if (cost_function_ & FEASIBILITY) {
-    // ROS_WARN("calc feasibility");
-
-    double f_feasibility = 0.0, gt_feasibility = 0.0;
-    calcFeasibilityCost(g_q_, dt, f_feasibility, g_feasibility_, gt_feasibility);
-    f_combine += ld_feasi_ * f_feasibility;
-    for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_feasi_ * g_feasibility_[i](j);
-    if (optimize_time_) grad[variable_num_ - 1] += ld_feasi_ * gt_feasibility;
-  }
-
-  // Cost4：起始状态约束
-  if (cost_function_ & START) {
-    // ROS_WARN("calc start");
-
-    double f_start = 0.0, gt_start = 0.0;
-    calcStartCost(g_q_, dt, f_start, g_start_, gt_start);
-    f_combine += ld_start_ * f_start;
-    for (int i = 0; i < 3; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_start_ * g_start_[i](j);
-    if (optimize_time_) grad[variable_num_ - 1] += ld_start_ * gt_start;
-  }
-
-  // Cost5：终止状态约束
-  if (cost_function_ & END) {
-
-    // ROS_WARN("calc end");
-    double f_end = 0.0, gt_end = 0.0;
-    calcEndCost(g_q_, dt, f_end, g_end_, gt_end);
-    f_combine += ld_end_ * f_end;
-    for (int i = point_num_ - 3; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_end_ * g_end_[i](j);
-
-    if (optimize_time_) grad[variable_num_ - 1] += ld_end_ * gt_end;
-  }
-
-  // Cost6：引导约束，指定的是控制点约束
-  if (cost_function_ & GUIDE) {
-    // ROS_WARN("calc guide");
-    double f_guide = 0.0;
-    calcGuideCost(g_q_, f_guide, g_guide_);
-    f_combine += ld_guide_ * f_guide;
-    for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_guide_ * g_guide_[i](j);
-  }
-
-  // Cost7：同样是引导约束，不过是使用waypoints，跟上面的区别是上面使用control point，这个使用knot point
-  if (cost_function_ & WAYPOINTS) {
-    // ROS_WARN("calc waypoints");
-    double f_waypoints = 0.0;
-    calcWaypointsCost(g_q_, f_waypoints, g_waypoints_);
-    f_combine += ld_waypt_ * f_waypoints;
-    for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_waypt_ * g_waypoints_[i](j);
-  }
-
-  if (cost_function_ & VIEWCONS) {
-    // ROS_WARN("calcViwcons");
-    double f_view = 0.0;
-    calcViewCost(g_q_, f_view, g_view_);
-    f_combine += ld_view_ * f_view;
-    for (int i = 0; i < point_num_; i++)
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_view_ * g_view_[i](j);
-  }
-
-  // Cost8：最小化时间约束
-  if (cost_function_ & MINTIME) {
-    // ROS_WARN("calc min time");
-    double f_time = 0.0, gt_time = 0.0;
-    calcTimeCost(dt, f_time, gt_time);
-    f_combine += ld_time_ * f_time;
-    grad[variable_num_ - 1] += ld_time_ * gt_time;
-  }
-
-  // SECTION Perception Aware Optimization
-
-  /// APACE新加的
-  /// 用于Position Trajectory Optimization阶段
-  /// Cost9：视差约束和垂直共视性约束
-  if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY)) {
-    double f_parallax = 0.0;
-    calcPerceptionCost(g_q_, dt, f_parallax, g_parallax_, ld_parallax_, ld_vertical_visibility_);
-    f_combine += f_parallax;
-    for (int i = 0; i < point_num_; i++) {
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
-    }
-  }
-  /// 用于Yaw Trajectory Optimization阶段
-  /// Cost10：yaw共视性约束
-  if (cost_function_ & YAWCOVISIBILITY) {
-    double f_yaw_covisibility = 0.0;
-    calcYawCoVisbilityCost(g_q_, f_yaw_covisibility, g_yaw_covisibility_);
-    f_combine += ld_yaw_covisib_ * f_yaw_covisibility;
-    for (int i = 0; i < point_num_; i++) {
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_yaw_covisib_ * g_yaw_covisibility_[i](j);
+      cost += cost_i;
+      for (int j = 0; j < 4; j++) gradient_q[i + j] += dcost_dq_i[j];
     }
   }
 
-  /// 我们新加的
-  ///  Cost11：frontier可见性约束
-  if (cost_function_ & FRONTIERVISIBILITY) {
-    double f_frontier_visibility = 0.0;
-    calcFrontierVisbilityCost(g_q_, f_frontier_visibility, g_frontier_visibility_);
-    cout << "frontier_cells_ size: " << frontier_cells_.size() << endl;
-    cout << "f_frontier_visibility: " << f_frontier_visibility << endl;
-    cout << "g_frontier_visibility_: " << endl;
-    for (const auto& g : g_frontier_visibility_) {
-      cout << g.transpose() << endl;
-    }
-    f_combine += ld_frontier_visibility_ * f_frontier_visibility;
-    for (int i = 0; i < point_num_; i++) {
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_frontier_visibility_ * g_frontier_visibility_[i](j);
+  void BsplineOptimizer::calcFrontierVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
+    ROS_INFO("calcFrontierVisbilityCost");
+
+    cost = 0.0;
+    Vector3d zero(0, 0, 0);
+    std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+    double cost_i;
+    vector<Vector3d> dcost_dq_i;
+
+    for (size_t i = 0; i < q.size() - 2; ++i) {
+      vector<Vector3d> q_cur;
+      for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
+
+      Vector3d knots_pos = pos_[i];
+      Vector3d knots_acc = acc_[i];
+
+      calcFrontierVisibilityCostAndGradientsKnots(q_cur, knots_pos, knots_acc, frontier_cells_, cost_i, dcost_dq_i);
+
+      cout << "cost_i: " << cost_i << endl;
+
+      cost += cost_i;
+      for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dq_i[j];
     }
   }
 
   // !SECTION
 
-  comb_time += (ros::Time::now() - t1).toSec();
-}
+  void BsplineOptimizer::combineCost(const std::vector<double>& x, std::vector<double>& grad, double& f_combine) {
 
-double BsplineOptimizer::costFunction(const std::vector<double>& x, std::vector<double>& grad, void* func_data) {
-  BsplineOptimizer* opt = reinterpret_cast<BsplineOptimizer*>(func_data);
-  double cost;
-  opt->combineCost(x, grad, cost);
-  opt->iter_num_++;
+    ros::Time t1 = ros::Time::now();
 
-  /* save the min cost result */
-  if (cost < opt->min_cost_) {
-    opt->min_cost_ = cost;
-    opt->best_variable_ = x;
+    for (int i = 0; i < point_num_; ++i) {
+      for (int j = 0; j < dim_; ++j) g_q_[i][j] = x[dim_ * i + j];
+      for (int j = dim_; j < 3; ++j) g_q_[i][j] = 0.0;
+    }
+    const double dt = optimize_time_ ? x[variable_num_ - 1] : knot_span_;
+
+    f_combine = 0.0;
+    grad.resize(variable_num_);
+    fill(grad.begin(), grad.end(), 0.0);
+
+    // Cost1：平滑度约束
+    if (cost_function_ & SMOOTHNESS) {
+      // ROS_WARN("calc smoothness cost");
+
+      double f_smoothness = 0.0;
+      calcSmoothnessCost(g_q_, f_smoothness, g_smoothness_);
+      f_combine += ld_smooth_ * f_smoothness;
+      for (int i = 0; i < point_num_; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_smooth_ * g_smoothness_[i](j);
+    }
+
+    // Cost2：避障约束
+    if (cost_function_ & DISTANCE) {
+      // ROS_WARN("calc distance cost");
+
+      double f_distance = 0.0;
+      calcDistanceCost(g_q_, f_distance, g_distance_);
+      f_combine += ld_dist_ * f_distance;
+      for (int i = 0; i < point_num_; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_dist_ * g_distance_[i](j);
+    }
+
+    // Cost3：动力学可行性约束
+    if (cost_function_ & FEASIBILITY) {
+      // ROS_WARN("calc feasibility");
+
+      double f_feasibility = 0.0, gt_feasibility = 0.0;
+      calcFeasibilityCost(g_q_, dt, f_feasibility, g_feasibility_, gt_feasibility);
+      f_combine += ld_feasi_ * f_feasibility;
+      for (int i = 0; i < point_num_; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_feasi_ * g_feasibility_[i](j);
+      if (optimize_time_) grad[variable_num_ - 1] += ld_feasi_ * gt_feasibility;
+    }
+
+    // Cost4：起始状态约束
+    if (cost_function_ & START) {
+      // ROS_WARN("calc start");
+
+      double f_start = 0.0, gt_start = 0.0;
+      calcStartCost(g_q_, dt, f_start, g_start_, gt_start);
+      f_combine += ld_start_ * f_start;
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_start_ * g_start_[i](j);
+      if (optimize_time_) grad[variable_num_ - 1] += ld_start_ * gt_start;
+    }
+
+    // Cost5：终止状态约束
+    if (cost_function_ & END) {
+
+      // ROS_WARN("calc end");
+      double f_end = 0.0, gt_end = 0.0;
+      calcEndCost(g_q_, dt, f_end, g_end_, gt_end);
+      f_combine += ld_end_ * f_end;
+      for (int i = point_num_ - 3; i < point_num_; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_end_ * g_end_[i](j);
+
+      if (optimize_time_) grad[variable_num_ - 1] += ld_end_ * gt_end;
+    }
+
+    // Cost6：引导约束，指定的是控制点约束
+    if (cost_function_ & GUIDE) {
+      // ROS_WARN("calc guide");
+      double f_guide = 0.0;
+      calcGuideCost(g_q_, f_guide, g_guide_);
+      f_combine += ld_guide_ * f_guide;
+      for (int i = 0; i < point_num_; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_guide_ * g_guide_[i](j);
+    }
+
+    // Cost7：同样是引导约束，不过是使用waypoints，跟上面的区别是上面使用control point，这个使用knot point
+    if (cost_function_ & WAYPOINTS) {
+      // ROS_WARN("calc waypoints");
+      double f_waypoints = 0.0;
+      calcWaypointsCost(g_q_, f_waypoints, g_waypoints_);
+      f_combine += ld_waypt_ * f_waypoints;
+      for (int i = 0; i < point_num_; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_waypt_ * g_waypoints_[i](j);
+    }
+
+    if (cost_function_ & VIEWCONS) {
+      // ROS_WARN("calcViwcons");
+      double f_view = 0.0;
+      calcViewCost(g_q_, f_view, g_view_);
+      f_combine += ld_view_ * f_view;
+      for (int i = 0; i < point_num_; i++)
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_view_ * g_view_[i](j);
+    }
+
+    // Cost8：最小化时间约束
+    if (cost_function_ & MINTIME) {
+      // ROS_WARN("calc min time");
+      double f_time = 0.0, gt_time = 0.0;
+      calcTimeCost(dt, f_time, gt_time);
+      f_combine += ld_time_ * f_time;
+      grad[variable_num_ - 1] += ld_time_ * gt_time;
+    }
+
+    // SECTION Perception Aware Optimization
+
+    /// APACE新加的
+    /// 用于Position Trajectory Optimization阶段
+    /// Cost9：视差约束和垂直共视性约束
+    if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY)) {
+      double f_parallax = 0.0;
+      calcPerceptionCost(g_q_, dt, f_parallax, g_parallax_, ld_parallax_, ld_vertical_visibility_);
+      f_combine += f_parallax;
+      for (int i = 0; i < point_num_; i++) {
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
+      }
+    }
+    // Cost11：FRONTIER可见性约束
+    if ((cost_function_ & FRONTIERVISIBILITY)) {
+      double f_frontier_visibility_ = 0.0;
+      calcViewFrontierCost(g_q_, dt, f_frontier_visibility_, g_frontier_visibility_);
+      f_combine += ld_frontier_visibility_ * f_frontier_visibility_;
+      for (int i = 0; i < point_num_; i++) {
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_frontier_visibility_[i](j);
+      }
+    }
+    /// 用于Yaw Trajectory Optimization阶段
+    /// Cost10：yaw共视性约束
+    if (cost_function_ & YAWCOVISIBILITY) {
+      double f_yaw_covisibility = 0.0;
+      calcYawCoVisbilityCost(g_q_, f_yaw_covisibility, g_yaw_covisibility_);
+      f_combine += ld_yaw_covisib_ * f_yaw_covisibility;
+      for (int i = 0; i < point_num_; i++) {
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_yaw_covisib_ * g_yaw_covisibility_[i](j);
+      }
+    }
+
+    /// 我们新加的
+    ///  Cost11：frontier可见性约束
+    if (cost_function_ & FRONTIERVISIBILITY) {
+      double f_frontier_visibility = 0.0;
+      calcFrontierVisbilityCost(g_q_, f_frontier_visibility, g_frontier_visibility_);
+      cout << "frontier_cells_ size: " << frontier_cells_.size() << endl;
+      cout << "f_frontier_visibility: " << f_frontier_visibility << endl;
+      cout << "g_frontier_visibility_: " << endl;
+      for (const auto& g : g_frontier_visibility_) {
+        cout << g.transpose() << endl;
+      }
+      f_combine += ld_frontier_visibility_ * f_frontier_visibility;
+      for (int i = 0; i < point_num_; i++) {
+        for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_frontier_visibility_ * g_frontier_visibility_[i](j);
+      }
+    }
+
+    // !SECTION
+
+    comb_time += (ros::Time::now() - t1).toSec();
   }
-  return cost;
-}
 
-vector<Eigen::Vector3d> BsplineOptimizer::matrixToVectors(const Eigen::MatrixXd& ctrl_pts) {
-  vector<Eigen::Vector3d> ctrl_q;
-  for (int i = 0; i < ctrl_pts.rows(); ++i) {
-    ctrl_q.push_back(ctrl_pts.row(i));
+  double BsplineOptimizer::costFunction(const std::vector<double>& x, std::vector<double>& grad, void* func_data) {
+    BsplineOptimizer* opt = reinterpret_cast<BsplineOptimizer*>(func_data);
+    double cost;
+    opt->combineCost(x, grad, cost);
+    opt->iter_num_++;
+
+    /* save the min cost result */
+    if (cost < opt->min_cost_) {
+      opt->min_cost_ = cost;
+      opt->best_variable_ = x;
+    }
+    return cost;
   }
-  return ctrl_q;
-}
 
-Eigen::MatrixXd BsplineOptimizer::getControlPoints() {
-  return this->control_points_;
-}
-
-bool BsplineOptimizer::isQuadratic() {
-  if (cost_function_ == GUIDE_PHASE) {
-    return true;
-  } else if (cost_function_ == SMOOTHNESS) {
-    return true;
-  } else if (cost_function_ == (SMOOTHNESS | WAYPOINTS)) {
-    return true;
+  vector<Eigen::Vector3d> BsplineOptimizer::matrixToVectors(const Eigen::MatrixXd& ctrl_pts) {
+    vector<Eigen::Vector3d> ctrl_q;
+    for (int i = 0; i < ctrl_pts.rows(); ++i) {
+      ctrl_q.push_back(ctrl_pts.row(i));
+    }
+    return ctrl_q;
   }
-  return false;
-}
+
+  Eigen::MatrixXd BsplineOptimizer::getControlPoints() {
+    return this->control_points_;
+  }
+
+  bool BsplineOptimizer::isQuadratic() {
+    if (cost_function_ == GUIDE_PHASE) {
+      return true;
+    } else if (cost_function_ == SMOOTHNESS) {
+      return true;
+    } else if (cost_function_ == (SMOOTHNESS | WAYPOINTS)) {
+      return true;
+    }
+    return false;
+  }
 
 }  // namespace fast_planner

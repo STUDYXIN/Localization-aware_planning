@@ -92,6 +92,24 @@ public:
   bool is_depth_useful(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
     return (target_p - camera_p).norm() > feature_visual_min && (target_p - camera_p).norm() < feature_visual_max;
   }
+
+  // 计算从 camera_p 看向 target_p 的可行 yaw 范围
+  Eigen::Vector2d calculateYawRange(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
+    Eigen::Vector2d relative_position_xy(target_p.x() - camera_p.x(), target_p.y() - camera_p.y());
+    double yaw_angle = atan2(relative_position_xy.y(), relative_position_xy.x());
+    double half_fov = fov_horizontal * M_PI / 180.0 / 2.0;
+    double min_yaw = yaw_angle - half_fov;
+    double max_yaw = yaw_angle + half_fov;
+    while (min_yaw < -M_PI) {
+      min_yaw += 2 * M_PI;
+    }
+    while (max_yaw > M_PI) {
+      max_yaw -= 2 * M_PI;
+    }
+
+    // 返回可行的Yaw角范围
+    return Eigen::Vector2d(min_yaw, max_yaw);
+  }
 };
 
 class EDTEnvironment;
@@ -103,10 +121,6 @@ public:
   typedef shared_ptr<FeatureMap> Ptr;
   typedef shared_ptr<const FeatureMap> ConstPtr;
 
-  struct Config {
-    double depth_min_;
-    double depth_max_;
-  };
   void setMap(shared_ptr<SDFMap>& map);
   void initMap(ros::NodeHandle& nh);
   void loadMap(const string& filename);
@@ -123,8 +137,9 @@ public:
   int get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
   int get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg);
   int get_NumCloud_using_justpos(const Eigen::Vector3d& pos);
+  int get_NumCloud_using_justpos(const Eigen::Vector3d& pos, vector<Eigen::Vector3d>& res);
+  void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num);
   void getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw);
-  Config config_;
   shared_ptr<SDFMap> sdf_map;
   CameraParam camera_param;
   ros::Subscriber odom_sub_, sensorpos_sub;

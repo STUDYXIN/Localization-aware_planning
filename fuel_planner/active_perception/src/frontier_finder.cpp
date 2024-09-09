@@ -1,6 +1,7 @@
 #include <active_perception/frontier_finder.h>
 #include <plan_env/raycast.h>
 #include <plan_env/sdf_map.h>
+#include <plan_env/feature_map.h>
 // #include <path_searching/astar2.h>
 
 #include <active_perception/graph_node.h>
@@ -22,6 +23,7 @@
 namespace fast_planner {
 FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, ros::NodeHandle& nh) {
   this->edt_env_ = edt;
+  using_feature_threshold_compute_viewpoint = false;
   int voxel_num = edt->sdf_map_->getVoxelNum();
   frontier_flag_ = vector<char>(voxel_num, 0);
   fill(frontier_flag_.begin(), frontier_flag_.end(), 0);
@@ -44,7 +46,37 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, ros::NodeHandle& 
   Eigen::Vector3d origin, size;
   edt_env_->sdf_map_->getRegion(origin, size);
   raycaster_->setParams(resolution_, origin);
+  percep_utils_.reset(new PerceptionUtils(nh));
+}
 
+FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap::Ptr& fea, ros::NodeHandle& nh) {
+  this->edt_env_ = edt;
+  using_feature_threshold_compute_viewpoint = true;
+  this->feature_map_ = fea;
+  int voxel_num = edt->sdf_map_->getVoxelNum();
+  frontier_flag_ = vector<char>(voxel_num, 0);
+  fill(frontier_flag_.begin(), frontier_flag_.end(), 0);
+
+  nh.param("frontier/cluster_min", cluster_min_, -1);
+  nh.param("frontier/cluster_size_xy", cluster_size_xy_, -1.0);
+  nh.param("frontier/cluster_size_z", cluster_size_z_, -1.0);
+  nh.param("frontier/min_candidate_dist", min_candidate_dist_, -1.0);
+  nh.param("frontier/min_candidate_clearance", min_candidate_clearance_, -1.0);
+  nh.param("frontier/candidate_dphi", candidate_dphi_, -1.0);
+  nh.param("frontier/candidate_rmax", candidate_rmax_, -1.0);
+  nh.param("frontier/candidate_rmin", candidate_rmin_, -1.0);
+  nh.param("frontier/candidate_rnum", candidate_rnum_, -1);
+  nh.param("frontier/down_sample", down_sample_, -1);
+  nh.param("frontier/min_visib_num", min_visib_num_, -1);
+  nh.param("frontier/min_view_finish_fraction", min_view_finish_fraction_, -1.0);
+  nh.param("frontier/min_view_feature_num_of_viewpoint", min_view_feature_num_of_viewpoint, -1);
+  nh.param("frontier/feature_sample_dphi", feature_sample_dphi, -1.0);
+
+  raycaster_.reset(new RayCaster);
+  resolution_ = edt_env_->sdf_map_->getResolution();
+  Eigen::Vector3d origin, size;
+  edt_env_->sdf_map_->getRegion(origin, size);
+  raycaster_->setParams(resolution_, origin);
   percep_utils_.reset(new PerceptionUtils(nh));
 }
 
@@ -378,21 +410,41 @@ void FrontierFinder::computeFrontiersToVisit() {
   first_new_ftr_ = frontiers_.end();
   int new_num = 0;
   int new_dormant_num = 0;
-  // Try find viewpoints for each cluster and categorize them according to viewpoint number
-  for (auto& tmp_ftr : tmp_frontiers_) {
-    // Search viewpoints around frontier
-    sampleViewpoints(tmp_ftr);
-    if (!tmp_ftr.viewpoints_.empty()) {
-      ++new_num;
-      list<Frontier>::iterator inserted = frontiers_.insert(frontiers_.end(), tmp_ftr);
-      // Sort the viewpoints by coverage fraction, best view in front
-      sort(inserted->viewpoints_.begin(), inserted->viewpoints_.end(),
-          [](const Viewpoint& v1, const Viewpoint& v2) { return v1.visib_num_ > v2.visib_num_; });
-      if (first_new_ftr_ == frontiers_.end()) first_new_ftr_ = inserted;
-    } else {
-      // Find no viewpoint, move cluster to dormant list
-      dormant_frontiers_.push_back(tmp_ftr);
-      ++new_dormant_num;
+  if (!using_feature_threshold_compute_viewpoint) {
+    // Try find viewpoints for each cluster and categorize them according to viewpoint number
+    for (auto& tmp_ftr : tmp_frontiers_) {
+      // Search viewpoints around frontier
+      sampleViewpoints(tmp_ftr);
+      if (!tmp_ftr.viewpoints_.empty()) {
+        ++new_num;
+        list<Frontier>::iterator inserted = frontiers_.insert(frontiers_.end(), tmp_ftr);
+        // Sort the viewpoints by coverage fraction, best view in front
+        sort(inserted->viewpoints_.begin(), inserted->viewpoints_.end(),
+            [](const Viewpoint& v1, const Viewpoint& v2) { return v1.visib_num_ > v2.visib_num_; });
+        if (first_new_ftr_ == frontiers_.end()) first_new_ftr_ = inserted;
+      } else {
+        // Find no viewpoint, move cluster to dormant list
+        dormant_frontiers_.push_back(tmp_ftr);
+        ++new_dormant_num;
+      }
+    }
+  } else {
+    // Try find viewpoints for each cluster and categorize them according to viewpoint number with feature number threshold
+    for (auto& tmp_ftr : tmp_frontiers_) {
+      // Search viewpoints around frontier
+      sampleBetterViewpoints(tmp_ftr);
+      if (!tmp_ftr.viewpoints_.empty()) {
+        ++new_num;
+        list<Frontier>::iterator inserted = frontiers_.insert(frontiers_.end(), tmp_ftr);
+        // Sort the viewpoints by coverage fraction, best view in front
+        sort(inserted->viewpoints_.begin(), inserted->viewpoints_.end(),
+            [](const Viewpoint& v1, const Viewpoint& v2) { return v1.visib_num_ > v2.visib_num_; });
+        if (first_new_ftr_ == frontiers_.end()) first_new_ftr_ = inserted;
+      } else {
+        // Find no viewpoint, move cluster to dormant list
+        dormant_frontiers_.push_back(tmp_ftr);
+        ++new_dormant_num;
+      }
     }
   }
   // Reset indices of frontiers
@@ -401,7 +453,7 @@ void FrontierFinder::computeFrontiersToVisit() {
 
   std::cout << "new num: " << new_num << ", new dormant: " << new_dormant_num << std::endl;
   std::cout << "to visit: " << frontiers_.size() << ", dormant: " << dormant_frontiers_.size() << std::endl;
-}
+}  // namespace fast_planner
 
 void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points, vector<double>& yaws,
     vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells) {
@@ -671,6 +723,101 @@ void FrontierFinder::sampleViewpoints(Frontier& frontier) {
     }
 }
 
+void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
+  // Evaluate sample viewpoints on circles, find ones that cover most cells
+  vector<double> sample_yaw;
+  for (double phi = -M_PI; phi < M_PI; phi += feature_sample_dphi) {
+    sample_yaw.push_back(phi);
+  }
+
+  for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_; rc <= candidate_rmax_ + 1e-3;
+       rc += dr)
+    for (double phi = -M_PI; phi < M_PI; phi += candidate_dphi_) {
+      const Vector3d sample_pos = frontier.average_ + rc * Vector3d(cos(phi), sin(phi), 0);
+
+      // Qualified viewpoint is in bounding box and in safe region
+      if (!edt_env_->sdf_map_->isInBox(sample_pos) || edt_env_->sdf_map_->getInflateOccupancy(sample_pos) == 1 ||
+          isNearUnknown(sample_pos))
+        continue;
+
+      // Compute average yaw
+      auto& cells = frontier.filtered_cells_;
+      // ROS_ERROR("[FrontierFinder::sampleBetterViewpoints] filtered_cells_size: %zu", cells.size());
+      // Eigen::Vector3d ref_dir = (cells.front() - sample_pos).normalized();
+      // double avg_yaw = 0.0;
+      // for (int i = 1; i < cells.size(); ++i) {
+      //   Eigen::Vector3d dir = (cells[i] - sample_pos).normalized();
+      //   double yaw = acos(dir.dot(ref_dir));
+      //   if (ref_dir.cross(dir)[2] < 0) yaw = -yaw;
+      //   avg_yaw += yaw;
+      // }
+      // avg_yaw = avg_yaw / cells.size() + atan2(ref_dir[1], ref_dir[0]);
+      vector<int> features_num_perYaw;
+      feature_map_->get_YawRange_using_Pos(sample_pos, sample_yaw, features_num_perYaw);
+      double feature_yaw;
+      int useful_yaw_count = 0;
+      // cout << "[FrontierFinder::sampleBetterViewpoints] yaw: ";
+      for (size_t i = 0; i < features_num_perYaw.size(); ++i) {
+        // cout << " i: " << i << " yaw: " << features_num_perYaw[i];
+        if (features_num_perYaw[i] < min_view_feature_num_of_viewpoint) continue;
+        feature_yaw = sample_yaw[i];
+        wrapYaw(feature_yaw);
+        int visib_num = countVisibleCells(sample_pos, feature_yaw, cells);
+        if (visib_num > min_visib_num_) {
+          Viewpoint vp = { sample_pos, feature_yaw, visib_num };
+          frontier.viewpoints_.push_back(vp);
+        }
+        // }
+      }
+    }
+}
+
+bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector<Vector3d>& path) {
+  if (path.empty()) {
+    ROS_ERROR("[FrontierFinder::RefactorViewpoint] Empty path provided to find junction");
+    return false;
+  }
+  double refactor_range = 3.0;
+  int max_sorting_num = 3;
+  vector<Viewpoint> sample_viewpoints;
+  for (int i = path.size() - 2; i > 0; --i) {  // goal is in FREE or the begin of path is near free，return
+    if (edt_env_->sdf_map_->getOccupancy(path[i]) == SDFMap::FREE) {  // FREE point
+      if (!edt_env_->sdf_map_->isInBox(path[i]) || edt_env_->sdf_map_->getInflateOccupancy(path[i]) == 1 ||
+          isNearUnknown(path[i]))
+        continue;
+      if ((path[i] - path[0]).norm() < min_candidate_dist_) continue;
+      Eigen::Vector3d direction = path[i + 1] - path[i];
+      Vector3d input_pos = path[i];
+      double input_yaw = atan2(direction.y(), direction.x());
+      vector<double> sample_yaw_near_input;
+      for (double phi = input_yaw - refactor_range * feature_sample_dphi; phi <= input_yaw + refactor_range * feature_sample_dphi;
+           phi += feature_sample_dphi) {
+        wrapYaw(phi);
+        sample_yaw_near_input.push_back(phi);
+      }
+      vector<int> features_num_perYaw;
+      feature_map_->get_YawRange_using_Pos(input_pos, sample_yaw_near_input, features_num_perYaw);
+      double feature_yaw;
+      int useful_yaw_count = 0;
+      for (size_t i = 0; i < features_num_perYaw.size(); ++i) {
+        if (features_num_perYaw[i] < min_view_feature_num_of_viewpoint) continue;
+        feature_yaw = sample_yaw_near_input[i];
+        int visib_num = getVisibleFrontiersNum(input_pos, feature_yaw);
+        if (visib_num > min_visib_num_) {
+          Viewpoint output_viewpoint = { input_pos, feature_yaw, visib_num };
+          sample_viewpoints.push_back(output_viewpoint);
+        }
+      }
+    }
+    if (sample_viewpoints.size() > max_sorting_num) break;
+  }
+  if (sample_viewpoints.empty()) return false;
+  std::sort(sample_viewpoints.begin(), sample_viewpoints.end(),
+      [](const Viewpoint& a, const Viewpoint& b) { return a.visib_num_ > b.visib_num_; });
+  refactorViewpoint = sample_viewpoints.front();
+  return true;
+}
+
 bool FrontierFinder::isFrontierCovered() {
   Vector3d update_min, update_max;
   edt_env_->sdf_map_->getUpdatedBox(update_min, update_max);
@@ -747,6 +894,30 @@ void FrontierFinder::downsample(const vector<Eigen::Vector3d>& cluster_in, vecto
 void FrontierFinder::wrapYaw(double& yaw) {
   while (yaw < -M_PI) yaw += 2 * M_PI;
   while (yaw > M_PI) yaw -= 2 * M_PI;
+}
+
+void FrontierFinder::getLatestFrontier(vector<Vector3d>& latest_frontier) {
+  // ROS_ERROR("[FrontierFinder::getLatestFrontier] DEBUG1");
+  // std::cout << "[FrontierFinder::getLatestFrontier] pos " << latest_viewpoint_.pos_.transpose();
+  // std::cout << " yaw " << latest_viewpoint_.yaw_ << std::endl;
+  // ROS_ERROR("[FrontierFinder::getLatestFrontier] DEBUG2");
+  percep_utils_->setPose(latest_viewpoint_.pos_, latest_viewpoint_.yaw_);
+  for (auto frontier : frontiers_) {
+    Eigen::Vector3i idx;
+    for (auto cell : frontier.filtered_cells_) {
+      if (!percep_utils_->insideFOV(cell)) continue;
+      // Check if frontier cell is visible (not occulded by obstacles)
+      raycaster_->input(cell, latest_viewpoint_.pos_);
+      bool visib = true;
+      while (raycaster_->nextId(idx)) {
+        if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+          visib = false;
+          break;
+        }
+      }
+      if (visib) latest_frontier.push_back(cell);
+    }
+  }
 }
 
 Eigen::Vector3i FrontierFinder::searchClearVoxel(const Eigen::Vector3i& pt) {

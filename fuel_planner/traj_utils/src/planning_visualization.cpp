@@ -31,6 +31,9 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle& nh) {
   viewpoint_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/viewpoints", 1000);
   pubs_.push_back(viewpoint_pub_);
 
+  text_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/text", 100);
+  pubs_.push_back(text_pub_);
+
   last_frontier_num_ = 0;
 }
 
@@ -173,6 +176,14 @@ void PlanningVisualization::drawLines(const vector<Eigen::Vector3d>& list, const
   mk.action = visualization_msgs::Marker::ADD;
   pubs_[pub_id].publish(mk);
   ros::Duration(0.0005).sleep();
+}
+
+void PlanningVisualization::clearLines(const string& ns, const int& id, const int& pub_id) {
+  visualization_msgs::Marker mk;
+  mk.ns = ns;
+  mk.id = id;
+  mk.action = visualization_msgs::Marker::DELETE;
+  pubs_[pub_id].publish(mk);
 }
 
 void PlanningVisualization::displaySphereList(
@@ -436,6 +447,44 @@ void PlanningVisualization::drawYawPath(NonUniformBspline& pos, const vector<dou
     pts2.push_back(pdir);
   }
   displayLineList(pts1, pts2, 0.04, Eigen::Vector4d(1, 0, 1, 1), 1, 5);
+}
+
+void PlanningVisualization::displayText(
+    const Eigen::Vector3d& position, const std::string& text, const Eigen::Vector4d& color, double scale, int id, int pub_id) {
+  visualization_msgs::Marker mk;
+  // ROS_WARN("[PlanningVisualization::displayText] DEBUG ----");
+  // std::cout << "Displaying text: " << text << std::endl;
+  // std::cout << "Position: [" << position(0) << ", " << position(1) << ", " << position(2) << "]" << std::endl;
+  // std::cout << "Color: [" << color(0) << ", " << color(1) << ", " << color(2) << ", " << color(3) << "]" << std::endl;
+  // std::cout << "Scale: " << scale << std::endl;
+  // std::cout << "ID: " << id << ", pub_id: " << pub_id << std::endl;
+  mk.header.frame_id = "world";  // 坐标系
+  mk.header.stamp = ros::Time::now();
+  mk.type = visualization_msgs::Marker::TEXT_VIEW_FACING;  // 文本标记类型
+  mk.action = visualization_msgs::Marker::ADD;             // 添加标记
+  mk.ns = "text_marker";                                   // 命名空间，用于区分不同类型的标记
+  mk.id = id;                                              // 标记的 ID，用于唯一识别
+
+  mk.pose.position.x = position(0);
+  mk.pose.position.y = position(1);
+  mk.pose.position.z = position(2);
+
+  mk.text = text;
+
+  mk.color.r = color(0);
+  mk.color.g = color(1);
+  mk.color.b = color(2);
+  mk.color.a = color(3);  // 透明度
+
+  mk.scale.z = scale;
+
+  mk.action = visualization_msgs::Marker::DELETE;
+  pubs_[pub_id].publish(mk);
+
+  mk.action = visualization_msgs::Marker::ADD;
+  pubs_[pub_id].publish(mk);
+
+  ros::Duration(0.0005).sleep();
 }
 
 // void PlanningVisualization::drawYawOnKnots(NonUniformBspline& pos, NonUniformBspline& acc, NonUniformBspline& yaw) {

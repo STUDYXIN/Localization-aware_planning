@@ -187,7 +187,7 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
   cur_node->index = stateToIndex(cur_node->state);
   cur_node->g_score = 0.0;
   if (!checkLocalizability(cur_node->state)) {
-    ROS_ERROR("Start point is not localizable!!!");
+    ROS_ERROR("[Kinodynamic AStar]: Start point is not localizable!!!");
     return NO_PATH;
   }
 
@@ -195,6 +195,11 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
   end_state.head(3) = end_pt;
   end_state.segment(3, 3) = end_v;
   end_state(6) = end_yaw;
+
+  if (!checkLocalizability(end_state)) {
+    ROS_ERROR("[Kinodynamic AStar]: End point is not localizable!!!");
+    return NO_PATH;
+  }
 
   Vector4i end_index = stateToIndex(end_state);
   double time_to_goal;
@@ -210,12 +215,16 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
   const int tolerance = ceil(1 / resolution_);
 
   while (!open_set_.empty()) {
+    ROS_INFO_THROTTLE(
+        1.0, "[Kinodynamic AStar]: iter_num: %d, open_set size: %ld, iter num: %d", iter_num_, open_set_.size(), iter_num_);
+
     cur_node = open_set_.top();
 
     // Terminate?
     bool reach_horizon = (cur_node->state.head(3) - start_pt).norm() >= horizon_;
 
     bool near_end = (cur_node->index.head(3) - end_index.head(3)).lpNorm<Infinity>() <= tolerance;
+    // bool near_end = (cur_node->index - end_index).lpNorm<Infinity>() <= tolerance;
 
     if (reach_horizon || near_end) {
       terminate_node = cur_node;
@@ -696,8 +705,7 @@ std::vector<Vector3d> KinodynamicAstar::getKinoTraj(double delta_t) {
   return state_list;
 }
 
-void KinodynamicAstar::getSamples(
-    double& ts, vector<Eigen::Vector3d>& point_set, vector<Eigen::Vector3d>& start_end_derivatives) {
+void KinodynamicAstar::getSamples(double& ts, vector<Vector3d>& point_set, vector<Vector3d>& start_end_derivatives) {
   /* ---------- path duration ---------- */
   double T_sum = 0.0;
   if (is_shot_succ_) {

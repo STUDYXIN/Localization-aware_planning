@@ -34,7 +34,8 @@ public:
   static const int PARALLAX;
   static const int VERTICALVISIBILITY;
   static const int YAWCOVISIBILITY;
-  static const int FRONTIERVISIBILITY;
+  static const int FRONTIERVISIBILITY_POS;
+  static const int FRONTIERVISIBILITY_YAW;
 
   static const int GUIDE_PHASE;
   static const int NORMAL_PHASE;
@@ -43,6 +44,7 @@ public:
     double estimator_freq_;  // frequency of consecutive frames in hz
     double max_parallax_;    // max parallax angle between consecutive frames in rad
     double pot_a_;           // potential func: a(x-max_parallax_)^2
+    double min_covisible_feature_cost_;
     double max_feature_and_frontier_convisual_angle_;
     double min_frontier_see_feature_num_;
     double pot_fafv_;
@@ -98,15 +100,16 @@ private:
   void calcTimeCost(const double& dt, double& cost, double& gt);
 
   // SECTION Perception Aware Optimization
-  void calcParaValueAndGradients(const Vector3d vfea, const Vector3d vfron, double& parallax, bool calc_grad,
-      Eigen::Vector3d& dpara_dv1, Eigen::Vector3d& dpara_dv2);
+  void calcParaValueAndGradients(
+      const Vector3d& vfea, const Vector3d& vfron, double& parallax, bool calc_grad, Vector3d& dpara_dv1, Vector3d& dpara_dv2);
   void calcParaPotentialAndGradients(const double parallax, const double dt, double& para_pot, double& dpot_dpara);
 
   double calcVCWeight(const Vector3d& knot, const Vector3d& f, const Vector3d& thrust_dir);
 
-  void calcVVValueAndGradients(const Eigen::Vector3d a, const Eigen::Vector3d b, double& cos_theta, bool calc_grad,
-      Eigen::Vector3d& dcos_theta_da, Eigen::Vector3d& dcos_theta_db);
-  void calcVVPotentialAndGradients(const double cos_theta, double& cos_theta_pot, double& dpot_dcos_theta);
+  // 位置轨迹规划阶段考虑frontier可见性
+  void calcFVBValueAndGradients(const Vector3d& node_pos, const Vector3d& feature, const Vector3d& frontier,
+      double& convisual_angle, bool calc_grad, Eigen::Vector3d& dfvb_dq);
+  void calcFVBPotentialAndGradients(const double convisual_angle, const double dt, double& fvb_pot, double& dpot_dfvb);
 
   void calcParaCostAndGradientsKnots(
       const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
@@ -171,9 +174,9 @@ private:
   // SECTION Perception Aware Optimization
   double ld_parallax_;
   double ld_vertical_visibility_;
-  double ld_frontier_visibility_;
+  double ld_frontier_visibility_pos_;
   double ld_yaw_covisib_;
-  double ld_frontier_visibility_;
+  double ld_frontier_visibility_yaw_;
 
   vector<Eigen::Vector3d> pos_, acc_;                 // knot points position and acceleration
   vector<vector<Eigen::Vector3d>> knot_nn_features_;  // neighboring features at each knot midpoint
@@ -195,9 +198,9 @@ private:
 
   // SECTION Perception Aware Optimization
   vector<Vector3d> g_parallax_;
-  vector<Vector3d> g_frontier_visibility_;
+  vector<Vector3d> g_frontier_visibility_pos_;
   vector<Vector3d> g_yaw_covisibility_;
-  vector<Vector3d> g_frontier_visibility_;
+  vector<Vector3d> g_frontier_visibility_yaw_;
 
   // !SECTION
 

@@ -419,18 +419,24 @@ void PlanningVisualization::drawFrontier(const vector<vector<Eigen::Vector3d>>& 
 }
 
 void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBspline& yaw, const double& dt) {
-  double duration = pos.getTimeSum();
+  double pos_duration = pos.getTimeSum();
+  double yaw_duration = yaw.getTimeSum();
+
+  ROS_ASSERT(pos_duration == yaw_duration);
+
   vector<Vector3d> pts1, pts2;
 
-  for (double tc = 0.0; tc <= duration + 1e-3; tc += dt) {
+  int cnt = 0;
+  for (double tc = 0.0; tc <= pos_duration + 1e-3; tc += dt) {
+    cnt++;
     Vector3d pc = pos.evaluateDeBoorT(tc);
-    // pc[2] += 0.15;
     double yc = yaw.evaluateDeBoorT(tc)[0];
     Vector3d dir(cos(yc), sin(yc), 0);
     Vector3d pdir = pc + 1.0 * dir;
     pts1.push_back(pc);
     pts2.push_back(pdir);
   }
+  ROS_INFO("[drawYawTraj]: %d", cnt);
   // displayLineList(pts1, pts2, 0.04, Eigen::Vector4d(1, 0.5, 0, 1), 0, 5);
   displayArrowList(pts1, pts2, 0.05, Color::Pink(), 0, 5);
 }
@@ -439,7 +445,7 @@ void PlanningVisualization::drawYawPath(NonUniformBspline& pos, const vector<dou
   vector<Eigen::Vector3d> pts1, pts2;
 
   for (int i = 0; i < yaw.size(); ++i) {
-    Eigen::Vector3d pc = pos.evaluateDeBoorT(i * dt);
+    Vector3d pc = pos.evaluateDeBoorT(i * dt);
     pc[2] += 0.3;
     Eigen::Vector3d dir(cos(yaw[i]), sin(yaw[i]), 0);
     Eigen::Vector3d pdir = pc + 1.0 * dir;

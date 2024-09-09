@@ -451,9 +451,9 @@ void FrontierFinder::computeFrontiersToVisit() {
   int idx = 0;
   for (auto& ft : frontiers_) ft.id_ = idx++;
 
-  std::cout << "new num: " << new_num << ", new dormant: " << new_dormant_num << std::endl;
-  std::cout << "to visit: " << frontiers_.size() << ", dormant: " << dormant_frontiers_.size() << std::endl;
-}  // namespace fast_planner
+  // std::cout << "new num: " << new_num << ", new dormant: " << new_dormant_num << std::endl;
+  // std::cout << "to visit: " << frontiers_.size() << ", dormant: " << dormant_frontiers_.size() << std::endl;
+}
 
 void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points, vector<double>& yaws,
     vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells) {
@@ -461,6 +461,7 @@ void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen:
   yaws.clear();
   averages.clear();
   visb_num.clear();
+  frontier_cells.clear();
 
   for (const auto& frontier : frontiers_) {
     // bool no_view = true;
@@ -470,11 +471,6 @@ void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen:
       // Retrieve the first viewpoint that is far enough and has highest coverage
       if ((frontier.viewpoints_[i].pos_ - cur_pos).norm() < min_candidate_dist_) continue;
 
-      // points.push_back(view.pos_);
-      // yaws.push_back(view.yaw_);
-      // averages.push_back(frontier.average_);
-      // visb_num.push_back(view.visib_num_);
-      // no_view = false;
       add_idx = i;
       break;
     }
@@ -857,7 +853,7 @@ int FrontierFinder::countVisibleCells(const Eigen::Vector3d& pos, const double& 
   percep_utils_->setPose(pos, yaw);
   int visib_num = 0;
   Eigen::Vector3i idx;
-  for (auto cell : cluster) {
+  for (const auto& cell : cluster) {
     // Check if frontier cell is inside FOV
     if (!percep_utils_->insideFOV(cell)) continue;
 
@@ -870,7 +866,7 @@ int FrontierFinder::countVisibleCells(const Eigen::Vector3d& pos, const double& 
         break;
       }
     }
-    if (visib) visib_num += 1;
+    if (visib) visib_num++;
   }
   return visib_num;
 }

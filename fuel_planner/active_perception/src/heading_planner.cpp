@@ -11,6 +11,8 @@
 #include <future>
 #include <iostream>
 
+using namespace Eigen;
+
 namespace fast_planner {
 // template <typename VERTEX>
 void Graph::print() {
@@ -75,17 +77,20 @@ void Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::
       reverse(path.begin(), path.end());
       return;
     }
+
     auto nbs = vc->neighbors_;
     for (auto vb : nbs) {
       // skip vertex in close set
       if (close_set.find(vb->id_) != close_set.end()) continue;
 
       // update new or open vertex
-      double g_tmp = vc->g_value_ - vc->gain(vb) + w_ * penal(vc->dist(vb));
+      double g_tmp = vc->g_value_ - vb->info_gain_ + w_ * penal(vc->dist(vb));
       if (open_set_map.find(vb->id_) == open_set_map.end()) {
         open_set_map[vb->id_] = 1;
         open_set.push(vb);
-      } else if (g_tmp > vb->g_value_) {
+      }
+
+      else if (g_tmp > vb->g_value_) {
         continue;
       }
       vb->parent_ = vc;
@@ -181,7 +186,9 @@ void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const v
       YawVertex::Ptr vert(new YawVertex(yaws[i], 0, gid++));
       yaw_graph.addVertex(vert);
       layer.push_back(vert);
-    } else {  // inter vertice
+    }
+
+    else {  // inter vertice
       initCastFlag(pts[i]);
       int vert_num = 2 * half_vert_num_ + 1;
       vector<future<double>> futs(vert_num);
@@ -189,6 +196,7 @@ void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const v
         double ys = yaws[i] + double(j - half_vert_num_) * yaw_diff_;
         futs[j] = std::async(std::launch::async, &HeadingPlanner::calcInformationGain, this, pts[i], ys, ctrl_pts, j);
       }
+
       for (int j = 0; j < vert_num; ++j) {
         double ys = yaws[i] + double(j - half_vert_num_) * yaw_diff_;
         double gain = futs[j].get();
@@ -229,8 +237,7 @@ void HeadingPlanner::searchPathOfYaw(const vector<Eigen::Vector3d>& pts, const v
   std::cout << "" << std::endl;
 }
 
-double HeadingPlanner::calcInformationGain(
-    const Eigen::Vector3d& pt, const double& yaw, const Eigen::MatrixXd& ctrl_pts, const int& task_id) {
+double HeadingPlanner::calcInformationGain(const Vector3d& pt, const double& yaw, const MatrixXd& ctrl_pts, const int& task_id) {
   // compute camera transform
   auto t1 = ros::Time::now();
   Eigen::Matrix3d R_wb;
@@ -275,12 +282,16 @@ double HeadingPlanner::calcInformationGain(
         char flag = cast_flags_.getFlag(pt_idx);
         if (flag == 1) {  // visited cell, fetch visibility directly
           if (weight_type_ == UNIFORM) {
-            gain += 1;
-          } else if (weight_type_ == NON_UNIFORM) {
+            gain++;
+          }
+
+          else if (weight_type_ == NON_UNIFORM) {
             distToPathAndCurPos(check_pt, ctrl_pts, dist12);
             gain += exp(-lambda1_ * dist12.first - lambda2_ * dist12.second);
           }
-        } else if (flag == 0) {  // unvisited cell, should raycast
+        }
+
+        else if (flag == 0) {  // unvisited cell, should raycast
           char result = 1;
           casters_[task_id]->setInput(check_pt / resolution, pt / resolution);
           while (casters_[task_id]->step(ray_pt)) {
@@ -292,10 +303,14 @@ double HeadingPlanner::calcInformationGain(
               break;
             }
           }
+
           if (result == 1) {
+
             if (weight_type_ == UNIFORM) {
-              gain += 1;
-            } else if (weight_type_ == NON_UNIFORM) {
+              gain++;
+            }
+
+            else if (weight_type_ == NON_UNIFORM) {
               distToPathAndCurPos(check_pt, ctrl_pts, dist12);
               gain += exp(-lambda1_ * dist12.first - lambda2_ * dist12.second);
             }
@@ -303,16 +318,7 @@ double HeadingPlanner::calcInformationGain(
           cast_flags_.setFlag(pt_idx, result);
         }
       }
-  // double dist = (cur_pos - pos).norm();
-  // gain = gain * exp(-lambda_ * dist);
-  // sensor_msgs::PointCloud2 msg;
-  // pcl::toROSMsg(gain_pts, msg);
-  // msg.header.frame_id = "world";
-  // visib_pub_.publish(msg);
 
-  // ROS_WARN("gain %d is %lf, cost %lf secs", task_id, gain, (ros::Time::now() -
-  // t1).toSec());
-  // std::cout << "gain: " << gain << std::endl;
   return gain;
 }
 
@@ -444,7 +450,7 @@ void HeadingPlanner::visualizeBox(const Eigen::Vector3d& lb, const Eigen::Vector
 }
 
 void HeadingPlanner::distToPathAndCurPos(
-    const Eigen::Vector3d& check_pt, const Eigen::MatrixXd& ctrl_pts, pair<double, double>& dists, bool debug) {
+    const Vector3d& check_pt, const MatrixXd& ctrl_pts, pair<double, double>& dists, bool debug) {
   double min_squ = numeric_limits<double>::max();
   int idx = -1;
   for (int i = 0; i < ctrl_pts.rows(); ++i) {
@@ -460,7 +466,6 @@ void HeadingPlanner::distToPathAndCurPos(
   for (int i = 0; i < idx; ++i) {
     dists.second += (ctrl_pts.row(i + 1) - ctrl_pts.row(i)).norm();
   }
-  if (debug) std::cout << "pos: " << check_pt.transpose() << ", d1: " << dists.first << ", d2: " << dists.second << std::endl;
 }
 
 bool HeadingPlanner::insideFoV(const Eigen::Vector3d& pw, const Eigen::Vector3d& pc, const vector<Eigen::Vector3d>& normals) {

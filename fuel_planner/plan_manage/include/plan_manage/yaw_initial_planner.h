@@ -34,6 +34,8 @@ private:
   double yaw_diff_;
   int half_vert_num_;
   double max_yaw_rate_, w_;
+  int min_feature_num_;
+  int min_covisible_feature_num_;
 };
 
 }  // namespace fast_planner

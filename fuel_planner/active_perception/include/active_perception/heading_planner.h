@@ -28,11 +28,7 @@ class SDFMap;
 // Basic vertex type containing only general artributes required by graph search
 class BaseVertex {
 public:
-  typedef shared_ptr<BaseVertex> Ptr;
-  BaseVertex() {
-  }
-  ~BaseVertex() {
-  }
+  using Ptr = shared_ptr<BaseVertex>;
 
   virtual void print() {
     std::cout << "no data in base vertex" << std::endl;
@@ -46,14 +42,14 @@ public:
 
 class YawVertex : public BaseVertex {
 public:
-  typedef shared_ptr<YawVertex> Ptr;
-  YawVertex(const double& y, double gain, const int& id) {
+  using Ptr = shared_ptr<YawVertex>;
+
+  YawVertex(const double y, const double gain, const int id) {
     yaw_ = y;
     info_gain_ = gain;
     id_ = id;
   }
-  ~YawVertex() {
-  }
+
   virtual void print() {
     std::cout << "yaw: " << yaw_ << std::endl;
   }

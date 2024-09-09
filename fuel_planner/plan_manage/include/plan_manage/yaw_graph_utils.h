@@ -12,6 +12,7 @@
 #include <vector>
 
 using std::list;
+using std::pair;
 using std::queue;
 using std::shared_ptr;
 using std::unique_ptr;
@@ -25,7 +26,8 @@ class YawVertex;
 
 class YawEdge {
 public:
-  typedef shared_ptr<YawEdge> Ptr;
+  using Ptr = shared_ptr<YawEdge>;
+
   YawEdge(const double& gain, const shared_ptr<YawVertex>& v) {
     gain_ = gain;
     next_vertex_ = v;
@@ -38,7 +40,7 @@ public:
 // Basic vertex type containing only general artributes required by graph search
 class BaseVertex {
 public:
-  typedef shared_ptr<BaseVertex> Ptr;
+  using Ptr = shared_ptr<BaseVertex>;
 
   virtual void print() {
     std::cout << "no data in base vertex" << std::endl;
@@ -51,15 +53,17 @@ public:
 // vertex type for yaw planning
 class YawVertex : public BaseVertex {
 public:
-  typedef shared_ptr<YawVertex> Ptr;
+  using Ptr = shared_ptr<YawVertex>;
+
   YawVertex(const double& y, const double gain, const int& id, const Eigen::Vector3d& pos, const Eigen::Vector3d& acc,
-      const bool vir = false) {
+      const bool vir = false, const bool start_or_end = false) {
     yaw_ = y;
     info_gain_ = gain;
     id_ = id;
     pos_ = pos;
     acc_ = acc;
     virtual_ = vir;
+    start_or_end_ = start_or_end;
   }
 
   virtual void print() {
@@ -78,14 +82,23 @@ public:
     return virtual_ || v->virtual_ ? 0 : fabs(yaw_ - v->yaw_);
   }
 
+  void setFeatures(const vector<pair<int, Vector3d>>& features) {
+    features_id_.clear();
+    for (const auto& feature : features) {
+      features_id_.push_back(feature.first);
+    }
+  }
+
   vector<YawEdge::Ptr> edges_;
   YawVertex::Ptr parent_;
 
   double yaw_;
   double info_gain_;
   bool virtual_;
+  bool start_or_end_;
 
   Eigen::Vector3d pos_, acc_;
+  vector<int> features_id_;
 
 private:
   double visib_;
@@ -104,6 +117,7 @@ public:
 public:
   double penal(const double& diff);
   vector<YawVertex::Ptr> vertice_;
+
   double w_;
   double max_yaw_rate_;
   double dt_;

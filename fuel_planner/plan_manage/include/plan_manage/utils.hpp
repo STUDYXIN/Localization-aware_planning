@@ -1,22 +1,9 @@
+#ifndef PLAN_MANAGE_UTILS_HPP
+#define PLAN_MANAGE_UTILS_HPP
+
 #include <Eigen/Eigen>
 #include <vector>
 #include <iostream>
-
-// Eigen::Vector3d getFarPoint(const std::vector<Eigen::Vector3d>& path, Eigen::Vector3d x1, Eigen::Vector3d x2) {
-//   double max_dist = -1000;
-//   Eigen::Vector3d vl = (x2 - x1).normalized();
-//   Eigen::Vector3d far_pt;
-
-//   for (int i = 1; i < path.size() - 1; ++i) {
-//     double dist = ((path[i] - x1).cross(vl)).norm();
-//     if (dist > max_dist) {
-//       max_dist = dist;
-//       far_pt = path[i];
-//     }
-//   }
-
-//   return far_pt;
-// }
 
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
@@ -44,6 +31,26 @@ public:
     return desired_attitude;
   }
 
+  static std::pair<double, double> calcMeanAndVariance(const Eigen::MatrixXd& vec) {
+    double mean = 0.0;
+    double variance = 0.0;
+
+    for (int i = 0; i < vec.rows(); i++) {
+      mean += vec(i, 0);
+    }
+
+    mean /= vec.rows();
+
+    for (int i = 0; i < vec.rows(); i++) {
+      double diff = vec(i, 0) - mean;
+      variance += diff * diff;
+    }
+
+    variance /= vec.rows();
+
+    return std::make_pair(mean, variance);
+  }
+
 private:
   static Vector3d getThrustDirection(const Vector3d& acc) {
     Vector3d gravity(0, 0, -9.81);
@@ -53,3 +60,5 @@ private:
 };
 
 }  // namespace fast_planner
+
+#endif

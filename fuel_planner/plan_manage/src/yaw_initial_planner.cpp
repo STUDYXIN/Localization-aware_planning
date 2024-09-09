@@ -1,4 +1,5 @@
 #include <plan_manage/yaw_initial_planner.h>
+#include <plan_manage/utils.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -10,6 +11,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+using namespace std;
 using namespace Eigen;
 
 namespace fast_planner {
@@ -23,14 +25,13 @@ YawInitialPlanner::YawInitialPlanner(ros::NodeHandle& nh) {
   nh.param("yaw_initial/half_vert_num", half_vert_num_, -1);
   nh.param("yaw_initial/max_yaw_rate", max_yaw_rate_, -1.0);
   nh.param("yaw_initial/w", w_, -1.0);
+  nh.param("yaw_initial/min_feature_num", min_feature_num_, -1);
+  nh.param("yaw_initial/min_covisible_feature_num", min_covisible_feature_num_, -1);
 }
-
-// void YawInitialPlanner::setMap(const shared_ptr<MapServer>& map) {
-//   map_server_ = map;
-// }
 
 void YawInitialPlanner::searchPathOfYaw(
     const vector<Vector3d>& pos, const vector<Vector3d>& acc, const double& dt, vector<double>& path) {
+
   // Step1: 依据pos，acc构建yaw图
   Graph yaw_graph;
   yaw_graph.setParams(w_, max_yaw_rate_, dt);
@@ -59,6 +60,13 @@ void YawInitialPlanner::searchPathOfYaw(
       yaw_samples.push_back(M_PI);
 
       for (const auto& yaw : yaw_samples) {
+        Quaterniond ori = Utils::calcOrientation(yaw, acc[i - 1]);
+        auto f_num = feature_map_->get_NumCloud_using_Odom(pos[i - 1], ori);
+
+        if (f_num <= min_feature_num_) {
+          continue;
+        }
+
         YawVertex::Ptr vert(new YawVertex(yaw, 0, gid++, pos[i - 1], acc[i - 1], false));
         yaw_graph.addVertex(vert);
         layer.push_back(vert);
@@ -69,6 +77,10 @@ void YawInitialPlanner::searchPathOfYaw(
     for (const auto& v1 : last_layer) {
       for (const auto& v2 : layer) yaw_graph.addEdge(v1->id_, v2->id_, calcCoVisibility(v1, v2));
     }
+
+    // for (const auto& v1 : last_layer) {
+    //   for (const auto& v2 : layer) yaw_graph.addEdge(v1->id_, v2->id_, calcCost(v1, v2));
+    // }
     last_layer.clear();
     last_layer.swap(layer);
   }
@@ -82,6 +94,9 @@ void YawInitialPlanner::searchPathOfYaw(
 
   // publishYawPath(pos, path);
 }
+
+// double YawInitialPlanner::calcCost(const YawVertex::Ptr& v1, const YawVertex::Ptr& v2) {
+// }
 
 double YawInitialPlanner::calcCoVisibility(YawVertex::Ptr v1, YawVertex::Ptr v2) {
   if (v1->virtual_ || v2->virtual_) return 0;

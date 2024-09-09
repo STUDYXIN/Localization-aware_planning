@@ -14,12 +14,20 @@
 #include <plan_env/sdf_map.h>
 
 #include <plan_manage/perception_aware_planner_manager.h>
+#include <plan_manage/utils.hpp>
 
 #include <visualization_msgs/Marker.h>
 
 #include <fstream>
 #include <iostream>
 #include <thread>
+
+#define GET_FSM_STATE()                                                                                                          \
+  const auto& start_pos = expl_fsm_.lock()->start_pos_;                                                                          \
+  const auto& start_vel = expl_fsm_.lock()->start_vel_;                                                                          \
+  const auto& start_acc = expl_fsm_.lock()->start_acc_;                                                                          \
+  const auto& start_yaw = expl_fsm_.lock()->start_yaw_;                                                                          \
+  const auto& final_goal = expl_fsm_.lock()->final_goal_;
 
 using namespace Eigen;
 
@@ -38,6 +46,7 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   ep_.reset(new ExplorationParam);
 
   nh.param("feature/using_feature", ep_->using_feature, false);
+
   if (ep_->using_feature) {
     global_sdf_map_.reset(new SDFMap);
     global_sdf_map_->using_global_map = true;
@@ -49,7 +58,9 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
     planner_manager_->setFeatureMap(feature_map_);
     frontier_finder_.reset(new FrontierFinder(edt_environment_, feature_map_, nh));
     planner_manager_->setFrontierFinder(frontier_finder_);
-  } else
+  }
+
+  else
     frontier_finder_.reset(new FrontierFinder(edt_environment_, nh));
 
   nh.param("exploration/refine_local", ep_->refine_local_, true);
@@ -98,16 +109,33 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
     next_pos = final_goal;
     ROS_INFO("Select final goal as next goal");
 
-    next_yaw = 0.0;
+    // next_yaw = 0.0;
 
+    vector<double> candidate_yaws;
+    searchYaw(next_pos, candidate_yaws);
+
+    bool success = false;
     vector<Vector3d> empty;
-    if (planToNextGoal(next_pos, next_yaw, empty)) {
-      ROS_INFO("Successfully planned to final goal.");
-      reach_end_flag = true;
+
+    for (const auto& yaw : candidate_yaws) {
+      if (planToNextGoal(next_pos, yaw, empty)) {
+        ROS_INFO(
+            "Successfully planned to final goal----x: %f, y: %f, z: %f, yaw: %f", next_pos(0), next_pos(1), next_pos(2), yaw);
+        success = true;
+        reach_end_flag = true;
+        break;
+      }
     }
 
-    else
+    // vector<Vector3d> empty;
+    // if (planToNextGoal(next_pos, next_yaw, empty)) {
+    //   ROS_INFO("Successfully planned to final goal.");
+    //   reach_end_flag = true;
+    // }
+
+    if (!success) {
       ROS_INFO("Failed to plan to final goal.Try to search frontier.");
+    }
   }
 
   // 需要渐进地通过前沿区域朝目标点摸索
@@ -163,8 +191,6 @@ bool PAExplorationManager::planToNextGoal(
   const auto& start_yaw = expl_fsm_.lock()->start_yaw_;
   const auto& final_goal = expl_fsm_.lock()->final_goal_;
 
-  // Compute time lower bound of start_yaw and use in trajectory generation
-  // Compute time lower bound of yaw and use in trajectory generation
   double diff = fabs(next_yaw - start_yaw[0]);
   double time_lb = min(diff, 2 * M_PI - diff) / ViewNode::yd_;
 
@@ -186,7 +212,7 @@ bool PAExplorationManager::planToNextGoal(
   }
 
   // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
-  planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells);
+  if (!planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells)) return false;
 
   return true;
 }
@@ -254,6 +280,26 @@ bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& 
   ROS_ERROR("[PAExplorationManager] No free point found, defaulting to path's start point.");
   point = path.front();
   return false;
+}
+
+void PAExplorationManager::searchYaw(const Vector3d& pos, vector<double>& yaw_samples_res) {
+  const int half_vert_num_ = 5;
+  const double yaw_diff_ = M_PI / 6;
+
+  yaw_samples_res.clear();
+
+  vector<double> yaw_samples;
+  int vert_num = 2 * half_vert_num_ + 1;
+  for (int j = 0; j < vert_num; j++) yaw_samples.push_back((j - half_vert_num_) * yaw_diff_);
+  yaw_samples.push_back(M_PI);
+
+  for (const auto& yaw : yaw_samples) {
+    Vector3d acc = Vector3d::Zero();
+    Quaterniond ori = Utils::calcOrientation(yaw, acc);
+    auto f_num = feature_map_->get_NumCloud_using_Odom(pos, ori);
+
+    if (f_num > expl_fsm_.lock()->fp_->min_feature_num_) yaw_samples_res.push_back(yaw);
+  }
 }
 
 }  // namespace fast_planner

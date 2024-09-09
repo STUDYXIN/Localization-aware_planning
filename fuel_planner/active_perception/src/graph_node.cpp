@@ -25,7 +25,6 @@ ViewNode::ViewNode(const Vector3d& p, const double& y) {
 double ViewNode::costTo(const ViewNode::Ptr& node) {
   vector<Vector3d> path;
   double c = ViewNode::computeCost(pos_, node->pos_, yaw_, node->yaw_, vel_, yaw_dot_, path);
-  // std::cout << "cost from " << id_ << " to " << node->id_ << " is: " << c << std::endl;
   return c;
 }
 

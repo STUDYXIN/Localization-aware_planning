@@ -36,6 +36,8 @@ struct M2GData;
 
 enum FSM_EXEC_STATE { INIT, WAIT_TARGET, PLAN_TO_NEXT_GOAL, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
 
+enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2 };
+
 class PAExplorationFSM : public std::enable_shared_from_this<PAExplorationFSM> {
 public:
   shared_ptr<FastPlannerManager> planner_manager_;
@@ -66,6 +68,11 @@ public:
   Eigen::Vector3d final_goal_;
   double last_arrive_goal_time_;
   int next_goal_;
+
+  int target_type_;  // 1 mannual select, 2 hard code
+  double waypoints_[50][3];
+  int waypoint_num_;
+  int current_wp_;
 
   /* Debug utils */
   vector<int> last_viewpoint_line, last_feature_line;

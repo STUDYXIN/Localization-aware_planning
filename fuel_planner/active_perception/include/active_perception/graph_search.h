@@ -102,7 +102,7 @@ void GraphSearch<NodeT>::DijkstraSearch(const int& start, const int& goal, vecto
       reverse(path.begin(), path.end());
       return;
     }
-    for (auto vb : vc->neighbors_) {
+    for (const auto& vb : vc->neighbors_) {
       // Check if in close set
       if (vb->closed_) continue;
 

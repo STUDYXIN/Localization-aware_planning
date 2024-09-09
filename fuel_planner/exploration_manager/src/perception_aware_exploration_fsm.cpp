@@ -13,6 +13,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   fp_.reset(new FSMParam);
 
   /*  Fsm param  */
+  nh.param("fsm/flight_type", target_type_, -1);
   nh.param("fsm/thresh_replan1", fp_->replan_thresh1_, -1.0);
   nh.param("fsm/thresh_replan2", fp_->replan_thresh2_, -1.0);
   nh.param("fsm/thresh_replan3", fp_->replan_thresh3_, -1.0);
@@ -20,6 +21,13 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
 
   nh.param("fsm/min_feature_num", fp_->min_feature_num_, -1);
   nh.param("fsm/draw_line2feature", draw_line2feature, false);
+
+  nh.param("fsm/wp_num", waypoint_num_, -1);
+  for (int i = 0; i < waypoint_num_; i++) {
+    nh.param("fsm/wp" + to_string(i) + "_x", waypoints_[i][0], -1.0);
+    nh.param("fsm/wp" + to_string(i) + "_y", waypoints_[i][1], -1.0);
+    nh.param("fsm/wp" + to_string(i) + "_z", waypoints_[i][2], -1.0);
+  }
 
   /* Initialize main modules */
   expl_manager_ = make_shared<PAExplorationManager>(shared_from_this());
@@ -50,9 +58,18 @@ void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
 
   vector<Eigen::Vector3d> global_wp;
 
-  final_goal_(0) = msg->poses[0].pose.position.x;
-  final_goal_(1) = msg->poses[0].pose.position.y;
-  final_goal_(2) = 1.0;
+  if (target_type_ == TARGET_TYPE::MANUAL_TARGET) {
+    final_goal_(0) = msg->poses[0].pose.position.x;
+    final_goal_(1) = msg->poses[0].pose.position.y;
+    final_goal_(2) = 1.0;
+  }
+
+  else {
+    final_goal_(0) = waypoints_[current_wp_][0];
+    final_goal_(1) = waypoints_[current_wp_][1];
+    final_goal_(2) = waypoints_[current_wp_][2];
+    current_wp_ = (current_wp_ + 1) % waypoint_num_;
+  }
   std::cout << "Final Goal: " << final_goal_.transpose() << std::endl;
 
   global_wp.push_back(final_goal_);
@@ -118,6 +135,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       next_goal_ = callExplorationPlanner();
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         transitState(PUB_TRAJ, "FSM");
+        ROS_INFO("Debug1");
       }
 
       else if (next_goal_ == NO_FRONTIER || next_goal_ == NO_AVAILABLE_FRONTIER) {
@@ -130,7 +148,9 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
     case PUB_TRAJ: {
       double dt = (ros::Time::now() - newest_traj_.start_time).toSec();
+      cout << "pub traj dt: " << dt << endl;
       if (dt > 0) {
+        ROS_INFO("Debug2");
         bspline_pub_.publish(newest_traj_);
         static_state_ = false;
         transitState(MOVE_TO_NEXT_GOAL, "FSM");
@@ -232,6 +252,7 @@ int PAExplorationFSM::callExplorationPlanner() {
   for (int i = 0; i < knots.rows(); ++i) {
     bspline.knots.push_back(knots(i));
   }
+
   Eigen::MatrixXd yaw_pts = info->yaw_traj_.getControlPoint();
   for (int i = 0; i < yaw_pts.rows(); ++i) {
     double yaw = yaw_pts(i, 0);
@@ -260,7 +281,7 @@ void PAExplorationFSM::visualize() {
   // 可视化位置轨迹
   visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
   // 在位置轨迹的knot point上可视化对应时间的yaw
-  visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->position_traj_.getKnotSpan());
+  visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
 
   // ROS_WARN("[PAExplorationFSM] path_next_goal_ SIZE: %zu", ed_ptr->path_next_goal_.size());
 }
@@ -370,13 +391,13 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
   //   return;
   // }
 
-  // int feature_num;
-  // if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_, feature_num)) {
-  //   ROS_WARN("Replan: Too few features detected,feature num: %d==================================", feature_num);
-  //   emergency_stop_pub_.publish(std_msgs::Empty());
-  //   transitState(EMERGENCY_STOP, "safetyCallback");
-  //   return;
-  // }
+  int feature_num;
+  if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_, feature_num)) {
+    ROS_WARN("Replan: Too few features detected,feature num: %d==================================", feature_num);
+    emergency_stop_pub_.publish(std_msgs::Empty());
+    transitState(EMERGENCY_STOP, "safetyCallback");
+    return;
+  }
 
   // if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL) {
   //   // Check safety and trigger replan if necessary

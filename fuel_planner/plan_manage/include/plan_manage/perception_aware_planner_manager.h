@@ -13,7 +13,8 @@
 #include <ros/ros.h>
 
 #include <plan_manage/plan_container.hpp>
-#include <plan_manage/yaw_initial_planner.h>
+// #include <plan_manage/yaw_initial_planner.h>
+#include <plan_manage/yaw_initial_planner_new.h>
 
 namespace fast_planner {
 // Fast Planner Manager
@@ -24,18 +25,22 @@ class FastPlannerManager {
 public:
   /* main planning interface */
   bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
+      const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel);
+  bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
       const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb);
+
   bool sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
       const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw, const double& time_lb = -1);
+
   bool kinodynamicReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
       const double start_yaw, const Eigen::Vector3d& end_pt, const Eigen::Vector3d& end_vel, const double end_yaw,
       const double& time_lb = -1);
+
   void planExploreTraj(const vector<Eigen::Vector3d>& tour, const Eigen::Vector3d& cur_vel, const Eigen::Vector3d& cur_acc,
       const double& time_lb = -1);
 
-  void planYaw(const Eigen::Vector3d& start_yaw);
   void planYawExplore(const Eigen::Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time);
-  void planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells);
+  bool planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells);
 
   void initPlanModules(ros::NodeHandle& nh);
   void setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints);

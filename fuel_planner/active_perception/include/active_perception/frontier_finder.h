@@ -52,6 +52,7 @@ struct Frontier {
 };
 
 class FrontierFinder {
+
 public:
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, ros::NodeHandle& nh);
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, const shared_ptr<FeatureMap>& fea, ros::NodeHandle& nh);
@@ -77,19 +78,21 @@ public:
   void setNextFrontier(const int& id);
   bool isFrontierCovered();
   void wrapYaw(double& yaw);
+
   void setLatestViewpoint(const Viewpoint& viewpoint) {
     latest_viewpoint_ = viewpoint;
   }
   void setLatestViewpoint(const Vector3d& pos, const double& yaw, const int& visib_num) {
     latest_viewpoint_ = { pos, yaw, visib_num };
   }
+
   void getLatestFrontier(vector<Vector3d>& latest_frontier);
 
   shared_ptr<PerceptionUtils> percep_utils_;
   Viewpoint latest_viewpoint_;
   vector<Vector3d> latest_frontier_;
 
-private:
+public:
   void splitLargeFrontiers(list<Frontier>& frontiers);
   bool splitHorizontally(const Frontier& frontier, list<Frontier>& splits);
   void mergeFrontiers(Frontier& ftr1, const Frontier& ftr2);

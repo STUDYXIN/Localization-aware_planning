@@ -19,6 +19,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/thresh_replan3", fp_->replan_thresh3_, -1.0);
   nh.param("fsm/thresh_replan_viewpoint_length", fp_->replan_thresh_replan_viewpoint_length_, -1.0);
   nh.param("fsm/replan_time", fp_->replan_time_, -1.0);
+  nh.param("fsm/do_replan", do_replan_, false);
 
   nh.param("fsm/min_feature_num", fp_->min_feature_num_, -1);
   nh.param("fsm/draw_line2feature", draw_line2feature, false);
@@ -201,6 +202,15 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       LocalTrajData& info = planner_manager_->local_data_;
       double t_r = (ros::Time::now() - info.start_time_).toSec() + fp_->replan_time_;
       if (t_r < info.duration_) {
+        start_pos_ = info.position_traj_.evaluateDeBoorT(t_r);
+        start_vel_ = info.velocity_traj_.evaluateDeBoorT(t_r);
+        start_acc_ = info.acceleration_traj_.evaluateDeBoorT(t_r);
+        start_yaw_(0) = info.yaw_traj_.evaluateDeBoorT(t_r)[0];
+        start_yaw_(1) = info.yawdot_traj_.evaluateDeBoorT(t_r)[0];
+        start_yaw_(2) = info.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
+        replan_pub_.publish(std_msgs::Empty());
+      } else if (!do_replan_) {
+        t_r = info.duration_;
         start_pos_ = info.position_traj_.evaluateDeBoorT(t_r);
         start_vel_ = info.velocity_traj_.evaluateDeBoorT(t_r);
         start_acc_ = info.acceleration_traj_.evaluateDeBoorT(t_r);
@@ -439,7 +449,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   }
   //重规划
   size_t idx = gains_[best_frontier_id].first;
-  if (exec_state_ == MOVE_TO_NEXT_GOAL) {
+  if (exec_state_ == MOVE_TO_NEXT_GOAL && do_replan_) {
     double length = (ed->points_[idx] - last_used_viewpoint_pos).norm();
     if (length > fp_->replan_thresh_replan_viewpoint_length_) transitState(REPLAN, "FSM");
   }

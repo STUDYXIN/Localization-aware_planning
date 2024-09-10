@@ -1,4 +1,30 @@
-## 更新日志
+# 更新日志
+
+## 9月10日更新
+
+- 增加了重规划开关，在`algorithm.xml`文件中。
+
+  ```xml
+       <param name="fsm/do_replan" value="false" type="bool" />
+  ```
+
+- 增加feature_map新接口，用于接收更大范围的特征点
+
+  ```xml
+    <param name="feature/wider_fov_horizontal" value="120.0" />
+    <param name="feature/wider_fov_vertical" value="90.0" />
+  ```
+
+  ```cpp
+  //增加接口，可以使得feature关注更多特征点，拓宽FOV数据写在algorithm.xml中
+    int get_More_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<pair<int, Eigen::Vector3d>>& res);
+    int get_More_NumCloud_using_Odom(
+        const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
+    int get_More_NumCloud_using_CamPosOrient(
+        const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
+  ```
+
+---
 
 ### 8月22日更新
 
@@ -453,3 +479,7 @@
 - <div align="center">
   <img src="img/bug1.png" alt="cover" width="640"/>
   </div>
+
+
+
+

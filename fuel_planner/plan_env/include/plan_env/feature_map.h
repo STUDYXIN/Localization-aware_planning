@@ -35,6 +35,8 @@ public:
   double fov_vertical;
   double feature_visual_min;
   double feature_visual_max;
+  double wider_fov_horizontal;
+  double wider_fov_vertical;
   Eigen::Matrix4d sensor2body;
 
   void init(ros::NodeHandle& nh) {
@@ -45,6 +47,9 @@ public:
     nh.param("feature/cam_width", width, 640);
     nh.param("feature/cam_height", height, 480);
     nh.param("feature/feature_visual_max", feature_visual_max, 10.0);
+    nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
+    nh.param("feature/wider_fov_horizontal", wider_fov_horizontal, 0.1);
+    nh.param("feature/wider_fov_vertical", wider_fov_vertical, 0.1);
     nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
     std::vector<double> cam02body;
     if (nh.getParam("feature/cam02body", cam02body)) {
@@ -73,8 +78,23 @@ public:
     std::cout << "height: " << height << std::endl;
     std::cout << "FOV Horizontal: " << fov_horizontal << " degrees" << std::endl;
     std::cout << "FOV Vertical: " << fov_vertical << " degrees" << std::endl;
+    std::cout << "Wider FOV Horizontal: " << wider_fov_horizontal << std::endl;
+    std::cout << "Wider FOV Vertical: " << wider_fov_vertical << std::endl;
     std::cout << "Feature Visual Max: " << feature_visual_max << std::endl;
     std::cout << "Feature Visual Min: " << feature_visual_min << std::endl;
+  }
+
+  bool is_in_wider_FOV(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p, const Eigen::Quaterniond& camera_q) {
+    Eigen::Vector3d target_in_camera = camera_q.inverse() * (target_p - camera_p);
+    double x = target_in_camera.x();
+    double y = target_in_camera.y();
+    double z = target_in_camera.z();
+    if (z <= feature_visual_min || z >= feature_visual_max) return false;
+    double fov_x = atan2(x, z) * 180 / M_PI;
+    double fov_y = atan2(y, z) * 180 / M_PI;
+    bool within_horizontal_fov = std::abs(fov_x) <= wider_fov_vertical / 2.0;
+    bool within_vertical_fov = std::abs(fov_y) <= wider_fov_vertical / 2.0;
+    return within_horizontal_fov && within_vertical_fov;
   }
 
   bool is_in_FOV(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p, const Eigen::Quaterniond& camera_q) {
@@ -145,6 +165,13 @@ public:
   int get_NumCloud_using_Odom(
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
   int get_NumCloud_using_CamPosOrient(
+      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
+
+  //增加接口，可以使得feature关注更多特征点，拓宽FOV数据写在algorithm.xml中
+  int get_More_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<pair<int, Eigen::Vector3d>>& res);
+  int get_More_NumCloud_using_Odom(
+      const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
+  int get_More_NumCloud_using_CamPosOrient(
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
 
   void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num);

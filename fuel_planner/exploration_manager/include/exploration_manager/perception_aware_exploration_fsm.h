@@ -67,6 +67,7 @@ public:
   int best_frontier_id;
 
   bool classic_;
+  bool do_replan_;
 
   Eigen::Vector3d final_goal_;
   double last_arrive_goal_time_;

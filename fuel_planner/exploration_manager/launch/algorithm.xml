@@ -69,6 +69,9 @@
     <param name="feature/filename" value="$(arg feature_filename)" />
     <param name="feature/occupied_thr" value="3" />
     <rosparam command="load" file="$(find plan_env)/config/cam.yaml" />
+    <param name="feature/wider_fov_horizontal" value="120.0" />
+    <param name="feature/wider_fov_vertical" value="90.0" />
+
 
     <param name="sdf_map/resolution" value="0.1" />
     <param name="sdf_map/map_size_x" value="$(arg map_size_x_)" />
@@ -120,6 +123,8 @@
     <param name="fsm/thresh_replan2" value="0.5" type="double" />
     <param name="fsm/thresh_replan3" value="1.5" type="double" />
     <param name="fsm/thresh_replan_viewpoint_length" value="0.5" type="double" />
+    <param name="fsm/do_replan" value="false" type="bool" />
+    <param name="fsm/min_feature_num" value="$(arg min_feature_num)" type="int" />
 
     <!-- <param name="fsm/thresh_replan1" value="0.00001" type="double"/> -->
     <!-- <param name="fsm/thresh_replan2" value="100.0" type="double"/> -->

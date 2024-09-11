@@ -210,7 +210,15 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     case REPLAN: {
       LocalTrajData& info = planner_manager_->local_data_;
       double t_r = (ros::Time::now() - info.start_time_).toSec() + fp_->replan_time_;
-      if (t_r < info.duration_) {
+      if (!do_replan_) {  //采用静态
+        start_pos_ = odom_pos_;
+        start_vel_ = odom_vel_;
+        start_acc_.setZero();
+
+        start_yaw_.setZero();
+        start_yaw_(0) = odom_yaw_;
+
+      } else if (t_r < info.duration_) {
         start_pos_ = info.position_traj_.evaluateDeBoorT(t_r);
         start_vel_ = info.velocity_traj_.evaluateDeBoorT(t_r);
         start_acc_ = info.acceleration_traj_.evaluateDeBoorT(t_r);
@@ -218,21 +226,8 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         start_yaw_(1) = info.yawdot_traj_.evaluateDeBoorT(t_r)[0];
         start_yaw_(2) = info.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
         replan_pub_.publish(std_msgs::Empty());
-      }
-
-      else if (!do_replan_) {
-        t_r = info.duration_;
-        start_pos_ = info.position_traj_.evaluateDeBoorT(t_r);
-        start_vel_ = info.velocity_traj_.evaluateDeBoorT(t_r);
-        start_acc_ = info.acceleration_traj_.evaluateDeBoorT(t_r);
-        start_yaw_(0) = info.yaw_traj_.evaluateDeBoorT(t_r)[0];
-        start_yaw_(1) = info.yawdot_traj_.evaluateDeBoorT(t_r)[0];
-        start_yaw_(2) = info.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
-        replan_pub_.publish(std_msgs::Empty());
-      }
-
-      else {
-        static_state_ = false;
+      } else {
+        static_state_ = true;
         transitState(PLAN_TO_NEXT_GOAL, "FSM");
         break;
       }

@@ -116,7 +116,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     }
 
     case PLAN_TO_NEXT_GOAL: {
-      if (ros::Time::now().toSec() - last_arrive_goal_time_ < 1.0) return;
+      if (ros::Time::now().toSec() - last_arrive_goal_time_ < 2.0) return;
 
       if (static_state_) {
         // Plan from static state (hover)
@@ -138,7 +138,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         start_yaw_(0) = info.yaw_traj_.evaluateDeBoorT(t_r)[0];
         start_yaw_(1) = info.yawdot_traj_.evaluateDeBoorT(t_r)[0];
         start_yaw_(2) = info.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
-        // ROS_INFO("[PLAN_TO_NEXT_GOAL] Debug3");
       }
 
       // Inform traj_server the replanning
@@ -187,7 +186,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         cout << "goal dist: " << (odom_pos_ - final_goal_).norm() << endl;
 
         if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
-          ROS_ERROR("Invalid goal next goal type!!!");
+          ROS_ERROR("Invalid next goal type!!!");
           ROS_BREAK();
         }
 
@@ -219,7 +218,9 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         start_yaw_(1) = info.yawdot_traj_.evaluateDeBoorT(t_r)[0];
         start_yaw_(2) = info.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
         replan_pub_.publish(std_msgs::Empty());
-      } else if (!do_replan_) {
+      }
+
+      else if (!do_replan_) {
         t_r = info.duration_;
         start_pos_ = info.position_traj_.evaluateDeBoorT(t_r);
         start_vel_ = info.velocity_traj_.evaluateDeBoorT(t_r);
@@ -228,8 +229,10 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         start_yaw_(1) = info.yawdot_traj_.evaluateDeBoorT(t_r)[0];
         start_yaw_(2) = info.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
         replan_pub_.publish(std_msgs::Empty());
-      } else {
-        static_state_ = 0;
+      }
+
+      else {
+        static_state_ = false;
         transitState(PLAN_TO_NEXT_GOAL, "FSM");
         break;
       }
@@ -277,10 +280,6 @@ int PAExplorationFSM::callExplorationPlanner() {
   double next_yaw;
   auto start_time = ros::Time::now();
   auto res = expl_manager_->selectNextGoal(next_pos, next_yaw);
-  // if (expl_manager_->selectNextGoal(next_pos, next_yaw) == NO_SOLUTION)
-  // {
-  //   return NO_FRONTIER;
-  // }
   cout << "res: " << res << endl;
 
   if (res == NO_FRONTIER || res == NO_AVAILABLE_FRONTIER) return res;

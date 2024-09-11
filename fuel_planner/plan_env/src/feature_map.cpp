@@ -128,8 +128,11 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
   vector<pair<int, Eigen::Vector3d>> visual_points_vec_with_idx;
   int feature_num = get_NumCloud_using_CamPosOrient(camera_p, camera_q, visual_points_vec);
   get_More_NumCloud_using_CamPosOrient(camera_p, camera_q, visual_points_vec_with_idx);
-  ROS_WARN("[FeatureMap::sensorposCallback] Test new feature map interface with wider FOV:---Origin Num: %zu --- New Num: %zu",
-      visual_points_vec.size(), visual_points_vec_with_idx.size());
+
+  // ROS_WARN("[FeatureMap::sensorposCallback] Test new feature map interface with wider FOV:---Origin Num: %zu --- New Num: "
+  //          "%zu",
+  //     visual_points_vec.size(), visual_points_vec_with_idx.size());
+
   visual_points_vec.clear();
   for (const auto& pair : visual_points_vec_with_idx) {
     visual_points_vec.push_back(pair.second);

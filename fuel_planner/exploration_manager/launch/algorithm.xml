@@ -124,7 +124,6 @@
     <param name="fsm/thresh_replan3" value="1.5" type="double" />
     <param name="fsm/thresh_replan_viewpoint_length" value="0.5" type="double" />
     <param name="fsm/do_replan" value="false" type="bool" />
-    <param name="fsm/min_feature_num" value="$(arg min_feature_num)" type="int" />
 
     <!-- <param name="fsm/thresh_replan1" value="0.00001" type="double"/> -->
     <!-- <param name="fsm/thresh_replan2" value="100.0" type="double"/> -->

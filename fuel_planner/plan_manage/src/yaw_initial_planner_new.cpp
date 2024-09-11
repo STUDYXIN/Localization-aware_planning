@@ -54,10 +54,10 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
       vector<pair<int, Vector3d>> res;
       auto f_num = feature_map_->get_NumCloud_using_Odom(pos[i], ori, res);
 
-      if (f_num <= min_feature_num) {
-        ROS_ERROR("[yaw initial planner]: Start point is not localizable!!!");
-        return false;
-      }
+      // if (f_num <= min_feature_num) {
+      //   ROS_ERROR("[yaw initial planner]: Start point is not localizable!!!");
+      //   return false;
+      // }
 
       YawVertex::Ptr vert(new YawVertex(start_yaw, gain, gid++, pos.front(), acc.front(), true, true));
       vert->setFeatures(res);
@@ -142,10 +142,10 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
     path.push_back(vert->yaw_);
   }
 
-  if (total_info_gain < min_info_gain_) {
-    ROS_ERROR("[yaw initial planner]: Total information gain is too less!!!");
-    return false;
-  }
+  // if (total_info_gain < min_info_gain_) {
+  //   ROS_ERROR("[yaw initial planner]: Total information gain is too less!!!");
+  //   return false;
+  // }
 
   publishYawPath(pos, path);
 

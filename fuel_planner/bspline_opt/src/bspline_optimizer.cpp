@@ -293,7 +293,6 @@ void BsplineOptimizer::optimize() {
 
   // Step4：正式进行优化
   auto t1 = ros::Time::now();
-  double final_cost;
   try {
     double final_cost;
     nlopt::result result = opt.optimize(q, final_cost);
@@ -963,9 +962,7 @@ void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q,
   dcost_dq.clear();
   for (int i = 0; i < 4; i++) dcost_dq.push_back(Vector3d::Zero());
 
-  // 通过最准确的方式计算共视特征点数量，如果达标就直接走
-  // ROS_INFO("Debug1");
-
+  // Step1: 通过最准确的方式计算共视特征点数量，如果达标就直接走
   Vector3d yaw_knot_0 = (q[0] + 4 * q[1] + q[2]) / 6;
   double yaw_0 = yaw_knot_0(0);
   Vector3d yaw_knot_1 = (q[1] + 4 * q[2] + q[3]) / 6;
@@ -996,9 +993,32 @@ void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q,
   int min_covisible_feature_num_plan = Utils::getGlobalParam().min_covisible_feature_num_plan_;
   if (commonFeatureCount > min_covisible_feature_num_plan) return;
 
+  // Step2: 获取两帧待选的特征点，保证不重复地加入优化特征点集合
+  vector<pair<int, Vector3d>> canditate_feature_0;
+  feature_map_->get_More_NumCloud_using_Odom(knots_pos[0], ori_0, canditate_feature_0);
+
+  vector<pair<int, Vector3d>> canditate_feature_1;
+  feature_map_->get_More_NumCloud_using_Odom(knots_pos[1], ori_1, canditate_feature_1);
+
+  vector<Vector3d> feature_opt;
+  list<int> feature_opt_id;
+  for (size_t i = 0; i < canditate_feature_0.size(); i++) {
+    feature_opt.push_back(canditate_feature_0[i].second);
+    feature_opt_id.push_back(canditate_feature_0[i].first);
+  }
+
+  for (size_t j = 0; j < canditate_feature_1.size(); j++) {
+    int id = canditate_feature_1[j].first;
+    if (std::find(feature_opt_id.begin(), feature_opt_id.end(), id) == feature_opt_id.end()) {
+      feature_opt.push_back(canditate_feature_1[j].second);
+      feature_opt_id.push_back(id);
+    }
+  }
+
   Vector3d gravity(0, 0, -9.81);
   double total_weight = 0.0;
-  for (const auto& f : features) {
+  for (const auto& f : feature_opt) {
+    // for (const auto& f : features) {
     double w = 1.0;
     vector<double> v3_theta3_vec, v1v2_vec;
     vector<vector<Vector3d>> dv3_dyaw_vec;
@@ -1225,7 +1245,7 @@ void BsplineOptimizer::calcYawCoVisbilityCost(const vector<Vector3d>& q, double&
 
     Vector3d knot_mid = 0.5 * (pos_[i] + pos_[i + 1]);
     vector<Vector3d> features;
-    feature_map_->getFeatures(knot_mid, features);
+    // feature_map_->getFeatures(knot_mid, features);
 
     calcYawCVCostAndGradientsKnots(q_cur, knots_pos, knots_acc, features, cost_i, dcost_dq_i);
 
@@ -1377,6 +1397,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_frontier_visibility_pos_ * g_frontier_visibility_pos_[i](j);
     }
   }
+
   /// 用于Yaw Trajectory Optimization阶段
   /// Cost12：yaw共视性约束
   if (cost_function_ & YAWCOVISIBILITY) {
@@ -1407,27 +1428,27 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
 
   comb_time += (ros::Time::now() - t1).toSec();
 
-  cout << "---------------------------------------------------------------------------" << endl;
-  cout << "[bspline optimizer]:iter_num: " << iter_num_ << endl;
-  cout << "[bspline optimizer]:total cost: " << f_combine << endl;
+  // cout << "---------------------------------------------------------------------------" << endl;
+  // cout << "[bspline optimizer]:iter_num: " << iter_num_ << endl;
+  // cout << "[bspline optimizer]:total cost: " << f_combine << endl;
 
-  if (cost_function_ & SMOOTHNESS) cout << "[bspline optimizer]:smoothness cost: " << f_smoothness_ << endl;
-  if (cost_function_ & DISTANCE) cout << "[bspline optimizer]:distance cost: " << f_distance_ << endl;
-  if (cost_function_ & FEASIBILITY) cout << "[bspline optimizer]:feasibility cost: " << f_feasibility_ << endl;
-  if (cost_function_ & START) cout << "[bspline optimizer]:start cost: " << f_start_ << endl;
-  if (cost_function_ & END) cout << "[bspline optimizer]:end cost: " << f_end_ << endl;
-  if (cost_function_ & GUIDE) cout << "[bspline optimizer]:guide cost: " << f_guide_ << endl;
-  if (cost_function_ & WAYPOINTS) cout << "[bspline optimizer]:waypoints cost: " << f_waypoints_ << endl;
-  if (cost_function_ & VIEWCONS) cout << "[bspline optimizer]:view cost: " << f_view_ << endl;
-  if (cost_function_ & MINTIME) cout << "[bspline optimizer]:time cost: " << f_time_ << endl;
-  if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY))
-    cout << "[bspline optimizer]:parallax cost: " << f_parallax_ << endl;
-  if (cost_function_ & FRONTIERVISIBILITY_POS)
-    cout << "[bspline optimizer]:view frontier(pos) cost: " << f_frontier_visibility_pos_ << endl;
-  if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ << endl;
-  if (cost_function_ & FRONTIERVISIBILITY_YAW)
-    cout << "[bspline optimizer]:view frontier(yaw) cost: " << f_frontier_visibility_yaw_ << endl;
-  cout << "---------------------------------------------------------------------------" << endl;
+  // if (cost_function_ & SMOOTHNESS) cout << "[bspline optimizer]:smoothness cost: " << f_smoothness_ << endl;
+  // if (cost_function_ & DISTANCE) cout << "[bspline optimizer]:distance cost: " << f_distance_ << endl;
+  // if (cost_function_ & FEASIBILITY) cout << "[bspline optimizer]:feasibility cost: " << f_feasibility_ << endl;
+  // if (cost_function_ & START) cout << "[bspline optimizer]:start cost: " << f_start_ << endl;
+  // if (cost_function_ & END) cout << "[bspline optimizer]:end cost: " << f_end_ << endl;
+  // if (cost_function_ & GUIDE) cout << "[bspline optimizer]:guide cost: " << f_guide_ << endl;
+  // if (cost_function_ & WAYPOINTS) cout << "[bspline optimizer]:waypoints cost: " << f_waypoints_ << endl;
+  // if (cost_function_ & VIEWCONS) cout << "[bspline optimizer]:view cost: " << f_view_ << endl;
+  // if (cost_function_ & MINTIME) cout << "[bspline optimizer]:time cost: " << f_time_ << endl;
+  // if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY))
+  //   cout << "[bspline optimizer]:parallax cost: " << f_parallax_ << endl;
+  // if (cost_function_ & FRONTIERVISIBILITY_POS)
+  //   cout << "[bspline optimizer]:view frontier(pos) cost: " << f_frontier_visibility_pos_ << endl;
+  // if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ << endl;
+  // if (cost_function_ & FRONTIERVISIBILITY_YAW)
+  //   cout << "[bspline optimizer]:view frontier(yaw) cost: " << f_frontier_visibility_yaw_ << endl;
+  // cout << "---------------------------------------------------------------------------" << endl;
 }
 
 double BsplineOptimizer::costFunction(const std::vector<double>& x, std::vector<double>& grad, void* func_data) {

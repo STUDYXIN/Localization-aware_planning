@@ -147,7 +147,7 @@ void FrontierFinder::searchFrontiers() {
 
   splitLargeFrontiers(tmp_frontiers_);
 
-  ROS_WARN_THROTTLE(5.0, "Frontier t: %lf", (ros::Time::now() - t1).toSec());
+  //ROS_WARN_THROTTLE(5.0, "Frontier t: %lf", (ros::Time::now() - t1).toSec());
 }
 
 void FrontierFinder::expandFrontier(const Eigen::Vector3i& first) {

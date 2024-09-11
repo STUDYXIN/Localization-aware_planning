@@ -89,7 +89,7 @@ bool Graph::dijkstraSearch(const int& start, const int& goal, vector<YawVertex::
     }
   }
 
-  ROS_ERROR("[Graph::dijkstraSearch] Dijkstra can't find path!");
+  ROS_ERROR("Dijkstra can't find path!");
   return false;
 }
 }  // namespace fast_planner

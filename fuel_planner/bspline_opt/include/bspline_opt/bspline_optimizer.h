@@ -127,7 +127,7 @@ private:
   void calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
       const double ld_para, const double ld_vcv);
 
-  void calcViewFrontierCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q);
+  void calcViewFrontierCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
   void calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
       const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq);
@@ -196,6 +196,20 @@ private:
   vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_start_, g_end_, g_guide_, g_waypoints_, g_view_,
       g_time_;
 
+  double f_smoothness_;
+  double f_distance_;
+  double f_feasibility_;
+  double f_start_;
+  double f_end_;
+  double f_guide_;
+  double f_waypoints_;
+  double f_view_;
+  double f_time_;
+  double f_parallax_;
+  double f_frontier_visibility_pos_;
+  double f_yaw_covisibility_;
+  double f_frontier_visibility_yaw_;
+
   // SECTION Perception Aware Optimization
   vector<Vector3d> g_parallax_;
   vector<Vector3d> g_frontier_visibility_pos_;
@@ -237,6 +251,8 @@ public:
   }
 
   // !SECTION
+
+  void resetCostAndGrad();
 
   void getCostCurve(vector<double>& cost, vector<double>& time) {
     cost = vec_cost_;

@@ -250,6 +250,11 @@ public:
     frontier_cells_ = frontier_cells;
   }
 
+  vector<Vector3d> observed_features_;
+  void setObservedFeatures(const vector<Vector3d>& features) {
+    observed_features_ = features;
+  }
+
   // !SECTION
 
   void resetCostAndGrad();

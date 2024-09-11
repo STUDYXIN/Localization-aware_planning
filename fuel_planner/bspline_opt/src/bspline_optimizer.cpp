@@ -3,6 +3,9 @@
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
 #include <plan_env/feature_map.h>
+
+#include <plan_env/utils.hpp>
+
 #include <active_perception/frontier_finder.h>
 
 #include <nlopt.hpp>
@@ -952,11 +955,46 @@ void BsplineOptimizer::calcViewFrontierCost(const vector<Vector3d>& q, double& c
 void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
     const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq) {
 
-  if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
+  ROS_ASSERT(q.size() == 4);
+  ROS_ASSERT(knots_pos.size() == 2);
+  ROS_ASSERT(knots_acc.size() == 2);
 
   cost = 0.0;
   dcost_dq.clear();
   for (int i = 0; i < 4; i++) dcost_dq.push_back(Vector3d::Zero());
+
+  // 通过最准确的方式计算共视特征点数量，如果达标就直接走
+  // ROS_INFO("Debug1");
+
+  Vector3d yaw_knot_0 = (q[0] + 4 * q[1] + q[2]) / 6;
+  double yaw_0 = yaw_knot_0(0);
+  Vector3d yaw_knot_1 = (q[1] + 4 * q[2] + q[3]) / 6;
+  double yaw_1 = yaw_knot_1(1);
+
+  Quaterniond ori_0 = Utils::calcOrientation(yaw_0, knots_acc[0]);
+  vector<pair<int, Vector3d>> feature_0;
+  feature_map_->get_NumCloud_using_Odom(knots_pos[0], ori_0, feature_0);
+
+  Quaterniond ori_1 = Utils::calcOrientation(yaw_1, knots_acc[1]);
+  vector<pair<int, Vector3d>> feature_1;
+  feature_map_->get_NumCloud_using_Odom(knots_pos[1], ori_1, feature_1);
+
+  int commonFeatureCount = 0;
+  for (size_t i = 0; i < feature_0.size(); i++) {
+    int id_i = feature_0[i].first;
+    for (size_t j = 0; j < feature_1.size(); j++) {
+      int id_j = feature_1[j].first;
+      if (id_i == id_j) {
+        commonFeatureCount++;
+      }
+    }
+  }
+
+  // ROS_INFO("Debug2");
+  // cout << "commonFeatureCount: " << commonFeatureCount << endl;
+
+  int min_covisible_feature_num_plan = Utils::getGlobalParam().min_covisible_feature_num_plan_;
+  if (commonFeatureCount > min_covisible_feature_num_plan) return;
 
   Vector3d gravity(0, 0, -9.81);
   double total_weight = 0.0;
@@ -1029,24 +1067,31 @@ void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q,
     double pot_cost;
     vector<Vector3d> dcovisb_pot_dq_cur;
 
-    // double covisibility_cost = -(v1v2_vec[0] * v1v2_vec[1] * v3_theta3_vec[0] * v3_theta3_vec[1]);
-    double covisibility_cost = (v1v2_vec[0] * v1v2_vec[1] * v3_theta3_vec[0] * v3_theta3_vec[1]);
+    // double covisibility_cost = (v1v2_vec[0] * v1v2_vec[1] * v3_theta3_vec[0] * v3_theta3_vec[1]);
 
-    if (covisibility_cost > 10) {
-      ROS_WARN("covisibility_cost: %f", covisibility_cost);
+    // if (covisibility_cost > 10) {
+    //   ROS_WARN("covisibility_cost: %f", covisibility_cost);
 
-      pot_cost = 0.0;
-      for (int j = 0; j < 4; j++) {
-        dcovisb_pot_dq_cur.emplace_back(Vector3d::Zero());
-      }
-    }
+    //   pot_cost = 0.0;
+    //   for (int j = 0; j < 4; j++) {
+    //     dcovisb_pot_dq_cur.emplace_back(Vector3d::Zero());
+    //   }
+    // }
 
-    else {
-      pot_cost = pow(covisibility_cost - 10, 2);
-      for (int j = 0; j < 4; j++) {
-        dcovisb_pot_dq_cur.emplace_back(2 * (covisibility_cost - 10) * v1v2_vec[0] * v1v2_vec[1] *
-                                        (dv3_dyaw_vec[0][j] * v3_theta3_vec[1] + v3_theta3_vec[0] * dv3_dyaw_vec[1][j]));
-      }
+    // else {
+    //   pot_cost = pow(covisibility_cost - 10, 2);
+    //   for (int j = 0; j < 4; j++) {
+    //     dcovisb_pot_dq_cur.emplace_back(2 * (covisibility_cost - 10) * v1v2_vec[0] * v1v2_vec[1] *
+    //                                     (dv3_dyaw_vec[0][j] * v3_theta3_vec[1] + v3_theta3_vec[0] * dv3_dyaw_vec[1][j]));
+    //   }
+    // }
+
+    double covisibility_cost = -(v1v2_vec[0] * v1v2_vec[1] * v3_theta3_vec[0] * v3_theta3_vec[1]);
+
+    pot_cost = covisibility_cost;
+    for (int j = 0; j < 4; j++) {
+      dcovisb_pot_dq_cur.emplace_back(
+          -v1v2_vec[0] * v1v2_vec[1] * (dv3_dyaw_vec[0][j] * v3_theta3_vec[1] + v3_theta3_vec[0] * dv3_dyaw_vec[1][j]));
     }
 
     cost = (cost * total_weight + pot_cost * w) / (total_weight + w);
@@ -1345,7 +1390,6 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   /// 我们新加的
   ///  Cost13：frontier可见性约束
   if (cost_function_ & FRONTIERVISIBILITY_YAW) {
-    double f_frontier_visibility_yaw = 0.0;
     calcFrontierVisbilityCost(g_q_, f_frontier_visibility_yaw_, g_frontier_visibility_yaw_);
     // cout << "frontier_cells_ size: " << frontier_cells_.size() << endl;
     // cout << "f_frontier_visibility: " << f_frontier_visibility_yaw << endl;

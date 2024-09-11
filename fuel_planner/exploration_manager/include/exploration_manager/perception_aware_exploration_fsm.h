@@ -75,7 +75,7 @@ public:
   int target_type_;  // 1 mannual select, 2 hard code
   double waypoints_[50][3];
   int waypoint_num_;
-  int current_wp_;
+  int current_wp_ = 0;
 
   /* Debug utils */
   vector<int> last_viewpoint_line, last_feature_line;

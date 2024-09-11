@@ -110,7 +110,6 @@ struct RRTParameters {
 
   // int
   int yaw_sample_piece_num_;
-  int min_feature_num_;
 
   void readParameters(ros::NodeHandle& nh);
 };

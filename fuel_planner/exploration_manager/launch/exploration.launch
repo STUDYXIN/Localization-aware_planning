@@ -53,8 +53,11 @@
     <arg name="max_vel" value="2.0" />
     <arg name="max_acc" value="2.0" />
 
-    <arg name="min_feature_num" value="10" />
-    <arg name="min_covisible_feature_num" value="6" />
+    <arg name="min_feature_num_act" value="10" />
+    <arg name="min_covisible_feature_num_act" value="6" />
+
+    <arg name="min_feature_num_plan" value="15" />
+    <arg name="min_covisible_feature_num_plan" value="12" />
 
     <!-- 1: use 2D Nav Goal to select goal  -->
     <!-- 2: use global waypoints below  -->

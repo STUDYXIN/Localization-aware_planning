@@ -48,7 +48,6 @@ public:
   bool checkTrajCollision(double& distance);
   bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, int& feature_num);
   bool checkTrajLocalizability(double& distance);
-  void calcNextYaw(const double& last_yaw, double& yaw);
 
   void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
     feature_map_ = feature_map;
@@ -56,6 +55,9 @@ public:
 
   void setFrontierFinder(shared_ptr<FrontierFinder> frontier_finder) {
     frontier_finder_ = frontier_finder;
+  }
+
+  void setExternelParam() {
   }
 
   PlanParameters pp_;
@@ -97,10 +99,6 @@ public:
 private:
   // unique_ptr<HeadingPlanner> heading_planner_;
   unique_ptr<VisibilityUtil> visib_util_;
-
-  // Benchmark method, local exploration
-public:
-  bool localExplore(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel, Eigen::Vector3d start_acc, Eigen::Vector3d end_pt);
 
   // !SECTION
 };

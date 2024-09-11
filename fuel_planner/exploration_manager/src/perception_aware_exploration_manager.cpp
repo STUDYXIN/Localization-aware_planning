@@ -14,7 +14,7 @@
 #include <plan_env/sdf_map.h>
 
 #include <plan_manage/perception_aware_planner_manager.h>
-#include <plan_manage/utils.hpp>
+#include <plan_env/utils.hpp>
 
 #include <visualization_msgs/Marker.h>
 
@@ -305,7 +305,8 @@ void PAExplorationManager::searchYaw(const Vector3d& pos, vector<double>& yaw_sa
     Quaterniond ori = Utils::calcOrientation(yaw, acc);
     auto f_num = feature_map_->get_NumCloud_using_Odom(pos, ori);
 
-    if (f_num > expl_fsm_.lock()->fp_->min_feature_num_) yaw_samples_res.push_back(yaw);
+    int min_feature_num = Utils::getGlobalParam().min_feature_num_plan_;
+    if (f_num > min_feature_num) yaw_samples_res.push_back(yaw);
   }
 }
 

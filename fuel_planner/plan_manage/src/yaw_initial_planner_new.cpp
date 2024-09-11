@@ -1,5 +1,5 @@
 #include <plan_manage/yaw_initial_planner_new.h>
-#include <plan_manage/utils.hpp>
+#include <plan_env/utils.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -26,8 +26,7 @@ YawInitialPlanner::YawInitialPlanner(ros::NodeHandle& nh) {
   yaw_diff_ = M_PI / (half_vert_num_ + 1);
   nh.param("yaw_initial/max_yaw_rate", max_yaw_rate_, -1.0);
   nh.param("yaw_initial/w", w_, -1.0);
-  nh.param("yaw_initial/min_feature_num", min_feature_num_, -1);
-  nh.param("yaw_initial/min_covisible_feature_num", min_covisible_feature_num_, -1);
+  nh.param("yaw_initial/min_info_gain", min_info_gain_, -1.0);
 }
 
 bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end_yaw, const vector<Vector3d>& pos,
@@ -43,6 +42,9 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
   // Start and end yaw are not specified, add additional start and end layers
   int num_layers = pos.size();
 
+  int min_feature_num = Utils::getGlobalParam().min_feature_num_plan_;
+  int min_covisible_feature_num = Utils::getGlobalParam().min_covisible_feature_num_plan_;
+
   for (int i = 0; i < num_layers; ++i) {
     if (i == 0) {
       double gain = calcInformationGain(pos.front(), start_yaw);
@@ -52,7 +54,7 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
       vector<pair<int, Vector3d>> res;
       auto f_num = feature_map_->get_NumCloud_using_Odom(pos[i], ori, res);
 
-      if (f_num <= min_feature_num_) {
+      if (f_num <= min_feature_num) {
         ROS_ERROR("[yaw initial planner]: Start point is not localizable!!!");
         return false;
       }
@@ -71,7 +73,7 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
       vector<pair<int, Vector3d>> res;
       auto f_num = feature_map_->get_NumCloud_using_Odom(pos[i], ori, res);
 
-      if (f_num <= min_feature_num_) {
+      if (f_num <= min_feature_num) {
         ROS_ERROR("[yaw initial planner]: End point is not localizable!!!");
         return false;
       }
@@ -97,7 +99,7 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
         //     int get_NumCloud_using_Odom(
         // const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
 
-        if (f_num <= min_feature_num_) continue;
+        if (f_num <= min_feature_num) continue;
 
         double gain = calcInformationGain(pos[i], yaw);
 
@@ -112,7 +114,7 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
       int add_edge_num = 0;
       for (const auto& v1 : last_layer) {
         for (const auto& v2 : layer) {
-          if (getCoVisibileNum(v1, v2) > min_covisible_feature_num_) {
+          if (getCoVisibileNum(v1, v2) > min_covisible_feature_num) {
             yaw_graph.addEdge(v1->id_, v2->id_, v2->info_gain_);
             add_edge_num++;
           }
@@ -134,7 +136,16 @@ bool YawInitialPlanner::searchPathOfYaw(const double start_yaw, const double end
   }
 
   // Step3: 将存储在vert_path中的yaw角数值提取出来
-  for (const auto& vert : vert_path) path.push_back(vert->yaw_);
+  double total_info_gain = 0;
+  for (const auto& vert : vert_path) {
+    total_info_gain += vert->info_gain_;
+    path.push_back(vert->yaw_);
+  }
+
+  if (total_info_gain < min_info_gain_) {
+    ROS_ERROR("[yaw initial planner]: Total information gain is too less!!!");
+    return false;
+  }
 
   publishYawPath(pos, path);
 

@@ -126,8 +126,6 @@ struct PlanParameters {
   double time_search_ = 0.0;
   double time_optimize_ = 0.0;
   double time_adjust_ = 0.0;
-
-  int min_feature_num_;
 };
 
 struct LocalTrajData {

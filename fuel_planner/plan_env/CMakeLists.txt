@@ -46,6 +46,7 @@ add_library( plan_env
     src/raycast.cpp
     src/map_ros.cpp
     src/feature_map.cpp
+    src/utils.cpp
     )
 target_link_libraries( plan_env
     ${catkin_LIBRARIES} 

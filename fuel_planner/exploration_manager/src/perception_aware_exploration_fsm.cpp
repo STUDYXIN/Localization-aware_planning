@@ -3,12 +3,16 @@
 
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
+#include <plan_env/utils.hpp>
+
 #include <plan_manage/perception_aware_planner_manager.h>
 #include <traj_utils/planning_visualization.h>
 #include <chrono>
+
 using Eigen::Vector4d;
 
 namespace fast_planner {
+
 void PAExplorationFSM::init(ros::NodeHandle& nh) {
   fp_.reset(new FSMParam);
 
@@ -20,7 +24,6 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/thresh_replan_viewpoint_length", fp_->replan_thresh_replan_viewpoint_length_, -1.0);
   nh.param("fsm/replan_time", fp_->replan_time_, -1.0);
 
-  nh.param("fsm/min_feature_num", fp_->min_feature_num_, -1);
   nh.param("fsm/draw_line2feature", draw_line2feature, false);
 
   nh.param("fsm/wp_num", waypoint_num_, -1);
@@ -31,10 +34,14 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   }
 
   /* Initialize main modules */
+  Utils::initialize(nh);
+
   expl_manager_ = make_shared<PAExplorationManager>(shared_from_this());
   expl_manager_->initialize(nh);
 
   planner_manager_ = expl_manager_->planner_manager_;
+  planner_manager_->setExternelParam();
+
   visualization_.reset(new PlanningVisualization(nh));
 
   state_str_ = { "INIT", "WAIT_TARGET", "PLAN_TO_NEXT_GOAL", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP" };
@@ -139,8 +146,11 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       next_goal_ = callExplorationPlanner();
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         transitState(PUB_TRAJ, "FSM");
-      } else if (next_goal_ == NO_FRONTIER)
+      }
+
+      else if (next_goal_ == NO_FRONTIER)
         ROS_WARN("No frontier, Maybe is loading...=================================");
+
       else if (next_goal_ == NO_AVAILABLE_FRONTIER) {
         // Still in PLAN_TRAJ state, keep replanning
         best_frontier_id++;
@@ -437,7 +447,8 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
       }
     }
   }
-  //重规划
+
+  // 重规划
   size_t idx = gains_[best_frontier_id].first;
   if (exec_state_ == MOVE_TO_NEXT_GOAL) {
     double length = (ed->points_[idx] - last_used_viewpoint_pos).norm();
@@ -453,10 +464,6 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
   if (!have_odom_) {
     return;
   }
-
-  // if (exec_state_ == FSM_EXEC_STATE::EMERGENCY_STOP) {
-  //   return;
-  // }
 
   int feature_num;
   if (!planner_manager_->checkCurrentLocalizability(odom_pos_, odom_orient_, feature_num)) {
@@ -508,12 +515,16 @@ void PAExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
   int feature_view_num = expl_manager_->feature_map_->get_NumCloud_using_Odom(msg);
   std::string text = "feature_view: " + std::to_string(feature_view_num);
   Eigen::Vector4d color;
-  if (feature_view_num < fp_->min_feature_num_) {
+
+  int min_feature_num = Utils::getGlobalParam().min_feature_num_act_;
+  if (feature_view_num < min_feature_num) {
     // 小于 threshold 时显示红色
     color = Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
-  } else {
+  }
+
+  else {
     // 大于 threshold 时从红色逐渐过渡到绿色
-    double ratio = std::min(1.0, double(feature_view_num - fp_->min_feature_num_) / (2.0 * fp_->min_feature_num_));
+    double ratio = std::min(1.0, double(feature_view_num - min_feature_num) / (2.0 * min_feature_num));
     color = Eigen::Vector4d(1.0 - ratio, ratio, 0.0, 1.0);
   }
   Eigen::Vector3d show_pos = odom_pos_;

@@ -24,8 +24,11 @@
   <arg name="max_acc" />
   <arg name="feature_filename" default="" />
 
-  <arg name="min_feature_num" />
-  <arg name="min_covisible_feature_num" />
+  <arg name="min_feature_num_act" />
+  <arg name="min_covisible_feature_num_act" />
+
+  <arg name="min_feature_num_plan" />
+  <arg name="min_covisible_feature_num_plan" />
 
   <arg name="flight_type" />
 
@@ -49,6 +52,13 @@
 
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
+    <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
+    <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)"
+      type="int" />
+    <param name="global/min_feature_num_plan" value="$(arg min_feature_num_plan)" type="int" />
+    <param name="global/min_covisible_feature_num_plan"
+      value="$(arg min_covisible_feature_num_plan)" type="int" />
+
     <remap from="/odom_world" to="$(arg odometry_topic)" />
     <remap from="/map_ros/pose" to="$(arg sensor_pose_topic)" />
     <remap from="/map_ros/depth" to="$(arg depth_topic)" />
@@ -110,7 +120,6 @@
     <param name="fsm/thresh_replan2" value="0.5" type="double" />
     <param name="fsm/thresh_replan3" value="1.5" type="double" />
     <param name="fsm/thresh_replan_viewpoint_length" value="0.5" type="double" />
-    <param name="fsm/min_feature_num" value="$(arg min_feature_num)" type="int" />
 
     <!-- <param name="fsm/thresh_replan1" value="0.00001" type="double"/> -->
     <!-- <param name="fsm/thresh_replan2" value="100.0" type="double"/> -->
@@ -192,8 +201,7 @@
     <param name="yaw_initial/half_vert_num" value="7" type="int" />
     <param name="yaw_initial/max_yaw_rate" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
     <param name="yaw_initial/w" value="0.0" type="double" />
-    <param name="yaw_initial/min_feature_num" value="$(arg min_feature_num)" type="double" />
-    <param name="yaw_initial/min_covisible_feature_num" value="$(arg min_covisible_feature_num)" type="double" />
+    <param name="yaw_initial/min_info_gain" value="30" type="double" />
 
     <!-- planner manager -->
     <!-- <param name="manager/max_vel" value="$(arg max_vel)" type="double"/> -->
@@ -211,7 +219,6 @@
     <param name="manager/use_optimization" value="true" type="bool" />
     <param name="manager/use_active_perception" value="true" type="bool" />
     <param name="manager/min_time" value="true" type="bool" />
-    <param name="manager/min_feature_num" value="$(arg min_feature_num)" type="int" />
 
     <!-- kinodynamic path searching -->
     <param name="search/max_tau" value="0.8" type="double" />
@@ -232,7 +239,6 @@
     <param name="search/max_yaw_rate" value="0.6" type="double" />
     <param name="search/yaw_origin" value="-1000.0" type="double" />
     <param name="search/yaw_size" value="2000.0" type="double" />
-    <param name="search/min_feature_num" value="$(arg min_feature_num)" type="int" />
 
     <param name="astar/lambda_heu" value="10000.0" type="double" />
     <param name="astar/resolution_astar" value="0.2" type="double" />
@@ -252,7 +258,6 @@
     <param name="rrt/max_search_time" value="10.0" type="double" />
 
     <param name="rrt/yaw_sample_piece_num" value="6" type="int" />
-    <param name="rrt/min_feature_num" value="$(arg min_feature_num)" type="int" />
 
     <param name="optimization/ld_smooth" value="25.0" type="double" />
     <param name="optimization/ld_dist" value="20.0" type="double" />
@@ -285,13 +290,14 @@
     <param name="optimization/max_iteration_time4" value="0.003" type="double" />
 
     <param name="optimization/parallax/estimator_freq" value="10.0" type="double" />
-    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)"
+      type="double" />
     <param name="optimization/parallax/pot_a" value="20.0" type="double" />
 
-    <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/max_feature_and_frontier_convisual_angle"
+      value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />
-
 
     <param name="bspline/limit_vel" value="$(arg max_vel)" type="double" />
     <param name="bspline/limit_acc" value="$(arg max_acc)" type="double" />

@@ -1,5 +1,5 @@
 #include "plan_manage/perception_aware_planner_manager.h"
-#include "plan_manage/utils.hpp"
+#include "plan_env/utils.hpp"
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -32,8 +32,6 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
   nh.param("manager/control_points_distance", pp_.ctrl_pt_dist, -1.0);
   nh.param("manager/bspline_degree", pp_.bspline_degree_, 3);
   nh.param("manager/min_time", pp_.min_time_, false);
-
-  nh.param("manager/min_feature_num", pp_.min_feature_num_, -1);
 
   bool use_geometric_path, use_kinodynamic_path, use_topo_path, use_optimization, use_active_perception;
   bool use_sample_path;
@@ -132,13 +130,17 @@ bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Q
 
   feature_num = feature_map_->get_NumCloud_using_Odom(pos, orient);
   static int error_times = 0;
-  if (feature_num <= pp_.min_feature_num_) {
+
+  int min_feature_num = Utils::getGlobalParam().min_feature_num_act_;
+  if (feature_num <= min_feature_num) {
     ROS_ERROR("ERROR STATE with feature: %d", feature_num);
     error_times++;
-  } else
+  }
+
+  else
     error_times = 0;
 
-  return feature_num > pp_.min_feature_num_ || error_times <= 10;
+  return feature_num > min_feature_num || error_times <= 10;
 }
 
 bool FastPlannerManager::checkTrajLocalizability(double& distance) {
@@ -530,7 +532,7 @@ void FastPlannerManager::planYawExplore(
       if (pd.norm() > 1e-6) {
         waypt(0) = atan2(pd(1), pd(0));
         waypt(1) = waypt(2) = 0.0;
-        calcNextYaw(last_yaw, waypt(0));
+        Utils::calcNextYaw(last_yaw, waypt(0));
       }
 
       else
@@ -544,7 +546,7 @@ void FastPlannerManager::planYawExplore(
 
   // Final state
   Eigen::Vector3d end_yaw3d(end_yaw, 0, 0);
-  calcNextYaw(last_yaw, end_yaw3d(0));
+  Utils::calcNextYaw(last_yaw, end_yaw3d(0));
   yaw.block<3, 1>(seg_num, 0) = states2pts * end_yaw3d;
 
   // cout << "states2pts * start_yaw3d: " << (states2pts * start_yaw3d).transpose() << endl;
@@ -633,7 +635,7 @@ bool FastPlannerManager::planYawPerceptionAware(
   for (size_t i = 0; i < yaw_waypoints.size(); ++i) {
     Vector3d waypt = Vector3d::Zero();
     waypt(0) = yaw_waypoints[i];
-    calcNextYaw(last_yaw, waypt(0));
+    Utils::calcNextYaw(last_yaw, waypt(0));
     last_yaw = waypt(0);
     waypts.push_back(waypt);
     waypt_idx.push_back(i);
@@ -644,9 +646,7 @@ bool FastPlannerManager::planYawPerceptionAware(
 
   //  Initial state
   Vector3d start_yaw3d = start_yaw;
-
-  while (start_yaw3d[0] < -M_PI) start_yaw3d[0] += 2 * M_PI;
-  while (start_yaw3d[0] > M_PI) start_yaw3d[0] -= 2 * M_PI;
+  Utils::roundPi(start_yaw3d[0]);
   last_yaw = start_yaw3d[0];
 
   Eigen::Matrix3d states2pts;
@@ -656,7 +656,7 @@ bool FastPlannerManager::planYawPerceptionAware(
 
   // Final state
   Eigen::Vector3d end_yaw3d(end_yaw, 0, 0);
-  calcNextYaw(last_yaw, end_yaw3d(0));
+  Utils::calcNextYaw(last_yaw, end_yaw3d(0));
   yaw.block<3, 1>(yaw.rows() - 3, 0) = states2pts * end_yaw3d;
   // yaw.block<3, 1>(ctrl_pts_num - 3, 0) = states2pts * Vector3d(yaw_waypoints.back(), 0, 0);
 
@@ -700,13 +700,13 @@ bool FastPlannerManager::planYawPerceptionAware(
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
   bspline_optimizers_[1]->setFeatureMap(feature_map_);
 
-  // cout << "yaw control point before optimize: " << yaw << endl;
-  // cout << "dt_yaw: " << dt_yaw << endl;
+  cout << "yaw control point before optimize: " << yaw << endl;
+  cout << "dt_yaw: " << dt_yaw << endl;
 
   // Add noise to yaw if variance is too small
   double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
   if (yaw_variance < 1e-4) {
-    // cout << "add gaussian noise to yaw control points" << endl;
+    cout << "add gaussian noise to yaw control points" << endl;
 
     double sigma = 0.1;  // adjust the noise level as needed
 
@@ -718,14 +718,15 @@ bool FastPlannerManager::planYawPerceptionAware(
       double noise = distribution(gen);  // 生成一个符合正态分布的随机数
       yaw(i, 0) += noise;
     }
-    // cout << "yaw control point before optimize(add noise): " << yaw << endl;
+    cout << "yaw control point before optimize(add noise): " << yaw << endl;
   }
+
   // cout << "[FastPlannerManager::planYawPerceptionAware] Begin yaw optimize!!!!!" << endl;
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
   // cout << "[FastPlannerManager::planYawPerceptionAware] yaw control point after optimize: " << yaw << endl;
 
   double time_opt = (ros::Time::now() - time_start_2).toSec();
-  // ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
+  ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
 
   // Update traj info
   // Step3: 更新yaw及其导数的轨迹W
@@ -746,26 +747,6 @@ bool FastPlannerManager::planYawPerceptionAware(
   // }
 
   return true;
-}
-
-void FastPlannerManager::calcNextYaw(const double& last_yaw, double& yaw) {
-  // round yaw to [-PI, PI]
-  double round_last = last_yaw;
-  while (round_last < -M_PI) {
-    round_last += 2 * M_PI;
-  }
-  while (round_last > M_PI) {
-    round_last -= 2 * M_PI;
-  }
-
-  double diff = yaw - round_last;
-  if (fabs(diff) <= M_PI) {
-    yaw = last_yaw + diff;
-  } else if (diff > M_PI) {
-    yaw = last_yaw + diff - 2 * M_PI;
-  } else if (diff < -M_PI) {
-    yaw = last_yaw + diff + 2 * M_PI;
-  }
 }
 
 }  // namespace fast_planner

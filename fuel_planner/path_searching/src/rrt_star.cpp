@@ -1,6 +1,7 @@
 #include "path_searching/rrt_star.h"
 
 #include <plan_env/sdf_map.h>
+#include <plan_env/utils.hpp>
 
 #include <execution>
 #include <random>
@@ -21,7 +22,6 @@ void RRTParameters::readParameters(ros::NodeHandle& nh) {
   nh.param<double>("rrt/max_search_time", max_search_time_, 100.0);
 
   nh.param<int>("rrt/yaw_sample_piece_num", yaw_sample_piece_num_, 6);
-  nh.param<int>("rrt/min_feature_num", min_feature_num_, 10);
 }
 
 void RRTVisualizer::init(ros::NodeHandle& nh) {
@@ -309,7 +309,8 @@ void RRTStar::generateNewNode(const Vector3d& pos, vector<RRTNode::Ptr>& nodes) 
     // auto feature_num = feature_map_->get_NumCloud_using_Odom(node->position_, Quaterniond::Identity(), res);
     // cout << "feature_num: " << feature_num << endl;
 
-    if (feature_num > param_.min_feature_num_) {
+    int min_feature_num = Utils::getGlobalParam().min_feature_num_plan_;
+    if (feature_num > min_feature_num) {
 
       // if (feature_map_->get_NumCloud_using_PosOrient(pos, quat, res) > param_.min_feature_num_) {
       RRTNode::Ptr node = make_unique<RRTNode>();

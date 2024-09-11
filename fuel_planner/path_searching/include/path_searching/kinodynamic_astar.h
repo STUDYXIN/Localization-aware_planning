@@ -132,8 +132,6 @@ private:
   Eigen::Vector4d origin_, map_size_4d_;
   double yaw_origin_, yaw_size_;
 
-  int min_feature_num_;
-
   /* helper */
   bool checkCollision(const PVYawState& cur_state, const Eigen::Vector4d& um, const double tau);
   bool checkLocalizability(const PVYawState& state);

@@ -1,5 +1,7 @@
 #include <path_searching/kinodynamic_astar.h>
+
 #include <plan_env/sdf_map.h>
+#include <plan_env/utils.hpp>
 
 #include <sstream>
 
@@ -136,7 +138,9 @@ bool KinodynamicAstar::checkLocalizability(const PVYawState& state) {
   Matrix3d rot = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
   Quaterniond quat(rot);
   auto feature_num = feature_map_->get_NumCloud_using_Odom(pos, quat);
-  return (feature_num > min_feature_num_);
+
+  int min_feature_num = Utils::getGlobalParam().min_feature_num_plan_;
+  return (feature_num > min_feature_num);
 }
 
 bool KinodynamicAstar::checkCollisionAndLocalizability(const PVYawState& cur_state, const Vector4d& um, const double tau) {
@@ -158,7 +162,8 @@ bool KinodynamicAstar::checkCollisionAndLocalizability(const PVYawState& cur_sta
     Quaterniond quat(rot);
     vector<Vector3d> res;
     auto feature_num = feature_map_->get_NumCloud_using_Odom(pos, quat, res);
-    if (feature_num < min_feature_num_) {
+    int min_feature_num = Utils::getGlobalParam().min_feature_num_plan_;
+    if (feature_num < min_feature_num) {
       safe = false;
       break;
     }
@@ -186,10 +191,12 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
   cur_node->state(6) = start_yaw;
   cur_node->index = stateToIndex(cur_node->state);
   cur_node->g_score = 0.0;
-  if (!checkLocalizability(cur_node->state)) {
-    ROS_ERROR("[Kinodynamic AStar]: Start point is not localizable!!!");
-    return NO_PATH;
-  }
+
+  /// 既然传进来了就不检查起点的合法性了
+  // if (!checkLocalizability(cur_node->state)) {
+  //   ROS_ERROR("[Kinodynamic AStar]: Start point is not localizable!!!");
+  //   return NO_PATH;
+  // }
 
   PVYawState end_state;
   end_state.head(3) = end_pt;
@@ -430,7 +437,6 @@ void KinodynamicAstar::setParam(ros::NodeHandle& nh) {
 
   nh.param("search/yaw_origin", yaw_origin_, -1000.0);
   nh.param("search/yaw_size", yaw_size_, 2000.0);
-  nh.param("search/min_feature_num", min_feature_num_, -1);
 
   tie_breaker_ = 1.0 + 1.0 / 10000;
 

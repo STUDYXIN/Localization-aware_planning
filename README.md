@@ -17,8 +17,14 @@
 - 稍微修改了一点replan的逻辑，把原本的`PLAN_TO_NEXT_GOAL`状态改为`START_IN_STATIC`状态，专门用来处理从当前odom开始的情况，其他情况都走`REPLAN`
 - TODO:
   1. 还是会出现发布轨迹的时候死掉的情况（不报错，但是程序不动）
-  2. REPLAN逻辑还在研究
   3. 位置轨迹生成还在改。。
+
+-重规划
+ 要开启重规划需要先跑一遍，看'[PAExplorationFSM::callExplorationPlanner] Time cost of selectNextGoal: 0.131328 sec'的大概数值，再在`algorithm.xml`文件中进行修改：
+
+  ```xml
+      <param name="fsm/replan_time" value="0.1" type="double" />
+  ```
 
 ## 9月10日更新
 

@@ -117,7 +117,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     }
 
     case START_IN_STATIC: {
-      if (ros::Time::now().toSec() - last_arrive_goal_time_ < 2.0) return;
+      // if (ros::Time::now().toSec() - last_arrive_goal_time_ < 2.0) return;
 
       start_pos_ = odom_pos_;
       start_vel_ = odom_vel_;
@@ -131,6 +131,10 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
       next_goal_ = callExplorationPlanner();
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
+        size_t idx = gains_[best_frontier_id].first;
+        visualization_->drawFrontiersGo(
+            expl_manager_->ed_->frontiers_[idx], expl_manager_->ed_->points_[idx], expl_manager_->ed_->yaws_[idx]);
+        best_frontier_id = 0;
         transitState(PUB_TRAJ, "FSM");
       }
 
@@ -139,9 +143,18 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
       else if (next_goal_ == NO_AVAILABLE_FRONTIER) {
         // Still in PLAN_TRAJ state, keep replanning
+        size_t idx = gains_[best_frontier_id].first;
+        auto plan_data = &planner_manager_->plan_data_;
+        visualization_->drawFrontiersUnreachable(expl_manager_->ed_->frontiers_[idx], expl_manager_->ed_->points_[idx],
+            expl_manager_->ed_->yaws_[idx], best_frontier_id, expl_manager_->ed_->averages_[idx], gains_[best_frontier_id].second,
+            planner_manager_->plan_data_.kino_path_);
         best_frontier_id++;
-        ROS_WARN("No frontier available=================================");
-        transitState(REPLAN, "FSM");
+        ROS_WARN("No frontier available for this frontier=================================");
+        ROS_WARN("Try number %d viewpoint", best_frontier_id);
+        if (best_frontier_id > expl_manager_->ed_->points_.size() - 1) {
+          ROS_ERROR("No available viewpoint to choose! EMERGENCY_STOP!!!!");
+          transitState(EMERGENCY_STOP, "FSM");
+        }
       }
       break;
     }
@@ -150,11 +163,11 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // cout << "debug enter PUB_TRAJ" << endl;
       double dt = (ros::Time::now() - newest_traj_.start_time).toSec();
       cout << "pub traj dt: " << dt << endl;
-      if (dt > 10e-3) {
+      last_traj = planner_manager_->local_data_;  //保存上一段轨迹
+      if (dt > 0) {
         bspline_pub_.publish(newest_traj_);
         static_state_ = false;
         transitState(MOVE_TO_NEXT_GOAL, "FSM");
-
         thread vis_thread(&PAExplorationFSM::visualize, this);
         vis_thread.detach();
       }
@@ -188,30 +201,42 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
           last_arrive_goal_time_ = ros::Time::now().toSec();
           ROS_WARN("Replan: reach tmp viewpoint=================================");
         }
+        return;
+      }
+      // Replan if next frontier to be visited is covered
+      if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
+        transitState(REPLAN, "FSM");
+        ROS_WARN("Replan: cluster covered=====================================");
+        return;
+      }
+      // Replan after some time
+      if (do_replan_ && t_cur > fp_->replan_thresh3_) {
+        transitState(REPLAN, "FSM");
+        ROS_WARN("Replan: periodic call=================================");
       }
 
       break;
     }
 
     case REPLAN: {
-      LocalTrajData& info = planner_manager_->local_data_;
-      double t_r = (ros::Time::now() - info.start_time_).toSec() + fp_->replan_time_;
+      // 为了防止后端轨迹规划失败，planner_manager_->local_data_的数据被更新，这里需要使用保存的上一个轨迹！！！！
+      // 禁止从静止状态直接跳到REPLAN！REPLAN使用的是last_traj，在 PUB_TRAJ 中赋值~~~~~
+      double t_r = (ros::Time::now() - last_traj.start_time_).toSec() + fp_->replan_time_;
       if (!do_replan_) {  //采用静态
         start_pos_ = odom_pos_;
         start_vel_ = odom_vel_;
         start_acc_.setZero();
         start_yaw_.setZero();
         start_yaw_(0) = odom_yaw_;
-
-      } else if (t_r < info.duration_) {
-        start_pos_ = info.position_traj_.evaluateDeBoorT(t_r);
-        start_vel_ = info.velocity_traj_.evaluateDeBoorT(t_r);
-        start_acc_ = info.acceleration_traj_.evaluateDeBoorT(t_r);
-        start_yaw_(0) = info.yaw_traj_.evaluateDeBoorT(t_r)[0];
-        start_yaw_(1) = info.yawdot_traj_.evaluateDeBoorT(t_r)[0];
-        start_yaw_(2) = info.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
+      } else if (t_r < last_traj.duration_) {
+        start_pos_ = last_traj.position_traj_.evaluateDeBoorT(t_r);
+        start_vel_ = last_traj.velocity_traj_.evaluateDeBoorT(t_r);
+        start_acc_ = last_traj.acceleration_traj_.evaluateDeBoorT(t_r);
+        start_yaw_(0) = last_traj.yaw_traj_.evaluateDeBoorT(t_r)[0];
+        start_yaw_(1) = last_traj.yawdot_traj_.evaluateDeBoorT(t_r)[0];
+        start_yaw_(2) = last_traj.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
         replan_pub_.publish(std_msgs::Empty());
-      } else {
+      } else {  //上一段轨迹都执行完了，已经不知道无人机跑哪里去了，直接从初始状态执行
         ROS_ERROR("t_r is too high=================================");
         static_state_ = true;
         transitState(START_IN_STATIC, "FSM");

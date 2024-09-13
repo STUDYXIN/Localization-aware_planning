@@ -2,6 +2,7 @@
 #define _PERCEPTION_AWARE_EXPLORATION_FSM_H_
 
 #include <exploration_manager/perception_aware_exploration_manager.h>
+#include <plan_manage/plan_container.hpp>
 
 #include <bspline/Bspline.h>
 #include <nav_msgs/Odometry.h>
@@ -65,7 +66,7 @@ public:
   FSM_EXEC_STATE exec_state_ = FSM_EXEC_STATE::INIT;
   Eigen::Vector3d last_used_viewpoint_pos;
   int best_frontier_id, search_times;
-
+  LocalTrajData last_traj;
   bool classic_;
   bool do_replan_;
 

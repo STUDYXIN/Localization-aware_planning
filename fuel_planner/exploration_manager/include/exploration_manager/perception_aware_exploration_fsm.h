@@ -35,7 +35,7 @@ struct FSMParam;
 struct FSMData;
 struct M2GData;
 
-enum FSM_EXEC_STATE { INIT, WAIT_TARGET, PLAN_TO_NEXT_GOAL, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
+enum FSM_EXEC_STATE { INIT, WAIT_TARGET, START_IN_STATIC, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
 
 enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2 };
 
@@ -64,7 +64,7 @@ public:
   vector<pair<size_t, double>> gains_;  // gains for viewpoint
   FSM_EXEC_STATE exec_state_ = FSM_EXEC_STATE::INIT;
   Eigen::Vector3d last_used_viewpoint_pos;
-  int best_frontier_id;
+  int best_frontier_id, search_times;
 
   bool classic_;
   bool do_replan_;

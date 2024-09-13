@@ -1,5 +1,25 @@
 # 更新日志
 
+## 9月13日更新
+
+- 增加了新的可视化代码
+
+<div align="center">
+<img src="img/viusal_show.jpg" alt="cover" width="640"/>
+</div>
+
+  1. 把当前时刻的frontier全部设成灰色
+  2. 把要去的frontier和viewpoint设为绿色
+  3. 把出错的frontier,viewpoint,path设为红色，注意！！！这个会一直保留，直到下次出错的时候全部更新
+  4. 实时显示每个frontier的分数
+
+- 暂时注释掉了位置轨迹关于frontier的优化部分，等改好了再加上来，计算速度大大提升。。。
+- 稍微修改了一点replan的逻辑，把原本的`PLAN_TO_NEXT_GOAL`状态改为`START_IN_STATIC`状态，专门用来处理从当前odom开始的情况，其他情况都走`REPLAN`
+- TODO:
+  1. 还是会出现发布轨迹的时候死掉的情况（不报错，但是程序不动）
+  2. REPLAN逻辑还在研究
+  3. 位置轨迹生成还在改。。
+
 ## 9月10日更新
 
 - 增加了重规划开关，在`algorithm.xml`文件中。
@@ -460,8 +480,6 @@
 
 - 在yaw轨迹优化前检查控制点的方差，如果太小就添加高斯噪声（避免全为0优化失败的情况）
 
-
-
 存在的问题：
 
 - b样条优化器经常不能很好的约束住yaw轨迹的末端指向预定的end yaw
@@ -479,7 +497,3 @@
 - <div align="center">
   <img src="img/bug1.png" alt="cover" width="640"/>
   </div>
-
-
-
-

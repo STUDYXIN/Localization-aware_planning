@@ -246,14 +246,14 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
 
   // 这里使用了平滑约束、动力学可行性约束、起点约束、终点约束、避障约束、视差约束、垂直可见性
   // **增加了未知区域可见性约束FRONTIERVISIBILITY
-  int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END |
-                  BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
-                  BsplineOptimizer::VERTICALVISIBILITY | BsplineOptimizer::FRONTIERVISIBILITY_POS;
-
   // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
   // BsplineOptimizer::END |
   //                 BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
-  //                 BsplineOptimizer::VERTICALVISIBILITY;
+  //                 BsplineOptimizer::VERTICALVISIBILITY | BsplineOptimizer::FRONTIERVISIBILITY_POS;
+
+  int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END |
+                  BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
+                  BsplineOptimizer::VERTICALVISIBILITY;
 
   // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
   // BsplineOptimizer::END |

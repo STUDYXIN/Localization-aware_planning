@@ -14,11 +14,24 @@
 #include <iostream>
 #include <vector>
 
+using std::pair;
 using std::vector;
 namespace fast_planner {
 class PlanningVisualization {
 private:
-  enum TRAJECTORY_PLANNING_ID { GOAL = 1, PATH = 200, BSPLINE = 300, BSPLINE_CTRL_PT = 400, POLY_TRAJ = 500, NEXT_GOAL = 600 };
+  enum TRAJECTORY_PLANNING_ID {
+    GOAL = 1,
+    PATH = 200,
+    BSPLINE = 300,
+    BSPLINE_CTRL_PT = 400,
+    POLY_TRAJ = 500,
+    NEXT_GOAL = 600,
+    VIEWPOINT_PATH = 700,
+    ASTAR_PATH = 800,
+    UNREACHABLE_VIEWPOINT = 900,
+    GO_VIEWPOINT = 1000,
+    UNREACHABLE_KINOASTAR = 1100
+  };
 
   enum TOPOLOGICAL_PATH_PLANNING_ID { GRAPH_NODE = 1, GRAPH_EDGE = 100, RAW_PATH = 200, FILTERED_PATH = 300, SELECT_PATH = 400 };
 
@@ -39,7 +52,18 @@ private:
 
 public:
   PlanningVisualization(ros::NodeHandle& nh);
-
+  // draw some debug message for viewpoint and frontier
+  void drawAstar(
+      const vector<Eigen::Vector3d>& path, const Eigen::Vector3d& best_pos, const double& best_yaw, const bool& have_best_point);
+  void drawFrontiersViewpointNow(const vector<vector<Eigen::Vector3d>>& frontiers,
+      const vector<Eigen::Vector3d>& viewpoint_points, const vector<double>& viewpoint_yaw, const bool& use_gray_frontier,
+      const vector<std::pair<size_t, double>> gains);
+  void drawScoreforFrontiers(const vector<Eigen::Vector3d>& frontier_average_pos, const vector<std::pair<size_t, double>> gains);
+  void drawFrontiersUnreachable(const vector<Eigen::Vector3d>& Unreachable_frontier,
+      const Eigen::Vector3d& Unreachable_viewpoint_points, const double& Unreachable_viewpoint_yaw, const int& UnreachableID,
+      const Eigen::Vector3d& frontier_average_pos, const double gain, const vector<Eigen::Vector3d>& fail_pos_traj);
+  void drawFrontiersGo(
+      const vector<Eigen::Vector3d>& Go_frontier, const Eigen::Vector3d& Go_viewpoint_points, const double& Go_viewpoint_yaw);
   // new interface
   void fillBasicInfo(visualization_msgs::Marker& mk, const Eigen::Vector3d& scale, const Eigen::Vector4d& color, const string& ns,
       const int& id, const int& shape);

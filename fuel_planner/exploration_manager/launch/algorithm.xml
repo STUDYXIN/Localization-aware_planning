@@ -53,11 +53,9 @@
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
-    <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)"
-      type="int" />
+    <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" type="int" />
     <param name="global/min_feature_num_plan" value="$(arg min_feature_num_plan)" type="int" />
-    <param name="global/min_covisible_feature_num_plan"
-      value="$(arg min_covisible_feature_num_plan)" type="int" />
+    <param name="global/min_covisible_feature_num_plan" value="$(arg min_covisible_feature_num_plan)" type="int" />
 
     <remap from="/odom_world" to="$(arg odometry_topic)" />
     <remap from="/map_ros/pose" to="$(arg sensor_pose_topic)" />
@@ -122,13 +120,13 @@
     <param name="fsm/thresh_replan1" value="0.5" type="double" />
     <param name="fsm/thresh_replan2" value="0.5" type="double" />
     <param name="fsm/thresh_replan3" value="1.5" type="double" />
-    <param name="fsm/thresh_replan_viewpoint_length" value="0.5" type="double" />
+    <param name="fsm/thresh_replan_viewpoint_length" value="0.8" type="double" />
     <param name="fsm/do_replan" value="false" type="bool" />
 
     <!-- <param name="fsm/thresh_replan1" value="0.00001" type="double"/> -->
     <!-- <param name="fsm/thresh_replan2" value="100.0" type="double"/> -->
     <!-- <param name="fsm/thresh_replan3" value="0.1" type="double"/> -->
-    <param name="fsm/replan_time" value="0.20" type="double" />
+    <param name="fsm/replan_time" value="0.1" type="double" />
     <!--flight_type:
     EXPLORATION = 0,  PRESET_TARGET = 1 -->
     <param name="fsm/flight_type" value="$(arg flight_type)" type="int" />
@@ -294,12 +292,10 @@
     <param name="optimization/max_iteration_time4" value="0.003" type="double" />
 
     <param name="optimization/parallax/estimator_freq" value="10.0" type="double" />
-    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)"
-      type="double" />
+    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/parallax/pot_a" value="20.0" type="double" />
 
-    <param name="optimization/max_feature_and_frontier_convisual_angle"
-      value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />
 

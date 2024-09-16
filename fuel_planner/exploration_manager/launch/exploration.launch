@@ -32,7 +32,7 @@
     <arg name="box_min_z" value="0.5" />
     <arg name="box_max_x" value="15.0" />
     <arg name="box_max_y" value="15.0" />
-    <arg name="box_max_z" value=" 3.0" />
+    <arg name="box_max_z" value=" 4.0" />
 
     <arg name="odometry_topic" value="$(arg odom_topic)" />
     <!-- sensor pose: transform of camera frame in the world frame -->
@@ -50,8 +50,8 @@
     <arg name="fy" value="387.229248046875" />
 
     <!-- maximum velocity and acceleration the drone will reach -->
-    <arg name="max_vel" value="2.0" />
-    <arg name="max_acc" value="2.0" />
+    <arg name="max_vel" value="0.5" />
+    <arg name="max_acc" value="0.2" />
 
     <arg name="min_feature_num_act" value="10" />
     <arg name="min_covisible_feature_num_act" value="6" />
@@ -87,6 +87,7 @@
     <remap from="/position_cmd" to="planning/pos_cmd" />
 
     <remap from="/odom_world" to="$(arg odom_topic)" />
+    <remap from="/odom_camera" to="/pcl_render_node/sensor_pose" />
     <param name="traj_server/time_forward" value="1.5" type="double" />
     <param name="traj_server/pub_traj_id" value="4" type="int" />
     <param name="traj_server/init_x" value="$(arg init_x)" type="double" />

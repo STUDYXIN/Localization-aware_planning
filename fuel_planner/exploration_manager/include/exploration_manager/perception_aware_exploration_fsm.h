@@ -73,6 +73,7 @@ public:
   Eigen::Vector3d final_goal_;
   double last_arrive_goal_time_;
   int next_goal_;
+  double replan_begin_time;
 
   int target_type_;  // 1 mannual select, 2 hard code
   double waypoints_[50][3];

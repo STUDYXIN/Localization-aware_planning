@@ -10,6 +10,8 @@
 #include "quadrotor_msgs/PositionCommand.h"
 #include "std_msgs/Empty.h"
 #include "visualization_msgs/Marker.h"
+
+#include "traj_utils/pub_fov_marker_tf.h"
 namespace backward {
 backward::SignalHandling sh;
 }
@@ -49,6 +51,9 @@ double energy;
 Eigen::Matrix3d R_loop;
 Eigen::Vector3d T_loop;
 bool isLoopCorrection = false;
+
+// Pub FOV marker
+FOVMarker* fovMarkerPtr = nullptr;
 
 double calcPathLength(const vector<Eigen::Vector3d>& path) {
   if (path.empty()) return 0;
@@ -195,7 +200,7 @@ void emergencyStopCallback(std_msgs::Empty msg) {
 
 void replanCallback(std_msgs::Empty msg) {
   // Informed of new replan, end the current traj after some time
-  const double time_out = 0.3;
+  const double time_out = 0.5;
   ros::Time time_now = ros::Time::now();
   double t_stop = (time_now - start_time_).toSec() + time_out + replan_time_;
   traj_duration_ = min(t_stop, traj_duration_);
@@ -211,12 +216,19 @@ void newCallback(std_msgs::Empty msg) {
 void odomCallbck(const nav_msgs::Odometry& msg) {
   if (msg.child_frame_id == "X" || msg.child_frame_id == "O") return;
   odom = msg;
+  fovMarkerPtr->publishFOV(msg);
   traj_real_.push_back(Eigen::Vector3d(odom.pose.pose.position.x, odom.pose.pose.position.y, odom.pose.pose.position.z));
   traj_real_yaw_.push_back(Eigen::Quaterniond(
       odom.pose.pose.orientation.w, odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z));
 
   if (traj_real_.size() > 10000) traj_real_.erase(traj_real_.begin(), traj_real_.begin() + 1000);
   if (traj_real_yaw_.size() > 10000) traj_real_yaw_.erase(traj_real_yaw_.begin(), traj_real_yaw_.begin() + 1000);
+}
+
+void odomcameraCallbck(const geometry_msgs::PoseStampedConstPtr& pose) {
+  // if (fovMarkerPtr) {                // 检查指针是否有效
+  //   fovMarkerPtr->publishFOV(pose);  // 调用 publishFOV 方法
+  // }
 }
 
 void pgTVioCallback(geometry_msgs::Pose msg) {
@@ -394,12 +406,15 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "traj_server");
   ros::NodeHandle node;
   ros::NodeHandle nh("~");
-
+  FOVMarker fovMarker;
+  fovMarker.init(nh);
+  fovMarkerPtr = &fovMarker;
   ros::Subscriber emergency_stop_sub = node.subscribe("planning/emergency_stop", 10, emergencyStopCallback);
   ros::Subscriber bspline_sub = node.subscribe("planning/bspline", 10, bsplineCallback);
   ros::Subscriber replan_sub = node.subscribe("planning/replan", 10, replanCallback);
   ros::Subscriber new_sub = node.subscribe("planning/new", 10, newCallback);
   ros::Subscriber odom_sub = node.subscribe("/odom_world", 50, odomCallbck);
+  ros::Subscriber odom_camera_sub = node.subscribe("/odom_camera", 50, odomcameraCallbck);
   ros::Subscriber pg_T_vio_sub = node.subscribe("/loop_fusion/pg_T_vio", 10, pgTVioCallback);
 
   cmd_vis_pub = node.advertise<visualization_msgs::Marker>("planning/position_cmd_vis", 10);

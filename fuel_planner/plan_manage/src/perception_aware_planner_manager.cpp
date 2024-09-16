@@ -143,6 +143,13 @@ bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Q
   return feature_num > min_feature_num || error_times <= 10;
 }
 
+bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Quaterniond& orient) {
+  if (feature_map_ == nullptr) return true;
+  int feature_num = feature_map_->get_NumCloud_using_Odom(pos, orient);
+  int min_feature_num = Utils::getGlobalParam().min_feature_num_act_;
+  return feature_num > min_feature_num;
+}
+
 bool FastPlannerManager::checkTrajLocalizability(double& distance) {
   double t_now = (ros::Time::now() - local_data_.start_time_).toSec();
 
@@ -179,7 +186,8 @@ bool FastPlannerManager::checkTrajLocalizability(double& distance) {
 // SECTION perception aware replanning
 
 bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
-    const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb) {
+    const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw,
+    const vector<Vector3d>& frontier_cells, const Vector3d& frontier_center, const double& time_lb) {
   // std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
   // std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
   // std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
@@ -245,21 +253,32 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   // cout << "pos control point before optimize: " << endl << ctrl_pts << endl;
 
   // 这里使用了平滑约束、动力学可行性约束、起点约束、终点约束、避障约束、视差约束、垂直可见性
-  // **增加了未知区域可见性约束FRONTIERVISIBILITY
-  // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
-  // BsplineOptimizer::END |
-  //                 BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
-  //                 BsplineOptimizer::VERTICALVISIBILITY | BsplineOptimizer::FRONTIERVISIBILITY_POS;
-
-  int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END |
-                  BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
-                  BsplineOptimizer::VERTICALVISIBILITY;
-
+  // **初始
   // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
   // BsplineOptimizer::END |
   //                 BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE;
-  bspline_optimizers_[0]->setFeatureMap(feature_map_);
-  bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
+  // **APACE
+  // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START |
+  // BsplineOptimizer::END |
+  //                 BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::PARALLAX |
+  //                 BsplineOptimizer::VERTICALVISIBILITY;
+
+  // **考虑FRONTIER可见性
+  int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END |
+                  BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::VERTICALVISIBILITY |
+                  BsplineOptimizer::FRONTIERVISIBILITY_POS;
+
+  // Set params
+  if (cost_func & BsplineOptimizer::PARALLAX || cost_func & BsplineOptimizer::VERTICALVISIBILITY ||
+      cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
+    bspline_optimizers_[0]->setFeatureMap(feature_map_);
+    if (cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
+      bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
+      bspline_optimizers_[0]->setFrontiercenter(frontier_center);
+      // bspline_optimizers_[0]->setFrontierCells(frontier_cells);
+    }
+  }
+
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
   if (!bspline_optimizers_[0]->issuccess) return false;
   local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
@@ -700,8 +719,8 @@ bool FastPlannerManager::planYawPerceptionAware(
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
   bspline_optimizers_[1]->setFeatureMap(feature_map_);
 
-  cout << "yaw control point before optimize: " << yaw << endl;
-  cout << "dt_yaw: " << dt_yaw << endl;
+  // cout << "yaw control point before optimize: " << yaw << endl;
+  // cout << "dt_yaw: " << dt_yaw << endl;
 
   // Add noise to yaw if variance is too small
   double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
@@ -718,7 +737,7 @@ bool FastPlannerManager::planYawPerceptionAware(
       double noise = distribution(gen);  // 生成一个符合正态分布的随机数
       yaw(i, 0) += noise;
     }
-    cout << "yaw control point before optimize(add noise): " << yaw << endl;
+    // cout << "yaw control point before optimize(add noise): " << yaw << endl;
   }
 
   // cout << "[FastPlannerManager::planYawPerceptionAware] Begin yaw optimize!!!!!" << endl;

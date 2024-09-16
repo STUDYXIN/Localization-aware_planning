@@ -58,6 +58,7 @@
     <param name="global/min_covisible_feature_num_plan" value="$(arg min_covisible_feature_num_plan)" type="int" />
 
     <remap from="/odom_world" to="$(arg odometry_topic)" />
+    <!-- <remap from="/odom_camera" to="$(arg sensor_pose_topic)" /> -->
     <remap from="/map_ros/pose" to="$(arg sensor_pose_topic)" />
     <remap from="/map_ros/depth" to="$(arg depth_topic)" />
     <remap from="/map_ros/cloud" to="$(arg cloud_topic)" />
@@ -119,14 +120,14 @@
     <!-- Fsm -->
     <param name="fsm/thresh_replan1" value="0.5" type="double" />
     <param name="fsm/thresh_replan2" value="0.5" type="double" />
-    <param name="fsm/thresh_replan3" value="1.0" type="double" />
+    <param name="fsm/thresh_replan3" value="3.0" type="double" />
     <param name="fsm/thresh_replan_viewpoint_length" value="0.8" type="double" />
     <param name="fsm/do_replan" value="true" type="bool" />
 
     <!-- <param name="fsm/thresh_replan1" value="0.00001" type="double"/> -->
     <!-- <param name="fsm/thresh_replan2" value="100.0" type="double"/> -->
     <!-- <param name="fsm/thresh_replan3" value="0.1" type="double"/> -->
-    <param name="fsm/replan_time" value="0.1" type="double" />
+    <param name="fsm/replan_time" value="0.2" type="double" />
     <!--flight_type:
     EXPLORATION = 0,  PRESET_TARGET = 1 -->
     <param name="fsm/flight_type" value="$(arg flight_type)" type="int" />
@@ -146,6 +147,7 @@
     <param name="fsm/wp3_y" value="$(arg point3_y)" type="double" />
     <param name="fsm/wp3_z" value="$(arg point3_z)" type="double" />
     <param name="fsm/draw_line2feature" value="false" type="bool" />
+    <param name="fsm/one_viewpoint_max_searchtimes" value="2" type="int" />
 
     <!-- Exploration manager -->
 
@@ -174,13 +176,13 @@
     <param name="frontier/min_candidate_dist" value="0.75" type="double" />
     <param name="frontier/min_candidate_clearance" value="0.21" type="double" />
     <param name="frontier/candidate_dphi" value="$(eval 15 * 3.1415926 / 180.0)" type="double" />
-    <param name="frontier/candidate_rnum" value="3" type="int" />
-    <param name="frontier/candidate_rmin" value="1.5" type="double" />
-    <param name="frontier/candidate_rmax" value="2.5" type="double" />
+    <param name="frontier/candidate_rnum" value="10" type="int" />
+    <param name="frontier/candidate_rmin" value="0.5" type="double" />
+    <param name="frontier/candidate_rmax" value="1.5" type="double" />
     <param name="frontier/down_sample" value="3" type="int" />
     <param name="frontier/min_visib_num" value="15" type="int" />
     <param name="frontier/min_view_finish_fraction" value="0.2" type="double" />
-    <param name="frontier/min_view_feature_num_of_viewpoint" value="20" type="int" />
+    <param name="frontier/min_view_feature_num_of_viewpoint" value="30" type="int" />
     <param name="frontier/feature_sample_dphi" value="$(eval 5 * 3.1415926 / 180.0)" type="double" />
 
     <!-- Perception utils -->
@@ -271,10 +273,10 @@
     <param name="optimization/ld_view" value="0.0" type="double" />
     <param name="optimization/ld_time" value="1.0" type="double" />
     <param name="optimization/ld_parallax" value="5.0" type="double" />
-    <param name="optimization/ld_vertical_visibility" value="5.0" type="double" />
-    <param name="optimization/ld_yaw_covisibility" value="100.0" type="double" />
-    <param name="optimization/ld_frontier_visibility_pos" value="100.0" type="double" />
-    <param name="optimization/ld_frontier_visibility_yaw" value="0.5" type="double" />
+    <param name="optimization/ld_vertical_visibility" value="10.0" type="double" />
+    <param name="optimization/ld_yaw_covisibility" value="10.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_pos" value="50.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_yaw" value="10.0" type="double" />
 
     <param name="optimization/dist0" value="0.7" type="double" />
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double" />
@@ -295,7 +297,7 @@
     <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/parallax/pot_a" value="20.0" type="double" />
 
-    <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />
 

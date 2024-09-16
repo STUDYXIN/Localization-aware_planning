@@ -107,10 +107,11 @@ private:
   double calcVCWeight(const Vector3d& knot, const Vector3d& f, const Vector3d& thrust_dir);
 
   // 位置轨迹规划阶段考虑frontier可见性
-  void calcFVBValueAndGradients(const Vector3d& node_pos, const Vector3d& feature, const Vector3d& frontier,
+  void calcffAngleValueAndGradients(const Vector3d& node_pos, const Vector3d& feature, const Vector3d& frontier,
       double& convisual_angle, bool calc_grad, Eigen::Vector3d& dfvb_dq);
-  void calcFVBPotentialAndGradients(const double convisual_angle, const double dt, double& fvb_pot, double& dpot_dfvb);
-
+  void calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, const Vector3d& knots_pos, const vector<Vector3d>& features,
+      double& cost, vector<Vector3d>& dcost_dq);
+  // ===========
   void calcParaCostAndGradientsKnots(
       const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
 
@@ -127,7 +128,7 @@ private:
   void calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
       const double ld_para, const double ld_vcv);
 
-  void calcViewFrontierCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
+  void calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
   void calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
       const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq);
@@ -246,8 +247,13 @@ public:
   }
 
   vector<Vector3d> frontier_cells_;
+  Vector3d frontier_centre_;
   void setFrontierCells(const vector<Vector3d>& frontier_cells) {
     frontier_cells_ = frontier_cells;
+  }
+
+  void setFrontiercenter(const Vector3d& frontier_centre) {
+    frontier_centre_ = frontier_centre;
   }
 
   vector<Vector3d> observed_features_;

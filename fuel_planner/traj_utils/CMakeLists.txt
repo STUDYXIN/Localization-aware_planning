@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   cv_bridge
+  tf
 )
 
 find_package(Eigen3 REQUIRED)
@@ -36,11 +37,14 @@ include_directories(
 link_directories(${PCL_LIBRARY_DIRS})
 
 add_library( traj_utils
-    src/planning_visualization.cpp 
+    src/planning_visualization.cpp
+    src/pub_fov_marker_tf.cpp
     )
 target_link_libraries( traj_utils
     ${catkin_LIBRARIES} 
     )  
+
+
 
 # add_executable(process_msg 
 #     src/process_msg.cpp

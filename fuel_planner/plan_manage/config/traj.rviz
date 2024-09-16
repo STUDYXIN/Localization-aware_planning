@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Planning1/position_cmd1
         - /active_perception1/frontier1/Namespaces1
         - /active_perception1/viewpoint1/Namespaces1
         - /LocalMap1/occupied_local1/Autocompute Value Bounds1
@@ -75,6 +76,7 @@ Visualization Manager:
           Name: bspline_traj
           Namespaces:
             "": true
+            B-Spline: true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -90,6 +92,7 @@ Visualization Manager:
           Marker Topic: /planning_vis/topo_path
           Name: viewpoint_show
           Namespaces:
+            path_2_next_goal: true
             viewpoint_vectoer_line: true
           Queue Size: 100
           Value: true
@@ -98,15 +101,15 @@ Visualization Manager:
           Marker Topic: /planning/travel_traj
           Name: executed_traj
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
           Enabled: true
-          Marker Topic: /planning/position_cmd_vis
+          Marker Topic: /fov_marker
           Name: position_cmd
           Namespaces:
-            {}
+            fov_marker: true
           Queue Size: 100
           Value: true
       Enabled: true
@@ -497,7 +500,7 @@ Visualization Manager:
           Marker Topic: /planning_vis/yaw
           Name: yaw
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -513,7 +516,7 @@ Visualization Manager:
           Marker Topic: /exploration_node/kinodynamic_astar/pos
           Name: kinoAstrarPos
           Namespaces:
-            {}
+            Path: true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -561,7 +564,7 @@ Visualization Manager:
           Marker Topic: /exploration_node/yaw_initial_planner/yaw_path
           Name: initial_yaw
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
       Enabled: true
@@ -599,8 +602,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 1.4994499683380127
-            Min Value: 0.5022749900817871
+            Max Value: 1.8607800006866455
+            Min Value: 0.5017960071563721
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -749,7 +752,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 40.09437942504883
+      Distance: 7.122486591339111
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -757,17 +760,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.296006202697754
-        Y: 4.306928634643555
-        Z: -3.0256987884058617e-05
+        X: 1.0711517333984375
+        Y: -0.10690844058990479
+        Z: -1.000030279159546
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6247971653938293
-      Target Frame: <Fixed Frame>
-      Yaw: 3.7215089797973633
+      Pitch: 0.5747975707054138
+      Target Frame: camera
+      Yaw: 3.3264925479888916
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 40.93450164794922

@@ -221,10 +221,17 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
   PathNodePtr terminate_node = nullptr;
   const int tolerance = ceil(1 / resolution_);
 
+  // 记录起始时间
+  ros::Time start_time = ros::Time::now();
+
   while (!open_set_.empty()) {
     ROS_INFO_THROTTLE(
         1.0, "[Kinodynamic AStar]: iter_num: %d, open_set size: %ld, iter num: %d", iter_num_, open_set_.size(), iter_num_);
-
+    ros::Duration elapsed_time = ros::Time::now() - start_time;
+    if (elapsed_time.toSec() > 0.5) {
+      ROS_ERROR("[Kinodynamic AStar]: Search exceeded time limit!!! Return NO_PATH!!");
+      return NO_PATH;
+    }
     cur_node = open_set_.top();
 
     // Terminate?

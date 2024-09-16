@@ -43,6 +43,7 @@ struct FSMParam {
   double replan_thresh3_;
   double replan_thresh_replan_viewpoint_length_;
   double replan_time_;  // second
+  int one_viewpoint_max_searchtimes_;
 };
 
 struct ExplorationData {

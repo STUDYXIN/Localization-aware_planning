@@ -27,7 +27,8 @@ public:
   bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
       const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel);
   bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
-      const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb);
+      const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw,
+      const vector<Vector3d>& frontier_cells, const Vector3d& frontier_center, const double& time_lb);
 
   bool sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
       const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw, const double& time_lb = -1);
@@ -47,6 +48,7 @@ public:
 
   bool checkTrajCollision(double& distance);
   bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, int& feature_num);
+  bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
   bool checkTrajLocalizability(double& distance);
 
   void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {

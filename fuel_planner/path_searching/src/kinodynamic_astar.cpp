@@ -228,7 +228,8 @@ int KinodynamicAstar::search(const Vector3d& start_pt, const Vector3d& start_v, 
     cur_node = open_set_.top();
 
     // Terminate?
-    bool reach_horizon = (cur_node->state.head(3) - start_pt).norm() >= horizon_;
+    // bool reach_horizon = (cur_node->state.head(3) - start_pt).norm() >= horizon_;
+    bool reach_horizon = false;
 
     bool near_end = (cur_node->index.head(3) - end_index.head(3)).lpNorm<Infinity>() <= tolerance;
     // bool near_end = (cur_node->index - end_index).lpNorm<Infinity>() <= tolerance;

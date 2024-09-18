@@ -13,8 +13,7 @@
 #include <ros/ros.h>
 
 #include <plan_manage/plan_container.hpp>
-// #include <plan_manage/yaw_initial_planner.h>
-#include <plan_manage/yaw_initial_planner_new.h>
+#include <plan_manage/yaw_initial_planner.h>
 
 namespace fast_planner {
 // Fast Planner Manager
@@ -48,6 +47,7 @@ public:
   bool checkTrajCollision(double& distance);
   bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, int& feature_num);
   bool checkTrajLocalizability(double& distance);
+  bool checkTrajLocalizabilityOnKnots();
 
   void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
     feature_map_ = feature_map;
@@ -55,9 +55,6 @@ public:
 
   void setFrontierFinder(shared_ptr<FrontierFinder> frontier_finder) {
     frontier_finder_ = frontier_finder;
-  }
-
-  void setExternelParam() {
   }
 
   PlanParameters pp_;

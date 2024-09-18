@@ -41,7 +41,6 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   expl_manager_->initialize(nh);
 
   planner_manager_ = expl_manager_->planner_manager_;
-  planner_manager_->setExternelParam();
 
   visualization_.reset(new PlanningVisualization(nh));
 
@@ -181,7 +180,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
       // Replan if traj is almost fully executed
       double time_to_end = info->duration_ - t_cur;
-      cout << " debug time2end: " << time_to_end << endl;
+      // cout << " debug time2end: " << time_to_end << endl;
       if (time_to_end < fp_->replan_thresh1_) {
         cout << "goal dist: " << (odom_pos_ - final_goal_).norm() << endl;
 
@@ -198,7 +197,8 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         }
 
         else {
-          transitState(REPLAN, "FSM");
+          // transitState(REPLAN, "FSM");
+          transitState(PLAN_TO_NEXT_GOAL, "FSM");
           last_arrive_goal_time_ = ros::Time::now().toSec();
           ROS_WARN("Replan: reach tmp viewpoint=================================");
         }
@@ -210,7 +210,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     case REPLAN: {
       LocalTrajData& info = planner_manager_->local_data_;
       double t_r = (ros::Time::now() - info.start_time_).toSec() + fp_->replan_time_;
-      if (!do_replan_) {  //采用静态
+      if (!do_replan_) {  // 采用静态
         start_pos_ = odom_pos_;
         start_vel_ = odom_vel_;
         start_acc_.setZero();

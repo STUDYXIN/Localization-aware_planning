@@ -12,6 +12,7 @@
 using Eigen::Vector3d;
 using std::list;
 using std::pair;
+using std::set;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
@@ -106,6 +107,8 @@ public:
   void sampleBetterViewpoints(Frontier& frontier);
 
   int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
+  void countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res);
+
   bool isNearUnknown(const Vector3d& pos);
   vector<Eigen::Vector3i> sixNeighbors(const Eigen::Vector3i& voxel);
   vector<Eigen::Vector3i> tenNeighbors(const Eigen::Vector3i& voxel);

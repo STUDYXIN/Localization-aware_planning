@@ -25,6 +25,7 @@ public:
   static const int SMOOTHNESS;
   static const int DISTANCE;
   static const int FEASIBILITY;
+  static const int FEASIBILITY_YAW;
   static const int START;
   static const int END;
   static const int GUIDE;
@@ -48,6 +49,9 @@ public:
     double max_feature_and_frontier_convisual_angle_;
     double min_frontier_see_feature_num_;
     double pot_fafv_;
+    double k1_;
+    double k2_;
+    double k3_;
   };
 
   PerceptionAwareConfig configPA_;
@@ -92,6 +96,8 @@ private:
   void calcSmoothnessCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
   void calcDistanceCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
   void calcFeasibilityCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt);
+  void calcFeasibilityCostYaw(
+      const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt);
   void calcStartCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt);
   void calcEndCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q, double& gt);
   void calcGuideCost(const vector<Eigen::Vector3d>& q, double& cost, vector<Eigen::Vector3d>& gradient_q);
@@ -135,7 +141,7 @@ private:
   // 计算整条yaw轨迹的共视性
   void calcYawCoVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
-  void calcFrontierVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
+  void calcFrontierVisbilityCostYaw(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
   static Vector3d getThrustDirection(const Vector3d& acc) {
     Vector3d gravity(0, 0, -9.81);
@@ -169,7 +175,7 @@ private:
   /* Parameters of optimization  */
   int order_;  // bspline degree
   int bspline_degree_;
-  double ld_smooth_, ld_dist_, ld_feasi_, ld_start_, ld_end_, ld_guide_, ld_waypt_, ld_view_, ld_time_;
+  double ld_smooth_, ld_dist_, ld_feasi_, ld_feasi_yaw_, ld_start_, ld_end_, ld_guide_, ld_waypt_, ld_view_, ld_time_;
 
   // SECTION Perception Aware Optimization
   double ld_parallax_;
@@ -193,12 +199,13 @@ private:
   double max_iteration_time_[4];  // stopping criteria that can be used
 
   // Data of opt
-  vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_start_, g_end_, g_guide_, g_waypoints_, g_view_,
-      g_time_;
+  vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_feasibility_yaw_, g_start_, g_end_, g_guide_,
+      g_waypoints_, g_view_, g_time_;
 
   double f_smoothness_;
   double f_distance_;
   double f_feasibility_;
+  double f_feasibility_yaw_;
   double f_start_;
   double f_end_;
   double f_guide_;
@@ -250,9 +257,9 @@ public:
     frontier_cells_ = frontier_cells;
   }
 
-  vector<Vector3d> observed_features_;
-  void setObservedFeatures(const vector<Vector3d>& features) {
-    observed_features_ = features;
+  vector<vector<Vector3d>> observed_features_;
+  void setInitialPlannerData(const vector<vector<Vector3d>>& observed_features) {
+    observed_features_ = observed_features;
   }
 
   // !SECTION

@@ -131,12 +131,6 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
       }
     }
 
-    // vector<Vector3d> empty;
-    // if (planToNextGoal(next_pos, next_yaw, empty)) {
-    //   ROS_INFO("Successfully planned to final goal.");
-    //   reach_end_flag = true;
-    // }
-
     if (!success) {
       ROS_INFO("Failed to plan to final goal.Try to search frontier.");
     }
@@ -220,6 +214,8 @@ bool PAExplorationManager::planToNextGoal(
 
   // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
   if (!planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells)) return false;
+
+  if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return false;
 
   return true;
 }

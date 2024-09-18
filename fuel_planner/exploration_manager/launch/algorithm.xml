@@ -22,6 +22,8 @@
 
   <arg name="max_vel" />
   <arg name="max_acc" />
+  <arg name="max_yaw_rate" />
+
   <arg name="feature_filename" default="" />
 
   <arg name="min_feature_num_act" />
@@ -58,6 +60,10 @@
     <param name="global/min_feature_num_plan" value="$(arg min_feature_num_plan)" type="int" />
     <param name="global/min_covisible_feature_num_plan"
       value="$(arg min_covisible_feature_num_plan)" type="int" />
+
+    <param name="global/max_vel" value="$(arg max_vel)" type="double" />
+    <param name="global/max_acc" value="$(arg max_acc)" type="double" />
+    <param name="global/max_yaw_rate" value="$(arg max_yaw_rate)" type="double" />
 
     <remap from="/odom_world" to="$(arg odometry_topic)" />
     <remap from="/map_ros/pose" to="$(arg sensor_pose_topic)" />
@@ -203,19 +209,21 @@
     <!-- Yaw planner utils -->
     <param name="yaw_initial/yaw_diff" value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
     <param name="yaw_initial/half_vert_num" value="7" type="int" />
-    <param name="yaw_initial/max_yaw_rate" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
-    <param name="yaw_initial/w" value="0.0" type="double" />
+    <param name="yaw_initial/max_yaw_rate1" value="$(eval 45 * 3.1415926 / 180.0)" type="double" />
+    <param name="yaw_initial/max_yaw_rate2" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
+    <param name="yaw_initial/w" value="100.0" type="double" />
     <param name="yaw_initial/min_info_gain" value="30" type="double" />
+    <param name="yaw_initial/piece_num" value="12" type="int" />
+    <param name="yaw_initial/ld_frontier" value="1.0" type="double" />
 
     <!-- planner manager -->
-    <!-- <param name="manager/max_vel" value="$(arg max_vel)" type="double"/> -->
     <param name="manager/max_vel" value="$(arg max_vel)" type="double" />
     <param name="manager/max_acc" value="$(arg max_acc)" type="double" />
     <param name="manager/max_jerk" value="4" type="double" />
     <param name="manager/dynamic_environment" value="0" type="int" />
     <param name="manager/local_segment_length" value="6.0" type="double" />
     <param name="manager/clearance_threshold" value="0.2" type="double" />
-    <param name="manager/control_points_distance" value="0.35" type="double" />
+    <param name="manager/control_points_distance" value="0.5" type="double" />
     <param name="manager/use_geometric_path" value="true" type="bool" />
     <param name="manager/use_kinodynamic_path" value="true" type="bool" />
     <param name="manager/use_sample_path" value="true" type="bool" />
@@ -240,7 +248,7 @@
     <param name="search/check_num" value="10" type="int" />
     <param name="search/optimistic" value="false" type="bool" />
 
-    <param name="search/max_yaw_rate" value="0.6" type="double" />
+    <param name="search/max_yaw_rate" value="$(arg max_yaw_rate)" type="double" />
     <param name="search/yaw_origin" value="-1000.0" type="double" />
     <param name="search/yaw_size" value="2000.0" type="double" />
 
@@ -266,15 +274,16 @@
     <param name="optimization/ld_smooth" value="25.0" type="double" />
     <param name="optimization/ld_dist" value="20.0" type="double" />
     <param name="optimization/ld_feasi" value="2.0" type="double" />
-    <param name="optimization/ld_start" value="50.0" type="double" />
-    <param name="optimization/ld_end" value="50.0" type="double" />
+    <param name="optimization/ld_feasi_yaw" value="2.0" type="double" />
+    <param name="optimization/ld_start" value="5000.0" type="double" />
+    <param name="optimization/ld_end" value="5000.0" type="double" />
     <param name="optimization/ld_guide" value="1.5" type="double" />
     <param name="optimization/ld_waypt" value="0.5" type="double" />
     <param name="optimization/ld_view" value="0.0" type="double" />
     <param name="optimization/ld_time" value="1.0" type="double" />
     <param name="optimization/ld_parallax" value="5.0" type="double" />
     <param name="optimization/ld_vertical_visibility" value="5.0" type="double" />
-    <param name="optimization/ld_yaw_covisibility" value="100.0" type="double" />
+    <param name="optimization/ld_yaw_covisibility" value="500.0" type="double" />
     <param name="optimization/ld_frontier_visibility_pos" value="100.0" type="double" />
     <param name="optimization/ld_frontier_visibility_yaw" value="0.5" type="double" />
 
@@ -300,8 +309,12 @@
 
     <param name="optimization/max_feature_and_frontier_convisual_angle"
       value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/min_covisible_feature_cost_" value="-30.0" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />
+    <param name="optimization/k1" value="40.0" type="double" />
+    <param name="optimization/k2" value="10.0" type="double" />
+    <param name="optimization/k3" value="20.0" type="double" />
 
     <param name="bspline/limit_vel" value="$(arg max_vel)" type="double" />
     <param name="bspline/limit_acc" value="$(arg max_acc)" type="double" />

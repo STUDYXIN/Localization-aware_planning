@@ -41,6 +41,7 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
   nh.param("manager/use_topo_path", use_topo_path, false);
   nh.param("manager/use_optimization", use_optimization, false);
   nh.param("manager/use_active_perception", use_active_perception, false);
+  nh.param("manager/use_4degree_kinoAstar", use_4degree_kinoAstar, false);
 
   local_data_.traj_id_ = 0;
   sdf_map_.reset(new SDFMap);
@@ -60,7 +61,14 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
 
   if (use_kinodynamic_path) {
     kino_path_finder_.reset(new KinodynamicAstar);
-    kino_path_finder_->init(nh, edt_environment_);
+    kino_path_finder_->setParam(nh);
+    kino_path_finder_->setEnvironment(edt_environment_);
+    kino_path_finder_->init();
+  }
+
+  if (use_4degree_kinoAstar) {
+    kino_path_4degree_finder_.reset(new KinodynamicAstar4Degree);
+    kino_path_4degree_finder_->init(nh, edt_environment_);
   }
 
   if (use_optimization) {
@@ -206,16 +214,31 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
 
   // Step1: 调用混合A*得到初始waypoints
   auto time_start = ros::Time::now();
-
-  kino_path_finder_->setFeatureMap(feature_map_);
-  kino_path_finder_->reset();
-
-  int status = kino_path_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
-  if (status == KinodynamicAstar::NO_PATH) {
-    ROS_ERROR("Kinodynamic A* search fail");
-    return false;
+  int status;
+  if (use_4degree_kinoAstar) {
+    kino_path_4degree_finder_->setFeatureMap(feature_map_);
+    kino_path_4degree_finder_->reset();
+    status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
+    if (status == KinodynamicAstar::NO_PATH) {
+      ROS_ERROR("Kinodynamic A* search fail");
+      return false;
+    }
+    plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
+  } else {
+    kino_path_finder_->reset();
+    status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+    if (status == KinodynamicAstar::NO_PATH) {
+      ROS_ERROR("search 1 fail");
+      // Retry
+      kino_path_finder_->reset();
+      status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
+      if (status == KinodynamicAstar::NO_PATH) {
+        cout << "[Kino replan]: Can't find path." << endl;
+        return false;
+      }
+    }
+    plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
   }
-  plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
 
   double time_search = (ros::Time::now() - time_start).toSec();
   ROS_WARN("Time cost of kinodynamic A*: %lf(sec)", time_search);
@@ -225,7 +248,10 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
 
   double dt = pp_.ctrl_pt_dist / pp_.max_vel_;
   vector<Eigen::Vector3d> point_set, start_end_derivatives;
-  kino_path_finder_->getSamples(dt, point_set, start_end_derivatives);
+  if (use_4degree_kinoAstar)
+    kino_path_4degree_finder_->getSamples(dt, point_set, start_end_derivatives);
+  else
+    kino_path_finder_->getSamples(dt, point_set, start_end_derivatives);
 
   Eigen::MatrixXd ctrl_pts;
   NonUniformBspline::parameterizeToBspline(dt, point_set, start_end_derivatives, pp_.bspline_degree_, ctrl_pts);
@@ -265,8 +291,7 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
 
   // **考虑FRONTIER可见性
   int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::FEASIBILITY | BsplineOptimizer::START | BsplineOptimizer::END |
-                  BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::VERTICALVISIBILITY |
-                  BsplineOptimizer::FRONTIERVISIBILITY_POS;
+                  BsplineOptimizer::MINTIME | BsplineOptimizer::DISTANCE | BsplineOptimizer::FRONTIERVISIBILITY_POS;
 
   // Set params
   if (cost_func & BsplineOptimizer::PARALLAX || cost_func & BsplineOptimizer::VERTICALVISIBILITY ||
@@ -402,27 +427,27 @@ bool FastPlannerManager::kinodynamicReplan(const Vector3d& start_pt, const Vecto
 
   auto time_start = ros::Time::now();
 
-  kino_path_finder_->setFeatureMap(feature_map_);
-  kino_path_finder_->reset();
-  // int status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+  kino_path_4degree_finder_->setFeatureMap(feature_map_);
+  kino_path_4degree_finder_->reset();
+  // int status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
   // if (status == KinodynamicAstar::NO_PATH) {
   //   ROS_ERROR("Init kinodynamic A* search fail");
   //   // Retry
-  //   kino_path_finder_->reset();
-  //   status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
+  //   kino_path_4degree_finder_->reset();
+  //   status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
   //   if (status == KinodynamicAstar::NO_PATH) {
   //     return false;
   //   }
   // }
 
   ROS_INFO("Start search");
-  int status = kino_path_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
+  int status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
   ROS_INFO("End search");
   if (status == KinodynamicAstar::NO_PATH) {
     ROS_ERROR("Kinodynamic A* search fail");
     return false;
   }
-  plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
+  plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
 
   double time_search = (ros::Time::now() - time_start).toSec();
   ROS_WARN("Time cost of kinodynamic A*: %lf(sec)", time_search);
@@ -432,7 +457,7 @@ bool FastPlannerManager::kinodynamicReplan(const Vector3d& start_pt, const Vecto
   // Parameterize path to B-spline
   double ts = pp_.ctrl_pt_dist / pp_.max_vel_;
   vector<Eigen::Vector3d> point_set, start_end_derivatives;
-  kino_path_finder_->getSamples(ts, point_set, start_end_derivatives);
+  kino_path_4degree_finder_->getSamples(ts, point_set, start_end_derivatives);
 
   Eigen::MatrixXd ctrl_pts;
   NonUniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, pp_.bspline_degree_, ctrl_pts);

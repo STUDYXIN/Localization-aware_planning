@@ -254,7 +254,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         break;
       }
 
-      replan_pub_.publish(std_msgs::Empty());
+      replan_pub_.publish(std_msgs::Empty());  //发布的时候无人机过一段时间会停下来，这一点没有必要，在traj_server里稍做修改
       next_goal_ = callExplorationPlanner();
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         size_t idx = gains_[best_frontier_id].first;
@@ -386,7 +386,6 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   if (++delay < 5) {
     return;
   }
-
   auto ft = expl_manager_->frontier_finder_;
   auto ed = expl_manager_->ed_;
   auto pa = expl_manager_->planner_manager_->path_finder_;
@@ -408,7 +407,11 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   Vector3d vector_ref;
   if (have_target_ && pa->search(odom_pos_, final_goal_) == Astar::REACH_END) {
     ed->path_next_goal_ = pa->getPath();
-    is_best_viewpoint_searched = ft->getBestViewpointinPath(best_viewpoint, ed->path_next_goal_);
+    // cout << "[astar] pa->getPath()" << endl;
+    // 似乎死循环出现在这里，这里本来就没有太大意义，只是提供提个位置参考，换一个简单的实现
+    // is_best_viewpoint_searched = ft->getBestViewpointinPath(best_viewpoint, ed->path_next_goal_);
+    is_best_viewpoint_searched = expl_manager_->findJunction(ed->path_next_goal_, best_viewpoint.pos_, best_viewpoint.yaw_);
+    // cout << "[astar] pa->getBestViewpointinPath()" << endl;
     if (is_best_viewpoint_searched)
       vector_ref = (best_viewpoint.pos_ - odom_pos_).normalized();  //这一步是计算当前位置到A给出的位置的向量
   }
@@ -431,12 +434,15 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
     gains_.emplace_back(i, score);
   }
   std::sort(gains_.begin(), gains_.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
+  // cout << "[frontierCallback] end sort" << endl;
+
   //排序完成============================
   //绘制当前frontier,所有的用同一颜色表示，若不输入颜色，则按照原来的颜色分布
   // visualization_->drawFrontiersViewpointNow(ed->frontiers_, ed->points_, ed->yaws_, false, gains_);
   visualization_->drawFrontiersViewpointNow(ed->frontiers_, ed->points_, ed->yaws_, true, gains_);
   //绘制排序之后的结果，给每个frontier上面显示分数
   visualization_->drawScoreforFrontiers(ed->averages_, gains_);
+  // ROS_WARN("[PAExplorationFSM::frontierCallback] frontier_debug_end-------------------------------------");
 
   // 重规划
   // size_t idx = gains_[best_frontier_id].first;

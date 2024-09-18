@@ -516,7 +516,7 @@ Visualization Manager:
           Marker Topic: /exploration_node/kinodynamic_astar/pos
           Name: kinoAstrarPos
           Namespaces:
-            Path: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -602,8 +602,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 1.8607800006866455
-            Min Value: 0.5017960071563721
+            Max Value: 2.6964499950408936
+            Min Value: 1.3020700216293335
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -752,7 +752,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 7.122486591339111
+      Distance: 7.921743869781494
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -760,17 +760,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 1.0711517333984375
-        Y: -0.10690844058990479
+        X: 0.17760086059570312
+        Y: -0.5714190602302551
         Z: -1.000030279159546
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5747975707054138
+      Pitch: 0.5047975182533264
       Target Frame: camera
-      Yaw: 3.3264925479888916
+      Yaw: 3.871497631072998
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 40.93450164794922

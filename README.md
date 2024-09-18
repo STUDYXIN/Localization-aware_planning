@@ -1,5 +1,45 @@
 # 更新日志
 
+## 9月18日更新
+
+- 修复中间陷入死循环的致命BUG
+
+- 修改位置轨迹优化逻辑，当下不使用APACE的优化项，只是加了一个frontier的优化项，为了保证优化效率，frontier只取`ed_->averages_`一项，但是目前效果不显著
+
+- 将原本的4自由度的混合A*写在了'kino_astar_4degree'中，原本的kinodynamic_astar放的是直接从fuel搬的混合A！现在初始位置轨迹是直接用混合A得来的。
+
+- 修改replan逻辑，主要改动如下：由于我们可能需要在失败后重新选择轨迹，为了保证轨迹连续性，让`traj_server`在接收到`replan`指令后，不是过`replan_time_`时间后就停止，而是在接受新的轨迹之间一直执行原轨迹：
+
+  ```cpp
+    void replanCallback(std_msgs::Empty msg) {
+      // Informed of new replan, end the current traj after some time
+      const double time_out = 0.5;
+      ros::Time time_now = ros::Time::now();
+      double t_stop = (time_now - start_time_).toSec() + time_out + replan_time_;
+      traj_duration_ = max(t_stop, traj_duration_);  //这里的修改是如果状态机规划时间过长，也让无人机走完轨迹（安全性有待商榷）
+      // traj_duration_ = min(t_stop, traj_duration_);
+    }
+  ```
+
+- 修改了一些replan参数，主要是：
+
+  ```xml
+    ...
+    <!-- 一些replan参数，但是主要适配实验室电脑的计算时间 -->
+    <param name="fsm/thresh_replan1" value="0.5" type="double" />
+    <param name="fsm/thresh_replan2" value="0.5" type="double" />
+    <param name="fsm/thresh_replan3" value="3.0" type="double" />
+    <param name="fsm/replan_time" value="0.2" type="double" />
+    ...
+    <!-- frontier 的FOV，参数和feature一致 -->
+    <param name="perception_utils/max_dist" value="6.0" type="double" />
+    <param name="perception_utils/vis_dist" value="0.3" type="double" />
+    ...
+    <!-- 是否使用4自由度混合A* -->
+    <param name="manager/use_4degree_kinoAstar" value="false" type="bool" />
+    ...
+  ```
+
 ## 9月13日更新
 
 - 增加了新的可视化代码

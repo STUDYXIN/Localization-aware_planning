@@ -884,7 +884,7 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, c
   cost = 0;
   dcost_dq.clear();
   for (int i = 0; i < 3; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
-  if (frontier_centre_.norm() < 10e-5) {
+  if (frontier_centre_.norm() < 1e-5) {
     ROS_ERROR("[BsplineOptimizer::calcFVBCostAndGradientsKnots] NO Frontiers!!!!");
     return;
   }

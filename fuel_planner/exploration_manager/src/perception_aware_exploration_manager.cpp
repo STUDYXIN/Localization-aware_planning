@@ -120,11 +120,11 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
     searchYaw(next_pos, candidate_yaws);
 
     bool success = false;
-    vector<Vector3d> empty_vec_v3;
-    Vector3d empty_v3;
-
+    size_t idx = gains[expl_fsm_.lock()->best_frontier_id].first;
+    vector<Vector3d> next_frontier_cells = frontier_cells[idx];
+    Vector3d next_frontier_center = frontier_center[idx];
     for (const auto& yaw : candidate_yaws) {
-      if (planToNextGoal(next_pos, yaw, empty_vec_v3, empty_v3)) {
+      if (planToNextGoal(next_pos, yaw, next_frontier_cells, next_frontier_center)) {
         ROS_INFO(
             "Successfully planned to final goal----x: %f, y: %f, z: %f, yaw: %f", next_pos(0), next_pos(1), next_pos(2), yaw);
         success = true;
@@ -274,7 +274,7 @@ bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& 
   for (int i = path.size() - 1; i >= 0; --i) {
     if (edt_environment_->sdf_map_->getOccupancy(path[i]) == SDFMap::FREE) {  // FREE point
       point = path[i];
-      cout << "[PAExplorationManager] find Junction points: " << point.transpose() << endl;
+      // cout << "[PAExplorationManager] find Junction points: " << point.transpose() << endl;
       if (i == path.size() - 1 && i > 0) {  // goal is in FREE
         Eigen::Vector3d direction = path[i] - path[i - 1];
         yaw = atan2(direction.y(), direction.x());

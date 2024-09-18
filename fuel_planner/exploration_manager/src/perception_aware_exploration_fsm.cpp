@@ -193,7 +193,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       double time_to_end = info->duration_ - t_cur;
       // cout << " debug time2end: " << time_to_end << endl;
       if (time_to_end < fp_->replan_thresh1_) {
-        cout << "goal dist: " << (odom_pos_ - final_goal_).norm() << endl;
 
         if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
           ROS_ERROR("Invalid next goal type!!!");
@@ -208,19 +207,20 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         }
 
         else {
-          // transitState(REPLAN, "FSM");
-          transitState(PLAN_TO_NEXT_GOAL, "FSM");
+          transitState(REPLAN, "FSM");
           last_arrive_goal_time_ = ros::Time::now().toSec();
           ROS_WARN("Replan: reach tmp viewpoint=================================");
         }
         return;
       }
+
       // Replan if next frontier to be visited is covered
       if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
         ROS_WARN("Replan: cluster covered=====================================");
         return;
       }
+
       // Replan after some time
       if (do_replan_ && t_cur > fp_->replan_thresh3_) {
         transitState(REPLAN, "FSM");

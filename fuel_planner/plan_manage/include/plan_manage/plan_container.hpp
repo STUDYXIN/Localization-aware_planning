@@ -117,6 +117,7 @@ struct PlanParameters {
   double ctrl_pt_dist;  // distance between adjacient B-spline control points
   int bspline_degree_;
   bool min_time_;
+  double min_observed_ratio_;
 
   double clearance_;
   int dynamic_;
@@ -128,8 +129,7 @@ struct PlanParameters {
 
 struct LocalTrajData {
   /* info of generated traj */
-
-  int traj_id_;
+  int traj_id_ = 0;
   double duration_;
   ros::Time start_time_;
   Eigen::Vector3d start_pos_;

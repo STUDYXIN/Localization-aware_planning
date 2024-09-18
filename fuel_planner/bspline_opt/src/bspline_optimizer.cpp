@@ -919,6 +919,7 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, c
   cost = 0;
   dcost_dq.clear();
   for (int i = 0; i < 3; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
+
   if (frontier_centre_.norm() < 1e-5) {
     ROS_ERROR("[BsplineOptimizer::calcFVBCostAndGradientsKnots] NO Frontiers!!!!");
     return;
@@ -1650,7 +1651,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     //   cout << "[bspline optimizer]:parallax cost: " << f_parallax_ << endl;
     // if (cost_function_ & FRONTIERVISIBILITY_POS)
     //   cout << "[bspline optimizer]:view frontier(pos) cost: " << f_frontier_visibility_pos_ << endl;
-    if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ << endl;
+    // if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ << endl;
     // if (cost_function_ & FRONTIERVISIBILITY_YAW)
     //   cout << "[bspline optimizer]:view frontier(yaw) cost: " << f_frontier_visibility_yaw_ << endl;
     // cout << "---------------------------------------------------------------------------" << endl;

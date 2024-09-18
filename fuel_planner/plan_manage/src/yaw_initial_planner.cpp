@@ -70,10 +70,6 @@ void YawInitialPlanner::estimateHeuristic(const YawVertex::Ptr& v) {
 }
 
 bool YawInitialPlanner::checkFeasibility(const YawVertex::Ptr& v1, const YawVertex::Ptr& v2) {
-  // cout << "v1 id: " << v1->yaw_id_ << endl;
-  // cout << "v2 id: " << v2->yaw_id_ << endl;
-  // cout << "param_.max_diff_yaw_id_: " << param_.max_diff_yaw_id_ << endl;
-
   int diff_id = abs(v1->yaw_id_ - v2->yaw_id_);
   int diff_id_round = std::min(diff_id, param_.piece_num_ - diff_id);
 
@@ -156,8 +152,6 @@ void YawInitialPlanner::setVisbleFeatures(const YawVertex::Ptr& v) {
 }
 
 int YawInitialPlanner::getCoVisibileNum(const YawVertex::Ptr& v1, const YawVertex::Ptr& v2) {
-  // cout << "v1 id: " << v1->yaw_id_ << endl;
-  // cout << "v2 id: " << v2->yaw_id_ << endl;
 
   int commonFeatureCount = 0;
   for (const auto& id1 : v1->features_id_) {
@@ -189,7 +183,6 @@ bool YawInitialPlanner::search(const double start_yaw, const double end_yaw, con
   param_.dt_ = dt;
   param_.max_diff_yaw_id_ = (param_.max_yaw_rate_ * dt) / (2 * M_PI / param_.piece_num_);
   param_.max_diff_yaw_id_ = std::max(1, param_.max_diff_yaw_id_);
-  cout << "param_.max_diff_yaw_id_: " << param_.max_diff_yaw_id_ << endl;
 
   size_t num_layers = pos_.size();
   ROS_ASSERT(num_layers >= 2);

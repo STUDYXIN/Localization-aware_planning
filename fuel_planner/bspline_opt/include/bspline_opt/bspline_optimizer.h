@@ -263,8 +263,8 @@ public:
     frontier_centre_ = frontier_centre;
   }
 
-  vector<Vector3d> observed_features_;
-  void setObservedFeatures(const vector<Vector3d>& features) {
+  vector<vector<Vector3d>> observed_features_;
+  void setInitialPlannerData(const vector<vector<Vector3d>>& features) {
     observed_features_ = features;
   }
 

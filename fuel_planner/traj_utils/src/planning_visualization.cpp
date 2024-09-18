@@ -161,7 +161,7 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
   double intensity = 1.0 - 0.1 * UnreachableID;
   if (intensity < 10e-3) intensity = 0.05;
   Vector4d color(intensity, 0.0, 0.0, 0.4);
-  if (UnreachableID == 0)  //清楚掉之前的marker
+  if (UnreachableID == 0)  // 清楚掉之前的marker
   {
     vector<Eigen::Vector3d> empty_vector_Vector3d;
     double empty_yaw;
@@ -175,7 +175,7 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
     }
     last_max = 0;
   }
-  //绘制这个不可达的frontier和viewpoint
+  // 绘制这个不可达的frontier和viewpoint
   drawCubes(Unreachable_frontier, 0.1, color, "frontier", UNREACHABLE_VIEWPOINT + UnreachableID % 100, 4);
   vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
   thisviewpoint.push_back(Unreachable_viewpoint_points);
@@ -185,7 +185,7 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
   viewpoint_line.push_back(end_point);
   displaySphereList(thisviewpoint, 0.25, color, UNREACHABLE_VIEWPOINT + UnreachableID % 100);
   drawLines(viewpoint_line, 0.1, color, "viewpoint_vectoer_line", UNREACHABLE_VIEWPOINT + UnreachableID % 100, 1);
-  //绘制这个不可达的信息和曲线
+  // 绘制这个不可达的信息和曲线
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(2) << gain;
   std::string text = "id: " + std::to_string(UnreachableID) + " score: " + ss.str();
@@ -547,9 +547,7 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBsplin
 
   vector<Vector3d> pts1, pts2;
 
-  int cnt = 0;
   for (double tc = 0.0; tc <= pos_duration + 1e-3; tc += dt) {
-    cnt++;
     Vector3d pc = pos.evaluateDeBoorT(tc);
     double yc = yaw.evaluateDeBoorT(tc)[0];
     Vector3d dir(cos(yc), sin(yc), 0);
@@ -557,7 +555,6 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBsplin
     pts1.push_back(pc);
     pts2.push_back(pdir);
   }
-  ROS_INFO("[drawYawTraj]: %d", cnt);
   // displayLineList(pts1, pts2, 0.04, Eigen::Vector4d(1, 0.5, 0, 1), 0, 5);
   displayArrowList(pts1, pts2, 0.05, Color::Pink(), 0, 5);
 }

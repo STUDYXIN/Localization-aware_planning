@@ -11,6 +11,7 @@ Panels:
         - /LocalMap1/occupied_local1/Autocompute Value Bounds1
         - /LocalMap1/occupied_all1/Autocompute Value Bounds1
         - /Simulation1/simulation_map1
+        - /Marker_debug1
         - /Marker_debug1/initial_yaw1
       Splitter Ratio: 0.5216138362884521
     Tree Height: 880
@@ -31,7 +32,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: simulation_map
+    SyncSource: depth
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -558,13 +559,13 @@ Visualization Manager:
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
-          Enabled: true
+          Enabled: false
           Marker Topic: /exploration_node/yaw_initial_planner/yaw_path
           Name: initial_yaw
           Namespaces:
-            "": true
+            {}
           Queue Size: 100
-          Value: true
+          Value: false
       Enabled: true
       Name: Marker_debug
     - Class: rviz/Group
@@ -600,8 +601,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 2.6964499950408936
-            Min Value: 1.3020700216293335
+            Max Value: 2.6699600219726562
+            Min Value: 1.502959966659546
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -750,7 +751,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 7.921743869781494
+      Distance: 19.61394691467285
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -766,9 +767,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5047975182533264
+      Pitch: 1.0747970342636108
       Target Frame: camera
-      Yaw: 3.871497631072998
+      Yaw: 3.1264965534210205
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 40.93450164794922

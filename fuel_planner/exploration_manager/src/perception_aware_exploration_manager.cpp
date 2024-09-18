@@ -220,6 +220,10 @@ bool PAExplorationManager::planToNextGoal(
 
   if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return false;
 
+  if (!planner_manager_->checkTrajExplorationOnKnots(frontire_cells)) return false;
+
+  planner_manager_->printStatistics();
+
   return true;
 }
 

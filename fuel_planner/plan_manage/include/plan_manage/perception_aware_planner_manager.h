@@ -20,6 +20,22 @@ namespace fast_planner {
 // Fast Planner Manager
 // Key algorithms of mapping and planning are called
 
+struct Statistics {
+  double time_kinodynamic_astar_;    // 位置轨迹规划混合A*耗时(s)
+  double time_pos_traj_opt_;         // 位置轨迹规划B样条优化耗时(s)
+  double time_yaw_initial_planner_;  // yaw轨迹规划搜索初值耗时(s)
+  double time_yaw_traj_opt_;         // yaw轨迹规划B样条优化耗时(s)
+  double time_total_;                // 规划总耗时(s)
+  double mean_vel_;                  // 位置轨迹平均速度(m/s)
+  double max_vel_;                   // 位置轨迹最大速度(m/s)
+  double mean_acc_;                  // 位置轨迹平均加速度(m/s)
+  double max_acc_;                   // 位置轨迹最大加速度(m^2/s)
+  double mean_yaw_rate_;             // yaw轨迹平均角速度(rad/s)
+  double max_yaw_rate_;              // yaw轨迹最大角速度(rad/s)
+  int observed_frontier_num_;        // 本条轨迹可观测到的目标frontier cell数量
+  double dt_;                        // 均匀B样条轨迹时间间隔(s)
+};
+
 class FastPlannerManager {
   // SECTION stable
 public:
@@ -51,6 +67,7 @@ public:
   bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
   bool checkTrajLocalizability(double& distance);
   bool checkTrajLocalizabilityOnKnots();
+  bool checkTrajExplorationOnKnots(const vector<Vector3d>& target_frontier);
 
   void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
     feature_map_ = feature_map;
@@ -60,8 +77,11 @@ public:
     frontier_finder_ = frontier_finder;
   }
 
+  void printStatistics();
+
   PlanParameters pp_;
 
+  Statistics statistics_;
   LocalTrajData local_data_;
   GlobalTrajData global_data_;
   MidPlanData plan_data_;

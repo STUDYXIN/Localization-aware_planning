@@ -33,7 +33,8 @@ public:
   void initialize(ros::NodeHandle& nh);
 
   NEXT_GOAL_TYPE selectNextGoal(Vector3d& next_pos, double& next_yaw);
-  bool planToNextGoal(const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells);
+  bool planToNextGoal(
+      const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells, const Vector3d& frontire_center);
   bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
 
   weak_ptr<PAExplorationFSM> expl_fsm_;

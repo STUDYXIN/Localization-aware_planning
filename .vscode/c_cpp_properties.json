@@ -7,9 +7,9 @@
       },
       "includePath": [
         "/home/star/ActiveSlam/rrt4/devel/include/**",
+        "/home/star/ActiveSlam/new_planner/devel/include/**",
         "/home/star/ActiveSlam/my_git/devel/include/**",
         "/opt/ros/noetic/include/**",
-        "/home/star/ActiveSlam/new_planner/devel/include/**",
         "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/active_perception/include/**",
         "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/airsim_ctrl/include/**",
         "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/airsim_ros_wrapper/include/**",

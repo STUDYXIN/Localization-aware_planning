@@ -105,13 +105,14 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   const auto& points = ed_->points_;
   const auto& yaws = ed_->yaws_;
   const auto& frontier_cells = ed_->frontier_cells_;
+  const auto& frontier_center = ed_->averages_;
 
   bool reach_end_flag = false;
 
   // 目标点已经出现在已知区域，直接前往
   if (sdf_map_->getOccupancy(final_goal) == SDFMap::FREE && sdf_map_->getDistance(final_goal) > 0.2) {
     next_pos = final_goal;
-    ROS_INFO("Select final goal as next goal");
+    ROS_WARN("========================Select final goal as next goal===========================");
 
     // next_yaw = 0.0;
 
@@ -119,10 +120,11 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
     searchYaw(next_pos, candidate_yaws);
 
     bool success = false;
-    vector<Vector3d> empty;
-
+    size_t idx = gains[expl_fsm_.lock()->best_frontier_id].first;
+    vector<Vector3d> next_frontier_cells = frontier_cells[idx];
+    Vector3d next_frontier_center = frontier_center[idx];
     for (const auto& yaw : candidate_yaws) {
-      if (planToNextGoal(next_pos, yaw, empty)) {
+      if (planToNextGoal(next_pos, yaw, next_frontier_cells, next_frontier_center)) {
         ROS_INFO(
             "Successfully planned to final goal----x: %f, y: %f, z: %f, yaw: %f", next_pos(0), next_pos(1), next_pos(2), yaw);
         success = true;
@@ -176,7 +178,8 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   next_pos = points[idx];
   next_yaw = yaws[idx];
   vector<Vector3d> next_frontier_cells = frontier_cells[idx];
-  if (planToNextGoal(next_pos, next_yaw, next_frontier_cells)) {
+  Vector3d next_frontier_center = frontier_center[idx];
+  if (planToNextGoal(next_pos, next_yaw, next_frontier_cells, next_frontier_center)) {
     expl_fsm_.lock()->last_used_viewpoint_pos = next_pos;
     return SEARCH_FRONTIER;
   }
@@ -185,7 +188,7 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
 }
 
 bool PAExplorationManager::planToNextGoal(
-    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells) {
+    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells, const Vector3d& frontire_center) {
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -203,8 +206,8 @@ bool PAExplorationManager::planToNextGoal(
   // if (!planner_manager_->sampleBasedReplan(start_pos, start_vel, start_acc, start_yaw(0), next_pos, next_yaw, time_lb)) {
   //   return false;
   // }
-  if (!planner_manager_->planPosPerceptionAware(
-          start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
+  if (!planner_manager_->planPosPerceptionAware(start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(),
+          next_yaw, frontire_cells, frontire_center, time_lb)) {
     return false;
   }
 
@@ -267,7 +270,7 @@ bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& 
   for (int i = path.size() - 1; i >= 0; --i) {
     if (edt_environment_->sdf_map_->getOccupancy(path[i]) == SDFMap::FREE) {  // FREE point
       point = path[i];
-      cout << "[PAExplorationManager] find Junction points: " << point.transpose() << endl;
+      // cout << "[PAExplorationManager] find Junction points: " << point.transpose() << endl;
       if (i == path.size() - 1 && i > 0) {  // goal is in FREE
         Eigen::Vector3d direction = path[i] - path[i - 1];
         yaw = atan2(direction.y(), direction.x());

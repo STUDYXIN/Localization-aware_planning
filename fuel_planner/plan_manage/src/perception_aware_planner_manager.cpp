@@ -37,6 +37,7 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
   nh.param("manager/use_topo_path", use_topo_path, false);
   nh.param("manager/use_optimization", use_optimization, false);
   nh.param("manager/use_active_perception", use_active_perception, false);
+  nh.param("manager/use_4degree_kinoAstar", use_4degree_kinoAstar, false);
 
   local_data_.traj_id_ = 0;
   sdf_map_.reset(new SDFMap);
@@ -56,7 +57,14 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
 
   if (use_kinodynamic_path) {
     kino_path_finder_.reset(new KinodynamicAstar);
-    kino_path_finder_->init(nh, edt_environment_);
+    kino_path_finder_->setParam(nh);
+    kino_path_finder_->setEnvironment(edt_environment_);
+    kino_path_finder_->init();
+  }
+
+  if (use_4degree_kinoAstar) {
+    kino_path_4degree_finder_.reset(new KinodynamicAstar4Degree);
+    kino_path_4degree_finder_->init(nh, edt_environment_);
   }
 
   if (use_optimization) {
@@ -139,6 +147,13 @@ bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Q
   return feature_num > min_feature_num || error_times <= 10;
 }
 
+bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Quaterniond& orient) {
+  if (feature_map_ == nullptr) return true;
+  int feature_num = feature_map_->get_NumCloud_using_Odom(pos, orient);
+  int min_feature_num = Utils::getGlobalParam().min_feature_num_act_;
+  return feature_num > min_feature_num;
+}
+
 bool FastPlannerManager::checkTrajLocalizability(double& distance) {
   double t_now = (ros::Time::now() - local_data_.start_time_).toSec();
 
@@ -197,7 +212,8 @@ bool FastPlannerManager::checkTrajLocalizabilityOnKnots() {
 // SECTION perception aware replanning
 
 bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
-    const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb) {
+    const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw,
+    const vector<Vector3d>& frontier_cells, const Vector3d& frontier_center, const double& time_lb) {
   // std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
   // std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
   // std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
@@ -216,16 +232,31 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
 
   // Step1: 调用混合A*得到初始waypoints
   auto time_start = ros::Time::now();
-
-  kino_path_finder_->setFeatureMap(feature_map_);
-  kino_path_finder_->reset();
-
-  int status = kino_path_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
-  if (status == KinodynamicAstar::NO_PATH) {
-    ROS_ERROR("Kinodynamic A* search fail");
-    return false;
+  int status;
+  if (use_4degree_kinoAstar) {
+    kino_path_4degree_finder_->setFeatureMap(feature_map_);
+    kino_path_4degree_finder_->reset();
+    status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
+    if (status == KinodynamicAstar::NO_PATH) {
+      ROS_ERROR("Kinodynamic A* search fail");
+      return false;
+    }
+    plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
+  } else {
+    kino_path_finder_->reset();
+    status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+    if (status == KinodynamicAstar::NO_PATH) {
+      ROS_ERROR("search 1 fail");
+      // Retry
+      kino_path_finder_->reset();
+      status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
+      if (status == KinodynamicAstar::NO_PATH) {
+        cout << "[Kino replan]: Can't find path." << endl;
+        return false;
+      }
+    }
+    plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
   }
-  plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
 
   double time_search = (ros::Time::now() - time_start).toSec();
   ROS_WARN("Time cost of kinodynamic A*: %lf(sec)", time_search);
@@ -235,7 +266,10 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
 
   double dt = pp_.ctrl_pt_dist / pp_.max_vel_;
   vector<Eigen::Vector3d> point_set, start_end_derivatives;
-  kino_path_finder_->getSamples(dt, point_set, start_end_derivatives);
+  if (use_4degree_kinoAstar)
+    kino_path_4degree_finder_->getSamples(dt, point_set, start_end_derivatives);
+  else
+    kino_path_finder_->getSamples(dt, point_set, start_end_derivatives);
 
   Eigen::MatrixXd ctrl_pts;
   NonUniformBspline::parameterizeToBspline(dt, point_set, start_end_derivatives, pp_.bspline_degree_, ctrl_pts);
@@ -400,27 +434,27 @@ bool FastPlannerManager::kinodynamicReplan(const Vector3d& start_pt, const Vecto
 
   auto time_start = ros::Time::now();
 
-  kino_path_finder_->setFeatureMap(feature_map_);
-  kino_path_finder_->reset();
-  // int status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
+  kino_path_4degree_finder_->setFeatureMap(feature_map_);
+  kino_path_4degree_finder_->reset();
+  // int status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
   // if (status == KinodynamicAstar::NO_PATH) {
   //   ROS_ERROR("Init kinodynamic A* search fail");
   //   // Retry
-  //   kino_path_finder_->reset();
-  //   status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
+  //   kino_path_4degree_finder_->reset();
+  //   status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
   //   if (status == KinodynamicAstar::NO_PATH) {
   //     return false;
   //   }
   // }
 
   ROS_INFO("Start search");
-  int status = kino_path_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
+  int status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
   ROS_INFO("End search");
   if (status == KinodynamicAstar::NO_PATH) {
     ROS_ERROR("Kinodynamic A* search fail");
     return false;
   }
-  plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
+  plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
 
   double time_search = (ros::Time::now() - time_start).toSec();
   ROS_WARN("Time cost of kinodynamic A*: %lf(sec)", time_search);
@@ -430,7 +464,7 @@ bool FastPlannerManager::kinodynamicReplan(const Vector3d& start_pt, const Vecto
   // Parameterize path to B-spline
   double ts = pp_.ctrl_pt_dist / pp_.max_vel_;
   vector<Eigen::Vector3d> point_set, start_end_derivatives;
-  kino_path_finder_->getSamples(ts, point_set, start_end_derivatives);
+  kino_path_4degree_finder_->getSamples(ts, point_set, start_end_derivatives);
 
   Eigen::MatrixXd ctrl_pts;
   NonUniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, pp_.bspline_degree_, ctrl_pts);
@@ -756,8 +790,8 @@ bool FastPlannerManager::planYawPerceptionAware(
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
   bspline_optimizers_[1]->setFeatureMap(feature_map_);
 
-  cout << "yaw control point before optimize: " << yaw << endl;
-  cout << "dt_yaw: " << dt_yaw << endl;
+  // cout << "yaw control point before optimize: " << yaw << endl;
+  // cout << "dt_yaw: " << dt_yaw << endl;
 
   // Add noise to yaw if variance is too small
   double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
@@ -774,7 +808,7 @@ bool FastPlannerManager::planYawPerceptionAware(
       double noise = distribution(gen);  // 生成一个符合正态分布的随机数
       yaw(i, 0) += noise;
     }
-    cout << "yaw control point before optimize(add noise): " << yaw << endl;
+    // cout << "yaw control point before optimize(add noise): " << yaw << endl;
   }
 
   // cout << "[FastPlannerManager::planYawPerceptionAware] Begin yaw optimize!!!!!" << endl;

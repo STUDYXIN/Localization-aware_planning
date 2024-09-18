@@ -1,5 +1,6 @@
 #include <traj_utils/planning_visualization.h>
-
+#include <iomanip>
+#include <sstream>
 using std::cout;
 using std::endl;
 
@@ -85,6 +86,126 @@ void PlanningVisualization::fillGeometryInfo(
     pt.z = list2[i](2);
     mk.points.push_back(pt);
   }
+}
+
+void PlanningVisualization::drawAstar(
+    const vector<Eigen::Vector3d>& path, const Eigen::Vector3d& best_pos, const double& best_yaw, const bool& have_best_point) {
+  if (!have_best_point) return;
+  // draw path 我将以topo的形式出击！(懒得定义，使用topo Marker的id 1)
+  Vector4d black_color(0.0, 0.0, 0.0, 1.0);
+  drawLines(path, 0.02, black_color, "path_2_next_goal", ASTAR_PATH, 1);
+  vector<Vector3d> thisviewpoint, viewpoint_line;
+  thisviewpoint.push_back(best_pos);
+  Vector3d direction(cos(best_yaw), sin(best_yaw), 0.0);
+  Vector3d end_point = best_pos + direction * 1.0;
+  viewpoint_line.push_back(best_pos);
+  viewpoint_line.push_back(end_point);
+  displaySphereList(thisviewpoint, 0.15, black_color, ASTAR_PATH + 1);
+  drawLines(viewpoint_line, 0.05, black_color, "viewpoint_vectoer_line", ASTAR_PATH, 1);
+}
+
+void PlanningVisualization::drawFrontiersViewpointNow(const vector<vector<Eigen::Vector3d>>& frontiers,
+    const vector<Eigen::Vector3d>& viewpoint_points, const vector<double>& viewpoint_yaw, const bool& use_gray_frontier,
+    const vector<std::pair<size_t, double>> gains) {
+  if (!use_gray_frontier) {
+    for (int i = 0; i < frontiers.size(); ++i) {
+      Vector4d color_this = getColor(double(i) / frontiers.size(), 0.4);
+      drawCubes(frontiers[i], 0.1, color_this, "frontier", i, 4);
+      vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
+      thisviewpoint.push_back(viewpoint_points[i]);
+      Eigen::Vector3d direction(cos(viewpoint_yaw[i]), sin(viewpoint_yaw[i]), 0.0);
+      Eigen::Vector3d end_point = viewpoint_points[i] + direction * 1.0;
+      viewpoint_line.push_back(viewpoint_points[i]);
+      viewpoint_line.push_back(end_point);
+      displaySphereList(thisviewpoint, 0.15, color_this, VIEWPOINT_PATH + i % 100);
+      drawLines(viewpoint_line, 0.05, color_this, "viewpoint_vectoer_line", VIEWPOINT_PATH + i % 100, 1);
+      // last_viewpoint_line.push_back(i + 10);
+    }
+  } else {
+    for (int i = 0; i < frontiers.size(); ++i) {
+      double gray_value = 1.0 - (double(gains[i].first) / frontiers.size());
+      Vector4d color(gray_value, gray_value, gray_value, 0.4);
+      drawCubes(frontiers[i], 0.1, color, "frontier", i, 4);
+      vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
+      thisviewpoint.push_back(viewpoint_points[i]);
+      Eigen::Vector3d direction(cos(viewpoint_yaw[i]), sin(viewpoint_yaw[i]), 0.0);
+      Eigen::Vector3d end_point = viewpoint_points[i] + direction * 1.0;
+      viewpoint_line.push_back(viewpoint_points[i]);
+      viewpoint_line.push_back(end_point);
+      displaySphereList(thisviewpoint, 0.15, color, VIEWPOINT_PATH + i % 100);
+      drawLines(viewpoint_line, 0.05, color, "viewpoint_vectoer_line", VIEWPOINT_PATH + i % 100, 1);
+      // last_viewpoint_line.push_back(i + 10);
+    }
+  }
+}
+
+void PlanningVisualization::drawScoreforFrontiers(
+    const vector<Eigen::Vector3d>& frontier_average_pos, const vector<std::pair<size_t, double>> gains) {
+  for (int i = 0; i < gains.size(); ++i) {
+    // double gray_value = 1.0 - (double(gains[i].first) / gains.size());
+    Vector4d color(0.0, 0.0, 0.0, 1.0);
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(2) << gains[i].second;
+    std::string text = ss.str();
+    // std::string text = "score: " + std::to_string(gains[i].second);
+    displayText(frontier_average_pos[gains[i].first], text, color, 0.3, 1 + i, 7);
+  }
+}
+
+void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3d>& Unreachable_frontier,
+    const Eigen::Vector3d& Unreachable_viewpoint_points, const double& Unreachable_viewpoint_yaw, const int& UnreachableID,
+    const Eigen::Vector3d& frontier_average_pos, const double gain, const vector<Eigen::Vector3d>& fail_pos_traj) {
+  static int last_max = 0;
+  Eigen::Vector3d show_text_pos = frontier_average_pos;
+  show_text_pos(2) += 2.0;
+  double intensity = 1.0 - 0.1 * UnreachableID;
+  if (intensity < 10e-3) intensity = 0.05;
+  Vector4d color(intensity, 0.0, 0.0, 0.4);
+  if (UnreachableID == 0)  //清楚掉之前的marker
+  {
+    vector<Eigen::Vector3d> empty_vector_Vector3d;
+    double empty_yaw;
+    std::string text = "";
+    for (int i = 0; i < last_max; ++i) {
+      drawCubes(empty_vector_Vector3d, 0.1, color, "frontier", UNREACHABLE_VIEWPOINT + i % 100, 4);
+      displaySphereList(empty_vector_Vector3d, 0.15, color, UNREACHABLE_VIEWPOINT + i % 100);
+      drawLines(empty_vector_Vector3d, 0.05, color, "viewpoint_vectoer_line", UNREACHABLE_VIEWPOINT + i % 100, 1);
+      displayText(show_text_pos, text, color, 0.3, UNREACHABLE_VIEWPOINT + i % 100, 7);
+      drawGeometricPath(empty_vector_Vector3d, 0.05, color, UNREACHABLE_VIEWPOINT + i % 100);
+    }
+    last_max = 0;
+  }
+  //绘制这个不可达的frontier和viewpoint
+  drawCubes(Unreachable_frontier, 0.1, color, "frontier", UNREACHABLE_VIEWPOINT + UnreachableID % 100, 4);
+  vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
+  thisviewpoint.push_back(Unreachable_viewpoint_points);
+  Eigen::Vector3d direction(cos(Unreachable_viewpoint_yaw), sin(Unreachable_viewpoint_yaw), 0.0);
+  Eigen::Vector3d end_point = Unreachable_viewpoint_points + direction * 1.0;
+  viewpoint_line.push_back(Unreachable_viewpoint_points);
+  viewpoint_line.push_back(end_point);
+  displaySphereList(thisviewpoint, 0.25, color, UNREACHABLE_VIEWPOINT + UnreachableID % 100);
+  drawLines(viewpoint_line, 0.1, color, "viewpoint_vectoer_line", UNREACHABLE_VIEWPOINT + UnreachableID % 100, 1);
+  //绘制这个不可达的信息和曲线
+  std::ostringstream ss;
+  ss << std::fixed << std::setprecision(2) << gain;
+  std::string text = "id: " + std::to_string(UnreachableID) + " score: " + ss.str();
+  displayText(show_text_pos, text, color, 0.3, UNREACHABLE_VIEWPOINT + UnreachableID % 100, 7);
+  displaySphereList(fail_pos_traj, 0.05, color, UNREACHABLE_KINOASTAR + UnreachableID % 100);
+  last_max++;
+}
+
+void PlanningVisualization::drawFrontiersGo(
+    const vector<Eigen::Vector3d>& Go_frontier, const Eigen::Vector3d& Go_viewpoint_points, const double& Go_viewpoint_yaw) {
+  Vector4d color(0.0, 1.0, 0.0, 0.7);
+  drawCubes(Go_frontier, 0.1, color, "frontier", GO_VIEWPOINT, 4);
+  vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
+  thisviewpoint.push_back(Go_viewpoint_points);
+  Eigen::Vector3d direction(cos(Go_viewpoint_yaw), sin(Go_viewpoint_yaw), 0.0);
+  Eigen::Vector3d end_point = Go_viewpoint_points + direction * 1.0;
+  viewpoint_line.push_back(Go_viewpoint_points);
+  viewpoint_line.push_back(end_point);
+  displaySphereList(thisviewpoint, 0.4, color, GO_VIEWPOINT);
+  drawLines(viewpoint_line, 0.25, color, "viewpoint_vectoer_line", GO_VIEWPOINT, 1);
 }
 
 void PlanningVisualization::drawBox(const Eigen::Vector3d& center, const Eigen::Vector3d& scale, const Eigen::Vector4d& color,

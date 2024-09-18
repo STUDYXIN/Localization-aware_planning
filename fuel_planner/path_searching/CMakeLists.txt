@@ -38,6 +38,7 @@ include_directories(
 
 add_library( path_searching 
     src/kinodynamic_astar.cpp 
+    src/kino_astar_4degree.cpp 
     # src/astar.cpp
     src/astar2.cpp
     src/rrt_star.cpp

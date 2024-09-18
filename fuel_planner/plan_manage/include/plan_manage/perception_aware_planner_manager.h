@@ -7,6 +7,7 @@
 #include <bspline_opt/bspline_optimizer.h>
 #include <path_searching/astar2.h>
 #include <path_searching/kinodynamic_astar.h>
+#include <path_searching/kino_astar_4degree.h>
 #include <path_searching/rrt_star.h>
 #include <path_searching/topo_prm.h>
 #include <plan_env/edt_environment.h>
@@ -26,7 +27,8 @@ public:
   bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
       const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel);
   bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
-      const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb);
+      const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw,
+      const vector<Vector3d>& frontier_cells, const Vector3d& frontier_center, const double& time_lb);
 
   bool sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
       const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw, const double& time_lb = -1);
@@ -46,6 +48,7 @@ public:
 
   bool checkTrajCollision(double& distance);
   bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, int& feature_num);
+  bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient);
   bool checkTrajLocalizability(double& distance);
   bool checkTrajLocalizabilityOnKnots();
 
@@ -73,6 +76,7 @@ private:
   shared_ptr<FeatureMap> feature_map_;
 
   unique_ptr<KinodynamicAstar> kino_path_finder_;
+  unique_ptr<KinodynamicAstar4Degree> kino_path_4degree_finder_;
   unique_ptr<RRTStar> sample_path_finder_;
   vector<BsplineOptimizer::Ptr> bspline_optimizers_;
 
@@ -96,7 +100,7 @@ public:
 private:
   // unique_ptr<HeadingPlanner> heading_planner_;
   unique_ptr<VisibilityUtil> visib_util_;
-
+  bool use_4degree_kinoAstar;
   // !SECTION
 };
 }  // namespace fast_planner

@@ -2,6 +2,7 @@
 #define _PERCEPTION_AWARE_EXPLORATION_FSM_H_
 
 #include <exploration_manager/perception_aware_exploration_manager.h>
+#include <plan_manage/plan_container.hpp>
 
 #include <bspline/Bspline.h>
 #include <nav_msgs/Odometry.h>
@@ -35,7 +36,7 @@ struct FSMParam;
 struct FSMData;
 struct M2GData;
 
-enum FSM_EXEC_STATE { INIT, WAIT_TARGET, PLAN_TO_NEXT_GOAL, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
+enum FSM_EXEC_STATE { INIT, WAIT_TARGET, START_IN_STATIC, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
 
 enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2 };
 
@@ -64,14 +65,15 @@ public:
   vector<pair<size_t, double>> gains_;  // gains for viewpoint
   FSM_EXEC_STATE exec_state_ = FSM_EXEC_STATE::INIT;
   Eigen::Vector3d last_used_viewpoint_pos;
-  int best_frontier_id;
-
+  int best_frontier_id, search_times;
+  LocalTrajData last_traj;
   bool classic_;
   bool do_replan_;
 
   Eigen::Vector3d final_goal_;
   double last_arrive_goal_time_;
   int next_goal_;
+  double replan_begin_time;
 
   int target_type_;  // 1 mannual select, 2 hard code
   double waypoints_[50][3];

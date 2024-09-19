@@ -7,6 +7,11 @@
   <arg name="init_x" default="-13.0" />
   <arg name="init_y" default="0.0" />
   <arg name="init_z" default="1.0" />
+
+  <arg name="goal_x" default="10.0" />
+  <arg name="goal_y" default="-10.0" />
+  <arg name="goal_z" default="2.0" />
+
   <arg name="feature_filename_" default="feature_map_sample1.ply" />
 
 
@@ -65,9 +70,9 @@
 
     <arg name="point_num" value="4" />
 
-    <arg name="point0_x" value="10.0" />
-    <arg name="point0_y" value="-10.0" />
-    <arg name="point0_z" value="2.0" />
+    <arg name="point0_x" value="$(arg goal_x)" />
+    <arg name="point0_y" value="$(arg goal_y)" />
+    <arg name="point0_z" value="$(arg goal_z)" />
 
     <arg name="point1_x" value="-8.0" />
     <arg name="point1_y" value="-1.5" />

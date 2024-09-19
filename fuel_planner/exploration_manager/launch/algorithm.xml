@@ -182,7 +182,7 @@
     <param name="frontier/down_sample" value="3" type="int" />
     <param name="frontier/min_visib_num" value="15" type="int" />
     <param name="frontier/min_view_finish_fraction" value="0.2" type="double" />
-    <param name="frontier/min_view_feature_num_of_viewpoint" value="30" type="int" />
+    <param name="frontier/min_view_feature_num_of_viewpoint" value="$(arg min_covisible_feature_num_plan)" type="int" />
     <param name="frontier/feature_sample_dphi" value="$(eval 5 * 3.1415926 / 180.0)" type="double" />
 
     <!-- Perception utils -->

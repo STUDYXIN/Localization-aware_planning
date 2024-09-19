@@ -44,6 +44,8 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
   nh.param("manager/use_optimization", use_optimization, false);
   nh.param("manager/use_active_perception", use_active_perception, false);
   nh.param("manager/use_4degree_kinoAstar", use_4degree_kinoAstar, false);
+  nh.param("manager/use_apace_pose_opt", use_apace_pose_opt_, false);
+  nh.param("manager/use_fvp_opt", use_fvp_opt_, false);
 
   sdf_map_.reset(new SDFMap);
   sdf_map_->initMap(nh);
@@ -368,20 +370,27 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   cost_func |= BsplineOptimizer::END;
   cost_func |= BsplineOptimizer::MINTIME;
   cost_func |= BsplineOptimizer::DISTANCE;
-  // cost_func |= BsplineOptimizer::PARALLAX;
-  // cost_func |= BsplineOptimizer::VERTICALVISIBILITY;
-  cost_func |= BsplineOptimizer::FRONTIERVISIBILITY_POS;
+  if (use_apace_pose_opt_) {
+    cost_func |= BsplineOptimizer::PARALLAX;
+    cost_func |= BsplineOptimizer::VERTICALVISIBILITY;
+    bspline_optimizers_[0]->setFeatureMap(feature_map_);
+  }
+  if (use_fvp_opt_) {
+    cost_func |= BsplineOptimizer::FRONTIERVISIBILITY_POS;
+    bspline_optimizers_[0]->setViewpoint(end_pt, end_yaw);
+  }
 
   // Set params
-  if (cost_func & BsplineOptimizer::PARALLAX || cost_func & BsplineOptimizer::VERTICALVISIBILITY ||
-      cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
-    bspline_optimizers_[0]->setFeatureMap(feature_map_);
-    if (cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
-      bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
-      bspline_optimizers_[0]->setFrontiercenter(frontier_center);
-      // bspline_optimizers_[0]->setFrontierCells(frontier_cells);
-    }
-  }
+  // if (cost_func & BsplineOptimizer::PARALLAX || cost_func & BsplineOptimizer::VERTICALVISIBILITY ||
+  //     cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
+  //   bspline_optimizers_[0]->setFeatureMap(feature_map_);
+  //   if (cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
+  //     // bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
+  //     // bspline_optimizers_[0]->setFrontiercenter(frontier_center);
+  //     bspline_optimizers_[0]->setViewpoint(end_pt, end_yaw);
+  //     // bspline_optimizers_[0]->setFrontierCells(frontier_cells);
+  //   }
+  // }
 
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
   if (!bspline_optimizers_[0]->issuccess) return false;

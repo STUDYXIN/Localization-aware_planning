@@ -120,7 +120,7 @@ public:
 private:
   // unique_ptr<HeadingPlanner> heading_planner_;
   unique_ptr<VisibilityUtil> visib_util_;
-  bool use_4degree_kinoAstar;
+  bool use_4degree_kinoAstar, use_apace_pose_opt_, use_fvp_opt_;
   // !SECTION
 };
 }  // namespace fast_planner

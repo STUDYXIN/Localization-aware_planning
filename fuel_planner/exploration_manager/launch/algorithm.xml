@@ -126,7 +126,7 @@
     <!-- Fsm -->
     <param name="fsm/thresh_replan1" value="0.5" type="double" />
     <param name="fsm/thresh_replan2" value="0.5" type="double" />
-    <param name="fsm/thresh_replan3" value="2.0" type="double" />
+    <param name="fsm/thresh_replan3" value="3.0" type="double" />
     <param name="fsm/thresh_replan_viewpoint_length" value="0.8" type="double" />
     <param name="fsm/do_replan" value="true" type="bool" />
 
@@ -235,6 +235,8 @@
     <param name="manager/use_optimization" value="true" type="bool" />
     <param name="manager/use_active_perception" value="true" type="bool" />
     <param name="manager/use_4degree_kinoAstar" value="false" type="bool" />
+    <param name="manager/use_apace_pose_opt" value="false" type="bool" />
+    <param name="manager/use_fvp_opt" value="true" type="bool" />
     <param name="manager/min_time" value="true" type="bool" />
 
     <!-- kinodynamic path searching -->
@@ -289,7 +291,7 @@
     <param name="optimization/ld_parallax" value="5.0" type="double" />
     <param name="optimization/ld_vertical_visibility" value="10.0" type="double" />
     <param name="optimization/ld_yaw_covisibility" value="10.0" type="double" />
-    <param name="optimization/ld_frontier_visibility_pos" value="50.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_pos" value="75.0" type="double" />
     <param name="optimization/ld_frontier_visibility_yaw" value="10.0" type="double" />
 
     <param name="optimization/dist0" value="0.7" type="double" />

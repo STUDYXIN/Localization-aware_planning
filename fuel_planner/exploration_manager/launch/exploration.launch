@@ -55,8 +55,10 @@
     <arg name="fy" value="387.229248046875" />
 
     <!-- maximum velocity and acceleration the drone will reach -->
-    <arg name="max_vel" value="1.0" />
-    <arg name="max_acc" value="0.4" />
+    <arg name="max_vel" value="0.4" />
+    <arg name="max_acc" value="0.15" />
+    <!-- <arg name="max_vel" value="1.0" />
+    <arg name="max_acc" value="0.4" /> -->
 
     <!-- ADD: maximum yaw rate the drone will reach -->
     <arg name="max_yaw_rate" value="0.6" />

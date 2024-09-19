@@ -117,6 +117,8 @@ private:
       double& convisual_angle, bool calc_grad, Eigen::Vector3d& dfvb_dq);
   void calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, const Vector3d& knots_pos, const vector<Vector3d>& features,
       double& cost, vector<Vector3d>& dcost_dq);
+  void calcFVBCostAndGradientsKnots(
+      const vector<Vector3d>& q, const Vector3d& knots_pos, double& cost, vector<Vector3d>& dcost_dq);
   // ===========
   void calcParaCostAndGradientsKnots(
       const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
@@ -254,13 +256,20 @@ public:
   }
 
   vector<Vector3d> frontier_cells_;
-  Vector3d frontier_centre_;
+  Vector3d frontier_centre_, view_point_pos_;
+  double view_point_yaw_;
+
   void setFrontierCells(const vector<Vector3d>& frontier_cells) {
     frontier_cells_ = frontier_cells;
   }
 
   void setFrontiercenter(const Vector3d& frontier_centre) {
     frontier_centre_ = frontier_centre;
+  }
+
+  void setViewpoint(const Vector3d& view_point_pos, double view_point_yaw) {
+    view_point_pos_ = view_point_pos;
+    view_point_yaw_ = view_point_yaw;
   }
 
   vector<vector<Vector3d>> observed_features_;

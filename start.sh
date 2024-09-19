@@ -42,10 +42,10 @@ GOAL_Z=2.0
 # PLY_NAME=simple_scene2.ply
 # FEATURE_NAME=simple_scene2_feature.ply
 # INIT_X=-6.0
-# INIT_Y=0.0
+# INIT_Y=1.0
 # INIT_Z=1.0
 # GOAL_X=4.5
-# GOAL_Y=3.0
+# GOAL_Y=3.5
 # GOAL_Z=3.0
 
 

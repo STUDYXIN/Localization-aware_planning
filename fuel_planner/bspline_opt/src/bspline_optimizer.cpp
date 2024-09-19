@@ -84,6 +84,8 @@ void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
 
   time_lb_ = -1;  // Not used by in most case
   frontier_centre_ = Eigen::Vector3d::Zero();
+  frontier_centre_ = Eigen::Vector3d::Zero();
+  view_point_yaw_ = 2 * M_PI;  // yaw_not_available
 }
 
 void BsplineOptimizer::setEnvironment(const EDTEnvironment::Ptr& env) {
@@ -898,7 +900,7 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
     feature_map_->getFeatures(knot_mid, features);
 
     // 对应论文第5章B节计算视差cost部分
-    // calcParaCostAndGradientsKnots(q_cur, dt, features, cost_para, dcost_para_dq);
+    calcParaCostAndGradientsKnots(q_cur, dt, features, cost_para, dcost_para_dq);
     // 对应论文第5章B节计算垂直共视性(vertical covisibility)cost部分
     calcVCVCostAndGradientsKnots(q_cur, dt, features, cost_vcv, dcost_vcv_dq);
 
@@ -906,7 +908,7 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
     cost += ld_vcv * cost_vcv;
 
     for (int j = 0; j < 4; j++) {
-      // gradient_q[i + j] += ld_para * dcost_para_dq[j];
+      gradient_q[i + j] += ld_para * dcost_para_dq[j];
       gradient_q[i + j] += ld_vcv * dcost_vcv_dq[j];
     }
   }
@@ -963,6 +965,75 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(const vector<Vector3d>& q, c
   dcost_dq[2] += dcost_dkont * (1.0 / 6.0);
 }
 
+void BsplineOptimizer::calcFVBCostAndGradientsKnots(
+    const vector<Vector3d>& q, const Vector3d& knots_pos, double& cost, vector<Vector3d>& dcost_dq) {
+  // 初始化以及一些可行性检查
+  cost = 0;
+  dcost_dq.clear();
+  for (int i = 0; i < 3; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
+
+  if (view_point_yaw_ == 2 * M_PI) {
+    // 有点丑陋的验证viewpoint有没有被初始化的方法...
+    ROS_ERROR("[BsplineOptimizer::calcFVBCostAndGradientsKnots] NO Frontiers!!!!");
+    return;
+  }
+  if (q.size() != 3) {
+    ROS_ERROR("[BsplineOptimizer::calcFVBCostAndGradientsKnots] Control points set should have exactly 3 points!");
+    return;
+  }
+  Eigen::Vector3d diff = view_point_pos_ - knots_pos;
+  double diff_norm = diff.norm();
+  if (diff_norm < 1e-6) return;
+  //求解梯度
+  Eigen::Vector3d dcost_dkont(Eigen::Vector3d::Zero());
+
+  Eigen::Vector3d diff_normalized = diff / diff_norm;
+  Eigen::Vector3d dir(std::cos(view_point_yaw_), std::sin(view_point_yaw_), 0);
+  // cost = sqrt(pow(diff_norm, 2) - diff.dot(dir));
+  // dcost_dkont = (diff - 0.5 * dir) / cost;
+  double cos_theta = diff_normalized.dot(dir);
+
+  cost = 1.0 - cos_theta;
+  if (std::abs(cos_theta) < 1.0) {
+    dcost_dkont = -(cos_theta * diff_normalized - dir) / diff_norm;
+  } else {
+    // 当 cos_theta 接近 1 或 -1 时，梯度设为零
+    dcost_dkont = Eigen::Vector3d::Zero();
+  }
+  dcost_dq[0] += dcost_dkont * (1.0 / 6.0);
+  dcost_dq[1] += dcost_dkont * (4.0 / 6.0);
+  dcost_dq[2] += dcost_dkont * (1.0 / 6.0);
+}
+
+//原本考虑的太复杂，更换方法
+// void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
+//   ros::Time start_time = ros::Time::now();
+
+//   cost = 0.0;
+//   Vector3d zero(0, 0, 0);
+//   std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+//   double cost_fvb;
+//   vector<Vector3d> dcost_dfvb_q;
+//   // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] Begin!: " << endl;
+
+//   for (size_t i = 0; i < q.size() - 2; ++i) {
+//     // 获得q_cur和knot_pos，用于对这个knot进行优化
+//     vector<Vector3d> q_cur;
+//     for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
+//     Vector3d knot_pos = (q[i + 0] + 4 * q[i + 1] + q[i + 2]) / 6;
+//     // 计算这个knot的可视特征点（一个球形范围）
+//     vector<Vector3d> features;
+//     feature_map_->getFeatures(knot_pos, features);  // 得到feature
+//     // 计算每个knot的cost和gradient
+//     calcFVBCostAndGradientsKnots(q_cur, knot_pos, features, cost_fvb, dcost_dfvb_q);
+//     // 累加cos和gradient到每一个控制点上
+//     cost += cost_fvb;
+//     for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dfvb_q[j];
+//   }
+//   // cout << "BsplineOptimizer::calcFVBCost: " << cost << endl;
+// }
+
 void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
   ros::Time start_time = ros::Time::now();
 
@@ -979,11 +1050,9 @@ void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vect
     vector<Vector3d> q_cur;
     for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
     Vector3d knot_pos = (q[i + 0] + 4 * q[i + 1] + q[i + 2]) / 6;
-    // 计算这个knot的可视特征点（一个球形范围）
-    vector<Vector3d> features;
-    feature_map_->getFeatures(knot_pos, features);  // 得到feature
     // 计算每个knot的cost和gradient
-    calcFVBCostAndGradientsKnots(q_cur, knot_pos, features, cost_fvb, dcost_dfvb_q);
+    calcFVBCostAndGradientsKnots(q_cur, knot_pos, cost_fvb, dcost_dfvb_q);
+    // cout << "cost_fvb: " << cost_fvb << endl;
     // 累加cos和gradient到每一个控制点上
     cost += cost_fvb;
     for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dfvb_q[j];

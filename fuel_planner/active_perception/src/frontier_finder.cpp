@@ -20,6 +20,9 @@
 
 #include <Eigen/Eigenvalues>
 
+using namespace std;
+using namespace Eigen;
+
 namespace fast_planner {
 FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, ros::NodeHandle& nh) {
   this->edt_env_ = edt;
@@ -147,7 +150,7 @@ void FrontierFinder::searchFrontiers() {
 
   splitLargeFrontiers(tmp_frontiers_);
 
-  //ROS_WARN_THROTTLE(5.0, "Frontier t: %lf", (ros::Time::now() - t1).toSec());
+  // ROS_WARN_THROTTLE(5.0, "Frontier t: %lf", (ros::Time::now() - t1).toSec());
 }
 
 void FrontierFinder::expandFrontier(const Eigen::Vector3i& first) {
@@ -883,7 +886,7 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
   return false;
 }
 
-int FrontierFinder::countVisibleCells(const Eigen::Vector3d& pos, const double& yaw, const vector<Eigen::Vector3d>& cluster) {
+int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
   percep_utils_->setPose(pos, yaw);
   int visib_num = 0;
   Eigen::Vector3i idx;
@@ -903,6 +906,29 @@ int FrontierFinder::countVisibleCells(const Eigen::Vector3d& pos, const double& 
     if (visib) visib_num++;
   }
   return visib_num;
+}
+
+void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res) {
+
+  percep_utils_->setPose(pos, yaw);
+  Eigen::Vector3i idx;
+  for (int i = 0; i < static_cast<int>(cluster.size()); i++) {
+    const auto& cell = cluster[i];
+    // Check if frontier cell is inside FOV
+    if (!percep_utils_->insideFOV(cell)) continue;
+
+    // Check if frontier cell is visible (not occulded by obstacles)
+    raycaster_->input(cell, pos);
+    bool visib = true;
+    while (raycaster_->nextId(idx)) {
+      if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+        visib = false;
+        break;
+      }
+    }
+
+    if (visib) res.emplace(i);
+  }
 }
 
 void FrontierFinder::downsample(const vector<Eigen::Vector3d>& cluster_in, vector<Eigen::Vector3d>& cluster_out) {

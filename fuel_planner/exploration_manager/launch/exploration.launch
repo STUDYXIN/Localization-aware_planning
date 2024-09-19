@@ -55,14 +55,17 @@
     <arg name="fy" value="387.229248046875" />
 
     <!-- maximum velocity and acceleration the drone will reach -->
-    <arg name="max_vel" value="0.5" />
-    <arg name="max_acc" value="0.2" />
+    <arg name="max_vel" value="1.0" />
+    <arg name="max_acc" value="0.4" />
+
+    <!-- ADD: maximum yaw rate the drone will reach -->
+    <arg name="max_yaw_rate" value="0.6" />
 
     <arg name="min_feature_num_act" value="10" />
     <arg name="min_covisible_feature_num_act" value="6" />
 
     <arg name="min_feature_num_plan" value="15" />
-    <arg name="min_covisible_feature_num_plan" value="12" />
+    <arg name="min_covisible_feature_num_plan" value="10" />
 
     <!-- 1: use 2D Nav Goal to select goal  -->
     <!-- 2: use global waypoints below  -->

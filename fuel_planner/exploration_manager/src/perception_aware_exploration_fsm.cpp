@@ -42,7 +42,6 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   expl_manager_->initialize(nh);
 
   planner_manager_ = expl_manager_->planner_manager_;
-  planner_manager_->setExternelParam();
 
   visualization_.reset(new PlanningVisualization(nh));
 
@@ -172,7 +171,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // cout << "debug enter PUB_TRAJ" << endl;
       double dt = (ros::Time::now() - newest_traj_.start_time).toSec();
       // cout << "pub traj dt: " << dt << endl;
-      last_traj = planner_manager_->local_data_;  //保存上一段轨迹
+      last_traj = planner_manager_->local_data_;  // 保存上一段轨迹
       if (dt > 0) {
         bspline_pub_.publish(newest_traj_);
         static_state_ = false;
@@ -194,7 +193,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       double time_to_end = info->duration_ - t_cur;
       // cout << " debug time2end: " << time_to_end << endl;
       if (time_to_end < fp_->replan_thresh1_) {
-        cout << "goal dist: " << (odom_pos_ - final_goal_).norm() << endl;
 
         if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
           ROS_ERROR("Invalid next goal type!!!");
@@ -215,12 +213,14 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         }
         return;
       }
+
       // Replan if next frontier to be visited is covered
       if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
         ROS_WARN("Replan: cluster covered=====================================");
         return;
       }
+
       // Replan after some time
       if (do_replan_ && t_cur > fp_->replan_thresh3_) {
         transitState(REPLAN, "FSM");
@@ -234,7 +234,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // 为了防止后端轨迹规划失败，planner_manager_->local_data_的数据被更新，这里需要使用保存的上一个轨迹！！！！
       // 禁止从静止状态直接跳到REPLAN！REPLAN使用的是last_traj，在 PUB_TRAJ 中赋值~~~~~
       double t_r = (ros::Time::now() - last_traj.start_time_).toSec() + fp_->replan_time_;
-      if (!do_replan_) {  //采用静态
+      if (!do_replan_) {  // 采用静态
         start_pos_ = odom_pos_;
         start_vel_ = odom_vel_;
         start_acc_.setZero();
@@ -247,14 +247,14 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         start_yaw_(0) = last_traj.yaw_traj_.evaluateDeBoorT(t_r)[0];
         start_yaw_(1) = last_traj.yawdot_traj_.evaluateDeBoorT(t_r)[0];
         start_yaw_(2) = last_traj.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
-      } else {  //上一段轨迹都执行完了，已经不知道无人机跑哪里去了，或者无人机速度已经很小了，直接从当前状态执行
+      } else {  // 上一段轨迹都执行完了，已经不知道无人机跑哪里去了，或者无人机速度已经很小了，直接从当前状态执行
         ROS_ERROR("t_r is too high=================================");
         static_state_ = true;
         transitState(START_IN_STATIC, "FSM");
         break;
       }
 
-      replan_pub_.publish(std_msgs::Empty());  //发布的时候无人机过一段时间会停下来，这一点没有必要，在traj_server里稍做修改
+      replan_pub_.publish(std_msgs::Empty());  // 发布的时候无人机过一段时间会停下来，这一点没有必要，在traj_server里稍做修改
       next_goal_ = callExplorationPlanner();
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         size_t idx = gains_[best_frontier_id].first;
@@ -413,11 +413,11 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
     is_best_viewpoint_searched = expl_manager_->findJunction(ed->path_next_goal_, best_viewpoint.pos_, best_viewpoint.yaw_);
     // cout << "[astar] pa->getBestViewpointinPath()" << endl;
     if (is_best_viewpoint_searched)
-      vector_ref = (best_viewpoint.pos_ - odom_pos_).normalized();  //这一步是计算当前位置到A给出的位置的向量
+      vector_ref = (best_viewpoint.pos_ - odom_pos_).normalized();  // 这一步是计算当前位置到A给出的位置的向量
   }
   visualization_->drawAstar(ed->path_next_goal_, best_viewpoint.pos_, best_viewpoint.yaw_, is_best_viewpoint_searched);
 
-  //计算各个Viewpoint的增益，并排序============================
+  // 计算各个Viewpoint的增益，并排序============================
   const double dg = (final_goal_ - odom_pos_).norm();
   gains_.clear();
   for (size_t i = 0; i < ed->points_.size(); ++i) {
@@ -436,11 +436,11 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   std::sort(gains_.begin(), gains_.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
   // cout << "[frontierCallback] end sort" << endl;
 
-  //排序完成============================
-  //绘制当前frontier,所有的用同一颜色表示，若不输入颜色，则按照原来的颜色分布
-  // visualization_->drawFrontiersViewpointNow(ed->frontiers_, ed->points_, ed->yaws_, false, gains_);
+  // 排序完成============================
+  // 绘制当前frontier,所有的用同一颜色表示，若不输入颜色，则按照原来的颜色分布
+  //  visualization_->drawFrontiersViewpointNow(ed->frontiers_, ed->points_, ed->yaws_, false, gains_);
   visualization_->drawFrontiersViewpointNow(ed->frontiers_, ed->points_, ed->yaws_, true, gains_);
-  //绘制排序之后的结果，给每个frontier上面显示分数
+  // 绘制排序之后的结果，给每个frontier上面显示分数
   visualization_->drawScoreforFrontiers(ed->averages_, gains_);
   // ROS_WARN("[PAExplorationFSM::frontierCallback] frontier_debug_end-------------------------------------");
 
@@ -532,7 +532,7 @@ void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string
   int pre_s = int(exec_state_);
   exec_state_ = new_state;
   cout << "[" + pos_call + "]: from " + state_str_[pre_s] + " to " + state_str_[int(new_state)] << endl;
-  //如果是转向replan，把一些累加值置0
+  // 如果是转向replan，把一些累加值置0
   if (new_state == REPLAN) {
     best_frontier_id = 0;
     search_times = 0;

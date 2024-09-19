@@ -14,19 +14,29 @@ using Eigen::Vector3d;
 namespace fast_planner {
 
 struct GlobalParam {
+  // 与定位约束相关
   int min_feature_num_act_;
   int min_covisible_feature_num_act_;
   int min_feature_num_plan_;
   int min_covisible_feature_num_plan_;
+
+  // 规划过程动力学约束
+  double max_vel_;
+  double max_acc_;
+  double max_yaw_rate_;
 };
 
 class Utils {
 public:
   static void initialize(ros::NodeHandle& nh) {
-    nh.param("global/min_feature_num_act", param_g_.min_feature_num_act_, 5);
-    nh.param("global/min_covisible_feature_num_act", param_g_.min_covisible_feature_num_act_, 5);
-    nh.param("global/min_feature_num_plan", param_g_.min_feature_num_plan_, 5);
-    nh.param("global/min_covisible_feature_num_plan", param_g_.min_covisible_feature_num_plan_, 5);
+    nh.param("global/min_feature_num_act", param_g_.min_feature_num_act_, -1);
+    nh.param("global/min_covisible_feature_num_act", param_g_.min_covisible_feature_num_act_, -1);
+    nh.param("global/min_feature_num_plan", param_g_.min_feature_num_plan_, -1);
+    nh.param("global/min_covisible_feature_num_plan", param_g_.min_covisible_feature_num_plan_, -1);
+
+    nh.param("global/max_vel", param_g_.max_vel_, -1.0);
+    nh.param("global/max_acc", param_g_.max_acc_, -1.0);
+    nh.param("global/max_yaw_rate", param_g_.max_yaw_rate_, -1.0);
 
     // std::cout << "param_g_.min_feature_num_act_: " << param_g_.min_feature_num_act_ << std::endl;
     // std::cout << "param_g_.min_covisible_feature_num_act_: " << param_g_.min_covisible_feature_num_act_ << std::endl;

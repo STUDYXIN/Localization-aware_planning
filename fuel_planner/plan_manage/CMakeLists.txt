@@ -40,9 +40,9 @@ include_directories(
 
 add_library(plan_manage 
   src/perception_aware_planner_manager.cpp
-  src/yaw_graph_utils.cpp
-  #src/yaw_initial_planner.cpp
-  src/yaw_initial_planner_new.cpp
+  #src/yaw_graph_utils.cpp
+  src/yaw_initial_planner.cpp
+  #src/yaw_initial_planner_new.cpp
   )
 target_link_libraries(plan_manage ${catkin_LIBRARIES})
 

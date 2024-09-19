@@ -127,7 +127,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       start_yaw_(0) = odom_yaw_;
 
       // Inform traj_server the replanning
-      replan_pub_.publish(std_msgs::Empty());
+      if (best_frontier_id == 0) replan_pub_.publish(std_msgs::Empty());
 
       next_goal_ = callExplorationPlanner();
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
@@ -253,8 +253,8 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         transitState(START_IN_STATIC, "FSM");
         break;
       }
-
-      replan_pub_.publish(std_msgs::Empty());  // 发布的时候无人机过一段时间会停下来，这一点没有必要，在traj_server里稍做修改
+      if (best_frontier_id == 0)
+        replan_pub_.publish(std_msgs::Empty());  // 发布的时候无人机过一段时间会停下来，这一点没有必要，在traj_server里稍做修改
       next_goal_ = callExplorationPlanner();
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         size_t idx = gains_[best_frontier_id].first;
@@ -380,12 +380,13 @@ void PAExplorationFSM::visualize() {
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
-  // auto start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::high_resolution_clock::now();
   // 初始化
   static int delay = 0;
   if (++delay < 5) {
     return;
   }
+  // cout << "[frontierCallback] search begin!!" << endl;
   auto ft = expl_manager_->frontier_finder_;
   auto ed = expl_manager_->ed_;
   auto pa = expl_manager_->planner_manager_->path_finder_;
@@ -399,7 +400,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
       odom_pos_, ed->points_, ed->yaws_, ed->averages_, ed->visb_num_, ed->frontier_cells_, ed->frontier_ids_);
 
   if (ed->points_.size() == 0) return;
-
+  // cout << "[frontierCallback] search success!!" << endl;
   // 使用A*算法搜索一个的点，这个点是这条路径上靠近终点且在free区域的最后一个点，并被后面viewpoint计算提供其中一项
   pa->reset();
   Viewpoint best_viewpoint;
@@ -422,7 +423,8 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   gains_.clear();
   for (size_t i = 0; i < ed->points_.size(); ++i) {
     double visb_score = static_cast<double>(ed->visb_num_[i]) / static_cast<double>(ep->visb_max);
-    double goal_score = (dg - (final_goal_ - ed->points_[i]).norm()) / dg;
+    double goal_score = 0;
+    if (dg > 1e-2) double goal_score = (dg - (final_goal_ - ed->points_[i]).norm()) / dg;
     double feature_score = static_cast<double>(expl_manager_->feature_map_->get_NumCloud_using_justpos(ed->points_[i])) /
                            static_cast<double>(ep->feature_num_max);
     double motioncons_score = 0;
@@ -450,9 +452,9 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   //   double length = (ed->points_[idx] - last_used_viewpoint_pos).norm();
   //   if (length > fp_->replan_thresh_replan_viewpoint_length_) transitState(REPLAN, "FSM");
   // }
-  // auto end = std::chrono::high_resolution_clock::now();
-  // std::chrono::duration<double> elapsed = end - start;
-  // // 输出持续时间（以毫秒为单位）
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = end - start;
+  // 输出持续时间（以毫秒为单位）
   // ROS_INFO_STREAM("[PAExplorationFSM::frontierCallback]  elapsed time: " << elapsed.count() << " seconds.");
 }
 

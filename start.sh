@@ -17,14 +17,14 @@ SETUP_DIR=$(dirname "${SETUP_FILE}")
 
 
 # 第二个地图的参数
-# PLY_NAME=forest_sample5.ply
-# FEATURE_NAME=forest_feature_703.ply
-# INIT_X=-13.0
-# INIT_Y=13.0
-# INIT_Z=1.0
-# GOAL_X=10.0
-# GOAL_Y=-10.0
-# GOAL_Z=2.0
+PLY_NAME=forest_sample5.ply
+FEATURE_NAME=forest_feature_703.ply
+INIT_X=-13.0
+INIT_Y=13.0
+INIT_Z=1.0
+GOAL_X=10.0
+GOAL_Y=-10.0
+GOAL_Z=2.0
 
 
 # 第三个地图的参数
@@ -39,14 +39,14 @@ SETUP_DIR=$(dirname "${SETUP_FILE}")
 
 
 # 第四个地图的参数
-PLY_NAME=simple_scene2.ply
-FEATURE_NAME=simple_scene2_feature.ply
-INIT_X=-6.0
-INIT_Y=0.0
-INIT_Z=1.0
-GOAL_X=4.5
-GOAL_Y=3.0
-GOAL_Z=3.0
+# PLY_NAME=simple_scene2.ply
+# FEATURE_NAME=simple_scene2_feature.ply
+# INIT_X=-6.0
+# INIT_Y=0.0
+# INIT_Z=1.0
+# GOAL_X=4.5
+# GOAL_Y=3.0
+# GOAL_Z=3.0
 
 
 echo "setup.bash is located in: ${SETUP_DIR}"

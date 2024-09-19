@@ -43,6 +43,8 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, ros::NodeHandle& 
   nh.param("frontier/down_sample", down_sample_, -1);
   nh.param("frontier/min_visib_num", min_visib_num_, -1);
   nh.param("frontier/min_view_finish_fraction", min_view_finish_fraction_, -1.0);
+  nh.param("frontier/z_sample_max_length", z_sample_max_length_, -1.0);
+  nh.param("frontier/z_sample_num", z_sample_num_, -1);
 
   raycaster_.reset(new RayCaster);
   resolution_ = edt_env_->sdf_map_->getResolution();
@@ -74,6 +76,8 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
   nh.param("frontier/min_view_finish_fraction", min_view_finish_fraction_, -1.0);
   nh.param("frontier/min_view_feature_num_of_viewpoint", min_view_feature_num_of_viewpoint, -1);
   nh.param("frontier/feature_sample_dphi", feature_sample_dphi, -1.0);
+  nh.param("frontier/z_sample_max_length", z_sample_max_length_, -1.0);
+  nh.param("frontier/z_sample_num", z_sample_num_, -1);
 
   raycaster_.reset(new RayCaster);
   resolution_ = edt_env_->sdf_map_->getResolution();
@@ -762,47 +766,38 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
   for (double phi = -M_PI; phi < M_PI; phi += feature_sample_dphi) {
     sample_yaw.push_back(phi);
   }
-
+  auto& cells = frontier.filtered_cells_;
+  //三层循环看着很吓人，但数量级基本上是5*5*60 = 1500 其实可以接受
   for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_; rc <= candidate_rmax_ + 1e-3;
        rc += dr)
-    for (double phi = -M_PI; phi < M_PI; phi += candidate_dphi_) {
-      const Vector3d sample_pos = frontier.average_ + rc * Vector3d(cos(phi), sin(phi), 0);
+    for (double z = frontier.average_.z() - z_sample_max_length_; z <= frontier.average_.z() + z_sample_max_length_ + 1e-3;
+         z += 2 * z_sample_max_length_ / z_sample_num_)
+      for (double phi = -M_PI; phi < M_PI; phi += candidate_dphi_) {
+        Vector3d sample_pos = frontier.average_ + rc * Vector3d(cos(phi), sin(phi), 0);
+        sample_pos.z() = z;  //多一个采样项
 
-      // Qualified viewpoint is in bounding box and in safe region
-      if (!edt_env_->sdf_map_->isInBox(sample_pos) || edt_env_->sdf_map_->getInflateOccupancy(sample_pos) == 1 ||
-          isNearUnknown(sample_pos))
-        continue;
-
-      // Compute average yaw
-      auto& cells = frontier.filtered_cells_;
-      // ROS_ERROR("[FrontierFinder::sampleBetterViewpoints] filtered_cells_size: %zu", cells.size());
-      // Eigen::Vector3d ref_dir = (cells.front() - sample_pos).normalized();
-      // double avg_yaw = 0.0;
-      // for (int i = 1; i < cells.size(); ++i) {
-      //   Eigen::Vector3d dir = (cells[i] - sample_pos).normalized();
-      //   double yaw = acos(dir.dot(ref_dir));
-      //   if (ref_dir.cross(dir)[2] < 0) yaw = -yaw;
-      //   avg_yaw += yaw;
-      // }
-      // avg_yaw = avg_yaw / cells.size() + atan2(ref_dir[1], ref_dir[0]);
-      vector<int> features_num_perYaw;
-      feature_map_->get_YawRange_using_Pos(sample_pos, sample_yaw, features_num_perYaw);
-      double feature_yaw;
-      int useful_yaw_count = 0;
-      // cout << "[FrontierFinder::sampleBetterViewpoints] yaw: ";
-      for (size_t i = 0; i < features_num_perYaw.size(); ++i) {
-        // cout << " i: " << i << " yaw: " << features_num_perYaw[i];
-        if (features_num_perYaw[i] < min_view_feature_num_of_viewpoint) continue;
-        feature_yaw = sample_yaw[i];
-        wrapYaw(feature_yaw);
-        int visib_num = countVisibleCells(sample_pos, feature_yaw, cells);
-        if (visib_num > min_visib_num_) {
-          Viewpoint vp = { sample_pos, feature_yaw, visib_num };
-          frontier.viewpoints_.push_back(vp);
+        // Qualified viewpoint is in bounding box and in safe region
+        if (!edt_env_->sdf_map_->isInBox(sample_pos) || edt_env_->sdf_map_->getInflateOccupancy(sample_pos) == 1 ||
+            isNearUnknown(sample_pos))
+          continue;
+        vector<int> features_num_perYaw;
+        feature_map_->get_YawRange_using_Pos(sample_pos, sample_yaw, features_num_perYaw);
+        double feature_yaw;
+        int useful_yaw_count = 0;
+        // cout << "[FrontierFinder::sampleBetterViewpoints] yaw: ";
+        for (size_t i = 0; i < features_num_perYaw.size(); ++i) {
+          // cout << " i: " << i << " yaw: " << features_num_perYaw[i];
+          if (features_num_perYaw[i] < min_view_feature_num_of_viewpoint) continue;
+          feature_yaw = sample_yaw[i];
+          wrapYaw(feature_yaw);
+          int visib_num = countVisibleCells(sample_pos, feature_yaw, cells);
+          if (visib_num > min_visib_num_) {
+            Viewpoint vp = { sample_pos, feature_yaw, visib_num };
+            frontier.viewpoints_.push_back(vp);
+          }
+          // }
         }
-        // }
       }
-    }
 }
 
 bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector<Vector3d>& path) {
@@ -832,9 +827,9 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
       feature_map_->get_YawRange_using_Pos(input_pos, sample_yaw_near_input, features_num_perYaw);
       double feature_yaw;
       int useful_yaw_count = 0;
-      for (size_t i = 0; i < features_num_perYaw.size(); ++i) {
-        if (features_num_perYaw[i] < min_view_feature_num_of_viewpoint) continue;
-        feature_yaw = sample_yaw_near_input[i];
+      for (size_t j = 0; j < features_num_perYaw.size(); ++j) {
+        if (features_num_perYaw[j] < min_view_feature_num_of_viewpoint) continue;
+        feature_yaw = sample_yaw_near_input[j];
         int visib_num = getVisibleFrontiersNum(input_pos, feature_yaw);
         if (visib_num > min_visib_num_) {
           Viewpoint output_viewpoint = { input_pos, feature_yaw, visib_num };

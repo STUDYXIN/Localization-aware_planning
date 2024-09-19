@@ -171,7 +171,7 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
       displaySphereList(empty_vector_Vector3d, 0.15, color, UNREACHABLE_VIEWPOINT + i % 100);
       drawLines(empty_vector_Vector3d, 0.05, color, "viewpoint_vectoer_line", UNREACHABLE_VIEWPOINT + i % 100, 1);
       displayText(show_text_pos, text, color, 0.3, UNREACHABLE_VIEWPOINT + i % 100, 7);
-      drawGeometricPath(empty_vector_Vector3d, 0.05, color, UNREACHABLE_VIEWPOINT + i % 100);
+      drawGeometricPath(empty_vector_Vector3d, 0.05, color, UNREACHABLE_KINOASTAR + i % 100);
     }
     last_max = 0;
   }
@@ -190,7 +190,8 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
   ss << std::fixed << std::setprecision(2) << gain;
   std::string text = "id: " + std::to_string(UnreachableID) + " score: " + ss.str();
   displayText(show_text_pos, text, color, 0.3, UNREACHABLE_VIEWPOINT + UnreachableID % 100, 7);
-  displaySphereList(fail_pos_traj, 0.05, color, UNREACHABLE_KINOASTAR + UnreachableID % 100);
+  // displaySphereList(fail_pos_traj, 0.05, color, UNREACHABLE_KINOASTAR + UnreachableID % 100);
+  drawGeometricPath(fail_pos_traj, 0.05, color, UNREACHABLE_KINOASTAR + UnreachableID % 100);
   last_max++;
 }
 

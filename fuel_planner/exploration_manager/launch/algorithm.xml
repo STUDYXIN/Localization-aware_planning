@@ -55,11 +55,9 @@
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
-    <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)"
-      type="int" />
+    <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" type="int" />
     <param name="global/min_feature_num_plan" value="$(arg min_feature_num_plan)" type="int" />
-    <param name="global/min_covisible_feature_num_plan"
-      value="$(arg min_covisible_feature_num_plan)" type="int" />
+    <param name="global/min_covisible_feature_num_plan" value="$(arg min_covisible_feature_num_plan)" type="int" />
 
     <param name="global/max_vel" value="$(arg max_vel)" type="double" />
     <param name="global/max_acc" value="$(arg max_acc)" type="double" />
@@ -128,7 +126,7 @@
     <!-- Fsm -->
     <param name="fsm/thresh_replan1" value="0.5" type="double" />
     <param name="fsm/thresh_replan2" value="0.5" type="double" />
-    <param name="fsm/thresh_replan3" value="3.0" type="double" />
+    <param name="fsm/thresh_replan3" value="2.0" type="double" />
     <param name="fsm/thresh_replan_viewpoint_length" value="0.8" type="double" />
     <param name="fsm/do_replan" value="true" type="bool" />
 
@@ -184,14 +182,17 @@
     <param name="frontier/min_candidate_dist" value="0.75" type="double" />
     <param name="frontier/min_candidate_clearance" value="0.21" type="double" />
     <param name="frontier/candidate_dphi" value="$(eval 15 * 3.1415926 / 180.0)" type="double" />
-    <param name="frontier/candidate_rnum" value="10" type="int" />
+    <param name="frontier/candidate_rnum" value="5" type="int" />
     <param name="frontier/candidate_rmin" value="0.5" type="double" />
     <param name="frontier/candidate_rmax" value="1.5" type="double" />
+    <!-- 上下z_sample_max_length的长度采样-->
+    <param name="frontier/z_sample_max_length" value="1.0" type="double" />
+    <param name="frontier/z_sample_num" value="5" type="int" />
     <param name="frontier/down_sample" value="3" type="int" />
     <param name="frontier/min_visib_num" value="15" type="int" />
     <param name="frontier/min_view_finish_fraction" value="0.2" type="double" />
     <param name="frontier/min_view_feature_num_of_viewpoint" value="$(arg min_covisible_feature_num_plan)" type="int" />
-    <param name="frontier/feature_sample_dphi" value="$(eval 5 * 3.1415926 / 180.0)" type="double" />
+    <param name="frontier/feature_sample_dphi" value="$(eval 15 * 3.1415926 / 180.0)" type="double" />
 
     <!-- Perception utils -->
     <param name="perception_utils/top_angle" value="0.56125" type="double" />
@@ -307,12 +308,10 @@
     <param name="optimization/max_iteration_time4" value="0.003" type="double" />
 
     <param name="optimization/parallax/estimator_freq" value="10.0" type="double" />
-    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)"
-      type="double" />
+    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/parallax/pot_a" value="20.0" type="double" />
 
-    <param name="optimization/max_feature_and_frontier_convisual_angle"
-      value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/min_covisible_feature_cost_" value="-30.0" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />

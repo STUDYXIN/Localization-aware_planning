@@ -37,6 +37,8 @@ public:
   double feature_visual_max;
   double wider_fov_horizontal;
   double wider_fov_vertical;
+  double quarter_fov_horizontal_rad;
+  double quarter_fov_vertical_rad;
   Eigen::Matrix4d sensor2body;
 
   void init(ros::NodeHandle& nh) {
@@ -65,11 +67,13 @@ public:
     }
     fov_horizontal = 2 * atan(width / (2 * fx)) * 180 / M_PI;
     fov_vertical = 2 * atan(height / (2 * fy)) * 180 / M_PI;
+    quarter_fov_vertical_rad = (fov_vertical / 2.0) * (M_PI / 180.0) / 2.0;  //只取正常FOV的一半，防止极端情况
+    quarter_fov_horizontal_rad = (fov_horizontal / 2.0) * (M_PI / 180.0) / 2.0;
     printParameters();
   }
 
   void printParameters() {
-    std::cout << "Camera Parameters:" << std::endl;
+    std::cout << "------------------Camera Parameters------------------:" << std::endl;
     std::cout << "cx: " << cx << std::endl;
     std::cout << "cy: " << cy << std::endl;
     std::cout << "fx: " << fx << std::endl;
@@ -82,6 +86,9 @@ public:
     std::cout << "Wider FOV Vertical: " << wider_fov_vertical << std::endl;
     std::cout << "Feature Visual Max: " << feature_visual_max << std::endl;
     std::cout << "Feature Visual Min: " << feature_visual_min << std::endl;
+    std::cout << "Half FOV Horizontal Rad: " << quarter_fov_horizontal_rad << std::endl;
+    std::cout << "Half FOV Vertical Rad: " << quarter_fov_vertical_rad << std::endl;
+    std::cout << "-----------------------------------------------------:" << std::endl;
   }
 
   bool is_in_wider_FOV(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p, const Eigen::Quaterniond& camera_q) {
@@ -114,13 +121,27 @@ public:
     return (target_p - camera_p).norm() > feature_visual_min && (target_p - camera_p).norm() < feature_visual_max;
   }
 
+  bool is_depth_useful_at_level(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
+    if ((target_p - camera_p).norm() < feature_visual_min && (target_p - camera_p).norm() > feature_visual_max)
+      return false;  //在球形之外
+    Eigen::Vector3d direction = target_p - camera_p;
+    // 计算方向向量在水平平面（x-y 平面）上的投影,并计算夹角
+    Eigen::Vector3d horizontal_projection = direction;
+    horizontal_projection.z() = 0;
+    double angle = std::atan2(std::abs(direction.z()), horizontal_projection.norm());
+    if (angle > quarter_fov_vertical_rad) return false;  //在水平区之外，即与x-y 平面夹角大于quarter_fov_vertical_rad
+    return true;
+  }
+
   // 计算从 camera_p 看向 target_p 的可行 yaw 范围
   Eigen::Vector2d calculateYawRange(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
     Eigen::Vector2d relative_position_xy(target_p.x() - camera_p.x(), target_p.y() - camera_p.y());
     double yaw_angle = atan2(relative_position_xy.y(), relative_position_xy.x());
-    double half_fov = fov_horizontal * M_PI / 180.0 / 2.0;
-    double min_yaw = yaw_angle - half_fov;
-    double max_yaw = yaw_angle + half_fov;
+    // double half_fov = fov_horizontal * M_PI / 180.0 / 2.0;
+    // double min_yaw = yaw_angle - half_fov;
+    // double max_yaw = yaw_angle + half_fov;
+    double min_yaw = yaw_angle - quarter_fov_horizontal_rad;
+    double max_yaw = yaw_angle + quarter_fov_horizontal_rad;
     while (min_yaw < -M_PI) {
       min_yaw += 2 * M_PI;
     }

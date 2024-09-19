@@ -476,7 +476,7 @@ void FeatureMap::get_YawRange_using_Pos(
   // cout << " [FeatureMap::get_YawRange_using_Pos] debug yaw_range";
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
-    if (camera_param.is_depth_useful(pos_transformed, f) &&
+    if (camera_param.is_depth_useful_at_level(pos_transformed, f) &&
         !sdf_map->checkObstacleBetweenPoints(
             pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
     {

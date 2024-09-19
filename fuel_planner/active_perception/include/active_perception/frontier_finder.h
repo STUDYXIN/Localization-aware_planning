@@ -141,8 +141,8 @@ public:
   double candidate_rmax_, candidate_rmin_, candidate_dphi_, min_candidate_dist_, min_candidate_clearance_, feature_sample_dphi;
   int down_sample_, min_view_feature_num_of_viewpoint;
   bool using_feature_threshold_compute_viewpoint;
-  double min_view_finish_fraction_, resolution_;
-  int min_visib_num_, candidate_rnum_;
+  double min_view_finish_fraction_, resolution_, z_sample_max_length_;
+  int min_visib_num_, candidate_rnum_, z_sample_num_;
 
   // Utils
   shared_ptr<EDTEnvironment> edt_env_;

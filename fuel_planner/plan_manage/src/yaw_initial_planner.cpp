@@ -258,7 +258,7 @@ bool YawInitialPlanner::search(const double start_yaw, const double end_yaw, con
       }
 
       if (add_edge_num == 0) {
-        ROS_ERROR("[yaw initial planner]: Fail to build graph");
+        ROS_ERROR("[yaw initial planner]: Fail to build graph %zu/%zu", i, num_layers);
         return false;  // 中间有断裂的层，search失败
       }
     }

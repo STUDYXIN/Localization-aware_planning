@@ -12,6 +12,18 @@ using std::string;
 using std::vector;
 
 namespace fast_planner {
+
+enum VIEWPOINT_CHANGE_REASON {
+  NO_NEED_CHANGE,
+  PATH_SEARCH_FAIL,
+  POSITION_OPT_FAIL,
+  YAW_INIT_FAIL,
+  YAW_OPT_FAIL,
+  LOCABILITY_CHECK_FAIL,
+  EXPLORABILITI_CHECK_FAIL,
+  COLLISION_CHECK_FAIL
+};
+
 struct FSMData {
   // FSM data
   bool trigger_, have_odom_, static_state_;
@@ -75,6 +87,10 @@ struct ExplorationData {
   // vector<Vector4d> views_;
   vector<Vector3d> views_vis1_, views_vis2_;
   vector<Vector3d> centers_, scales_;
+
+  Vector3d point_now;
+  double yaw_now;
+  vector<Vector3d> frontier_now;
 };
 
 struct ExplorationParam {

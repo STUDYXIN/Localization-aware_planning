@@ -59,7 +59,7 @@ echo Rviz; \
 roslaunch exploration_manager rviz.launch; exec bash"
 
 # 加载点云文件
-sleep 1s
+sleep 1.5s
 gnome-terminal --tab -- bash -c "\
 echo PCL; \
 roslaunch map_publisher map_publisher.launch file_name:=${PLY_NAME}; exec bash"

@@ -8,6 +8,7 @@
 #include <ros/ros.h>
 
 using Eigen::Matrix3d;
+using Eigen::Matrix4d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 
@@ -107,6 +108,17 @@ public:
     bool within_horizontal_fov = std::abs(fov_x) <= fov_horizontal / 2.0;
     bool within_vertical_fov = std::abs(fov_y) <= fov_vertical / 2.0;
     return within_horizontal_fov && within_vertical_fov;
+  }
+
+  void fromOdom2Camera(const Eigen::Vector3d& odom_pos, const Eigen::Quaterniond& odom_orient, Eigen::Vector3d& camera_pose,
+      Eigen::Quaterniond& camera_orient) {
+    Matrix4d Pose4d_receive = Matrix4d::Identity();
+    Pose4d_receive.block<3, 3>(0, 0) = odom_orient.toRotationMatrix();
+    Pose4d_receive.block<3, 1>(0, 3) = odom_pos;
+    Matrix4d camera_Pose4d = Pose4d_receive * sensor2body;
+    camera_pose = camera_Pose4d.block<3, 1>(0, 3);
+    Eigen::Matrix3d cam_rot_matrix = camera_Pose4d.block<3, 3>(0, 0);
+    camera_orient = Eigen::Quaterniond(cam_rot_matrix);
   }
 
   bool is_depth_useful(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {

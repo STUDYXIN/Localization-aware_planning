@@ -822,7 +822,7 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBsplin
   double pos_duration = pos.getTimeSum();
   double yaw_duration = yaw.getTimeSum();
   if (pos_duration != yaw_duration) {
-    ROS_ERROR("[PlanningVisualization::drawYawTraj] pos_duration: .4f != yaw_duration .4f !!!!!!", pos_duration, yaw_duration);
+    ROS_ERROR("[PlanningVisualization::drawYawTraj] pos_duration: %.4f != yaw_duration %.4f !!!!!!", pos_duration, yaw_duration);
     return;
   }
   // ROS_ASSERT(pos_duration == yaw_duration);

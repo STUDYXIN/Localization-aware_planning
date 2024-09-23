@@ -1,12 +1,14 @@
 #ifndef _FRONTIER_FINDER_H_
 #define _FRONTIER_FINDER_H_
 
+#include "plan_env/utils.hpp"
 #include <ros/ros.h>
 
 #include <Eigen/Eigen>
 #include <list>
 #include <memory>
 #include <utility>
+#include <iostream>
 #include <vector>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_types.h>
@@ -25,6 +27,7 @@ namespace fast_planner {
 class EDTEnvironment;
 class PerceptionUtils;
 class FeatureMap;
+class CameraParam;
 // Viewpoint to cover a frontier cluster
 struct Viewpoint {
   // Position
@@ -236,6 +239,7 @@ public:
   shared_ptr<EDTEnvironment> edt_env_;
   unique_ptr<RayCaster> raycaster_;
   shared_ptr<FeatureMap> feature_map_;
+  CameraParam::Ptr camera_param_ptr = nullptr;
 };
 
 }  // namespace fast_planner

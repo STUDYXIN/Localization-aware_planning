@@ -52,6 +52,13 @@
   <arg name="point3_y" />
   <arg name="point3_z" />
 
+  <arg name="do_replan" />
+  <arg name="replan_time" />
+  <arg name="thresh_replan1" />
+  <arg name="thresh_replan2" />
+  <arg name="thresh_replan3" />
+
+
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
@@ -124,12 +131,12 @@
     <param name="map_ros/frame_id" value="world" />
 
     <!-- Fsm -->
-    <param name="fsm/thresh_replan1" value="0.5" type="double" />
-    <param name="fsm/thresh_replan2" value="1.5" type="double" />
-    <param name="fsm/thresh_replan3" value="4.0" type="double" />
+    <param name="fsm/thresh_replan1" value="$(arg thresh_replan1)" type="double" />
+    <param name="fsm/thresh_replan2" value="$(arg thresh_replan2)" type="double" />
+    <param name="fsm/thresh_replan3" value="$(arg thresh_replan3)" type="double" />
     <param name="fsm/thresh_replan_viewpoint_length" value="0.8" type="double" />
-    <param name="fsm/do_replan" value="true" type="bool" />
-    <param name="fsm/replan_time" value="0.2" type="double" />
+    <param name="fsm/do_replan" value="$(arg do_replan)" type="bool" />
+    <param name="fsm/replan_time" value="$(arg replan_time)" type="double" />
     <!-- param for rechoose viewpoint -->
     <param name="fsm/draw_line2feature" value="false" type="bool" />
     <param name="fsm/one_viewpoint_max_searchtimes" value="2" type="int" />

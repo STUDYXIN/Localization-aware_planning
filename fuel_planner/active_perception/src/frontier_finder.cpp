@@ -19,6 +19,7 @@
 #include <pcl/filters/voxel_grid.h>
 
 #include <Eigen/Eigenvalues>
+#include <Eigen/Geometry>
 
 using namespace std;
 using namespace Eigen;
@@ -51,7 +52,7 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, ros::NodeHandle& 
   Eigen::Vector3d origin, size;
   edt_env_->sdf_map_->getRegion(origin, size);
   raycaster_->setParams(resolution_, origin);
-  percep_utils_.reset(new PerceptionUtils(nh));
+  // percep_utils_.reset(new PerceptionUtils(nh));
 }
 
 FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap::Ptr& fea, ros::NodeHandle& nh) {
@@ -91,7 +92,9 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
   Eigen::Vector3d origin, size;
   edt_env_->sdf_map_->getRegion(origin, size);
   raycaster_->setParams(resolution_, origin);
-  percep_utils_.reset(new PerceptionUtils(nh));
+  camera_param_ptr = Utils::getGlobalParam().camera_param_;
+
+  // percep_utils_.reset(new PerceptionUtils(nh));
   frontier_id_count = 0;
   viewpoint_used_thr = min(z_sample_max_length_ / z_sample_num_, (candidate_rmax_ - candidate_rmin_) / candidate_rnum_);
   cout << "frontier/viewpoint_used_thr: " << viewpoint_used_thr << endl;
@@ -796,12 +799,18 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
 }
 
 int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
-  percep_utils_->setPose(pos, yaw);
-  int visib_num = 0;
+  // percep_utils_->setPose(pos, yaw);
   Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+  int visib_num = 0;
   for (const auto& cell : cluster) {
     // Check if frontier cell is inside FOV
-    if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
+    // if (!percep_utils_->insideFOV(cell)) continue;
 
     // Check if frontier cell is visible (not occulded by obstacles)
     raycaster_->input(cell, pos);
@@ -819,13 +828,18 @@ int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, co
 
 void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res) {
 
-  percep_utils_->setPose(pos, yaw);
+  // percep_utils_->setPose(pos, yaw);
   Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
   for (int i = 0; i < static_cast<int>(cluster.size()); i++) {
     const auto& cell = cluster[i];
     // Check if frontier cell is inside FOV
-    if (!percep_utils_->insideFOV(cell)) continue;
-
+    // if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
     // Check if frontier cell is visible (not occulded by obstacles)
     raycaster_->input(cell, pos);
     bool visib = true;

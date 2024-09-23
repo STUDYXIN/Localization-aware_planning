@@ -1,6 +1,8 @@
 #ifndef _BSPLINE_OPTIMIZER_H_
 #define _BSPLINE_OPTIMIZER_H_
 
+#include "plan_env/utils.hpp"
+
 #include <active_perception/traj_visibility.h>
 #include <ros/ros.h>
 
@@ -258,6 +260,8 @@ public:
   vector<Vector3d> frontier_cells_;
   Vector3d frontier_centre_, view_point_pos_;
   double view_point_yaw_;
+
+  CameraParam::Ptr camera_param_ = nullptr;
 
   void setFrontierCells(const vector<Vector3d>& frontier_cells) {
     frontier_cells_ = frontier_cells;

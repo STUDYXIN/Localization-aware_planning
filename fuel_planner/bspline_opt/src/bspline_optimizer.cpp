@@ -86,6 +86,8 @@ void BsplineOptimizer::setParam(ros::NodeHandle& nh) {
   frontier_centre_ = Eigen::Vector3d::Zero();
   frontier_centre_ = Eigen::Vector3d::Zero();
   view_point_yaw_ = 2 * M_PI;  // yaw_not_available
+
+  camera_param_ = Utils::getGlobalParam().camera_param_;
 }
 
 void BsplineOptimizer::setEnvironment(const EDTEnvironment::Ptr& env) {
@@ -984,7 +986,7 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(
   Eigen::Vector3d diff = view_point_pos_ - knots_pos;
   double diff_norm = diff.norm();
   if (diff_norm < 1e-6) return;
-  //求解梯度
+  // 求解梯度
   Eigen::Vector3d dcost_dkont(Eigen::Vector3d::Zero());
 
   Eigen::Vector3d diff_normalized = diff / diff_norm;
@@ -1005,9 +1007,9 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(
   dcost_dq[2] += dcost_dkont * (1.0 / 6.0);
 }
 
-//原本考虑的太复杂，更换方法
-// void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
-//   ros::Time start_time = ros::Time::now();
+// 原本考虑的太复杂，更换方法
+//  void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
+//    ros::Time start_time = ros::Time::now();
 
 //   cost = 0.0;
 //   Vector3d zero(0, 0, 0);
@@ -1275,7 +1277,8 @@ void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q,
 
       // Calculate v1 * v2
       double sin_theta1, v1_theta1, cos_theta2, v2_theta2, v1v2;
-      double fov_vertical = M_PI / 3.0;
+      // double fov_vertical = M_PI / 3.0;
+      double fov_vertical = camera_param_->fov_vertical;
       sin_theta1 = n1.cross(b).norm() / (n1.norm() * b.norm());
       v1_theta1 = 1 / (1 + exp(-configPA_.k1_ * (sin_theta1 - sin((M_PI - fov_vertical) / 2.0))));
       cos_theta2 = n2.dot(b) / (n2.norm() * b.norm());
@@ -1284,7 +1287,8 @@ void BsplineOptimizer::calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q,
 
       // Calculate v3(theta3) and gradients
       double sin_theta3, v3_theta3;
-      double fov_horizontal = M_PI / 2.0;
+      // double fov_horizontal = M_PI / 2.0;
+      double fov_horizontal = camera_param_->fov_horizontal;
       sin_theta3 = n3.cross(b).norm() / (n3.norm() * b.norm());
       v3_theta3 = 1 / (1 + exp(-configPA_.k3_ * (sin_theta3 - sin((M_PI - fov_horizontal) / 2.0))));
 

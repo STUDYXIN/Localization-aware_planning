@@ -198,7 +198,7 @@
     <param name="frontier/wg" value="1.2" type="double" />
     <param name="frontier/wf" value="0.8" type="double" />
     <param name="frontier/wc" value="0.8" type="double" />
-    <param name="frontier/domant_frontier_length_thr" value="5.0" type="double" />
+    <param name="frontier/domant_frontier_length_thr" value="8.0" type="double" />
 
     <!-- Perception utils -->
     <param name="perception_utils/top_angle" value="0.56125" type="double" />

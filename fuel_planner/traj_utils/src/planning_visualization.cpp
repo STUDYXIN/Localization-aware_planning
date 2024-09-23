@@ -37,6 +37,8 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle& nh) {
 
   last_frontier_num_ = 0;
   unreachable_num_ = 0;
+  fail_reason = NO_NEED_CHANGE;
+  fsm_status = INIT;
 }
 
 void PlanningVisualization::fillBasicInfo(visualization_msgs::Marker& mk, const Vector3d& scale, const Vector4d& color,
@@ -113,7 +115,7 @@ void PlanningVisualization::drawdeadFrontiers(const vector<vector<Eigen::Vector3
 }
 
 void PlanningVisualization::drawFrontiers(const vector<vector<Eigen::Vector3d>>& frontiers) {
-  Vector4d color_gray(0.5, 0.5, 0.5, 0.4);
+  Vector4d color_gray(0.5, 0.5, 0.5, 0.2);
   for (int i = 0; i < frontiers.size(); ++i) {
     drawCubes(frontiers[i], 0.1, color_gray, "frontier", ACTIVE_FRONTIER + i % 100, 4);
   }
@@ -254,6 +256,7 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
   // Vector4d color(intensity, 0.0, 0.0, 0.4);
   Vector4d color_purple(intensity, 0, intensity, 0.5);
   double geometricpathsize = 0.04;
+  double posoptsize = 0.02;
 
   // 绘制这个不可达的frontier和viewpoint
   drawCubes(Unreachable_frontier, 0.1, color_purple, "frontier", UNREACHABLE_VIEWPOINT + unreachable_num_ % 100, 4);
@@ -277,38 +280,43 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
       break;
     case YAW_INIT_FAIL:
       error_reason = "YAW_INIT_FAIL";
-      drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
-      // drawBspline(fail_pos_opt, 0.03, color, true, 0.05, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
+          UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
       break;
     case YAW_OPT_FAIL:
       error_reason = "YAW_OPT_FAIL";
-      drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
-      // drawBspline(fail_pos_opt, 0.03, color, true, 0.05, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
+          UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
       cout << "unreachable_num_" << unreachable_num_ << endl;
       break;
     case LOCABILITY_CHECK_FAIL:
       error_reason = "LOCABILITY_CHECK_FAIL";
-      drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
-      // drawBspline(fail_pos_opt, 0.03, color, true, 0.05, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
+          UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
       // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_ * 100) % 10000);
       break;
     case EXPLORABILITI_CHECK_FAIL:
       error_reason = "EXPLORABILITI_CHECK_FAIL";
-      drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
-      // drawBspline(fail_pos_opt, 0.03, color, true, 0.05, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
+          UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
       // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_ * 100) % 10000);
       break;
     case COLLISION_CHECK_FAIL:
       error_reason = "COLLISION_CHECK_FAIL";
-      drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
-      // drawBspline(fail_pos_opt, 0.03, color, true, 0.05, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
+          UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
       // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_ * 100) % 10000);
       break;
     default:
       error_reason = "UNKONW_FAIL";
       break;
   }
-  std::string text = "id: " + std::to_string(unreachable_num_) + " Error Reason " + error_reason;
+  std::string text = "id: " + std::to_string(unreachable_num_) + "  " + error_reason;
   color_purple(3) = 1.0;
   displayText(top_middle, text, color_purple, 0.2, UNREACHABLE_VIEWPOINT + unreachable_num_ % 100, 7);
   unreachable_num_++;
@@ -329,11 +337,111 @@ void PlanningVisualization::clearUnreachableMarker() {
     displaySphereList(empty_vector_Vector3d, 0.15, black_color, UNREACHABLE_VIEWPOINT + i % 100);
     drawLines(empty_vector_Vector3d, 0.02, black_color, "viewpoint_vectoer_line", UNREACHABLE_VIEWPOINT + i % 100, 1);
     displayText(zero_pos, text, black_color, 0.3, UNREACHABLE_VIEWPOINT + i % 100, 7);
-    // drawBspline(empty_traj, 0.1, black_color, true, 0.15, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + i % 100);
+    drawBspline(empty_traj, 0.1, black_color, true, 0.15, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + i % 100);
     drawGeometricPath(empty_vector_Vector3d, 0.02, black_color, UNREACHABLE_KINOASTAR + i % 100);
     // drawYawTraj(empty_traj, empty_traj, empty_yaw, (unreachable_num_ * 100) % 10000);
   }
   unreachable_num_ = 0;
+}
+void PlanningVisualization::drawfeaturenum(const int& feature_num, const int& feature_num_thr, const Eigen::Vector3d& odom_pos) {
+  std::string text = "Feature_view: " + std::to_string(feature_num);
+  Eigen::Vector4d color;
+  if (feature_num < feature_num_thr) {
+    // 小于 threshold 时显示红色
+    color = Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+  } else {
+    // 大于 threshold 时从红色逐渐过渡到绿色
+    double ratio = std::min(1.0, double(feature_num - feature_num_thr) / (2.0 * feature_num_thr));
+    color = Eigen::Vector4d(1.0 - ratio, ratio, 0.0, 1.0);
+  }
+  Eigen::Vector3d show_pos = odom_pos;
+  show_pos(2) += 1.0;
+  displayText(show_pos, text, color, 0.3, SHOW_FEATURE_TEXT, 7);
+}
+
+void PlanningVisualization::drawfsmstatu(const Eigen::Vector3d& odom_pos) {
+  std::string fsm_text, err_text;
+  switch (fsm_status) {
+    case INIT:
+      fsm_text = "        INIT          ";
+      break;
+    case WAIT_TARGET:
+      fsm_text = "     WAIT_TARGET      ";
+      break;
+    case START_IN_STATIC:
+      fsm_text = "    START_IN_STATIC   ";
+      break;
+    case PUB_TRAJ:
+      fsm_text = "       PUB_TRAJ       ";
+      break;
+    case MOVE_TO_NEXT_GOAL:
+      fsm_text = "   MOVE_TO_NEXT_GOAL  ";
+      break;
+    case REACH_TMP_REPLAN:
+      fsm_text = "   REACH_TMP_REPLAN   ";
+      break;
+    case CLUSTER_COVER_REPLAN:
+      fsm_text = " CLUSTER_COVER_REPLAN ";
+      break;
+    case TIME_OUT_REPLAN:
+      fsm_text = "    TIME_OUT_REPLAN   ";
+      break;
+    case COLLISION_CHECK_REPLAN:
+      fsm_text = "COLLISION_CHECK_REPLAN";
+      break;
+    case EMERGENCY_STOP:
+      fsm_text = "    EMERGENCY_STOP    ";
+      break;
+    case ERROR_FSM_TYPE:
+      fsm_text = "    ERROR_FSM_TYPE    ";
+      break;
+    default:
+      fsm_text = "      UNKONW_FSM      ";
+      break;
+  }
+  switch (fail_reason) {
+    case PATH_SEARCH_FAIL:
+      err_text = "    PATH    ";
+      break;
+    case POSITION_OPT_FAIL:
+      err_text = "POSITION_OPT";
+      break;
+    case YAW_INIT_FAIL:
+      err_text = "  YAW_INIT  ";
+      break;
+    case YAW_OPT_FAIL:
+      err_text = "   YAW_OPT  ";
+      break;
+    case LOCABILITY_CHECK_FAIL:
+      err_text = " LOCABILITY ";
+      break;
+    case EXPLORABILITI_CHECK_FAIL:
+      err_text = "EXPLORA_CHEK";
+      break;
+    case COLLISION_CHECK_FAIL:
+      err_text = "COLLISION_CH";
+      break;
+    default:
+      err_text = "LAST_SUCCESS";
+      break;
+  }
+
+  std::string text_fsm = "FSM: " + fsm_text;
+  std::string text_err = "ERR: " + err_text;
+  double fsm_intense, err_intense;
+  fsm_intense = max(0.0, min(static_cast<double>(fsm_status) / 10, 1.0));
+  err_intense = max(0.0, min(static_cast<double>(fail_reason) / 8, 1.0));
+  Eigen::Vector4d blue_violet(0.54, 0.17, 0.89, 1.0);  // 蓝紫色
+  Eigen::Vector4d yellow(1.0, 1.0, 0.0, 1.0);          // 黄色
+  Eigen::Vector4d green(0.0, 1.0, 0.0, 1.0);           // 绿色
+  Eigen::Vector4d purple(0.5, 0.0, 0.5, 1.0);          // 紫色
+  Eigen::Vector4d fsm_color = (1.0 - fsm_intense) * blue_violet + fsm_intense * yellow;
+  Eigen::Vector4d err_color = (1.0 - err_intense) * purple + err_intense * green;
+  Eigen::Vector3d show_pos = odom_pos;
+  show_pos(2) += 0.5;
+  displayText(show_pos, text_fsm, fsm_color, 0.2, SHOW_FEATURE_TEXT + 1, 7);
+  show_pos(2) += 0.25;
+  displayText(show_pos, text_err, err_color, 0.2, SHOW_FEATURE_TEXT + 2, 7);
 }
 
 void PlanningVisualization::drawFrontiersGo(
@@ -571,6 +679,7 @@ void PlanningVisualization::displayArrowList(
 
   visualization_msgs::MarkerArray markerArray;
   if (list1.empty() || list2.empty()) {
+    ROS_ERROR("CLEAR YAW!!!");
     for (ssize_t i = id; i < 100 + id; ++i) {
       visualization_msgs::Marker mk;
       mk.header.frame_id = "world";
@@ -635,7 +744,17 @@ void PlanningVisualization::drawGeometricPath(const vector<Vector3d>& path, doub
 
 void PlanningVisualization::drawBspline(NonUniformBspline& bspline, double size, const Eigen::Vector4d& color, bool show_ctrl_pts,
     double size2, const Eigen::Vector4d& color2, int id1) {
-  if (bspline.getControlPoint().size() == 0) return;
+  if (bspline.getControlPoint().size() == 0) {
+    visualization_msgs::Marker mk;
+    fillBasicInfo(mk, Eigen::Vector3d(1.0, 1.0, 1.0), Eigen::Vector4d(1.0, 1.0, 1.0, 1.0), "B-Spline", id1,
+        visualization_msgs::Marker::SPHERE_LIST);
+    mk.action = visualization_msgs::Marker::DELETE;
+    pubs_[0].publish(mk);
+    fillBasicInfo(mk, Eigen::Vector3d(1.0, 1.0, 1.0), Eigen::Vector4d(1.0, 1.0, 1.0, 1.0), "B-Spline", id1 + 50,
+        visualization_msgs::Marker::SPHERE_LIST);
+    pubs_[0].publish(mk);
+    return;
+  }
 
   vector<Eigen::Vector3d> traj_pts;
   double tm, tmp;
@@ -702,7 +821,6 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBsplin
   }
   double pos_duration = pos.getTimeSum();
   double yaw_duration = yaw.getTimeSum();
-
   if (pos_duration != yaw_duration) {
     ROS_ERROR("[PlanningVisualization::drawYawTraj] pos_duration: .4f != yaw_duration .4f !!!!!!", pos_duration, yaw_duration);
     return;

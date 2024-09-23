@@ -87,7 +87,8 @@ private:
     ACTIVE_FRONTIER = 1400,
     BEST_FRONTIER = 1500,
     UNREACHABLE_POSTTAJ = 1600,
-    UNREACHABLE_YAWTAJ = 10000  // 100递增
+    UNREACHABLE_YAWTAJ = 10000,  // 100递增
+    SHOW_FEATURE_TEXT = 1700
   };
 
   enum TOPOLOGICAL_PATH_PLANNING_ID { GRAPH_NODE = 1, GRAPH_EDGE = 100, RAW_PATH = 200, FILTERED_PATH = 300, SELECT_PATH = 400 };
@@ -118,6 +119,21 @@ public:
     EXPLORABILITI_CHECK_FAIL,
     COLLISION_CHECK_FAIL
   };
+
+  enum FSM_STATUS {
+    INIT,
+    WAIT_TARGET,
+    START_IN_STATIC,
+    PUB_TRAJ,
+    MOVE_TO_NEXT_GOAL,
+    REACH_TMP_REPLAN,
+    CLUSTER_COVER_REPLAN,
+    TIME_OUT_REPLAN,
+    COLLISION_CHECK_REPLAN,
+    EMERGENCY_STOP,
+    ERROR_FSM_TYPE
+  };
+
   PlanningVisualization(ros::NodeHandle& nh);
   // draw some debug message for viewpoint and frontier
   void drawAstar(
@@ -136,11 +152,14 @@ public:
       const Eigen::Vector3d& frontier_average_pos, const double gain, const vector<Eigen::Vector3d>& fail_pos_traj);
   int unreachable_num_;
   VIEWPOINT_CHANGE_REASON_VISUAL fail_reason;
+  FSM_STATUS fsm_status;
   MESSAGE_HAS_BEEN_DRAW message_drawn;
   void drawFrontiersUnreachable(const vector<Eigen::Vector3d>& Unreachable_frontier,
       const Eigen::Vector3d& Unreachable_viewpoint_points, const double& Unreachable_viewpoint_yaw,
       const vector<Eigen::Vector3d>& fail_pos_traj, NonUniformBspline& fail_pos_opt, NonUniformBspline& yaw, const double& dt);
   void clearUnreachableMarker();
+  void drawfeaturenum(const int& feature_num, const int& feature_num_thr, const Eigen::Vector3d& odom_pos);
+  void drawfsmstatu(const Eigen::Vector3d& odom_pos);
   void drawFrontiersGo(
       const vector<Eigen::Vector3d>& Go_frontier, const Eigen::Vector3d& Go_viewpoint_points, const double& Go_viewpoint_yaw);
   // new interface

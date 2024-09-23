@@ -42,6 +42,8 @@ enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2 };
 
 enum REPLAN_TYPE { START_FROM_TRAJ_NOW = 0, START_FROM_LAST_TRAJ = 1, START_FROM_ODOM = 2 };
 
+enum REPLAN_REASON { REACH_TMP = 0, CLUSTER_COVER = 1, TIME_OUT = 2, COLLISION_CHECK = 3, NO_REPLAN = 4 };
+
 class PAExplorationFSM : public std::enable_shared_from_this<PAExplorationFSM> {
 public:
   shared_ptr<FastPlannerManager> planner_manager_;
@@ -136,6 +138,7 @@ public:
   bool transitViewpoint();  // 根据错误原因，选择转变的重计算方式
   void setdata(const REPLAN_TYPE& replan_start_type);
   void setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoint_change_reason);
+  void setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type = NO_REPLAN);
 };
 
 }  // namespace fast_planner

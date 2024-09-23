@@ -126,6 +126,15 @@ void FrontierFinder::ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw
   viewpoint.score_yaw.push_back(sort_refer_.we * visb_score + sort_refer_.wf * feature_score);
 }
 
+void FrontierFinder::ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, double yaw_ref, int feature_num_) {
+  double diff_yaw = yaw - yaw_ref;
+  wrapYaw(diff_yaw);
+  double visb_score = (M_PI - abs(diff_yaw)) / M_PI;
+  double feature_score = static_cast<double>(feature_num_) / static_cast<double>(sort_refer_.feature_num_max);
+  viewpoint.yaw_available.push_back(yaw);
+  viewpoint.score_yaw.push_back(sort_refer_.we * visb_score + sort_refer_.wf * feature_score);
+}
+
 // void FrontierFinder::CombineScore(Viewpoint& viewpoint) {
 //   if (abs(ros::Time::now().toSec() - sort_refer_.time) > 0.1) {
 //     ROS_ERROR("[FrontierFinder::ComputeScoreUnrelatedwithyaw] Time error when compute viewpoint score. time_now: %.6f "
@@ -192,7 +201,8 @@ bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws
     int id = 0;
     for (const auto& frontier : frontiers_) {
       if (id++ != best_id) continue;  //遍历到需要的地方，有点蠢。。。
-      for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size(); ++viewpoint_num) {
+      for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size();
+           ++viewpoint_num) {  // frontier的viewpoint有按照好坏排序，这里简单选取分数高的，并把选择过的推入kd-tree中，用于下次排除。
         auto& view = frontier.viewpoints_[viewpoint_num];
         if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
           points = view.pos_;
@@ -201,7 +211,7 @@ bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws
           unavailableViewpointManage_.addViewpoint(view);
           return true;
         }
-        unavailableViewpointManage_.addViewpoint(view);
+        // unavailableViewpointManage_.addViewpoint(view);
       }
     }
     cout << "[get_next_viewpoint_forbadpos] search next frontier" << endl;
@@ -229,7 +239,7 @@ bool FrontierFinder::get_next_viewpoint_forbadyaw(Vector3d& points, double& yaws
           unavailableViewpointManage_.addViewpoint(view);
           return true;
         }
-        unavailableViewpointManage_.addViewpoint(view);
+        // unavailableViewpointManage_.addViewpoint(view);
       }
     }
     cout << "[get_next_viewpoint_forbadyaw] search next frontier" << endl;
@@ -255,16 +265,24 @@ void FrontierFinder::searchFrontiers() {
     iter = frontiers.erase(iter);
   };
 
-  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
-  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
+  // Function to move frontier to dormant_frontiers_ if its final score is < -100
+  auto moveToDormant = [&](list<Frontier>::iterator& iter, list<Frontier>& frontiers, list<Frontier>& dormant_frontiers) {
+    dormant_frontiers.push_back(*iter);  // Move to dormant_frontiers_
+    resetFlag(iter, frontiers);          // Remove from frontiers
+  };
 
+  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
+  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
+  updateScorePos();
   removed_ids_.clear();
   int rmv_idx = 0;
   for (auto iter = frontiers_.begin(); iter != frontiers_.end();) {
     if (haveOverlap(iter->box_min_, iter->box_max_, update_min, update_max) && isFrontierChanged(*iter)) {
       resetFlag(iter, frontiers_);
       removed_ids_.push_back(rmv_idx);
-    } else {
+    } else if (iter->viewpoints_.front().final_score < -100)
+      moveToDormant(iter, frontiers_, dormant_frontiers_);
+    else {
       ++rmv_idx;
       ++iter;
     }
@@ -501,7 +519,6 @@ void FrontierFinder::computeFrontiersToVisit() {
     }
   } else {
     // Try find viewpoints for each cluster and categorize them according to viewpoint number with feature number threshold
-    updateScorePos();
     for (auto& tmp_ftr : tmp_frontiers_) {
       // Search viewpoints around frontier
       sampleBetterViewpoints(tmp_ftr);
@@ -524,7 +541,9 @@ void FrontierFinder::computeFrontiersToVisit() {
   //      << " tmp_frontiers_.size: " << tmp_frontiers_.size() << " frontier_id_count: " << frontier_id_count << endl;
   // Reset indices of frontiers
   int idx = 0;
+  //定义id
   for (auto& ft : frontiers_) ft.id_ = idx++;
+  //排序
   frontier_sort_id.resize(frontiers_.size());
   std::iota(frontier_sort_id.begin(), frontier_sort_id.end(), 0);
   vector<list<Frontier>::iterator> frontier_iterators;
@@ -570,6 +589,34 @@ int FrontierFinder::getVisibleFrontiersNum(const Vector3d& pos, const double& ya
   return visib_num;
 }
 
+void FrontierFinder::computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells) {
+  Eigen::Vector3d ref_dir = (cells.front() - start).normalized();
+  double avg_yaw = 0.0;
+  for (int i = 1; i < cells.size(); ++i) {
+    Eigen::Vector3d dir = (cells[i] - start).normalized();
+    double yaw = acos(dir.dot(ref_dir));
+    if (ref_dir.cross(dir)[2] < 0) yaw = -yaw;
+    avg_yaw += yaw;
+  }
+  avg_yaw = avg_yaw / cells.size() + atan2(ref_dir[1], ref_dir[0]);
+  wrapYaw(avg_yaw);
+  Eigen::Vector3d dir(std::cos(avg_yaw), std::sin(avg_yaw), 0);
+  double min_distance = std::numeric_limits<double>::max();
+
+  for (const auto& cell : cells) {
+    Eigen::Vector3d to_cell = cell - start;
+    double projection = to_cell.dot(dir);
+    if (projection > 0) {
+      double distance = (to_cell - projection * dir).norm();
+      if (distance < min_distance) {
+        min_distance = distance;
+        end = cell;
+      }
+    }
+  }
+  // cout << " min_distance " << min_distance << " to_cell " << (end - start).transpose() << endl;
+}
+
 // Sample viewpoints around frontier's average position, check coverage to the frontier cells
 void FrontierFinder::sampleViewpoints(Frontier& frontier) {
   // Evaluate sample viewpoints on circles, find ones that cover most cells
@@ -598,7 +645,7 @@ void FrontierFinder::sampleViewpoints(Frontier& frontier) {
       // Compute the fraction of covered and visible cells
       int visib_num = countVisibleCells(sample_pos, avg_yaw, cells);
       if (visib_num > min_visib_num_) {
-        Viewpoint vp = { sample_pos, avg_yaw, visib_num };
+        Viewpoint vp = { sample_pos, avg_yaw };
         frontier.viewpoints_.push_back(vp);
         // int gain = findMaxGainYaw(sample_pos, frontier, sample_yaw);
       }
@@ -612,7 +659,9 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
   for (double phi = -M_PI; phi < M_PI; phi += feature_sample_dphi) {
     sample_yaw.push_back(phi);
   }
+  Vector3d start_ = frontier.average_, end_;
   auto& cells = frontier.filtered_cells_;
+  computeYawEndPoint(start_, end_, cells);
   //三层循环看着很吓人，但数量级基本上是5*5*60 = 1500 其实可以接受
   for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_; rc <= candidate_rmax_ + 1e-3;
        rc += dr)
@@ -641,6 +690,10 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
           wrapYaw(feature_yaw);
           int visib_num = countVisibleCells(sample_pos, feature_yaw, cells);
           if (visib_num > min_visib_num_) {
+            // double yaw_ref_ = atan2(end_.y() - start_.y(), end_.x() - start_.x());
+            double yaw_ref_ = atan2(end_.y() - vp.pos_.y(), end_.x() - vp.pos_.x());
+            // wrapYaw(yaw_ref_);
+            // ComputeScoreRelatedwithyaw(vp, feature_yaw, yaw_ref_, features_num_perYaw[i]);
             ComputeScoreRelatedwithyaw(vp, feature_yaw, visib_num, features_num_perYaw[i]);
             // cout << "   vp.yaw_score " << vp.score_yaw.front() << endl;
 
@@ -693,7 +746,7 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
         feature_yaw = sample_yaw_near_input[j];
         int visib_num = getVisibleFrontiersNum(input_pos, feature_yaw);
         if (visib_num > min_visib_num_) {
-          Viewpoint output_viewpoint = { input_pos, feature_yaw, visib_num };
+          Viewpoint output_viewpoint = { input_pos, feature_yaw };
           sample_viewpoints.push_back(output_viewpoint);
         }
       }

@@ -190,6 +190,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // Replan if traj is almost fully executed
       double time_to_end = info->duration_ - t_cur;
       // cout << " debug time2end: " << time_to_end << endl;
+      setVisualErrorType(last_fail_reason);
       if (time_to_end < fp_->replan_thresh1_) {
 
         if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
@@ -206,6 +207,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
         else {
           transitState(REPLAN, "FSM");
+          setVisualFSMType(REPLAN, REACH_TMP);
           last_arrive_goal_time_ = ros::Time::now().toSec();
           ROS_WARN("Replan: reach tmp viewpoint=================================");
         }
@@ -215,6 +217,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // Replan if next frontier to be visited is covered
       if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
+        setVisualFSMType(REPLAN, CLUSTER_COVER);
         ROS_WARN("Replan: cluster covered=====================================");
         return;
       }
@@ -222,6 +225,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // Replan after some time
       if (do_replan_ && t_cur > fp_->replan_thresh3_) {
         transitState(REPLAN, "FSM");
+        setVisualFSMType(REPLAN, TIME_OUT);
         ROS_WARN("Replan: periodic call=================================");
       }
 
@@ -381,7 +385,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   // Draw updated box
   Vector3d bmin, bmax;
   planner_manager_->edt_environment_->sdf_map_->getUpdatedBox(bmin, bmax);
-  visualization_->drawBox((bmin + bmax) / 2.0, bmax - bmin, Vector4d(0, 1, 0, 0.3), "updated_box", 0, 4);
+  // visualization_->drawBox((bmin + bmax) / 2.0, bmax - bmin, Vector4d(0, 1, 0, 0.3), "updated_box", 0, 4);
   // cout << "[frontierCallback] search begin!!" << endl;
   auto ft = expl_manager_->frontier_finder_;
   auto ed = expl_manager_->ed_;
@@ -408,6 +412,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   ft->computeFrontiersToVisit();
   ft->getFrontiers(ed->frontiers_);
   ft->getDormantFrontiers(ed->dead_frontiers_);
+  // cout << " Frontiers num " << ed->frontiers_.size() << " DormantFrontiers num " << ed->dead_frontiers_.size() << endl;
   if (ed->frontiers_.size() == 0) return;
   vector<double> score;
   ft->getBestViewpointData(ed->point_now, ed->yaw_now, ed->frontier_now, score);
@@ -451,8 +456,11 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
     if (!safe) {
       ROS_WARN("Replan: collision detected==================================");
       last_fail_reason = COLLISION_CHECK_FAIL;
+      setdata(START_FROM_ODOM);
+      replan_pub_.publish(std_msgs::Empty());
       transitViewpoint();
       transitState(REPLAN, "safetyCallback");
+      setVisualFSMType(REPLAN, COLLISION_CHECK);
     }
   }
 }
@@ -475,24 +483,9 @@ void PAExplorationFSM::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
   odom_yaw_ = atan2(rot_x(1), rot_x(0));
 
   have_odom_ = true;
-  int feature_view_num = expl_manager_->feature_map_->get_NumCloud_using_Odom(msg);
-  std::string text = "feature_view: " + std::to_string(feature_view_num);
-  Eigen::Vector4d color;
-
-  int min_feature_num = Utils::getGlobalParam().min_feature_num_act_;
-  if (feature_view_num < min_feature_num) {
-    // 小于 threshold 时显示红色
-    color = Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
-  }
-
-  else {
-    // 大于 threshold 时从红色逐渐过渡到绿色
-    double ratio = std::min(1.0, double(feature_view_num - min_feature_num) / (2.0 * min_feature_num));
-    color = Eigen::Vector4d(1.0 - ratio, ratio, 0.0, 1.0);
-  }
-  Eigen::Vector3d show_pos = odom_pos_;
-  show_pos(2) += 1.0;
-  visualization_->displayText(show_pos, text, color, 0.3, 0, 7);
+  visualization_->drawfeaturenum(
+      expl_manager_->feature_map_->get_NumCloud_using_Odom(msg), Utils::getGlobalParam().min_feature_num_act_, odom_pos_);
+  visualization_->drawfsmstatu(odom_pos_);
 }
 
 void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string& pos_call) {
@@ -504,7 +497,8 @@ void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string
     best_frontier_id = 0;
     search_times = 0;
     visualization_->clearUnreachableMarker();
-  }
+  } else
+    setVisualFSMType(new_state);
 }
 
 bool PAExplorationFSM::transitViewpoint() {
@@ -514,6 +508,7 @@ bool PAExplorationFSM::transitViewpoint() {
   auto info = &planner_manager_->local_data_;
   auto plan_data = &planner_manager_->plan_data_;
   setVisualErrorType(last_fail_reason);
+  // visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
   visualization_->drawFrontiersUnreachable(choose_frontier_cell, choose_pos_, choose_yaw_, plan_data->kino_path_,
       info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
   double length2best = (ed->point_now - origin_pos_).norm();
@@ -725,6 +720,45 @@ void PAExplorationFSM::setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoi
       break;
     default:
       visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::NO_NEED_CHANGE;
+      break;
+  }
+}
+
+void PAExplorationFSM::setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type) {
+  auto& fsm_data = visualization_->fsm_status;
+  switch (fsm_status) {
+    case INIT:
+      fsm_data = PlanningVisualization::FSM_STATUS::INIT;
+      break;
+    case WAIT_TARGET:
+      fsm_data = PlanningVisualization::FSM_STATUS::WAIT_TARGET;
+      break;
+    case START_IN_STATIC:
+      fsm_data = PlanningVisualization::FSM_STATUS::START_IN_STATIC;
+      break;
+    case PUB_TRAJ:
+      fsm_data = PlanningVisualization::FSM_STATUS::PUB_TRAJ;
+      break;
+    case MOVE_TO_NEXT_GOAL:
+      fsm_data = PlanningVisualization::FSM_STATUS::MOVE_TO_NEXT_GOAL;
+      break;
+    case REPLAN:
+      if (replan_type == REACH_TMP)
+        fsm_data = PlanningVisualization::FSM_STATUS::REACH_TMP_REPLAN;
+      else if (replan_type == CLUSTER_COVER)
+        fsm_data = PlanningVisualization::FSM_STATUS::CLUSTER_COVER_REPLAN;
+      else if (replan_type == TIME_OUT)
+        fsm_data = PlanningVisualization::FSM_STATUS::TIME_OUT_REPLAN;
+      else if (replan_type == COLLISION_CHECK)
+        fsm_data = PlanningVisualization::FSM_STATUS::COLLISION_CHECK_REPLAN;
+      else
+        fsm_data = PlanningVisualization::FSM_STATUS::ERROR_FSM_TYPE;
+      break;
+    case EMERGENCY_STOP:
+      fsm_data = PlanningVisualization::FSM_STATUS::EMERGENCY_STOP;
+      break;
+    default:
+      fsm_data = PlanningVisualization::FSM_STATUS::INIT;
       break;
   }
 }

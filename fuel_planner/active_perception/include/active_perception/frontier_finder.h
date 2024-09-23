@@ -30,12 +30,12 @@ struct Viewpoint {
   // Position
   Vector3d pos_;
   double score_pos;
-  double final_score;
   // Yaw
   vector<double> yaw_available;
   vector<double> score_yaw;
   vector<double> sort_id;
   // others
+  double final_score;
 };
 
 struct Sortrefer {
@@ -153,9 +153,13 @@ public:
   }
   void ComputeScoreUnrelatedwithyaw(Viewpoint& viewpoint);
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, int visib_num_, int feature_num_);
+  void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, double yaw_ref, int feature_num_);
   void getBestViewpointData(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
   void updateScorePos();
+  void computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells);
   // void getMessage2draw(vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages, vector<double>& gains);
+  bool get_next_viewpoint_forbadpos(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells);
+  bool get_next_viewpoint_forbadyaw(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells);
 
   // get frontiers near new point
   bool getBestViewpointinPath(Viewpoint& refactorViewpoint, vector<Vector3d>& path);
@@ -179,6 +183,7 @@ public:
 
   int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
   void countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res);
+  double computeExplorebility(const Vector3d& pos, const double& yaw, const Vector3d& start, const Vector3d& end);
 
   bool isNearUnknown(const Vector3d& pos);
   vector<Eigen::Vector3i> sixNeighbors(const Eigen::Vector3i& voxel);
@@ -217,9 +222,6 @@ public:
     unavailableViewpointManage_.clear();
     unavailableViewpointManage_.addViewpoint(init_viewpoint);
   }
-
-  bool get_next_viewpoint_forbadpos(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells);
-  bool get_next_viewpoint_forbadyaw(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells);
 
   // Params
   int cluster_min_;

@@ -96,6 +96,7 @@ public:
   shared_ptr<FrontierFinder> frontier_finder_;
 
   int last_error_type;
+  bool is_pos_search_reach_end;
 
 private:
   /* main planning algorithms & modules */

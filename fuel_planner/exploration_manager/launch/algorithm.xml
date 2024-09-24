@@ -295,16 +295,16 @@
     <param name="optimization/ld_dist" value="20.0" type="double" />
     <param name="optimization/ld_feasi" value="2.0" type="double" />
     <param name="optimization/ld_feasi_yaw" value="5.0" type="double" />
-    <param name="optimization/ld_start" value="5000.0" type="double" />
-    <param name="optimization/ld_end" value="5000.0" type="double" />
+    <param name="optimization/ld_start" value="500.0" type="double" />
+    <param name="optimization/ld_end" value="500.0" type="double" />
     <param name="optimization/ld_guide" value="1.5" type="double" />
-    <param name="optimization/ld_waypt" value="0.5" type="double" />
+    <param name="optimization/ld_waypt" value="0.2" type="double" />
     <param name="optimization/ld_view" value="0.0" type="double" />
     <param name="optimization/ld_time" value="1.0" type="double" />
     <param name="optimization/ld_parallax" value="5.0" type="double" />
     <param name="optimization/ld_vertical_visibility" value="10.0" type="double" />
     <param name="optimization/ld_yaw_covisibility" value="10.0" type="double" />
-    <param name="optimization/ld_frontier_visibility_pos" value="75.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_pos" value="50.0" type="double" />
     <param name="optimization/ld_frontier_visibility_yaw" value="10.0" type="double" />
 
     <param name="optimization/dist0" value="0.7" type="double" />

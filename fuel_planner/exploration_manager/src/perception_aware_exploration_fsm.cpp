@@ -48,7 +48,8 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
 
   visualization_.reset(new PlanningVisualization(nh));
 
-  state_str_ = { "INIT", "WAIT_TARGET", "START_IN_STATIC", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP" };
+  state_str_ = { "INIT", "WAIT_TARGET", "START_IN_STATIC", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP",
+    "FIND_FINAL_GOAL" };
   /* Ros sub, pub and timer */
   exec_timer_ = nh.createTimer(ros::Duration(0.05), &PAExplorationFSM::FSMCallback, this);
   safety_timer_ = nh.createTimer(ros::Duration(0.05), &PAExplorationFSM::safetyCallback, this);
@@ -192,7 +193,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       // cout << " debug time2end: " << time_to_end << endl;
       setVisualErrorType(last_fail_reason);
       if (time_to_end < fp_->replan_thresh1_) {
-
         if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
           ROS_ERROR("Invalid next goal type!!!");
           ROS_BREAK();
@@ -215,7 +215,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       }
 
       // Replan if next frontier to be visited is covered
-      if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
+      else if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, CLUSTER_COVER);
         ROS_WARN("Replan: cluster covered=====================================");
@@ -223,7 +223,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       }
 
       // Replan after some time
-      if (do_replan_ && t_cur > fp_->replan_thresh3_) {
+      else if (do_replan_ && t_cur > fp_->replan_thresh3_) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, TIME_OUT);
         ROS_WARN("Replan: periodic call=================================");
@@ -234,6 +234,10 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
     case REPLAN: {
       static bool first_enter_replan_ = true;
+      if (FindFinalGoal()) {
+        transitState(FIND_FINAL_GOAL, "FSM");  //如果终点被发现，转到FIND_FINAL_GOAL
+        break;
+      }
       if (first_enter_replan_ && last_fail_reason != COLLISION_CHECK_FAIL) {
         replan_begin_time = ros::Time::now();
         setdata(START_FROM_LAST_TRAJ);
@@ -272,16 +276,46 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       ROS_WARN_THROTTLE(1.0, "Emergency Stop.");
       break;
     }
+    case FIND_FINAL_GOAL: {
+      static bool first_enter_findend_ = true;
+      if (first_enter_findend_ && last_fail_reason != COLLISION_CHECK_FAIL) {
+        replan_begin_time = ros::Time::now();
+        setdata(START_FROM_LAST_TRAJ);
+        // Inform traj_server the replanning
+        replan_pub_.publish(std_msgs::Empty());
+        expl_manager_->setSampleYaw(final_goal_, odom_yaw_);
+        choose_pos_ = final_goal_;
+        choose_yaw_ = expl_manager_->getNextYaw();
+        choose_frontier_cell = expl_manager_->ed_->frontier_now;
+        if (std::isnan(choose_yaw_)) {
+          first_enter_findend_ = true;
+          transitState(EMERGENCY_STOP, "FSM");
+          break;
+        }
+        first_enter_findend_ = false;
+      }
+      next_goal_ = callExplorationPlanner();
+
+      if (next_goal_ == REACH_END) {
+        last_fail_reason = NO_NEED_CHANGE;
+        visualization_->drawFrontiersGo(choose_frontier_cell, choose_pos_, choose_yaw_);
+        transitState(PUB_TRAJ, "FSM");
+        first_enter_findend_ = true;
+      }
+
+      else {
+        choose_yaw_ = expl_manager_->getNextYaw();
+        ROS_ERROR("Try end_yaw = %.2f But can't find path to end...-----------------------------", choose_yaw_);
+      }
+
+      break;
+    }
   }
 }
 
-bool PAExplorationFSM::checkReachFinalGoal() {
+bool PAExplorationFSM::FindFinalGoal() {
   const auto& sdf_map = planner_manager_->edt_environment_->sdf_map_;
-  if ((odom_pos_ - final_goal_).norm() < 0.2 && sdf_map->getOccupancy(final_goal_) == SDFMap::FREE &&
-      sdf_map->getDistance(final_goal_) > 0.2) {
-    return true;
-  }
-
+  if (sdf_map->getOccupancy(final_goal_) == SDFMap::FREE && sdf_map->getDistance(final_goal_) > 0.2) return true;
   return false;
 }
 
@@ -762,4 +796,5 @@ void PAExplorationFSM::setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const 
       break;
   }
 }
+
 }  // namespace fast_planner

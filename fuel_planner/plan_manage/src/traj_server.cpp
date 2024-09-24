@@ -381,10 +381,10 @@ void cmdCallback(const ros::TimerEvent& e) {
   // drawCmd(pos, vel, 0, Eigen::Vector4d(0, 1, 0, 1));
   // drawCmd(pos, acc, 1, Eigen::Vector4d(0, 0, 1, 1));
   // drawCmd(pos, pos_err, 3, Eigen::Vector4d(1, 1, 0, 0.7));
-  percep_utils_->setPose(pos, yaw);
-  vector<Eigen::Vector3d> l1, l2;
-  percep_utils_->getFOV(l1, l2);
-  drawFOV(l1, l2);
+  // percep_utils_->setPose(pos, yaw);
+  // vector<Eigen::Vector3d> l1, l2;
+  // percep_utils_->getFOV(l1, l2);
+  // drawFOV(l1, l2);
 
   // Record info of the executed traj
   if (traj_cmd_.size() == 0) {

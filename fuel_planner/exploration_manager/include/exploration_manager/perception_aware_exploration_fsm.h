@@ -36,7 +36,7 @@ struct FSMParam;
 struct FSMData;
 struct M2GData;
 
-enum FSM_EXEC_STATE { INIT, WAIT_TARGET, START_IN_STATIC, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
+enum FSM_EXEC_STATE { INIT, WAIT_TARGET, START_IN_STATIC, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP, FIND_FINAL_GOAL };
 
 enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2 };
 
@@ -104,7 +104,7 @@ public:
 
   int callExplorationPlanner();
 
-  bool checkReachFinalGoal();
+  bool FindFinalGoal();
 
   void transitState(const FSM_EXEC_STATE new_state, const string& pos_call);
 

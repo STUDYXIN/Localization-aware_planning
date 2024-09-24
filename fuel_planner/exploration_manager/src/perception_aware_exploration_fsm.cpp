@@ -65,6 +65,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   best_frontier_id = 0;
   search_times = 0;
   final_goal_ = Vector3d::Zero();
+  do_final_plan = true;
 }
 
 void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
@@ -213,7 +214,11 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         }
         return;
       }
-
+      // Replan if find final goal
+      else if (t_cur > fp_->replan_thresh2_ && FindFinalGoal()) {
+        if (do_final_plan) transitState(FIND_FINAL_GOAL, "FSM");  //如果终点被发现，转到FIND_FINAL_GOAL, 之后不考虑重规划
+        break;
+      }
       // Replan if next frontier to be visited is covered
       else if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
@@ -234,10 +239,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
     case REPLAN: {
       static bool first_enter_replan_ = true;
-      if (FindFinalGoal()) {
-        transitState(FIND_FINAL_GOAL, "FSM");  //如果终点被发现，转到FIND_FINAL_GOAL
-        break;
-      }
       if (first_enter_replan_ && last_fail_reason != COLLISION_CHECK_FAIL) {
         replan_begin_time = ros::Time::now();
         setdata(START_FROM_LAST_TRAJ);
@@ -257,6 +258,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         visualization_->drawFrontiersGo(choose_frontier_cell, choose_pos_, choose_yaw_);
         transitState(PUB_TRAJ, "FSM");
         first_enter_replan_ = true;
+        do_final_plan = true;
       }
 
       else if (next_goal_ == NO_FRONTIER)
@@ -301,11 +303,17 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         visualization_->drawFrontiersGo(choose_frontier_cell, choose_pos_, choose_yaw_);
         transitState(PUB_TRAJ, "FSM");
         first_enter_findend_ = true;
+        do_final_plan = false;
       }
 
       else {
         choose_yaw_ = expl_manager_->getNextYaw();
         ROS_ERROR("Try end_yaw = %.2f But can't find path to end...-----------------------------", choose_yaw_);
+        if (std::isnan(choose_yaw_)) {
+          first_enter_findend_ = true;
+          transitState(REPLAN, "FSM");
+          break;
+        }
       }
 
       break;

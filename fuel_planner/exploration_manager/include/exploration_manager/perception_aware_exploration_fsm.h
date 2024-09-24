@@ -131,6 +131,7 @@ public:
   double choose_yaw_, origin_yaw_;
   vector<Eigen::Vector3d> choose_frontier_cell;
   ros::Time replan_begin_time;
+  bool do_final_plan;
   // Param
   double still_choose_new_length_thr_;  // 由于计算需要时间，如果这个过程距离变化不大，可以继续选择最好的
 

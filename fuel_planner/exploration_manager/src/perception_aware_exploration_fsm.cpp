@@ -216,7 +216,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       }
       // Replan if find final goal
       else if (t_cur > fp_->replan_thresh2_ && FindFinalGoal()) {
-        if (do_final_plan) transitState(FIND_FINAL_GOAL, "FSM");  //如果终点被发现，转到FIND_FINAL_GOAL, 之后不考虑重规划
+        if (do_final_plan) transitState(FIND_FINAL_GOAL, "FSM");  // 如果终点被发现，转到FIND_FINAL_GOAL, 之后不考虑重规划
         break;
       }
       // Replan if next frontier to be visited is covered
@@ -351,7 +351,7 @@ int PAExplorationFSM::callExplorationPlanner() {
       return res;
       break;
     default:
-      ROS_WARN("[callExplorationPlanner] WRRONG RETURN FOR selectNextGoal!!");
+      ROS_WARN("[callExplorationPlanner] WRONG RETURN FOR selectNextGoal!!");
       break;
   }
 
@@ -559,7 +559,7 @@ bool PAExplorationFSM::transitViewpoint() {
   static int position_fail_count = 0;
   static int yaw_fail_count = 0;
   bool need_cycle = true;
-  while (need_cycle) {  //这里之所以执行循环是因为有些情况需要跳转 last_fail_reason, need_cycle =true表示当下循环即可结束
+  while (need_cycle) {  // 这里之所以执行循环是因为有些情况需要跳转 last_fail_reason, need_cycle =true表示当下循环即可结束
     switch (last_fail_reason) {
       /**
        *正常进来这个函数不可能是 NO_NEED_CHANGE，直接返回 false
@@ -582,9 +582,11 @@ bool PAExplorationFSM::transitViewpoint() {
           choose_yaw_ = ed->yaw_now;
           choose_frontier_cell = ed->frontier_now;
           last_used_viewpoint_pos = choose_pos_;
-        } else {  //在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
+        }
+
+        else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
           if (!ft->get_next_viewpoint_forbadpos(choose_pos_, choose_yaw_, choose_frontier_cell)) {
-            //遍历完所有情况依然失败
+            // 遍历完所有情况依然失败
             cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
             return false;
           }
@@ -598,16 +600,16 @@ bool PAExplorationFSM::transitViewpoint() {
        */
       case POSITION_OPT_FAIL: {
         cout << "[transitViewpoint] POSITION_OPT_FAIL" << endl;
-        //优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
+        // 优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
         if (position_fail_count < 1) {
           position_fail_count++;
           need_cycle = false;
-          //初始状态和末状态都不进行设置，即不变
+          // 初始状态和末状态都不进行设置，即不变
         } else {
           position_fail_count = 0;
           last_fail_reason = PATH_SEARCH_FAIL;
           need_cycle = true;
-          //转向 PATH_SEARCH_FAIL
+          // 转向 PATH_SEARCH_FAIL
         }
         break;
       }
@@ -616,13 +618,13 @@ bool PAExplorationFSM::transitViewpoint() {
        */
       case YAW_INIT_FAIL: {
         cout << "[transitViewpoint] YAW_INIT_FAIL" << endl;
-        if (length2best > still_choose_new_length_thr_) {  //最好的frontier已经变了，位置需要重新规划
+        if (length2best > still_choose_new_length_thr_) {  // 最好的frontier已经变了，位置需要重新规划
           last_fail_reason = PATH_SEARCH_FAIL;
           need_cycle = true;
           break;
-        } else {  //在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
+        } else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
           if (!ft->get_next_viewpoint_forbadyaw(choose_pos_, choose_yaw_, choose_frontier_cell)) {
-            //遍历完所有情况依然失败
+            // 遍历完所有情况依然失败
             cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
             return false;
           }
@@ -637,16 +639,16 @@ bool PAExplorationFSM::transitViewpoint() {
        */
       case YAW_OPT_FAIL: {
         cout << "[transitViewpoint] YAW_OPT_FAIL" << endl;
-        //优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
+        // 优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
         if (yaw_fail_count < 1) {
           yaw_fail_count++;
           need_cycle = false;
-          //初始状态和末状态都不进行设置，即不变
+          // 初始状态和末状态都不进行设置，即不变
         } else {
           yaw_fail_count = 0;
           last_fail_reason = YAW_INIT_FAIL;
           need_cycle = true;
-          //转向 PATH_SEARCH_FAIL
+          // 转向 PATH_SEARCH_FAIL
         }
         break;
       }
@@ -696,7 +698,7 @@ void PAExplorationFSM::setdata(const REPLAN_TYPE& replan_start_type) {
   }
 
   switch (replan_switch) {
-    case START_FROM_TRAJ_NOW: {  //用于上一段轨迹
+    case START_FROM_TRAJ_NOW: {  // 用于上一段轨迹
       cout << "START_FROM_TRAJ_NOW" << endl;
       start_pos_ = odom_pos_;
       start_vel_ = odom_vel_;

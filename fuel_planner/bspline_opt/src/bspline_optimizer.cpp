@@ -307,10 +307,10 @@ void BsplineOptimizer::optimize() {
       for (int j = 0; j < dim_; ++j) control_points_(i, j) = best_variable_[dim_ * i + j];
     if (optimize_time_) knot_span_ = best_variable_[variable_num_ - 1];
 
-    if (cost_function_ & MINTIME) {
-      std::cout << "Iter num: " << iter_num_ << ", time: " << (ros::Time::now() - t1).toSec() << ", point num: " << point_num_
-                << ", comb time: " << comb_time << std::endl;
-    }
+    // if (cost_function_ & MINTIME) {
+    //   std::cout << "Iter num: " << iter_num_ << ", time: " << (ros::Time::now() - t1).toSec() << ", point num: " << point_num_
+    //             << ", comb time: " << comb_time << std::endl;
+    // }
     issuccess = true;
   }
 
@@ -1674,9 +1674,9 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     //   cout << "[bspline optimizer]:parallax cost: " << f_parallax_ << endl;
     // if (cost_function_ & FRONTIERVISIBILITY_POS)
     //   cout << "[bspline optimizer]:view frontier(pos) cost: " << f_frontier_visibility_pos_ << endl;
-    if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ << endl;
-    if (cost_function_ & FRONTIERVISIBILITY_YAW)
-      cout << "[bspline optimizer]:view frontier(yaw) cost: " << f_frontier_visibility_yaw_ << endl;
+    // if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ << endl;
+    // if (cost_function_ & FRONTIERVISIBILITY_YAW)
+    //   cout << "[bspline optimizer]:view frontier(yaw) cost: " << f_frontier_visibility_yaw_ << endl;
     // cout << "---------------------------------------------------------------------------" << endl;
   }
 }

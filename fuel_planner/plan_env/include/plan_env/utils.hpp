@@ -53,7 +53,6 @@ public:
     nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
     nh.param("feature/wider_fov_horizontal", wider_fov_horizontal, 0.1);
     nh.param("feature/wider_fov_vertical", wider_fov_vertical, 0.1);
-    nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
     std::vector<double> cam02body;
     if (nh.getParam("feature/cam02body", cam02body)) {
       if (cam02body.size() == 16) {
@@ -118,6 +117,17 @@ public:
     return within_horizontal_fov && within_vertical_fov;
   }
 
+  void fromOdom2Camera(const Eigen::Vector3d& odom_pos, const Eigen::Quaterniond& odom_orient, Eigen::Vector3d& camera_pose,
+      Eigen::Quaterniond& camera_orient) {
+    Matrix4d Pose4d_receive = Matrix4d::Identity();
+    Pose4d_receive.block<3, 3>(0, 0) = odom_orient.toRotationMatrix();
+    Pose4d_receive.block<3, 1>(0, 3) = odom_pos;
+    Matrix4d camera_Pose4d = Pose4d_receive * sensor2body;
+    camera_pose = camera_Pose4d.block<3, 1>(0, 3);
+    Eigen::Matrix3d cam_rot_matrix = camera_Pose4d.block<3, 3>(0, 0);
+    camera_orient = Eigen::Quaterniond(cam_rot_matrix);
+  }
+
   bool is_depth_useful(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
     return (target_p - camera_p).norm() > feature_visual_min && (target_p - camera_p).norm() < feature_visual_max;
   }
@@ -125,6 +135,7 @@ public:
   bool is_depth_useful_at_level(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
     if ((target_p - camera_p).norm() < feature_visual_min && (target_p - camera_p).norm() > feature_visual_max)
       return false;  // 在球形之外
+
     Eigen::Vector3d direction = target_p - camera_p;
     // 计算方向向量在水平平面（x-y 平面）上的投影,并计算夹角
     Eigen::Vector3d horizontal_projection = direction;

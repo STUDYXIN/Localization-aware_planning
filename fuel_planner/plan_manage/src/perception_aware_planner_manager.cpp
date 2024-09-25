@@ -235,20 +235,20 @@ bool FastPlannerManager::checkTrajExplorationOnKnots(const vector<Vector3d>& tar
   statistics_.observed_frontier_num_ = observed_features.size();
 
   double ratio = static_cast<double>(observed_features.size()) / target_frontier.size();
-  ROS_INFO("[FastPlannerManager::checkTrajLocalizabilityOnKnots] Exploration Info: %ld/%ld", observed_features.size(),
-      target_frontier.size());
+  // ROS_INFO("[FastPlannerManager::checkTrajLocalizabilityOnKnots] Exploration Info: %ld/%ld", observed_features.size(),
+  //     target_frontier.size());
   if (ratio < pp_.min_observed_ratio_) {
-    ROS_WARN("[FastPlannerManager::checkTrajExplorationOnKnots] Poor exploration");
+    // ROS_WARN("[FastPlannerManager::checkTrajExplorationOnKnots] Poor exploration");
     return false;
   }
 
   return true;
 }
 
-void FastPlannerManager::printStatistics() {
+void FastPlannerManager::printStatistics(const vector<Vector3d>& target_frontier) {
   cout << ANSI_COLOR_GREEN_BOLD;
   cout << "====================Local Planner Statistics====================" << endl;
-  cout << fixed << setprecision(6);
+  cout << fixed << setprecision(3);
   cout << "Time of Kinodynamic A*:      " << statistics_.time_kinodynamic_astar_ << " (sec)" << endl;
   cout << "Time of Pos Traj Optimize:   " << statistics_.time_pos_traj_opt_ << " (sec)" << endl;
   cout << "Time of Yaw Initial Planner: " << statistics_.time_yaw_initial_planner_ << " (sec)" << endl;
@@ -264,8 +264,9 @@ void FastPlannerManager::printStatistics() {
   cout << "Max Acc on Pos Traj:                " << statistics_.max_acc_ << " (m^2/s)" << endl;
   cout << "Max Yaw Rate on Yaw Traj:           " << statistics_.max_yaw_rate_ << " (rad/s)" << endl;
   cout << "Knot Span:                          " << statistics_.dt_ << " (s)" << endl;
-  cout << "Observed Frontiers Num(Yaw Intial): " << statistics_.observed_frontier_num_yaw_initial_ << endl;
-  cout << "Observed Frontiers Num:             " << statistics_.observed_frontier_num_ << endl;
+  cout << "Observed Frontiers Num(Yaw Intial): " << statistics_.observed_frontier_num_yaw_initial_ << "/"
+       << target_frontier.size() << endl;
+  cout << "Observed Frontiers Num:             " << statistics_.observed_frontier_num_ << "/" << target_frontier.size() << endl;
   cout.unsetf(ios::fixed);
   cout << "===============================================================" << endl;
   cout << NORMAL_FONT;
@@ -714,7 +715,7 @@ void FastPlannerManager::planYawExplore(
   plan_data_.dt_yaw_ = dt_yaw;
 }
 
-bool FastPlannerManager::planYawPerceptionAware(
+int FastPlannerManager::planYawPerceptionAware(
     const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal) {
 
   // Yaw b-spline has same segment number as position b-spline
@@ -839,8 +840,6 @@ bool FastPlannerManager::planYawPerceptionAware(
 
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
   if (!bspline_optimizers_[1]->issuccess) return YAW_OPT_ERROR;
-  // double time_opt = (ros::Time::now() - time_start_2).toSec();
-  // ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
 
   statistics_.time_yaw_traj_opt_ = (ros::Time::now() - time_start_2).toSec();
 
@@ -852,18 +851,6 @@ bool FastPlannerManager::planYawPerceptionAware(
 
   local_data_.yaw_traj_.getMeanAndMaxVel(statistics_.mean_yaw_rate_, statistics_.max_yaw_rate_);
 
-  // Step3: 更新yaw及其导数的轨迹W
-  // vector<double> knot_yaw;
-  // for (int i = 0; i < ctrl_pts_num - 2; ++i) {
-  //   double t = i * dt_yaw;
-  //   knot_yaw.emplace_back(local_data_.yaw_traj_.evaluateDeBoorT(t)[0]);
-  // }
-
-  // // ROS_INFO("Compare knot point of yaw");
-  // ROS_ASSERT(knot_yaw.size() == yaw_waypoints.size());
-  // // for (size_t i = 0; i < knot_yaw.size(); ++i) {
-  // //   cout << "knot_yaw: " << knot_yaw[i] << ", yaw_waypoints: " << yaw_waypoints[i] << endl;
-  // // }
   return SUCCESS_FIND_YAW_TRAJ;
 }
 

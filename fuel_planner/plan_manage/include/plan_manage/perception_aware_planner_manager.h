@@ -40,6 +40,8 @@ struct Statistics {
   int observed_frontier_num_yaw_initial_;  // 本条轨迹可观测到的目标frontier cell数量(yaw_initial_planner)
   int observed_frontier_num_;              // 本条轨迹可观测到的目标frontier cell数量
   double dt_;                              // 均匀B样条轨迹时间间隔(s)
+  double last_success_time_;               // 上一次成功局部规划的时间
+  int local_plan_time_ = 0;                // 局部规划总次数，每次成功后清零
 };
 
 class FastPlannerManager {
@@ -63,7 +65,8 @@ public:
       const double& time_lb = -1);
 
   void planYawExplore(const Eigen::Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time);
-  int planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells);
+  int planYawPerceptionAware(
+      const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal);
 
   void initPlanModules(ros::NodeHandle& nh);
   void setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints);
@@ -83,7 +86,7 @@ public:
     frontier_finder_ = frontier_finder;
   }
 
-  void printStatistics();
+  void printStatistics(const vector<Vector3d>& target_frontier);
 
   PlanParameters pp_;
 

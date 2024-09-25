@@ -232,7 +232,7 @@
     <param name="yaw_initial/max_yaw_rate2" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
     <param name="yaw_initial/w" value="100.0" type="double" />
     <param name="yaw_initial/min_info_gain" value="30" type="double" />
-    <param name="yaw_initial/piece_num" value="15" type="int" />
+    <param name="yaw_initial/piece_num" value="20" type="int" />
     <param name="yaw_initial/ld_frontier" value="1.0" type="double" />
     <param name="yaw_initial/ld_final_goal" value="100.0" type="double" />
 

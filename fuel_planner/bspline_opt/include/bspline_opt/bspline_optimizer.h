@@ -260,8 +260,6 @@ public:
   Vector3d frontier_centre_, view_point_pos_;
   double view_point_yaw_;
 
-  CameraParam::Ptr camera_param_ = nullptr;
-
   void setFrontierCells(const vector<Vector3d>& frontier_cells) {
     frontier_cells_ = frontier_cells;
   }

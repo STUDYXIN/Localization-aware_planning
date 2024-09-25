@@ -1,5 +1,19 @@
 # 更新日志
 
+## 9月25日更新：
+
+### 将这些天改动的yaw轨迹规划内容部分合并到现有代码中：
+
+针对探索frontier:
+
+`calcFrontierVisibilityCostAndGradientsKnots`函数里对周报里提到的分类frontier方式做了一定程度的实现
+
+针对feature:
+
+`calcYawCoVisbilityCost`函数修复了之前因为对共视cost理解有问题导致硬约束加的不合理的bug
+
+同步修改了yaw initial planner的一些内容，增加了piece num到20（应该可以改善yaw graph频繁建立失败的问题）
+
 ## 9月23日更新(YCX)
 
 ### 重写轨迹的起点定义，尽可能减少当轨迹搜寻失败重新搜寻的时候无人机的晃动
@@ -55,7 +69,7 @@
           */
       ...
         }}}
-
+  
     ```
 
 - **修改VIEWPOINT内部机理**
@@ -106,6 +120,7 @@
     ```
 
   `unavailableViewpointManage_`中会记录失败的VIEWPOINT的位置，加入kd-tree中，在成功规划时清除kd-tree。每次选择VIEWPOINT的时候会利用距离不超过一定阈值的原理判断这个VIEWPOINT是否被选择过
+  
   > 注：之所以不给viewpoint加上序号，而使用距离数值是因为frontier实时更新的过程是先摧毁现有的，再重新选择，这个时候上次的viewpoint已经全部被摧毁了,所以使用距离判断，防止无人机重复选择同一个坏的VIEWPOINT，进而卡死。
 
 ### 其他改动

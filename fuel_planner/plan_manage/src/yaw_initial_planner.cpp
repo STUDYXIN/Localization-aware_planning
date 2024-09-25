@@ -42,8 +42,8 @@ void YawInitialPlanner::preprocessFrontier() {
   for (size_t i = 0; i < num_layers; i++) {
     Vector3d pos = pos_[i];
     for (size_t j = 0; j < target_frontier_.size(); j++) {
-      Vector3d frontier = target_frontier_[i];
-      if (frontier_finder_->getVisibility(pos, frontier)) target_frontier_aft_preprocess_[i].emplace_back(j);
+      Vector3d cell = target_frontier_[j];
+      if (frontier_finder_->getVisibility(pos, cell)) target_frontier_aft_preprocess_[i].emplace_back(j);
     }
   }
 

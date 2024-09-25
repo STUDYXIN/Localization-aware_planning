@@ -1,14 +1,13 @@
 #include <active_perception/frontier_finder.h>
+#include <active_perception/perception_utils.h>
+
+#include <plan_env/edt_environment.h>
 #include <plan_env/raycast.h>
 #include <plan_env/sdf_map.h>
 #include <plan_env/feature_map.h>
-// #include <path_searching/astar2.h>
 
-// #include <active_perception/graph_node.h>
-#include <active_perception/perception_utils.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <plan_env/edt_environment.h>
 
 // use PCL region growing segmentation
 // #include <pcl/point_types.h>
@@ -384,7 +383,7 @@ bool FrontierFinder::splitHorizontally(const Frontier& frontier, list<Frontier>&
   // Split a frontier into small piece if it is too large
   auto mean = frontier.average_.head<2>();
   bool need_split = false;
-  for (const auto& cell : frontier.filtered_cells_) {
+  for (auto cell : frontier.filtered_cells_) {
     if ((cell.head<2>() - mean).norm() > cluster_size_xy_) {
       need_split = true;
       break;
@@ -396,11 +395,11 @@ bool FrontierFinder::splitHorizontally(const Frontier& frontier, list<Frontier>&
   // Covariance matrix of cells
   Eigen::Matrix2d cov;
   cov.setZero();
-  for (const auto& cell : frontier.filtered_cells_) {
+  for (auto cell : frontier.filtered_cells_) {
     Eigen::Vector2d diff = cell.head<2>() - mean;
     cov += diff * diff.transpose();
   }
-  cov /= frontier.filtered_cells_.size();
+  cov /= double(frontier.filtered_cells_.size());
 
   // Find eigenvector corresponds to maximal eigenvector
   Eigen::EigenSolver<Eigen::Matrix2d> es(cov);
@@ -460,29 +459,6 @@ bool FrontierFinder::isInBoxes(const vector<pair<Vector3d, Vector3d>>& boxes, co
   return false;
 }
 
-void FrontierFinder::mergeFrontiers(Frontier& ftr1, const Frontier& ftr2) {
-  // Merge ftr2 into ftr1
-  ftr1.average_ = (ftr1.average_ * double(ftr1.cells_.size()) + ftr2.average_ * double(ftr2.cells_.size())) /
-                  (double(ftr1.cells_.size() + ftr2.cells_.size()));
-  ftr1.cells_.insert(ftr1.cells_.end(), ftr2.cells_.begin(), ftr2.cells_.end());
-  computeFrontierInfo(ftr1);
-}
-
-bool FrontierFinder::canBeMerged(const Frontier& ftr1, const Frontier& ftr2) {
-  Vector3d merged_avg = (ftr1.average_ * double(ftr1.cells_.size()) + ftr2.average_ * double(ftr2.cells_.size())) /
-                        (double(ftr1.cells_.size() + ftr2.cells_.size()));
-  // Check if it can merge two frontier without exceeding size limit
-  for (auto c1 : ftr1.cells_) {
-    auto diff = c1 - merged_avg;
-    if (diff.head<2>().norm() > cluster_size_xy_ || diff[2] > cluster_size_z_) return false;
-  }
-  for (auto c2 : ftr2.cells_) {
-    auto diff = c2 - merged_avg;
-    if (diff.head<2>().norm() > cluster_size_xy_ || diff[2] > cluster_size_z_) return false;
-  }
-  return true;
-}
-
 bool FrontierFinder::haveOverlap(const Vector3d& min1, const Vector3d& max1, const Vector3d& min2, const Vector3d& max2) {
   // Check if two box have overlap part
   Vector3d bmin, bmax;
@@ -508,19 +484,17 @@ void FrontierFinder::computeFrontierInfo(Frontier& ftr) {
   ftr.average_.setZero();
   ftr.box_max_ = ftr.cells_.front();
   ftr.box_min_ = ftr.cells_.front();
-  for (const auto& cell : ftr.cells_) {
+  for (auto cell : ftr.cells_) {
     ftr.average_ += cell;
     for (int i = 0; i < 3; ++i) {
       ftr.box_min_[i] = min(ftr.box_min_[i], cell[i]);
       ftr.box_max_[i] = max(ftr.box_max_[i], cell[i]);
     }
   }
-  ftr.average_ /= ftr.cells_.size();
+  ftr.average_ /= double(ftr.cells_.size());
 
   // Compute downsampled cluster
-  // cout << "ftr.cells_ size: " << ftr.cells_.size() << endl;
   downsample(ftr.cells_, ftr.filtered_cells_);
-  // cout << "ftr.filtered_cells_ size: " << ftr.filtered_cells_.size() << endl;
 }
 
 void FrontierFinder::computeFrontiersToVisit() {
@@ -823,14 +797,59 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
   return false;
 }
 
-int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
-  percep_utils_->setPose(pos, yaw);
-  int visib_num = 0;
+bool FrontierFinder::getVisibility(const Vector3d& pos, const Vector3d& point) {
+  // Eigen::Quaterniond odom_orient(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
+  // Eigen::Vector3d camera_pos;
+  // Eigen::Quaterniond camera_orient;
+  // camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pos, camera_orient);
+
+  Eigen::Vector3d camera_pos = pos;  // 这里假设相机位置和机器人位置一样，以后记得改
+  if (!camera_param_ptr->is_depth_useful(camera_pos, point)) return false;
+
+  // Check if frontier cell is visible (not occulded by obstacles)
   Eigen::Vector3i idx;
+  raycaster_->input(point, pos);
+  while (raycaster_->nextId(idx)) {
+    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool FrontierFinder::getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+
+  if (!camera_param_ptr->is_in_FOV(camera_pose, point, camera_orient)) return false;
+
+  // Check if frontier cell is visible (not occulded by obstacles)
+  raycaster_->input(point, pos);
+  while (raycaster_->nextId(idx)) {
+    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+  int visib_num = 0;
   for (const auto& cell : cluster) {
     // Check if frontier cell is inside FOV
     if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
-    // if (!percep_utils_->insideFOV(cell)) continue;
 
     // Check if frontier cell is visible (not occulded by obstacles)
     raycaster_->input(cell, pos);
@@ -847,8 +866,6 @@ int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, co
 }
 
 void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res) {
-
-  // percep_utils_->setPose(pos, yaw);
   Eigen::Vector3i idx;
   Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
   Eigen::Quaterniond odom_orient(angle_axis);
@@ -876,24 +893,26 @@ void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, c
 
 void FrontierFinder::countVisibleCells(
     const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res) {
-
-  percep_utils_->setPose(pos, yaw);
-  // Eigen::Vector3i idx;
-  //  for (int i = 0; i < static_cast<int>(cluster.size()); i++) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
   for (const auto& id : mask) {
     const auto& cell = cluster[id];
     // Check if frontier cell is inside FOV
-    if (!percep_utils_->insideFOV(cell)) continue;
-
+    // if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
     // Check if frontier cell is visible (not occulded by obstacles)
-    // raycaster_->input(cell, pos);
+    raycaster_->input(cell, pos);
     bool visib = true;
-    // while (raycaster_->nextId(idx)) {
-    //   if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-    //     visib = false;
-    //     break;
-    //   }
-    // }
+    while (raycaster_->nextId(idx)) {
+      if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+        visib = false;
+        break;
+      }
+    }
 
     if (visib) res.emplace(id);
   }
@@ -903,7 +922,7 @@ void FrontierFinder::downsample(const vector<Eigen::Vector3d>& cluster_in, vecto
   // downsamping cluster
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloudf(new pcl::PointCloud<pcl::PointXYZ>);
-  for (const auto& cell : cluster_in) cloud->points.emplace_back(cell[0], cell[1], cell[2]);
+  for (auto cell : cluster_in) cloud->points.emplace_back(cell[0], cell[1], cell[2]);
 
   const double leaf_size = edt_env_->sdf_map_->getResolution() * down_sample_;
   pcl::VoxelGrid<pcl::PointXYZ> sor;
@@ -912,7 +931,7 @@ void FrontierFinder::downsample(const vector<Eigen::Vector3d>& cluster_in, vecto
   sor.filter(*cloudf);
 
   cluster_out.clear();
-  for (const auto& pt : cloudf->points) cluster_out.emplace_back(pt.x, pt.y, pt.z);
+  for (auto pt : cloudf->points) cluster_out.emplace_back(pt.x, pt.y, pt.z);
 }
 
 void FrontierFinder::wrapYaw(double& yaw) {

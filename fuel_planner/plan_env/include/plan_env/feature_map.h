@@ -70,7 +70,6 @@ public:
   void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num);
   void getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw);
   shared_ptr<SDFMap> sdf_map;
-  // CameraParam camera_param;
   CameraParam::Ptr camera_param = nullptr;
   ros::Subscriber odom_sub_, sensorpos_sub;
   ros::Publisher feature_map_pub_, visual_feature_cloud_pub_;

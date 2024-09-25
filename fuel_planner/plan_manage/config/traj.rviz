@@ -8,10 +8,11 @@ Panels:
         - /Planning1/position_cmd1
         - /active_perception1/frontier1/Namespaces1
         - /active_perception1/viewpoint1/Namespaces1
+        - /LocalMap1
         - /LocalMap1/occupied_local1/Autocompute Value Bounds1
+        - /LocalMap1/occupied_all1
         - /LocalMap1/occupied_all1/Autocompute Value Bounds1
         - /Simulation1/simulation_map1
-        - /Marker_debug1
         - /Marker_debug1/initial_yaw1
       Splitter Ratio: 0.5216138362884521
     Tree Height: 592
@@ -189,7 +190,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
-        - Alpha: 1
+        - Alpha: 0.20000000298023224
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 1.25
@@ -198,10 +199,10 @@ Visualization Manager:
           Axis: Z
           Channel Name: intensity
           Class: rviz/PointCloud2
-          Color: 116; 116; 116
-          Color Transformer: AxisColor
+          Color: 150; 150; 0
+          Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 0; 0; 0
           Min Color: 0; 0; 0
@@ -216,7 +217,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 0.30000001192092896
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -229,7 +230,7 @@ Visualization Manager:
           Color: 106; 106; 106
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 0; 0; 0
           Min Color: 0; 0; 0
@@ -244,7 +245,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 0.10000000149011612
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -749,7 +750,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 13.366355895996094
+      Distance: 12.344900131225586
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -757,17 +758,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.17760086059570312
-        Y: -0.5714190602302551
-        Z: -1.000030279159546
+        X: 0.858018159866333
+        Y: -0.32839715480804443
+        Z: -1.000030755996704
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.029797077178955
+      Pitch: 0.8097971081733704
       Target Frame: camera
-      Yaw: 3.2714974880218506
+      Yaw: 3.143317699432373
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 40.93450164794922

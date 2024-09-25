@@ -19,6 +19,7 @@
 #include <pcl/filters/voxel_grid.h>
 
 #include <Eigen/Eigenvalues>
+#include <Eigen/Geometry>
 
 using namespace std;
 using namespace Eigen;
@@ -51,7 +52,7 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, ros::NodeHandle& 
   Eigen::Vector3d origin, size;
   edt_env_->sdf_map_->getRegion(origin, size);
   raycaster_->setParams(resolution_, origin);
-  percep_utils_.reset(new PerceptionUtils(nh));
+  // percep_utils_.reset(new PerceptionUtils(nh));
 }
 
 FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap::Ptr& fea, ros::NodeHandle& nh) {
@@ -78,14 +79,175 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
   nh.param("frontier/feature_sample_dphi", feature_sample_dphi, -1.0);
   nh.param("frontier/z_sample_max_length", z_sample_max_length_, -1.0);
   nh.param("frontier/z_sample_num", z_sample_num_, -1);
+  nh.param("frontier/feature_num_max", sort_refer_.feature_num_max, -1);
+  nh.param("frontier/feature_num_max", sort_refer_.visb_max, -1);
+  nh.param("frontier/we", sort_refer_.we, -1.0);
+  nh.param("frontier/wg", sort_refer_.wg, -1.0);
+  nh.param("frontier/wf", sort_refer_.wf, -1.0);
+  nh.param("frontier/wc", sort_refer_.wc, -1.0);
+  nh.param("frontier/domant_frontier_length_thr", domant_frontier_length_thr_, -1.0);
 
   raycaster_.reset(new RayCaster);
   resolution_ = edt_env_->sdf_map_->getResolution();
   Eigen::Vector3d origin, size;
   edt_env_->sdf_map_->getRegion(origin, size);
   raycaster_->setParams(resolution_, origin);
-  percep_utils_.reset(new PerceptionUtils(nh));
+  camera_param_ptr = Utils::getGlobalParam().camera_param_;
+
+  // percep_utils_.reset(new PerceptionUtils(nh));
   frontier_id_count = 0;
+  viewpoint_used_thr = min(z_sample_max_length_ / z_sample_num_, (candidate_rmax_ - candidate_rmin_) / candidate_rnum_);
+  cout << "frontier/viewpoint_used_thr: " << viewpoint_used_thr << endl;
+}
+
+void FrontierFinder::ComputeScoreUnrelatedwithyaw(Viewpoint& viewpoint) {
+  if (abs(ros::Time::now().toSec() - sort_refer_.time) > 1.0) {
+    ROS_ERROR("[FrontierFinder::ComputeScoreUnrelatedwithyaw] Time error when compute viewpoint score. time_now: %.6f "
+              "time_refer_input: %.6f",
+        ros::Time::now().toSec(), sort_refer_.time);
+    viewpoint.score_pos = -9999;  // 这个viewpoint计算必然错误，把分数设置的很低
+    return;
+  }
+  // cout << "pos_final_ " << sort_refer_.pos_final_.transpose() << endl;
+  // cout << "pos_now_ " << sort_refer_.pos_now_.transpose() << endl;
+
+  double goal_score, motioncons_score;
+  Eigen::Vector3d direction_yaw(std::cos(sort_refer_.yaw_now_), std::sin(sort_refer_.yaw_now_), 0);
+  Eigen::Vector3d direction_goal = (sort_refer_.pos_refer_ - sort_refer_.pos_now_).normalized();
+  Eigen::Vector3d direction_target = (viewpoint.pos_ - sort_refer_.pos_now_).normalized();
+
+  goal_score = (M_PI - std::acos(((direction_target).dot(direction_goal)))) / M_PI;
+  motioncons_score = (M_PI - std::acos(((direction_target).dot(direction_yaw)))) / M_PI;
+
+  viewpoint.score_pos = sort_refer_.wc * motioncons_score + sort_refer_.wg * goal_score;
+}
+
+void FrontierFinder::ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, int visib_num_, int feature_num_) {
+  double visb_score = static_cast<double>(visib_num_) / static_cast<double>(sort_refer_.visb_max);
+  double feature_score = static_cast<double>(feature_num_) / static_cast<double>(sort_refer_.feature_num_max);
+  viewpoint.yaw_available.push_back(yaw);
+  viewpoint.score_yaw.push_back(sort_refer_.we * visb_score + sort_refer_.wf * feature_score);
+}
+
+void FrontierFinder::ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, double yaw_ref, int feature_num_) {
+  double diff_yaw = yaw - yaw_ref;
+  wrapYaw(diff_yaw);
+  double visb_score = (M_PI - abs(diff_yaw)) / M_PI;
+  double feature_score = static_cast<double>(feature_num_) / static_cast<double>(sort_refer_.feature_num_max);
+  viewpoint.yaw_available.push_back(yaw);
+  viewpoint.score_yaw.push_back(sort_refer_.we * visb_score + sort_refer_.wf * feature_score);
+}
+
+// void FrontierFinder::CombineScore(Viewpoint& viewpoint) {
+//   if (abs(ros::Time::now().toSec() - sort_refer_.time) > 0.1) {
+//     ROS_ERROR("[FrontierFinder::ComputeScoreUnrelatedwithyaw] Time error when compute viewpoint score. time_now: %.6f "
+//               "time_refer_input: %.6f",
+//         ros::Time::now().toSec(), sort_refer_.time);
+//     viewpoint.score = -9999;  //这个viewpoint计算必然错误，把分数设置的很低
+//     return;
+//   }
+//   if (viewpoint.visib_num_ <= min_visib_num_ || viewpoint.feature_num_ <= min_view_feature_num_of_viewpoint) {
+//     ROS_ERROR("[FrontierFinder::ComputeScoreUnrelatedwithyaw] Error visib num: %d !!! or Error feature num: %d !!! ",
+//         viewpoint.visib_num_, viewpoint.feature_num_);
+//     viewpoint.score = -999;  //这个viewpoint计算必然错误，把分数设置的很低
+//     return;
+//   }
+//   viewpoint.score = sort_refer_.we * viewpoint.visb_score + sort_refer_.wg * viewpoint.goal_score +
+//                     sort_refer_.wf * viewpoint.feature_score + sort_refer_.wc * viewpoint.motioncons_score;
+// }
+
+void FrontierFinder::getBestViewpointData(
+    Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score) {
+  best_id = frontier_sort_id.front();
+  int id = 0;
+  if (frontier_sort_id.size() != frontiers_.size()) {
+    ROS_ERROR("[FrontierFinder::getBestViewpointData] frontier sort fail!!!!!");
+    return;
+  }
+  for (const auto& frontier : frontiers_) {
+    if (id++ != best_id) continue;
+    auto& view = frontier.viewpoints_.front();
+    points = view.pos_;
+    yaws = view.yaw_available[view.sort_id.front()];
+    frontier_cells = frontier.filtered_cells_;
+    best_viewpoint = view;
+    score.clear();
+    score.push_back(view.score_pos);
+    score.push_back(view.score_yaw.front());
+    score.push_back(view.final_score);
+    return;
+  }
+}
+void FrontierFinder::updateScorePos() {
+  for (auto& ftr : frontiers_) {
+    if ((ftr.average_ - sort_refer_.pos_now_).norm() > domant_frontier_length_thr_) {
+      for (auto& view : ftr.viewpoints_) view.final_score = -999;
+      continue;
+    }
+    for (auto& view : ftr.viewpoints_) {
+      ComputeScoreUnrelatedwithyaw(view);
+      view.final_score = view.score_pos + view.score_yaw[view.sort_id.front()];
+    }
+    sort(ftr.viewpoints_.begin(), ftr.viewpoints_.end(),
+        [](const Viewpoint& v1, const Viewpoint& v2) { return v1.final_score > v2.final_score; });
+  }
+}
+
+bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells) {
+  // 这里的逻辑是同一个frontier中的viewpoint检查前3个，都失败后再往下遍历其他frontier
+  if (frontier_sort_id.size() != frontiers_.size()) {
+    ROS_ERROR("[FrontierFinder::get_next_viewpoint_forbadpos] frontier sort fail!!!!!");
+    return false;
+  }
+  for (int sort_num = 0; sort_num < frontier_sort_id.size(); ++sort_num) {
+    best_id = frontier_sort_id[sort_num];
+    int id = 0;
+    for (const auto& frontier : frontiers_) {
+      if (id++ != best_id) continue;  // 遍历到需要的地方，有点蠢。。。
+      for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size();
+           ++viewpoint_num) {  // frontier的viewpoint有按照好坏排序，这里简单选取分数高的，并把选择过的推入kd-tree中，用于下次排除。
+        auto& view = frontier.viewpoints_[viewpoint_num];
+        if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
+          points = view.pos_;
+          yaws = view.yaw_available[view.sort_id.front()];
+          frontier_cells = frontier.filtered_cells_;
+          unavailableViewpointManage_.addViewpoint(view);
+          return true;
+        }
+        // unavailableViewpointManage_.addViewpoint(view);
+      }
+    }
+    cout << "[get_next_viewpoint_forbadpos] search next frontier" << endl;
+  }
+  return false;
+}
+
+bool FrontierFinder::get_next_viewpoint_forbadyaw(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells) {
+  // 这里的逻辑是同一个frontier中的viewpoint的pos都失败后再往下遍历其他frontier 和上面一样
+  if (frontier_sort_id.size() != frontiers_.size()) {
+    ROS_ERROR("[FrontierFinder::get_next_viewpoint_forbadyaw] frontier sort fail!!!!!");
+    return false;
+  }
+  for (int sort_num = 0; sort_num < frontier_sort_id.size(); ++sort_num) {
+    best_id = frontier_sort_id[sort_num];
+    int id = 0;
+    for (const auto& frontier : frontiers_) {
+      if (id++ != best_id) continue;  // 遍历到需要的地方，有点蠢。。。
+      for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size(); ++viewpoint_num) {
+        auto& view = frontier.viewpoints_[viewpoint_num];
+        if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
+          points = view.pos_;
+          yaws = view.yaw_available[view.sort_id.front()];
+          frontier_cells = frontier.filtered_cells_;
+          unavailableViewpointManage_.addViewpoint(view);
+          return true;
+        }
+        // unavailableViewpointManage_.addViewpoint(view);
+      }
+    }
+    cout << "[get_next_viewpoint_forbadyaw] search next frontier" << endl;
+  }
+  return false;
 }
 
 void FrontierFinder::searchFrontiers() {
@@ -106,16 +268,24 @@ void FrontierFinder::searchFrontiers() {
     iter = frontiers.erase(iter);
   };
 
-  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
-  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
+  // Function to move frontier to dormant_frontiers_ if its final score is < -100
+  auto moveToDormant = [&](list<Frontier>::iterator& iter, list<Frontier>& frontiers, list<Frontier>& dormant_frontiers) {
+    dormant_frontiers.push_back(*iter);  // Move to dormant_frontiers_
+    resetFlag(iter, frontiers);          // Remove from frontiers
+  };
 
+  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
+  // std::cout << "Before remove: " << frontiers_.size() << std::endl;
+  updateScorePos();
   removed_ids_.clear();
   int rmv_idx = 0;
   for (auto iter = frontiers_.begin(); iter != frontiers_.end();) {
     if (haveOverlap(iter->box_min_, iter->box_max_, update_min, update_max) && isFrontierChanged(*iter)) {
       resetFlag(iter, frontiers_);
       removed_ids_.push_back(rmv_idx);
-    } else {
+    } else if (iter->viewpoints_.front().final_score < -100)
+      moveToDormant(iter, frontiers_, dormant_frontiers_);
+    else {
       ++rmv_idx;
       ++iter;
     }
@@ -367,7 +537,7 @@ void FrontierFinder::computeFrontiersToVisit() {
         list<Frontier>::iterator inserted = frontiers_.insert(frontiers_.end(), tmp_ftr);
         // Sort the viewpoints by coverage fraction, best view in front
         sort(inserted->viewpoints_.begin(), inserted->viewpoints_.end(),
-            [](const Viewpoint& v1, const Viewpoint& v2) { return v1.visib_num_ > v2.visib_num_; });
+            [](const Viewpoint& v1, const Viewpoint& v2) { return v1.final_score > v2.final_score; });
         if (first_new_ftr_ == frontiers_.end()) first_new_ftr_ = inserted;
       } else {
         // Find no viewpoint, move cluster to dormant list
@@ -383,9 +553,10 @@ void FrontierFinder::computeFrontiersToVisit() {
       if (!tmp_ftr.viewpoints_.empty()) {
         ++new_num;
         list<Frontier>::iterator inserted = frontiers_.insert(frontiers_.end(), tmp_ftr);
+        // inserted->id_ = frontier_id_count++;  //给新加入的赋予新的id
         // Sort the viewpoints by coverage fraction, best view in front
         sort(inserted->viewpoints_.begin(), inserted->viewpoints_.end(),
-            [](const Viewpoint& v1, const Viewpoint& v2) { return v1.visib_num_ > v2.visib_num_; });
+            [](const Viewpoint& v1, const Viewpoint& v2) { return v1.final_score > v2.final_score; });
         if (first_new_ftr_ == frontiers_.end()) first_new_ftr_ = inserted;
       } else {
         // Find no viewpoint, move cluster to dormant list
@@ -394,106 +565,27 @@ void FrontierFinder::computeFrontiersToVisit() {
       }
     }
   }
+  // cout << "dormant_frontiers_.size: " << dormant_frontiers_.size() << " frontiers_.size: " << frontiers_.size()
+  //      << " tmp_frontiers_.size: " << tmp_frontiers_.size() << " frontier_id_count: " << frontier_id_count << endl;
   // Reset indices of frontiers
   int idx = 0;
+  // 定义id
   for (auto& ft : frontiers_) ft.id_ = idx++;
+  // 排序
+  frontier_sort_id.resize(frontiers_.size());
+  std::iota(frontier_sort_id.begin(), frontier_sort_id.end(), 0);
+  vector<list<Frontier>::iterator> frontier_iterators;
+  for (auto it = frontiers_.begin(); it != frontiers_.end(); ++it) {
+    frontier_iterators.push_back(it);
+  }
+  std::sort(frontier_sort_id.begin(), frontier_sort_id.end(), [&frontier_iterators](int i1, int i2) {
+    // 比较两个 Frontier 的 viewpoints_.front().final_score
+    return frontier_iterators[i1]->viewpoints_.front().final_score > frontier_iterators[i2]->viewpoints_.front().final_score;
+  });
   // for (auto& ft : frontiers_) ft.id_ = frontier_id_count++;
 
   // std::cout << "new num: " << new_num << ", new dormant: " << new_dormant_num << std::endl;
   // std::cout << "to visit: " << frontiers_.size() << ", dormant: " << dormant_frontiers_.size() << std::endl;
-}
-
-void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points, vector<double>& yaws,
-    vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells) {
-  points.clear();
-  yaws.clear();
-  averages.clear();
-  visb_num.clear();
-  frontier_cells.clear();
-
-  for (const auto& frontier : frontiers_) {
-    // bool no_view = true;
-    size_t add_idx = 0;
-    // for (const auto &view : frontier.viewpoints_)
-    for (size_t i = 0; i < frontier.viewpoints_.size(); i++) {
-      // Retrieve the first viewpoint that is far enough and has highest coverage
-      if ((frontier.viewpoints_[i].pos_ - cur_pos).norm() < min_candidate_dist_) continue;
-
-      add_idx = i;
-      break;
-    }
-
-    const auto& view = frontier.viewpoints_[add_idx];
-    points.push_back(view.pos_);
-    yaws.push_back(view.yaw_);
-    frontier_cells.push_back(frontier.filtered_cells_);
-    averages.push_back(frontier.average_);
-    visb_num.push_back(view.visib_num_);
-  }
-}
-
-void FrontierFinder::getTopViewpointsInfo(const Vector3d& cur_pos, vector<Eigen::Vector3d>& points, vector<double>& yaws,
-    vector<Eigen::Vector3d>& averages, vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells, vector<int>& idx) {
-  points.clear();
-  yaws.clear();
-  averages.clear();
-  visb_num.clear();
-  frontier_cells.clear();
-  idx.clear();
-
-  for (const auto& frontier : frontiers_) {
-    // bool no_view = true;
-    size_t add_idx = 0;
-    // for (const auto &view : frontier.viewpoints_)
-    for (size_t i = 0; i < frontier.viewpoints_.size(); i++) {
-      // Retrieve the first viewpoint that is far enough and has highest coverage
-      if ((frontier.viewpoints_[i].pos_ - cur_pos).norm() < min_candidate_dist_) continue;
-
-      add_idx = i;
-      break;
-    }
-
-    const auto& view = frontier.viewpoints_[add_idx];
-    points.push_back(view.pos_);
-    yaws.push_back(view.yaw_);
-    frontier_cells.push_back(frontier.filtered_cells_);
-    averages.push_back(frontier.average_);
-    visb_num.push_back(view.visib_num_);
-    idx.push_back(frontier.id_);
-  }
-}
-
-void FrontierFinder::getViewpointsInfo(const Vector3d& cur_pos, const vector<int>& ids, const int& view_num,
-    const double& max_decay, vector<vector<Eigen::Vector3d>>& points, vector<vector<double>>& yaws) {
-  points.clear();
-  yaws.clear();
-  for (auto id : ids) {
-    // Scan all frontiers to find one with the same id
-    for (auto frontier : frontiers_) {
-      if (frontier.id_ == id) {
-        // Get several top viewpoints that are far enough
-        vector<Eigen::Vector3d> pts;
-        vector<double> ys;
-        int visib_thresh = frontier.viewpoints_.front().visib_num_ * max_decay;
-        for (auto view : frontier.viewpoints_) {
-          if (pts.size() >= view_num || view.visib_num_ <= visib_thresh) break;
-          if ((view.pos_ - cur_pos).norm() < min_candidate_dist_) continue;
-          pts.push_back(view.pos_);
-          ys.push_back(view.yaw_);
-        }
-        if (pts.empty()) {
-          // All viewpoints are very close, ignore the distance limit
-          for (auto view : frontier.viewpoints_) {
-            if (pts.size() >= view_num || view.visib_num_ <= visib_thresh) break;
-            pts.push_back(view.pos_);
-            ys.push_back(view.yaw_);
-          }
-        }
-        points.push_back(pts);
-        yaws.push_back(ys);
-      }
-    }
-  }
 }
 
 void FrontierFinder::getFrontiers(vector<vector<Eigen::Vector3d>>& clusters) {
@@ -525,63 +617,32 @@ int FrontierFinder::getVisibleFrontiersNum(const Vector3d& pos, const double& ya
   return visib_num;
 }
 
-void FrontierFinder::findViewpoints(const Vector3d& sample, const Vector3d& ftr_avg, vector<Viewpoint>& vps) {
-  if (!edt_env_->sdf_map_->isInBox(sample) || edt_env_->sdf_map_->getInflateOccupancy(sample) == 1 || isNearUnknown(sample))
-    return;
+void FrontierFinder::computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells) {
+  Eigen::Vector3d ref_dir = (cells.front() - start).normalized();
+  double avg_yaw = 0.0;
+  for (int i = 1; i < cells.size(); ++i) {
+    Eigen::Vector3d dir = (cells[i] - start).normalized();
+    double yaw = acos(dir.dot(ref_dir));
+    if (ref_dir.cross(dir)[2] < 0) yaw = -yaw;
+    avg_yaw += yaw;
+  }
+  avg_yaw = avg_yaw / cells.size() + atan2(ref_dir[1], ref_dir[0]);
+  wrapYaw(avg_yaw);
+  Eigen::Vector3d dir(std::cos(avg_yaw), std::sin(avg_yaw), 0);
+  double min_distance = std::numeric_limits<double>::max();
 
-  double left_angle_, right_angle_, vertical_angle_, ray_length_;
-
-  // Central yaw is determined by frontier's average position and sample
-  auto dir = ftr_avg - sample;
-  double hc = atan2(dir[1], dir[0]);
-
-  vector<int> slice_gains;
-  // Evaluate info gain of different slices
-  for (double phi_h = -M_PI_2; phi_h <= M_PI_2 + 1e-3; phi_h += M_PI / 18) {
-    // Compute gain of one slice
-    int gain = 0;
-    for (double phi_v = -vertical_angle_; phi_v <= vertical_angle_; phi_v += vertical_angle_ / 3) {
-      // Find endpoint of a ray
-      Vector3d end;
-      end[0] = sample[0] + ray_length_ * cos(phi_v) * cos(hc + phi_h);
-      end[1] = sample[1] + ray_length_ * cos(phi_v) * sin(hc + phi_h);
-      end[2] = sample[2] + ray_length_ * sin(phi_v);
-
-      // Do raycasting to check info gain
-      Vector3i idx;
-      raycaster_->input(sample, end);
-      while (raycaster_->nextId(idx)) {
-        // Hit obstacle, stop the ray
-        if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || !edt_env_->sdf_map_->isInBox(idx)) break;
-        // Count number of unknown cells
-        if (edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) ++gain;
+  for (const auto& cell : cells) {
+    Eigen::Vector3d to_cell = cell - start;
+    double projection = to_cell.dot(dir);
+    if (projection > 0) {
+      double distance = (to_cell - projection * dir).norm();
+      if (distance < min_distance) {
+        min_distance = distance;
+        end = cell;
       }
     }
-    slice_gains.push_back(gain);
   }
-
-  // Sum up slices' gain to get different yaw's gain
-  vector<pair<double, int>> yaw_gains;
-  for (int i = 0; i < 6; ++i)  // [-90,-10]-> [10,90], delta_yaw = 20, 6 groups
-  {
-    double yaw = hc - M_PI_2 + M_PI / 9.0 * i + right_angle_;
-    int gain = 0;
-    for (int j = 2 * i; j < 2 * i + 9; ++j)  // 80 degree hFOV, 9 slices
-      gain += slice_gains[j];
-    yaw_gains.push_back(make_pair(yaw, gain));
-  }
-
-  // Get several yaws with highest gain
-  vps.clear();
-  sort(yaw_gains.begin(), yaw_gains.end(),
-      [](const pair<double, int>& p1, const pair<double, int>& p2) { return p1.second > p2.second; });
-  for (int i = 0; i < 3; ++i) {
-    if (yaw_gains[i].second < min_visib_num_) break;
-    Viewpoint vp = { sample, yaw_gains[i].first, yaw_gains[i].second };
-    while (vp.yaw_ < -M_PI) vp.yaw_ += 2 * M_PI;
-    while (vp.yaw_ > M_PI) vp.yaw_ -= 2 * M_PI;
-    vps.push_back(vp);
-  }
+  // cout << " min_distance " << min_distance << " to_cell " << (end - start).transpose() << endl;
 }
 
 // Sample viewpoints around frontier's average position, check coverage to the frontier cells
@@ -612,7 +673,7 @@ void FrontierFinder::sampleViewpoints(Frontier& frontier) {
       // Compute the fraction of covered and visible cells
       int visib_num = countVisibleCells(sample_pos, avg_yaw, cells);
       if (visib_num > min_visib_num_) {
-        Viewpoint vp = { sample_pos, avg_yaw, visib_num };
+        Viewpoint vp = { sample_pos, avg_yaw };
         frontier.viewpoints_.push_back(vp);
         // int gain = findMaxGainYaw(sample_pos, frontier, sample_yaw);
       }
@@ -626,7 +687,9 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
   for (double phi = -M_PI; phi < M_PI; phi += feature_sample_dphi) {
     sample_yaw.push_back(phi);
   }
+  Vector3d start_ = frontier.average_, end_;
   auto& cells = frontier.filtered_cells_;
+  computeYawEndPoint(start_, end_, cells);
   // 三层循环看着很吓人，但数量级基本上是5*5*60 = 1500 其实可以接受
   for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_; rc <= candidate_rmax_ + 1e-3;
        rc += dr)
@@ -642,20 +705,39 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
           continue;
         vector<int> features_num_perYaw;
         feature_map_->get_YawRange_using_Pos(sample_pos, sample_yaw, features_num_perYaw);
-        double feature_yaw;
-        int useful_yaw_count = 0;
         // cout << "[FrontierFinder::sampleBetterViewpoints] yaw: ";
+        Viewpoint vp;
+        vp.pos_ = sample_pos;
+        // cout << "begin_compute_score_pos" << endl;
+        ComputeScoreUnrelatedwithyaw(vp);
+        // cout << "vp.score_pos " << vp.score_pos << endl;
         for (size_t i = 0; i < features_num_perYaw.size(); ++i) {
           // cout << " i: " << i << " yaw: " << features_num_perYaw[i];
           if (features_num_perYaw[i] < min_view_feature_num_of_viewpoint) continue;
-          feature_yaw = sample_yaw[i];
+          double feature_yaw = sample_yaw[i];
           wrapYaw(feature_yaw);
           int visib_num = countVisibleCells(sample_pos, feature_yaw, cells);
           if (visib_num > min_visib_num_) {
-            Viewpoint vp = { sample_pos, feature_yaw, visib_num };
-            frontier.viewpoints_.push_back(vp);
+            // double yaw_ref_ = atan2(end_.y() - start_.y(), end_.x() - start_.x());
+            double yaw_ref_ = atan2(end_.y() - vp.pos_.y(), end_.x() - vp.pos_.x());
+            // wrapYaw(yaw_ref_);
+            // ComputeScoreRelatedwithyaw(vp, feature_yaw, yaw_ref_, features_num_perYaw[i]);
+            ComputeScoreRelatedwithyaw(vp, feature_yaw, visib_num, features_num_perYaw[i]);
+            // cout << "   vp.yaw_score " << vp.score_yaw.front() << endl;
+
+            // Viewpoint vp = { sample_pos, feature_yaw, visib_num, features_num_perYaw[i] };
+            // frontier.viewpoints_.push_back(vp);
           }
           // }
+        }
+        // sort_yaw_score
+        if (vp.yaw_available.size() > 0) {
+          vp.sort_id.resize(vp.score_yaw.size());
+          std::iota(vp.sort_id.begin(), vp.sort_id.end(), 0);
+          std::sort(vp.sort_id.begin(), vp.sort_id.end(), [&vp](int i1, int i2) { return vp.score_yaw[i1] > vp.score_yaw[i2]; });
+          vp.final_score = vp.score_pos + vp.score_yaw[vp.sort_id.front()];
+          // cout << "vp.final_score " << vp.final_score << endl;
+          frontier.viewpoints_.push_back(vp);
         }
       }
 }
@@ -692,7 +774,7 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
         feature_yaw = sample_yaw_near_input[j];
         int visib_num = getVisibleFrontiersNum(input_pos, feature_yaw);
         if (visib_num > min_visib_num_) {
-          Viewpoint output_viewpoint = { input_pos, feature_yaw, visib_num };
+          Viewpoint output_viewpoint = { input_pos, feature_yaw };
           sample_viewpoints.push_back(output_viewpoint);
         }
       }
@@ -701,7 +783,7 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
   }
   if (sample_viewpoints.empty()) return false;
   std::sort(sample_viewpoints.begin(), sample_viewpoints.end(),
-      [](const Viewpoint& a, const Viewpoint& b) { return a.visib_num_ > b.visib_num_; });
+      [](const Viewpoint& a, const Viewpoint& b) { return a.final_score > b.final_score; });
   refactorViewpoint = sample_viewpoints.front();
   return true;
 }
@@ -741,47 +823,14 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
   return false;
 }
 
-bool FrontierFinder::getVisibility(const Vector3d& pos, const Vector3d& point) {
-  Eigen::Vector3d dir = point - pos;
-  if (dir.norm() > percep_utils_->max_dist_) return false;
-
-  // Check if frontier cell is visible (not occulded by obstacles)
-  Eigen::Vector3i idx;
-  raycaster_->input(point, pos);
-  while (raycaster_->nextId(idx)) {
-    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool FrontierFinder::getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point) {
-  percep_utils_->setPose(pos, yaw);
-  Eigen::Vector3i idx;
-
-  // Check if frontier cell is inside FOV
-  if (!percep_utils_->insideFOV(point)) return false;
-
-  // Check if frontier cell is visible (not occulded by obstacles)
-  raycaster_->input(point, pos);
-  while (raycaster_->nextId(idx)) {
-    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
   percep_utils_->setPose(pos, yaw);
   int visib_num = 0;
   Eigen::Vector3i idx;
   for (const auto& cell : cluster) {
     // Check if frontier cell is inside FOV
-    if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
+    // if (!percep_utils_->insideFOV(cell)) continue;
 
     // Check if frontier cell is visible (not occulded by obstacles)
     raycaster_->input(cell, pos);
@@ -799,13 +848,18 @@ int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, co
 
 void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res) {
 
-  percep_utils_->setPose(pos, yaw);
+  // percep_utils_->setPose(pos, yaw);
   Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
   for (int i = 0; i < static_cast<int>(cluster.size()); i++) {
     const auto& cell = cluster[i];
     // Check if frontier cell is inside FOV
-    if (!percep_utils_->insideFOV(cell)) continue;
-
+    // if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
     // Check if frontier cell is visible (not occulded by obstacles)
     raycaster_->input(cell, pos);
     bool visib = true;
@@ -864,30 +918,6 @@ void FrontierFinder::downsample(const vector<Eigen::Vector3d>& cluster_in, vecto
 void FrontierFinder::wrapYaw(double& yaw) {
   while (yaw < -M_PI) yaw += 2 * M_PI;
   while (yaw > M_PI) yaw -= 2 * M_PI;
-}
-
-void FrontierFinder::getLatestFrontier(vector<Vector3d>& latest_frontier) {
-  // ROS_ERROR("[FrontierFinder::getLatestFrontier] DEBUG1");
-  // std::cout << "[FrontierFinder::getLatestFrontier] pos " << latest_viewpoint_.pos_.transpose();
-  // std::cout << " yaw " << latest_viewpoint_.yaw_ << std::endl;
-  // ROS_ERROR("[FrontierFinder::getLatestFrontier] DEBUG2");
-  percep_utils_->setPose(latest_viewpoint_.pos_, latest_viewpoint_.yaw_);
-  for (auto frontier : frontiers_) {
-    Eigen::Vector3i idx;
-    for (auto cell : frontier.filtered_cells_) {
-      if (!percep_utils_->insideFOV(cell)) continue;
-      // Check if frontier cell is visible (not occulded by obstacles)
-      raycaster_->input(cell, latest_viewpoint_.pos_);
-      bool visib = true;
-      while (raycaster_->nextId(idx)) {
-        if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-          visib = false;
-          break;
-        }
-      }
-      if (visib) latest_frontier.push_back(cell);
-    }
-  }
 }
 
 Eigen::Vector3i FrontierFinder::searchClearVoxel(const Eigen::Vector3i& pt) {

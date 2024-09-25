@@ -1,6 +1,6 @@
 #ifndef _PERCEPTION_AWARE_EXPLORATION_FSM_H_
 #define _PERCEPTION_AWARE_EXPLORATION_FSM_H_
-
+#include <exploration_manager/expl_data.h>
 #include <exploration_manager/perception_aware_exploration_manager.h>
 #include <plan_manage/plan_container.hpp>
 
@@ -36,9 +36,13 @@ struct FSMParam;
 struct FSMData;
 struct M2GData;
 
-enum FSM_EXEC_STATE { INIT, WAIT_TARGET, START_IN_STATIC, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP };
+enum FSM_EXEC_STATE { INIT, WAIT_TARGET, START_IN_STATIC, PUB_TRAJ, MOVE_TO_NEXT_GOAL, REPLAN, EMERGENCY_STOP, FIND_FINAL_GOAL };
 
 enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2 };
+
+enum REPLAN_TYPE { START_FROM_TRAJ_NOW = 0, START_FROM_LAST_TRAJ = 1, START_FROM_ODOM = 2 };
+
+enum REPLAN_REASON { REACH_TMP = 0, CLUSTER_COVER = 1, TIME_OUT = 2, COLLISION_CHECK = 3, NO_REPLAN = 4 };
 
 class PAExplorationFSM : public std::enable_shared_from_this<PAExplorationFSM> {
 public:
@@ -66,14 +70,15 @@ public:
   FSM_EXEC_STATE exec_state_ = FSM_EXEC_STATE::INIT;
   Eigen::Vector3d last_used_viewpoint_pos;
   int best_frontier_id, search_times;
+  //在发布轨迹后更新
   LocalTrajData last_traj;
+  bool is_last_traj_init;
   bool classic_;
   bool do_replan_;
 
   Eigen::Vector3d final_goal_;
   double last_arrive_goal_time_;
   int next_goal_;
-  double replan_begin_time;
 
   int target_type_;  // 1 mannual select, 2 hard code
   double waypoints_[50][3];
@@ -99,7 +104,7 @@ public:
 
   int callExplorationPlanner();
 
-  bool checkReachFinalGoal();
+  bool FindFinalGoal();
 
   void transitState(const FSM_EXEC_STATE new_state, const string& pos_call);
 
@@ -117,6 +122,24 @@ public:
   void init(ros::NodeHandle& nh);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+public:
+  // viewpoint的重新选择
+  // Data
+  VIEWPOINT_CHANGE_REASON last_fail_reason = VIEWPOINT_CHANGE_REASON::NO_NEED_CHANGE;
+  Eigen::Vector3d choose_pos_, origin_pos_;
+  double choose_yaw_, origin_yaw_;
+  vector<Eigen::Vector3d> choose_frontier_cell;
+  ros::Time replan_begin_time;
+  bool do_final_plan;
+  // Param
+  double still_choose_new_length_thr_;  // 由于计算需要时间，如果这个过程距离变化不大，可以继续选择最好的
+
+  // Function
+  bool transitViewpoint();  // 根据错误原因，选择转变的重计算方式
+  void setdata(const REPLAN_TYPE& replan_start_type);
+  void setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoint_change_reason);
+  void setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type = NO_REPLAN);
 };
 
 }  // namespace fast_planner

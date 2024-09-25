@@ -19,7 +19,12 @@
 namespace fast_planner {
 // Fast Planner Manager
 // Key algorithms of mapping and planning are called
-
+#define SUCCESS_FIND_POSISION_TRAJ 0
+#define PATH_SEARCH_ERROR 1
+#define POSISION_OPT_ERROR 2
+#define SUCCESS_FIND_YAW_TRAJ 3
+#define YAW_INIT_ERROR 4
+#define YAW_OPT_ERROR 5
 struct Statistics {
   double time_kinodynamic_astar_;          // 位置轨迹规划混合A*耗时(s)
   double time_pos_traj_opt_;               // 位置轨迹规划B样条优化耗时(s)
@@ -43,9 +48,9 @@ public:
   /* main planning interface */
   bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
       const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel);
-  bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
+  int planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
       const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw,
-      const vector<Vector3d>& frontier_cells, const Vector3d& frontier_center, const double& time_lb);
+      const vector<Vector3d>& frontier_cells, const double& time_lb);
 
   bool sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
       const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw, const double& time_lb = -1);
@@ -58,8 +63,7 @@ public:
       const double& time_lb = -1);
 
   void planYawExplore(const Eigen::Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time);
-  bool planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells,
-      const Vector3d& final_goal);
+  int planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells);
 
   void initPlanModules(ros::NodeHandle& nh);
   void setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints);
@@ -91,6 +95,9 @@ public:
   shared_ptr<Astar> path_finder_;
   unique_ptr<TopologyPRM> topo_prm_;
   shared_ptr<FrontierFinder> frontier_finder_;
+
+  int last_error_type;
+  bool is_pos_search_reach_end;
 
 private:
   /* main planning algorithms & modules */

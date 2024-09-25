@@ -33,10 +33,13 @@ public:
   void initialize(ros::NodeHandle& nh);
 
   NEXT_GOAL_TYPE selectNextGoal(Vector3d& next_pos, double& next_yaw);
-  bool planToNextGoal(
-      const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells, const Vector3d& frontire_center);
-  bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
+  VIEWPOINT_CHANGE_REASON planToNextGoal(
+      const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells);
+  VIEWPOINT_CHANGE_REASON planToFinalGoal(
+      const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells);
 
+  bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
+  void setLastErrorType(VIEWPOINT_CHANGE_REASON reason);
   weak_ptr<PAExplorationFSM> expl_fsm_;
 
   shared_ptr<ExplorationData> ed_;
@@ -44,6 +47,16 @@ public:
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FrontierFinder> frontier_finder_;
   shared_ptr<FeatureMap> feature_map_;
+  //为终点选择合适的采样点
+  vector<double> yaw_samples;
+  int yaw_choose_id;
+  void setSampleYaw(const Vector3d& pos, const double& yaw_now);
+  double getNextYaw();
+  double normalizeYaw(double yaw) {
+    while (yaw > M_PI) yaw -= 2.0 * M_PI;
+    while (yaw < -M_PI) yaw += 2.0 * M_PI;
+    return yaw;
+  }
 
 private:
   shared_ptr<EDTEnvironment> edt_environment_;

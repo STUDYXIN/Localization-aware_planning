@@ -99,94 +99,33 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
   const auto& start_yaw = expl_fsm_.lock()->start_yaw_;
   const auto& final_goal = expl_fsm_.lock()->final_goal_;
-  const auto& gains = expl_fsm_.lock()->gains_;
-  const auto& points = ed_->points_;
-  const auto& yaws = ed_->yaws_;
-  const auto& frontier_cells = ed_->frontier_cells_;
-  const auto& frontier_center = ed_->averages_;
+  const auto& frontier_cells = expl_fsm_.lock()->choose_frontier_cell;
+  auto& last_fail_reason = expl_fsm_.lock()->last_fail_reason;
 
   bool reach_end_flag = false;
 
   // 目标点已经出现在已知区域，直接前往
   if (sdf_map_->getOccupancy(final_goal) == SDFMap::FREE && sdf_map_->getDistance(final_goal) > 0.2) {
-    next_pos = final_goal;
-    ROS_WARN("========================Select final goal as next goal===========================");
-
-    // next_yaw = 0.0;
-
-    vector<double> candidate_yaws;
-    searchYaw(next_pos, candidate_yaws);
-
-    bool success = false;
-    size_t idx = gains[expl_fsm_.lock()->best_frontier_id].first;
-    vector<Vector3d> next_frontier_cells = frontier_cells[idx];
-    Vector3d next_frontier_center = frontier_center[idx];
-    for (const auto& yaw : candidate_yaws) {
-      if (planToNextGoal(next_pos, yaw, next_frontier_cells, next_frontier_center)) {
-        ROS_INFO(
-            "Successfully planned to final goal----x: %f, y: %f, z: %f, yaw: %f", next_pos(0), next_pos(1), next_pos(2), yaw);
-        success = true;
-        reach_end_flag = true;
-        break;
-      }
-    }
-
-    if (!success) {
-      ROS_INFO("Failed to plan to final goal.Try to search frontier.");
+    last_fail_reason = planToFinalGoal(next_pos, next_yaw, frontier_cells);
+    if (last_fail_reason == NO_NEED_CHANGE) {
+      ROS_INFO("SUCCESS FIND END!!!!!.");
+      return REACH_END;
+    } else {
+      ROS_WARN("FAIL TO FIND END!!!!!.");
+      return NO_AVAILABLE_FRONTIER;
     }
   }
 
-  // 需要渐进地通过前沿区域朝目标点摸索
+  if (ed_->frontiers_.empty()) return NO_FRONTIER;
 
-  // 使用混合A*算法搜索最优路径
+  last_fail_reason = planToNextGoal(next_pos, next_yaw, frontier_cells);
+  if (last_fail_reason == NO_NEED_CHANGE) return SEARCH_FRONTIER;
 
-  // Search frontiers and group them into clusters 在fsm中的frontier定时器里实时更新
-
-  if (reach_end_flag) return REACH_END;
-
-  if (ed_->frontiers_.empty()) {
-    ROS_WARN("No coverable frontier.");
-    return NO_AVAILABLE_FRONTIER;
-  }
-
-  // Select point with highest score
-  // const double dg = (final_goal - start_pos).norm();
-  // vector<pair<size_t, double>> gains;
-  // for (size_t i = 0; i < ed_->points_.size(); ++i) {
-  //   double visb_score = static_cast<double>(ed_->visb_num_[i]) / static_cast<double>(ep_->visb_max);
-  //   double goal_score = (dg - (final_goal - ed_->points_[i]).norm()) / dg;
-  //   double feature_score = static_cast<double>(feature_map_->get_NumCloud_using_justpos(ed_->points_[i])) /
-  //                          static_cast<double>(ep_->feature_num_max);
-  //   double motioncons_score =
-  //       std::sin((ed_->points_[i] - start_pos).dot(start_vel) / ((ed_->points_[i] - start_pos).norm() * start_vel.norm())) /
-  //       (M_PI / 2);
-  //   double score = ep_->we * visb_score + ep_->wg * goal_score + ep_->wf * feature_score + ep_->wc * motioncons_score;
-  //   // cout << "[PAExplorationManager] SCORE DEUBUG NUM: " << i << " visb_score: " << visb_score << " goal_score: " <<
-  //   goal_score
-  //   //      << " feature_score: " << feature_score << " score: " << score << " motioncons_score: " << motioncons_score << endl;
-  //   gains.emplace_back(i, score);
-  // }
-
-  // std::sort(gains.begin(), gains.end(), [&](const auto& a, const auto& b) { return a.second > b.second; });
-
-  // 按序遍历前沿点，直到找到一个可以规划成功的点
-
-  // expl_fsm_.lock()->best_frontier_id默认是0，但是若是失败会外部递增
-  size_t idx = gains[expl_fsm_.lock()->best_frontier_id].first;
-  next_pos = points[idx];
-  next_yaw = yaws[idx];
-  vector<Vector3d> next_frontier_cells = frontier_cells[idx];
-  Vector3d next_frontier_center = frontier_center[idx];
-  if (planToNextGoal(next_pos, next_yaw, next_frontier_cells, next_frontier_center)) {
-    expl_fsm_.lock()->last_used_viewpoint_pos = next_pos;
-    return SEARCH_FRONTIER;
-  }
-  ROS_ERROR("[PAExplorationManager::selectNextGoal] The best Viewpoint can't be reached!!!!");
   return NO_AVAILABLE_FRONTIER;
-}
+}  // namespace fast_planner
 
-bool PAExplorationManager::planToNextGoal(
-    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells, const Vector3d& frontire_center) {
+VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
+    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells) {
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -205,25 +144,71 @@ bool PAExplorationManager::planToNextGoal(
   // if (!planner_manager_->sampleBasedReplan(start_pos, start_vel, start_acc, start_yaw(0), next_pos, next_yaw, time_lb)) {
   //   return false;
   // }
-  if (!planner_manager_->planPosPerceptionAware(start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(),
-          next_yaw, frontire_cells, frontire_center, time_lb)) {
-    return false;
-  }
+  // setLastErrorType(expl_fsm_.lock()->last_fail_reason);
+  const auto& last_fail_reason = expl_fsm_.lock()->last_fail_reason;
+  // 简单先把pos和yaw分开来
+  int position_traj_statu = planner_manager_->planPosPerceptionAware(
+      start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, frontire_cells, time_lb);
+  if (position_traj_statu == PATH_SEARCH_ERROR)
+    return PATH_SEARCH_FAIL;
+  else if (position_traj_statu == POSISION_OPT_ERROR)
+    return POSITION_OPT_FAIL;
 
   if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1) {
     ROS_ERROR("Lower bound not satified!");
   }
 
   // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
-  if (!planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells, final_goal)) return false;
+  int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells);
+  if (yaw_traj_statu == YAW_INIT_ERROR)
+    return YAW_INIT_FAIL;
+  else if (yaw_traj_statu == YAW_OPT_ERROR)
+    return YAW_OPT_FAIL;
 
-  if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return false;
+  if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return LOCABILITY_CHECK_FAIL;
 
-  if (!planner_manager_->checkTrajExplorationOnKnots(frontire_cells)) return false;
+  if (!planner_manager_->checkTrajExplorationOnKnots(frontire_cells)) return EXPLORABILITI_CHECK_FAIL;
 
   planner_manager_->printStatistics();
 
-  return true;
+  return NO_NEED_CHANGE;
+}
+
+VIEWPOINT_CHANGE_REASON PAExplorationManager::planToFinalGoal(
+    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells) {
+  const auto& start_pos = expl_fsm_.lock()->start_pos_;
+  const auto& start_vel = expl_fsm_.lock()->start_vel_;
+  const auto& start_acc = expl_fsm_.lock()->start_acc_;
+  const auto& start_yaw = expl_fsm_.lock()->start_yaw_;
+
+  double diff = fabs(next_yaw - start_yaw[0]);
+  double time_lb = min(diff, 2 * M_PI - diff) / ViewNode::yd_;
+
+  const auto& last_fail_reason = expl_fsm_.lock()->last_fail_reason;
+  // 简单先把pos和yaw分开来
+  int position_traj_statu = planner_manager_->planPosPerceptionAware(
+      start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, frontire_cells, time_lb);
+  if (position_traj_statu == PATH_SEARCH_ERROR)
+    return PATH_SEARCH_FAIL;
+  else if (position_traj_statu == POSISION_OPT_ERROR)
+    return POSITION_OPT_FAIL;
+
+  if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1) {
+    ROS_ERROR("Lower bound not satified!");
+  }
+
+  // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
+  int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells);
+  if (yaw_traj_statu == YAW_INIT_ERROR)
+    return YAW_INIT_FAIL;
+  else if (yaw_traj_statu == YAW_OPT_ERROR)
+    return YAW_OPT_FAIL;
+
+  if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return LOCABILITY_CHECK_FAIL;
+
+  planner_manager_->printStatistics();
+
+  return NO_NEED_CHANGE;
 }
 
 bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw) {
@@ -271,6 +256,57 @@ void PAExplorationManager::searchYaw(const Vector3d& pos, vector<double>& yaw_sa
 
     int min_feature_num = Utils::getGlobalParam().min_feature_num_plan_;
     if (f_num > min_feature_num) yaw_samples_res.push_back(yaw);
+  }
+}
+
+void PAExplorationManager::setSampleYaw(const Vector3d& pos, const double& yaw_now) {
+  yaw_samples.clear();
+  yaw_choose_id = 0;
+
+  // 终点可以不用考虑看向未知区域，只用考虑特征点数量，和与当前状态的一致性，简单从当前yaw开始采样
+  double yaw_step = M_PI / 12.0;  // 15度一步进，一共24个采样点
+
+  // 遍历采样的 yaw 值
+  for (double yaw = -M_PI; yaw < M_PI; yaw += yaw_step) {
+    Vector3d acc = Vector3d::Zero();
+    Quaterniond ori = Utils::calcOrientation(yaw, acc);
+    auto f_num = feature_map_->get_NumCloud_using_Odom(pos, ori);
+    if (f_num > Utils::getGlobalParam().min_feature_num_plan_) yaw_samples.push_back(yaw);
+  }
+  double norm_target_yaw = normalizeYaw(yaw_now);  // 归一化当前 yaw
+                                                   // 对 yaw_samples 按照与当前 yaw_now 的差值进行排序
+  std::sort(yaw_samples.begin(), yaw_samples.end(), [this, norm_target_yaw](double yaw1, double yaw2) {
+    double diff1 = this->normalizeYaw(yaw1 - norm_target_yaw);
+    double diff2 = this->normalizeYaw(yaw2 - norm_target_yaw);
+    return std::abs(diff1) < std::abs(diff2);
+  });
+}
+
+double PAExplorationManager::getNextYaw() {
+  if (yaw_choose_id >= yaw_samples.size()) return std::numeric_limits<double>::quiet_NaN();
+  return yaw_samples[yaw_choose_id++];
+}
+
+void PAExplorationManager::setLastErrorType(VIEWPOINT_CHANGE_REASON reason) {
+  switch (reason) {
+    case NO_NEED_CHANGE:
+      planner_manager_->last_error_type = SUCCESS_FIND_POSISION_TRAJ;  // 假设 NO_NEED_CHANGE 表示成功
+      break;
+    case PATH_SEARCH_FAIL:
+      planner_manager_->last_error_type = PATH_SEARCH_ERROR;
+      break;
+    case POSITION_OPT_FAIL:
+      planner_manager_->last_error_type = POSISION_OPT_ERROR;
+      break;
+    case YAW_INIT_FAIL:
+      planner_manager_->last_error_type = YAW_INIT_ERROR;
+      break;
+    case YAW_OPT_FAIL:
+      planner_manager_->last_error_type = YAW_OPT_ERROR;
+      break;
+    default:
+      planner_manager_->last_error_type = -1;  // 未知错误
+      break;
   }
 }
 

@@ -274,21 +274,21 @@ void FastPlannerManager::printStatistics() {
 
 // SECTION perception aware replanning
 
-bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
+int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
     const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw,
-    const vector<Vector3d>& frontier_cells, const Vector3d& frontier_center, const double& time_lb) {
-  std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
-  std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
-  std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
-  std::cout << "[Kino replan]: start yaw: " << start_yaw << endl;
-  std::cout << "[Kino replan]: end pos: " << end_pt.transpose() << endl;
-  std::cout << "[Kino replan]: end vel: " << end_vel.transpose() << endl;
-  std::cout << "[Kino replan]: end yaw: " << end_yaw << endl;
+    const vector<Vector3d>& frontier_cells, const double& time_lb) {
+  // std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
+  // std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
+  // std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
+  // std::cout << "[Kino replan]: start yaw: " << start_yaw << endl;
+  // std::cout << "[Kino replan]: end pos: " << end_pt.transpose() << endl;
+  // std::cout << "[Kino replan]: end vel: " << end_vel.transpose() << endl;
+  // std::cout << "[Kino replan]: end yaw: " << end_yaw << endl;
 
-  frontier_finder_->setLatestViewpoint(end_pt, end_yaw, 0);
+  // frontier_finder_->setLatestViewpoint(end_pt, end_yaw, 0);
   if ((start_pt - end_pt).norm() < 1e-2) {
     cout << "Close goal" << endl;
-    return false;
+    return PATH_SEARCH_ERROR;
   }
 
   // Kinodynamic path searching
@@ -302,7 +302,7 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
     status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
     if (status == KinodynamicAstar::NO_PATH) {
       ROS_ERROR("Kinodynamic A* search fail");
-      return false;
+      return PATH_SEARCH_ERROR;
     }
     plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
   }
@@ -317,7 +317,7 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
       status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
       if (status == KinodynamicAstar::NO_PATH) {
         cout << "[Kino replan]: Can't find path." << endl;
-        return false;
+        return PATH_SEARCH_ERROR;
       }
     }
     plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
@@ -391,14 +391,14 @@ bool FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const 
   // }
 
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
-  if (!bspline_optimizers_[0]->issuccess) return false;
+  if (!bspline_optimizers_[0]->issuccess) return POSISION_OPT_ERROR;
   local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
 
   statistics_.time_pos_traj_opt_ = (ros::Time::now() - time_start_2).toSec();
 
   updateTrajInfo();
 
-  return true;
+  return SUCCESS_FIND_POSISION_TRAJ;
 }
 
 // !SECTION
@@ -755,7 +755,7 @@ bool FastPlannerManager::planYawPerceptionAware(
 
   if (!yaw_initial_planner_->search(start_yaw[0], end_yaw, dt_yaw, yaw_waypoints)) {
     ROS_ERROR("Yaw Trajectory Planning Failed in Graph Search!!!");
-    return false;
+    return YAW_INIT_ERROR;
   }
 
   statistics_.observed_frontier_num_yaw_initial_ = yaw_initial_planner_->getObservedNum();
@@ -838,7 +838,9 @@ bool FastPlannerManager::planYawPerceptionAware(
   // }
 
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
-  if (!bspline_optimizers_[1]->issuccess) return false;
+  if (!bspline_optimizers_[1]->issuccess) return YAW_OPT_ERROR;
+  // double time_opt = (ros::Time::now() - time_start_2).toSec();
+  // ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
 
   statistics_.time_yaw_traj_opt_ = (ros::Time::now() - time_start_2).toSec();
 
@@ -862,8 +864,7 @@ bool FastPlannerManager::planYawPerceptionAware(
   // // for (size_t i = 0; i < knot_yaw.size(); ++i) {
   // //   cout << "knot_yaw: " << knot_yaw[i] << ", yaw_waypoints: " << yaw_waypoints[i] << endl;
   // // }
-
-  return true;
+  return SUCCESS_FIND_YAW_TRAJ;
 }
 
 }  // namespace fast_planner

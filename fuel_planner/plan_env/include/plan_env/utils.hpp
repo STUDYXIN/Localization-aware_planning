@@ -8,6 +8,7 @@
 #include <ros/ros.h>
 
 using Eigen::Matrix3d;
+using Eigen::Matrix4d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using std::vector;
@@ -184,11 +185,6 @@ public:
 
     param_g_.camera_param_.reset(new CameraParam());
     param_g_.camera_param_->init(nh);
-
-    // std::cout << "param_g_.min_feature_num_act_: " << param_g_.min_feature_num_act_ << std::endl;
-    // std::cout << "param_g_.min_covisible_feature_num_act_: " << param_g_.min_covisible_feature_num_act_ << std::endl;
-    // std::cout << "param_g_.min_feature_num_plan_: " << param_g_.min_feature_num_plan_ << std::endl;
-    // std::cout << "param_g_.min_covisible_feature_num_plan_: " << param_g_.min_covisible_feature_num_plan_ << std::endl;
   }
 
   static GlobalParam getGlobalParam() {

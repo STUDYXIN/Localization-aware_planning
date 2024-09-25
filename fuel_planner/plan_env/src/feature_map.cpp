@@ -23,9 +23,7 @@ void FeatureMap::initMap(ros::NodeHandle& nh) {
     loadMap(filename);
   }
   nh.param("feature/yaw_samples_max", yaw_samples_max, 360);
-  // camera_param->init(nh);
   camera_param = Utils::getGlobalParam().camera_param_;
-
   // ros sub and pub
   odom_sub_ = nh.subscribe("/odom_world", 1, &FeatureMap::odometryCallback, this);
   sensorpos_sub = nh.subscribe("/map_ros/pose", 1, &FeatureMap::sensorposCallback, this);
@@ -251,13 +249,9 @@ int FeatureMap::get_NumCloud_using_CamPosOrient(const Eigen::Vector3d& pos, cons
 
 int FeatureMap::get_NumCloud_using_Odom(
     const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<Eigen::Vector3d>& res) {
-  Matrix4d Pose_receive = Matrix4d::Identity();
-  Pose_receive.block<3, 3>(0, 0) = orient.toRotationMatrix();
-  Pose_receive.block<3, 1>(0, 3) = pos;
-  Matrix4d camera_pose = Pose_receive * camera_param->sensor2body;
-  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
-  Eigen::Matrix3d cam_rot_matrix = camera_pose.block<3, 3>(0, 0);
-  Eigen::Quaterniond orient_transformed(cam_rot_matrix);
+  Eigen::Vector3d pos_transformed;
+  Eigen::Quaterniond orient_transformed;
+  camera_param->fromOdom2Camera(pos, orient, pos_transformed, orient_transformed);
 
   return get_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed, res);
 }
@@ -279,13 +273,9 @@ int FeatureMap::get_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, v
 
 int FeatureMap::get_NumCloud_using_Odom(
     const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res) {
-  Matrix4d Pose_receive = Matrix4d::Identity();
-  Pose_receive.block<3, 3>(0, 0) = orient.toRotationMatrix();
-  Pose_receive.block<3, 1>(0, 3) = pos;
-  Matrix4d camera_pose = Pose_receive * camera_param->sensor2body;
-  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
-  Eigen::Matrix3d cam_rot_matrix = camera_pose.block<3, 3>(0, 0);
-  Eigen::Quaterniond orient_transformed(cam_rot_matrix);
+  Eigen::Vector3d pos_transformed;
+  Eigen::Quaterniond orient_transformed;
+  camera_param->fromOdom2Camera(pos, orient, pos_transformed, orient_transformed);
 
   return get_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed, res);
 }
@@ -321,20 +311,16 @@ int FeatureMap::get_More_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& m
   Eigen::Vector3d pos(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
   Eigen::Quaterniond orient(
       msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
-  return get_NumCloud_using_Odom(pos, orient, res);
+  return get_More_NumCloud_using_CamPosOrient(pos, orient, res);
 }
 
 int FeatureMap::get_More_NumCloud_using_Odom(
     const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res) {
-  Matrix4d Pose_receive = Matrix4d::Identity();
-  Pose_receive.block<3, 3>(0, 0) = orient.toRotationMatrix();
-  Pose_receive.block<3, 1>(0, 3) = pos;
-  Matrix4d camera_pose = Pose_receive * camera_param->sensor2body;
-  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
-  Eigen::Matrix3d cam_rot_matrix = camera_pose.block<3, 3>(0, 0);
-  Eigen::Quaterniond orient_transformed(cam_rot_matrix);
+  Eigen::Vector3d pos_transformed;
+  Eigen::Quaterniond orient_transformed;
+  camera_param->fromOdom2Camera(pos, orient, pos_transformed, orient_transformed);
 
-  return get_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed, res);
+  return get_More_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed, res);
 }
 
 int FeatureMap::get_More_NumCloud_using_CamPosOrient(
@@ -365,13 +351,9 @@ int FeatureMap::get_More_NumCloud_using_CamPosOrient(
 }
 
 int FeatureMap::get_NumCloud_using_Odom(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient) {
-  Matrix4d Pose_receive = Matrix4d::Identity();
-  Pose_receive.block<3, 3>(0, 0) = orient.toRotationMatrix();
-  Pose_receive.block<3, 1>(0, 3) = pos;
-  Matrix4d camera_pose = Pose_receive * camera_param->sensor2body;
-  Eigen::Vector3d pos_transformed = camera_pose.block<3, 1>(0, 3);
-  Eigen::Matrix3d cam_rot_matrix = camera_pose.block<3, 3>(0, 0);
-  Eigen::Quaterniond orient_transformed(cam_rot_matrix);
+  Eigen::Vector3d pos_transformed;
+  Eigen::Quaterniond orient_transformed;
+  camera_param->fromOdom2Camera(pos, orient, pos_transformed, orient_transformed);
 
   return get_NumCloud_using_CamPosOrient(pos_transformed, orient_transformed);
 }

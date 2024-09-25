@@ -1,6 +1,132 @@
 # 更新日志
 
-## 9月18日更新(LZH):
+## 9月23日更新(YCX)
+
+### 重写轨迹的起点定义，尽可能减少当轨迹搜寻失败重新搜寻的时候无人机的晃动
+
+```cpp
+  enum REPLAN_TYPE { START_FROM_TRAJ_NOW = 0, START_FROM_LAST_TRAJ = 1, START_FROM_ODOM = 2 };
+  ...
+  void PAExplorationFSM::setdata(const REPLAN_TYPE& replan_start_type)
+  {
+    double t_r = (ros::Time::now() - last_traj.start_time_).toSec() + fp_->replan_time_;
+    double t_c = (ros::Time::now() - replan_begin_time).toSec();
+
+    if (!do_replan_                       // 不重规划
+        || t_r > last_traj.duration_      // 当前时间没有轨迹的运行时间
+        || odom_vel_.norm() < 0.01        // 当前无人机接近静止
+        || t_c > fp_->replan_time_ + 0.5  // replan时间过久，无人机已经被traj_server叫停
+    ) {
+      replan_switch = START_FROM_ODOM;
+    }
+    ...
+  }
+```
+
+### 集成失败后重新选择viewpoint的逻辑
+
+- **新增失败重新选择逻辑**
+
+  - 失败原因集成
+
+      ```cpp
+      enum VIEWPOINT_CHANGE_REASON {
+        NO_NEED_CHANGE,
+        PATH_SEARCH_FAIL,
+        POSITION_OPT_FAIL,
+        YAW_INIT_FAIL,
+        YAW_OPT_FAIL,
+        LOCABILITY_CHECK_FAIL,
+        EXPLORABILITI_CHECK_FAIL,
+        COLLISION_CHECK_FAIL
+      };
+      ```
+
+  - 根据失败原因重新选择viewpoint
+
+    ```cpp
+      bool PAExplorationFSM::transitViewpoint() {
+      // return false 表示极端坏情况，如代码错误,遍历完所有frontier，这个时候返回false，状态机中让无人机停止
+      ...
+      while (need_cycle) {  //这里之所以执行循环是因为有些情况需要跳转 last_fail_reason, need_cycle =true表示当下循环即可结束
+        switch (last_fail_reason) {
+          /**
+          *正常进来这个函数不可能是 NO_NEED_CHANGE，直接返回 false
+          */
+      ...
+        }}}
+
+    ```
+
+- **修改VIEWPOINT内部机理**
+  - viewpoint结构体变成与yaw无关部分的分数，以及一系列可行的YAW及对应的分数。
+
+    ```cpp
+      struct Viewpoint {
+      // Position
+      Vector3d pos_;
+      double score_pos;
+      // Yaw
+      vector<double> yaw_available;
+      vector<double> score_yaw;
+      vector<double> sort_id;
+      // others
+      double final_score;
+      };  
+    ```
+  
+    但是目前选择逻辑还只是根据`final_score`的大小，但是这样处理的好处是当无人机位置变化时，可以快速重新计算`score_pos`，而由于`score_yaw`与无人机odom无关，不需要重新计算，这样可以快速计算出`final_score`！！  
+
+    > 注：之前之所以不这样操作是因为之前每个frontier只对应一个Viewpoint，所以可以在状态机里直接计算Viewpoint分数，但是这样的问题是当重规划失败后，这个frontier上所有viewpoint就被排除了，以上改进解决了这个问题，最直观效果是无人机即使还是会规划失败，但是`“回头“`次数显著减少！
+
+  - 重新选择的逻辑
+    目前虽然`transitViewpoint`写了基于不同原因更换viewpoint的逻辑,但是实际测试下来全部当做**PATH_SEARCH_FAIL**来处理是可行的，后续如果解决不了报错过多的问题，这里可以进行更多处理！目前VIEWPOINT转化的逻辑如下：
+
+    ```cpp
+      bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells) {
+          // 这里的逻辑是同一个frontier中的viewpoint检查前3个，都失败后再往下遍历其他frontier
+          ...
+          for (int sort_num = 0; sort_num < frontier_sort_id.size(); ++sort_num) {
+            ...
+            for (const auto& frontier : frontiers_) {
+              if (id++ != best_id) continue;  //遍历到需要的地方，有点蠢。。。
+              for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size();
+                  ++viewpoint_num) {  // frontier的viewpoint有按照好坏排序，这里简单选取分数高的，并把选择过的推入kd-tree中，用于下次排除。
+                auto& view = frontier.viewpoints_[viewpoint_num];
+                if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
+                  ...
+                }
+                // unavailableViewpointManage_.addViewpoint(view);
+              }
+            }
+            cout << "[get_next_viewpoint_forbadpos] search next frontier" << endl;
+          }
+          return false;
+        }
+    ```
+
+  `unavailableViewpointManage_`中会记录失败的VIEWPOINT的位置，加入kd-tree中，在成功规划时清除kd-tree。每次选择VIEWPOINT的时候会利用距离不超过一定阈值的原理判断这个VIEWPOINT是否被选择过
+  > 注：之所以不给viewpoint加上序号，而使用距离数值是因为frontier实时更新的过程是先摧毁现有的，再重新选择，这个时候上次的viewpoint已经全部被摧毁了,所以使用距离判断，防止无人机重复选择同一个坏的VIEWPOINT，进而卡死。
+
+### 其他改动
+
+- 稍微简洁有效的rviz可视化Marker
+- 打印出yaw-init是在哪里出错，（发现哪里都有，不一定是末端）
+- `traj_service`回退到之前接收到REPLAN_MSG之后过一段时间停止的逻辑，并在状态机中进行一定适配
+- 为了接受错误原因，manage里面函数返回值都进行了一定修改...
+
+### TODO
+
+- feature_map 和 frontier的相机模型改为一致的
+- 位置轨迹需要沉淀一下，而且现在这个经常优化出来起点和混合A*起点不一样（并未修改START优化项的阈值）
+- B样条断点无法解决，还是存在重规划时间过久无人机抖一下的问题
+- 传一系列end yaw操作由于位置轨迹的规划方法需要viewpoint的yaw，所以只是减少了混合A*的搜索过程，目前没想到办法可以解决，除非就不管位置轨迹怎么样
+- 混合A*失败原因暂时不明，还没有找到哪里有问题，另外，结果不是`reach_end`的时候，yaw还是用viewpoint的yaw，这里因为前面viewpoint选择逻辑的更改，现在viewpoint不会选择超过一定距离的点，所以大多是情况下这个问题可以暂时不管。
+- 目前测试下来还是yaw initial planner失败最多，考虑是否需要在位置轨迹搜索之前就考虑这个终点有没有转过去的可能？或者在路径搜索结束后先在节点上yaw initial一下，失败了换viewpoint的yaw...
+
+---
+
+## 9月18日更新(LZH)
 
 - 换用了新的yaw initial planner，使用A*算法进行图搜索，将共视约束以及动力学约束作为硬约束加在生成连接两条节点的边的过程，两个节点之间的cost设定为角度差值，同时，从父节点到子节点的过程中新增观测的frontier数量将减小cost，引导选择frontier可视性更好的节点
 
@@ -18,7 +144,7 @@
 
   说实话还行，就是对规划耗时的要求更高了，轨迹之间的停顿很明显
 
-  ### 待解决的问题：
+  ### 待解决的问题
 
   - yaw轨迹B样条优化的过程中，给每个yaw节点分配的供优化的特征点现在直接暴力从initial planner那里拿过来，这个理论上说实话不太对劲，容易把视角锁的很死
   - yaw轨迹现在动力学约束还是不太好，通过打印数据，轨迹上最大角速度经常突破1rad/s（设定上最大角速度现在是0.6rad/s），根据观察一般越靠近末端越容易大转弯
@@ -26,15 +152,7 @@
   - 到达最终目标点时有时候会猛的顿一下
   - 规划耗时问题
 
-## 9月18日更新
-
-- 修复中间陷入死循环的致命BUG
-
-- 修改位置轨迹优化逻辑，当下不使用APACE的优化项，只是加了一个frontier的优化项，为了保证优化效率，frontier只取`ed_->averages_`一项，但是目前效果不显著
-
-- 将原本的4自由度的混合A*写在了'kino_astar_4degree'中，原本的kinodynamic_astar放的是直接从fuel搬的混合A！现在初始位置轨迹是直接用混合A得来的。
-
-- 修改replan逻辑，主要改动如下：由于我们可能需要在失败后重新选择轨迹，为了保证轨迹连续性，让`traj_server`在接收到`replan`指令后，不是过`replan_time_`时间后就停止，而是在接受新的轨迹之间一直执行原轨迹：
+## 9月18日更新d选择轨迹，为了保证轨迹连续性，让`traj_server`在接收到`replan`指令后，不是过`replan_time_`时间后就停止，而是在接受新的轨迹之间一直执行原轨迹
 
   ```cpp
     void replanCallback(std_msgs::Empty msg) {

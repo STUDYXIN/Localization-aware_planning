@@ -21,19 +21,20 @@ namespace fast_planner {
 // Key algorithms of mapping and planning are called
 
 struct Statistics {
-  double time_kinodynamic_astar_;    // 位置轨迹规划混合A*耗时(s)
-  double time_pos_traj_opt_;         // 位置轨迹规划B样条优化耗时(s)
-  double time_yaw_initial_planner_;  // yaw轨迹规划搜索初值耗时(s)
-  double time_yaw_traj_opt_;         // yaw轨迹规划B样条优化耗时(s)
-  double time_total_;                // 规划总耗时(s)
-  double mean_vel_;                  // 位置轨迹平均速度(m/s)
-  double max_vel_;                   // 位置轨迹最大速度(m/s)
-  double mean_acc_;                  // 位置轨迹平均加速度(m/s)
-  double max_acc_;                   // 位置轨迹最大加速度(m^2/s)
-  double mean_yaw_rate_;             // yaw轨迹平均角速度(rad/s)
-  double max_yaw_rate_;              // yaw轨迹最大角速度(rad/s)
-  int observed_frontier_num_;        // 本条轨迹可观测到的目标frontier cell数量
-  double dt_;                        // 均匀B样条轨迹时间间隔(s)
+  double time_kinodynamic_astar_;          // 位置轨迹规划混合A*耗时(s)
+  double time_pos_traj_opt_;               // 位置轨迹规划B样条优化耗时(s)
+  double time_yaw_initial_planner_;        // yaw轨迹规划搜索初值耗时(s)
+  double time_yaw_traj_opt_;               // yaw轨迹规划B样条优化耗时(s)
+  double time_total_;                      // 规划总耗时(s)
+  double mean_vel_;                        // 位置轨迹平均速度(m/s)
+  double max_vel_;                         // 位置轨迹最大速度(m/s)
+  double mean_acc_;                        // 位置轨迹平均加速度(m/s)
+  double max_acc_;                         // 位置轨迹最大加速度(m^2/s)
+  double mean_yaw_rate_;                   // yaw轨迹平均角速度(rad/s)
+  double max_yaw_rate_;                    // yaw轨迹最大角速度(rad/s)
+  int observed_frontier_num_yaw_initial_;  // 本条轨迹可观测到的目标frontier cell数量(yaw_initial_planner)
+  int observed_frontier_num_;              // 本条轨迹可观测到的目标frontier cell数量
+  double dt_;                              // 均匀B样条轨迹时间间隔(s)
 };
 
 class FastPlannerManager {
@@ -57,7 +58,8 @@ public:
       const double& time_lb = -1);
 
   void planYawExplore(const Eigen::Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time);
-  bool planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells);
+  bool planYawPerceptionAware(const Eigen::Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells,
+      const Vector3d& final_goal);
 
   void initPlanModules(ros::NodeHandle& nh);
   void setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints);
@@ -119,7 +121,7 @@ public:
 
 private:
   // unique_ptr<HeadingPlanner> heading_planner_;
-  unique_ptr<VisibilityUtil> visib_util_;
+  // unique_ptr<VisibilityUtil> visib_util_;
   bool use_4degree_kinoAstar, use_apace_pose_opt_, use_fvp_opt_;
   // !SECTION
 };

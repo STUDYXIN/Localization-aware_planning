@@ -27,7 +27,6 @@ public:
   bool insideFOV(const Vector3d& point);
   void getFOVBoundingBox(Vector3d& bmin, Vector3d& bmax);
 
-private:
   // Data
   // Current camera pos and yaw
   Vector3d pos_;

@@ -106,8 +106,12 @@ public:
   void sampleViewpoints(Frontier& frontier);
   void sampleBetterViewpoints(Frontier& frontier);
 
+  bool getVisibility(const Vector3d& pos, const Vector3d& point);
+  bool getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point);
   int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
   void countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res);
+  void countVisibleCells(
+      const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res);
 
   bool isNearUnknown(const Vector3d& pos);
   vector<Eigen::Vector3i> sixNeighbors(const Eigen::Vector3i& voxel);

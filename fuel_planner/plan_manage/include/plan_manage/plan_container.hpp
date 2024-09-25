@@ -1,7 +1,7 @@
 #ifndef _PLAN_CONTAINER_H_
 #define _PLAN_CONTAINER_H_
 
-#include <active_perception/traj_visibility.h>
+// #include <active_perception/traj_visibility.h>
 #include <bspline/non_uniform_bspline.h>
 #include <path_searching/topo_prm.h>
 #include <poly_traj/polynomial_traj.h>
@@ -244,8 +244,6 @@ public:
   vector<Eigen::Vector3d> block_pts_;
   Eigen::MatrixXd ctrl_pts_;
   NonUniformBspline no_visib_traj_;
-  vector<VisiblePair> visib_pairs_;
-  ViewConstraint view_cons_;
 
   // heading planning
   vector<vector<Eigen::Vector3d>> frontiers_;

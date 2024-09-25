@@ -182,7 +182,6 @@ list<GraphNode::Ptr> TopologyPRM::createGraph(Eigen::Vector3d start, Eigen::Vect
   // std::cout << "[Topo]: node num: " << graph_.size() << std::endl;
 
   return graph_;
-  // return searchPaths(start_node, end_node);
 }
 
 vector<GraphNode::Ptr> TopologyPRM::findVisibGuard(Eigen::Vector3d pt) {

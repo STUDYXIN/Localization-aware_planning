@@ -2,6 +2,7 @@
 #include <pcl/filters/voxel_grid.h>
 
 namespace fast_planner {
+
 PerceptionUtils::PerceptionUtils(ros::NodeHandle& nh) {
   nh.param("perception_utils/top_angle", top_angle_, -1.0);
   nh.param("perception_utils/left_angle", left_angle_, -1.0);
@@ -20,6 +21,7 @@ PerceptionUtils::PerceptionUtils(ros::NodeHandle& nh) {
   // FOV vertices in body frame, for FOV visualization
   double hor = vis_dist_ * tan(left_angle_);
   double vert = vis_dist_ * tan(top_angle_);
+
   Vector3d origin(0, 0, 0);
   Vector3d left_up(vis_dist_, hor, vert);
   Vector3d left_down(vis_dist_, hor, -vert);
@@ -59,7 +61,6 @@ void PerceptionUtils::setPose(const Vector3d& pos, const double& yaw) {
   T_wb.block<3, 1>(0, 3) = pc;
   Eigen::Matrix4d T_wc = T_wb * T_bc_;
   Eigen::Matrix3d R_wc = T_wc.block<3, 3>(0, 0);
-  // Vector3d t_wc = T_wc.block<3, 1>(0, 3);
   normals_ = { n_top_, n_bottom_, n_left_, n_right_ };
   for (auto& n : normals_) n = R_wc * n;
 }
@@ -84,9 +85,10 @@ bool PerceptionUtils::insideFOV(const Vector3d& point) {
   if (dir.norm() > max_dist_) return false;
 
   dir.normalize();
-  for (auto n : normals_) {
+  for (const auto& n : normals_) {
     if (dir.dot(n) < 0.0) return false;
   }
+
   return true;
 }
 

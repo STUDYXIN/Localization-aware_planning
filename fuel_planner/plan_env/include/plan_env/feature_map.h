@@ -1,6 +1,8 @@
 #ifndef FEATURE_MAP_H
 #define FEATURE_MAP_H
 
+#include "plan_env/utils.hpp"
+
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <pcl/filters/voxel_grid.h>
@@ -23,136 +25,6 @@ using std::vector;
 using namespace Eigen;
 
 namespace fast_planner {
-class CameraParam {
-public:
-  double cx;
-  double cy;
-  double fx;
-  double fy;
-  int width;
-  int height;
-  double fov_horizontal;
-  double fov_vertical;
-  double feature_visual_min;
-  double feature_visual_max;
-  double wider_fov_horizontal;
-  double wider_fov_vertical;
-  double quarter_fov_horizontal_rad;
-  double quarter_fov_vertical_rad;
-  Eigen::Matrix4d sensor2body;
-
-  void init(ros::NodeHandle& nh) {
-    nh.param("feature/cam_cx", cx, 321.046);
-    nh.param("feature/cam_cy", cy, 243.449);
-    nh.param("feature/cam_fx", fx, 387.229);
-    nh.param("feature/cam_fy", fy, 387.229);
-    nh.param("feature/cam_width", width, 640);
-    nh.param("feature/cam_height", height, 480);
-    nh.param("feature/feature_visual_max", feature_visual_max, 10.0);
-    nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
-    nh.param("feature/wider_fov_horizontal", wider_fov_horizontal, 0.1);
-    nh.param("feature/wider_fov_vertical", wider_fov_vertical, 0.1);
-    nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
-    std::vector<double> cam02body;
-    if (nh.getParam("feature/cam02body", cam02body)) {
-      if (cam02body.size() == 16) {
-        sensor2body << cam02body[0], cam02body[1], cam02body[2], cam02body[3], cam02body[4], cam02body[5], cam02body[6],
-            cam02body[7], cam02body[8], cam02body[9], cam02body[10], cam02body[11], cam02body[12], cam02body[13], cam02body[14],
-            cam02body[15];
-      } else {
-        ROS_ERROR("Parameter 'feature/cam02body' size is incorrect. Expected 16 values.");
-      }
-    } else {
-      ROS_ERROR("Failed to get parameter 'feature/cam02body'.");
-    }
-    fov_horizontal = 2 * atan(width / (2 * fx)) * 180 / M_PI;
-    fov_vertical = 2 * atan(height / (2 * fy)) * 180 / M_PI;
-    quarter_fov_vertical_rad = (fov_vertical / 2.0) * (M_PI / 180.0) / 2.0;  //只取正常FOV的一半，防止极端情况
-    quarter_fov_horizontal_rad = (fov_horizontal / 2.0) * (M_PI / 180.0) / 2.0;
-    printParameters();
-  }
-
-  void printParameters() {
-    std::cout << "------------------Camera Parameters------------------:" << std::endl;
-    std::cout << "cx: " << cx << std::endl;
-    std::cout << "cy: " << cy << std::endl;
-    std::cout << "fx: " << fx << std::endl;
-    std::cout << "fy: " << fy << std::endl;
-    std::cout << "width: " << width << std::endl;
-    std::cout << "height: " << height << std::endl;
-    std::cout << "FOV Horizontal: " << fov_horizontal << " degrees" << std::endl;
-    std::cout << "FOV Vertical: " << fov_vertical << " degrees" << std::endl;
-    std::cout << "Wider FOV Horizontal: " << wider_fov_horizontal << std::endl;
-    std::cout << "Wider FOV Vertical: " << wider_fov_vertical << std::endl;
-    std::cout << "Feature Visual Max: " << feature_visual_max << std::endl;
-    std::cout << "Feature Visual Min: " << feature_visual_min << std::endl;
-    std::cout << "Half FOV Horizontal Rad: " << quarter_fov_horizontal_rad << std::endl;
-    std::cout << "Half FOV Vertical Rad: " << quarter_fov_vertical_rad << std::endl;
-    std::cout << "-----------------------------------------------------:" << std::endl;
-  }
-
-  bool is_in_wider_FOV(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p, const Eigen::Quaterniond& camera_q) {
-    Eigen::Vector3d target_in_camera = camera_q.inverse() * (target_p - camera_p);
-    double x = target_in_camera.x();
-    double y = target_in_camera.y();
-    double z = target_in_camera.z();
-    if (z <= feature_visual_min || z >= feature_visual_max) return false;
-    double fov_x = atan2(x, z) * 180 / M_PI;
-    double fov_y = atan2(y, z) * 180 / M_PI;
-    bool within_horizontal_fov = std::abs(fov_x) <= wider_fov_vertical / 2.0;
-    bool within_vertical_fov = std::abs(fov_y) <= wider_fov_vertical / 2.0;
-    return within_horizontal_fov && within_vertical_fov;
-  }
-
-  bool is_in_FOV(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p, const Eigen::Quaterniond& camera_q) {
-    Eigen::Vector3d target_in_camera = camera_q.inverse() * (target_p - camera_p);
-    double x = target_in_camera.x();
-    double y = target_in_camera.y();
-    double z = target_in_camera.z();
-    if (z <= feature_visual_min || z >= feature_visual_max) return false;
-    double fov_x = atan2(x, z) * 180 / M_PI;
-    double fov_y = atan2(y, z) * 180 / M_PI;
-    bool within_horizontal_fov = std::abs(fov_x) <= fov_horizontal / 2.0;
-    bool within_vertical_fov = std::abs(fov_y) <= fov_vertical / 2.0;
-    return within_horizontal_fov && within_vertical_fov;
-  }
-
-  bool is_depth_useful(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
-    return (target_p - camera_p).norm() > feature_visual_min && (target_p - camera_p).norm() < feature_visual_max;
-  }
-
-  bool is_depth_useful_at_level(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
-    if ((target_p - camera_p).norm() < feature_visual_min && (target_p - camera_p).norm() > feature_visual_max)
-      return false;  //在球形之外
-    Eigen::Vector3d direction = target_p - camera_p;
-    // 计算方向向量在水平平面（x-y 平面）上的投影,并计算夹角
-    Eigen::Vector3d horizontal_projection = direction;
-    horizontal_projection.z() = 0;
-    double angle = std::atan2(std::abs(direction.z()), horizontal_projection.norm());
-    if (angle > quarter_fov_vertical_rad) return false;  //在水平区之外，即与x-y 平面夹角大于quarter_fov_vertical_rad
-    return true;
-  }
-
-  // 计算从 camera_p 看向 target_p 的可行 yaw 范围
-  Eigen::Vector2d calculateYawRange(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
-    Eigen::Vector2d relative_position_xy(target_p.x() - camera_p.x(), target_p.y() - camera_p.y());
-    double yaw_angle = atan2(relative_position_xy.y(), relative_position_xy.x());
-    // double half_fov = fov_horizontal * M_PI / 180.0 / 2.0;
-    // double min_yaw = yaw_angle - half_fov;
-    // double max_yaw = yaw_angle + half_fov;
-    double min_yaw = yaw_angle - quarter_fov_horizontal_rad;
-    double max_yaw = yaw_angle + quarter_fov_horizontal_rad;
-    while (min_yaw < -M_PI) {
-      min_yaw += 2 * M_PI;
-    }
-    while (max_yaw > M_PI) {
-      max_yaw -= 2 * M_PI;
-    }
-
-    // 返回可行的Yaw角范围
-    return Eigen::Vector2d(min_yaw, max_yaw);
-  }
-};
 
 class EDTEnvironment;
 class SDFMap;
@@ -188,7 +60,7 @@ public:
   int get_NumCloud_using_CamPosOrient(
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
 
-  //增加接口，可以使得feature关注更多特征点，拓宽FOV数据写在algorithm.xml中
+  // 增加接口，可以使得feature关注更多特征点，拓宽FOV数据写在algorithm.xml中
   int get_More_NumCloud_using_Odom(const nav_msgs::OdometryConstPtr& msg, vector<pair<int, Eigen::Vector3d>>& res);
   int get_More_NumCloud_using_Odom(
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
@@ -198,7 +70,8 @@ public:
   void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num);
   void getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw);
   shared_ptr<SDFMap> sdf_map;
-  CameraParam camera_param;
+  // CameraParam camera_param;
+  CameraParam::Ptr camera_param = nullptr;
   ros::Subscriber odom_sub_, sensorpos_sub;
   ros::Publisher feature_map_pub_, visual_feature_cloud_pub_;
   int yaw_samples_max;

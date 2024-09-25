@@ -1,6 +1,4 @@
 #include <active_perception/frontier_finder.h>
-#include <active_perception/graph_node.h>
-#include <active_perception/graph_search.h>
 #include <active_perception/perception_utils.h>
 #include <exploration_manager/expl_data.h>
 #include <exploration_manager/perception_aware_exploration_manager.h>
@@ -71,11 +69,11 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   nh.param("exploration/tsp_dir", ep_->tsp_dir_, string("null"));
   nh.param("exploration/relax_time", ep_->relax_time_, 1.0);
 
-  nh.param("exploration/vm", ViewNode::vm_, -1.0);
-  nh.param("exploration/am", ViewNode::am_, -1.0);
-  nh.param("exploration/yd", ViewNode::yd_, -1.0);
-  nh.param("exploration/ydd", ViewNode::ydd_, -1.0);
-  nh.param("exploration/w_dir", ViewNode::w_dir_, -1.0);
+  // nh.param("exploration/vm", ViewNode::vm_, -1.0);
+  // nh.param("exploration/am", ViewNode::am_, -1.0);
+  // nh.param("exploration/yd", ViewNode::yd_, -1.0);
+  // nh.param("exploration/ydd", ViewNode::ydd_, -1.0);
+  // nh.param("exploration/w_dir", ViewNode::w_dir_, -1.0);
 
   nh.param("exploration/feature_num_max", ep_->feature_num_max, -1);
   nh.param("exploration/visb_max", ep_->visb_max, -1);
@@ -84,15 +82,15 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   nh.param("exploration/wf", ep_->wf, -1.0);
   nh.param("exploration/wc", ep_->wc, -1.0);
 
-  ViewNode::astar_.reset(new Astar);
-  ViewNode::astar_->init(nh, edt_environment_);
-  ViewNode::map_ = sdf_map_;
+  // ViewNode::astar_.reset(new Astar);
+  // ViewNode::astar_->init(nh, edt_environment_);
+  // ViewNode::map_ = sdf_map_;
 
   double resolution_ = sdf_map_->getResolution();
   Eigen::Vector3d origin, size;
   sdf_map_->getRegion(origin, size);
-  ViewNode::caster_.reset(new RayCaster);
-  ViewNode::caster_->setParams(resolution_, origin);
+  // ViewNode::caster_.reset(new RayCaster);
+  // ViewNode::caster_->setParams(resolution_, origin);
 }
 
 NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& next_yaw) {
@@ -196,7 +194,8 @@ bool PAExplorationManager::planToNextGoal(
   const auto& final_goal = expl_fsm_.lock()->final_goal_;
 
   double diff = fabs(next_yaw - start_yaw[0]);
-  double time_lb = min(diff, 2 * M_PI - diff) / ViewNode::yd_;
+  double max_yaw_rate = Utils::getGlobalParam().max_yaw_rate_;
+  double time_lb = min(diff, 2 * M_PI - diff) / max_yaw_rate;
 
   // if (!planner_manager_->kinodynamicReplan(
   //         start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
@@ -216,7 +215,7 @@ bool PAExplorationManager::planToNextGoal(
   }
 
   // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
-  if (!planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells)) return false;
+  if (!planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells, final_goal)) return false;
 
   if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return false;
 
@@ -225,44 +224,6 @@ bool PAExplorationManager::planToNextGoal(
   planner_manager_->printStatistics();
 
   return true;
-}
-
-void PAExplorationManager::shortenPath(vector<Vector3d>& path) {
-  if (path.empty()) {
-    ROS_ERROR("Empty path to shorten");
-    return;
-  }
-
-  // Shorten the tour, only critical intermediate points are reserved.
-  const double dist_thresh = 3.0;
-  vector<Vector3d> short_tour = { path.front() };
-  for (int i = 1; i < path.size() - 1; ++i) {
-    if ((path[i] - short_tour.back()).norm() > dist_thresh)
-      short_tour.push_back(path[i]);
-    else {
-      // Add waypoints to shorten path only to avoid collision
-      ViewNode::caster_->input(short_tour.back(), path[i + 1]);
-      Eigen::Vector3i idx;
-      while (ViewNode::caster_->nextId(idx) && ros::ok()) {
-        if (edt_environment_->sdf_map_->getInflateOccupancy(idx) == 1 ||
-            edt_environment_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-          short_tour.push_back(path[i]);
-          break;
-        }
-      }
-    }
-  }
-
-  if ((path.back() - short_tour.back()).norm() > 1e-3) {
-    short_tour.push_back(path.back());
-  }
-
-  // Ensure at least three points in the path
-  if (short_tour.size() == 2) {
-    short_tour.insert(short_tour.begin() + 1, 0.5 * (short_tour[0] + short_tour[1]));
-  }
-
-  path = short_tour;
 }
 
 bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw) {

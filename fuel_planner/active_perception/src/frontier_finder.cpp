@@ -1,14 +1,13 @@
 #include <active_perception/frontier_finder.h>
+#include <active_perception/perception_utils.h>
+
+#include <plan_env/edt_environment.h>
 #include <plan_env/raycast.h>
 #include <plan_env/sdf_map.h>
 #include <plan_env/feature_map.h>
-// #include <path_searching/astar2.h>
 
-#include <active_perception/graph_node.h>
-#include <active_perception/perception_utils.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <plan_env/edt_environment.h>
 
 // use PCL region growing segmentation
 // #include <pcl/point_types.h>
@@ -105,7 +104,7 @@ void FrontierFinder::ComputeScoreUnrelatedwithyaw(Viewpoint& viewpoint) {
     ROS_ERROR("[FrontierFinder::ComputeScoreUnrelatedwithyaw] Time error when compute viewpoint score. time_now: %.6f "
               "time_refer_input: %.6f",
         ros::Time::now().toSec(), sort_refer_.time);
-    viewpoint.score_pos = -9999;  //这个viewpoint计算必然错误，把分数设置的很低
+    viewpoint.score_pos = -9999;  // 这个viewpoint计算必然错误，把分数设置的很低
     return;
   }
   // cout << "pos_final_ " << sort_refer_.pos_final_.transpose() << endl;
@@ -203,7 +202,7 @@ bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws
     best_id = frontier_sort_id[sort_num];
     int id = 0;
     for (const auto& frontier : frontiers_) {
-      if (id++ != best_id) continue;  //遍历到需要的地方，有点蠢。。。
+      if (id++ != best_id) continue;  // 遍历到需要的地方，有点蠢。。。
       for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size();
            ++viewpoint_num) {  // frontier的viewpoint有按照好坏排序，这里简单选取分数高的，并把选择过的推入kd-tree中，用于下次排除。
         auto& view = frontier.viewpoints_[viewpoint_num];
@@ -232,7 +231,7 @@ bool FrontierFinder::get_next_viewpoint_forbadyaw(Vector3d& points, double& yaws
     best_id = frontier_sort_id[sort_num];
     int id = 0;
     for (const auto& frontier : frontiers_) {
-      if (id++ != best_id) continue;  //遍历到需要的地方，有点蠢。。。
+      if (id++ != best_id) continue;  // 遍历到需要的地方，有点蠢。。。
       for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size(); ++viewpoint_num) {
         auto& view = frontier.viewpoints_[viewpoint_num];
         if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
@@ -550,9 +549,9 @@ void FrontierFinder::computeFrontiersToVisit() {
   // Reset indices of frontiers
   time_debug_.function_start("sortFrontier");
   int idx = 0;
-  //定义id
+  // 定义id
   for (auto& ft : frontiers_) ft.id_ = idx++;
-  //排序
+  // 排序
   frontier_sort_id.resize(frontiers_.size());
   std::iota(frontier_sort_id.begin(), frontier_sort_id.end(), 0);
   vector<list<Frontier>::iterator> frontier_iterators;
@@ -673,11 +672,7 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
     sample_yaw.push_back(phi);
   }
   auto& cells = frontier.filtered_cells_;
-  // Vector3d start_ = frontier.average_, end_;
-  // computeYawEndPoint(start_, end_, cells);
-  // time_debug_.function_end("init_sampleBetterView");
 
-  //三层循环看着很吓人，但数量级基本上是5*5*60 = 1500 其实可以接受
   for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_; rc <= candidate_rmax_ + 1e-3;
        rc += dr)
     for (double z = frontier.average_.z() - z_sample_max_length_; z <= frontier.average_.z() + z_sample_max_length_ + 1e-3;
@@ -831,8 +826,49 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
   return false;
 }
 
+bool FrontierFinder::getVisibility(const Vector3d& pos, const Vector3d& point) {
+  // Eigen::Quaterniond odom_orient(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
+  // Eigen::Vector3d camera_pos;
+  // Eigen::Quaterniond camera_orient;
+  // camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pos, camera_orient);
+
+  Eigen::Vector3d camera_pos = pos;  // 这里假设相机位置和机器人位置一样，以后记得改
+  if (!camera_param_ptr->is_depth_useful(camera_pos, point)) return false;
+
+  // Check if frontier cell is visible (not occulded by obstacles)
+  Eigen::Vector3i idx;
+  raycaster_->input(point, pos);
+  while (raycaster_->nextId(idx)) {
+    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool FrontierFinder::getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+
+  if (!camera_param_ptr->is_in_FOV(camera_pose, point, camera_orient)) return false;
+
+  // Check if frontier cell is visible (not occulded by obstacles)
+  raycaster_->input(point, pos);
+  while (raycaster_->nextId(idx)) {
+    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
-  // percep_utils_->setPose(pos, yaw);
   Eigen::Vector3i idx;
   Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
   Eigen::Quaterniond odom_orient(angle_axis);
@@ -843,7 +879,6 @@ int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, co
   for (const auto& cell : cluster) {
     // Check if frontier cell is inside FOV
     if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
-    // if (!percep_utils_->insideFOV(cell)) continue;
 
     // Check if frontier cell is visible (not occulded by obstacles)
     raycaster_->input(cell, pos);
@@ -860,8 +895,6 @@ int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, co
 }
 
 void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res) {
-
-  // percep_utils_->setPose(pos, yaw);
   Eigen::Vector3i idx;
   Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
   Eigen::Quaterniond odom_orient(angle_axis);
@@ -884,6 +917,33 @@ void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, c
     }
 
     if (visib) res.emplace(i);
+  }
+}
+
+void FrontierFinder::countVisibleCells(
+    const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+  for (const auto& id : mask) {
+    const auto& cell = cluster[id];
+    // Check if frontier cell is inside FOV
+    // if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
+    // Check if frontier cell is visible (not occulded by obstacles)
+    raycaster_->input(cell, pos);
+    bool visib = true;
+    while (raycaster_->nextId(idx)) {
+      if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
+        visib = false;
+        break;
+      }
+    }
+
+    if (visib) res.emplace(id);
   }
 }
 

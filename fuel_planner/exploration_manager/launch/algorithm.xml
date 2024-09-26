@@ -232,8 +232,9 @@
     <param name="yaw_initial/max_yaw_rate2" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
     <param name="yaw_initial/w" value="100.0" type="double" />
     <param name="yaw_initial/min_info_gain" value="30" type="double" />
-    <param name="yaw_initial/piece_num" value="15" type="int" />
+    <param name="yaw_initial/piece_num" value="20" type="int" />
     <param name="yaw_initial/ld_frontier" value="1.0" type="double" />
+    <param name="yaw_initial/ld_final_goal" value="100.0" type="double" />
 
     <!-- planner manager -->
     <param name="manager/max_vel" value="$(arg max_vel)" type="double" />
@@ -308,7 +309,9 @@
     <param name="optimization/ld_vertical_visibility" value="10.0" type="double" />
     <param name="optimization/ld_yaw_covisibility" value="10.0" type="double" />
     <param name="optimization/ld_frontier_visibility_pos" value="50.0" type="double" />
-    <param name="optimization/ld_frontier_visibility_yaw" value="10.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_yaw" value="30.0" type="double" />
+    <param name="optimization/ld_weight1" value="50.0" type="double" />
+    <param name="optimization/ld_weight2" value="10.0" type="double" />
 
     <param name="optimization/dist0" value="0.7" type="double" />
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double" />
@@ -330,7 +333,7 @@
     <param name="optimization/parallax/pot_a" value="20.0" type="double" />
 
     <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
-    <param name="optimization/min_covisible_feature_cost_" value="-30.0" type="double" />
+    <param name="optimization/min_covisible_feature_cost_" value="0.6" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />
     <param name="optimization/k1" value="40.0" type="double" />

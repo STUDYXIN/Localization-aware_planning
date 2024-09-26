@@ -1,9 +1,8 @@
 #ifndef _BSPLINE_OPTIMIZER_H_
 #define _BSPLINE_OPTIMIZER_H_
 
-#include "plan_env/utils.hpp"
-
-#include <active_perception/traj_visibility.h>
+#include <plan_env/utils.hpp>
+#include <plan_env/edt_environment.h>
 #include <ros/ros.h>
 
 #include <Eigen/Eigen>
@@ -32,7 +31,6 @@ public:
   static const int END;
   static const int GUIDE;
   static const int WAYPOINTS;
-  static const int VIEWCONS;
   static const int MINTIME;
   static const int PARALLAX;
   static const int VERTICALVISIBILITY;
@@ -75,7 +73,6 @@ public:
   // optional inputs
   void setGuidePath(const vector<Vector3d>& guide_pt);
   void setWaypoints(const vector<Vector3d>& waypts, const vector<int>& waypt_idx);  // N-2 constraints at most
-  void setViewConstraint(const ViewConstraint& vc);
   void enableDynamic(double time_start);
 
   // SECTION Perception Aware Optimization
@@ -146,6 +143,9 @@ private:
   // 计算整条yaw轨迹的共视性
   void calcYawCoVisbilityCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
+  void calcFrontierVisibilityCostAndGradientsKnots(const vector<Vector3d>& q_cur, const Vector3d& knots_pos,
+      const Vector3d& knots_acc, const int layer, double& cost_i, vector<Vector3d>& dcost_dq_i);
+
   void calcFrontierVisbilityCostYaw(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
   static Vector3d getThrustDirection(const Vector3d& acc) {
@@ -181,6 +181,7 @@ private:
   int order_;  // bspline degree
   int bspline_degree_;
   double ld_smooth_, ld_dist_, ld_feasi_, ld_feasi_yaw_, ld_start_, ld_end_, ld_guide_, ld_waypt_, ld_view_, ld_time_;
+  double ld_weight1_, ld_weight2_;
 
   // SECTION Perception Aware Optimization
   double ld_parallax_;
@@ -236,7 +237,6 @@ private:
   int iter_num_;                       // iteration of the solver
   std::vector<double> best_variable_;  //
   double min_cost_;                    //
-  ViewConstraint view_cons_;
   double pt_dist_;
 
   /* for benckmark evaluation only */
@@ -257,11 +257,8 @@ public:
     frontier_finder_ = frontier_finder;
   }
 
-  vector<Vector3d> frontier_cells_;
   Vector3d frontier_centre_, view_point_pos_;
   double view_point_yaw_;
-
-  CameraParam::Ptr camera_param_ = nullptr;
 
   void setFrontierCells(const vector<Vector3d>& frontier_cells) {
     frontier_cells_ = frontier_cells;
@@ -276,9 +273,16 @@ public:
     view_point_yaw_ = view_point_yaw;
   }
 
-  vector<vector<Vector3d>> observed_features_;
-  void setInitialPlannerData(const vector<vector<Vector3d>>& features) {
-    observed_features_ = features;
+  CameraParam::Ptr camera_param_ = nullptr;
+  vector<Vector3d> frontier_cells_;
+
+  // vector<vector<int>> frontier_status_;
+
+  // vector<vector<Vector3d>> observed_features_;
+
+  YawOptData::Ptr opt_data_ = nullptr;
+  void setOptData(const YawOptData::Ptr& data) {
+    opt_data_ = data;
   }
 
   // !SECTION

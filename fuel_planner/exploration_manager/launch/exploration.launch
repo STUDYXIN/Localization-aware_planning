@@ -133,7 +133,6 @@
     <param name="perception_utils/max_dist" value="4.5" type="double" />
     <param name="perception_utils/vis_dist" value="1.0" type="double" />
 
-
   </node>
 
   <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">

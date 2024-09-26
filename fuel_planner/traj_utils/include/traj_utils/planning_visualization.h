@@ -1,7 +1,7 @@
 #ifndef _PLANNING_VISUALIZATION_H_
 #define _PLANNING_VISUALIZATION_H_
 
-#include <active_perception/traj_visibility.h>
+// #include <active_perception/traj_visibility.h>
 #include <bspline/non_uniform_bspline.h>
 #include <plan_env/obj_predictor.h>
 #include <poly_traj/polynomial_traj.h>

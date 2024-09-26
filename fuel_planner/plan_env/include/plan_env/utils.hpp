@@ -11,8 +11,16 @@ using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
+using std::vector;
 
 namespace fast_planner {
+
+struct YawOptData {
+  using Ptr = std::shared_ptr<YawOptData>;
+
+  vector<vector<int>> frontier_status_;
+  vector<vector<Vector3d>> observed_features_;
+};
 
 class CameraParam {
 public:
@@ -37,6 +45,7 @@ public:
   Eigen::Matrix4d sensor2body;
 
   void init(ros::NodeHandle& nh) {
+
     nh.param("camera/cam_cx", cx, 321.046);
     nh.param("camera/cam_cy", cy, 243.449);
     nh.param("camera/cam_fx", fx, 387.229);
@@ -50,6 +59,7 @@ public:
     nh.param("camera/feature_visual_min", feature_visual_min, 0.1);
     nh.param("camera/frontier_visual_min", frontier_visual_min, 0.1);
     nh.param("camera/frontier_visual_max", frontier_visual_max, 0.1);
+
     std::vector<double> cam02body;
     if (nh.getParam("camera/cam02body", cam02body)) {
       if (cam02body.size() == 16) {
@@ -132,6 +142,7 @@ public:
   bool is_depth_useful_at_level(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
     if ((target_p - camera_p).norm() < feature_visual_min && (target_p - camera_p).norm() > feature_visual_max)
       return false;  // 在球形之外
+
     Eigen::Vector3d direction = target_p - camera_p;
     // 计算方向向量在水平平面（x-y 平面）上的投影,并计算夹角
     Eigen::Vector3d horizontal_projection = direction;
@@ -249,6 +260,7 @@ struct GlobalParam {
   double max_acc_;
   double max_yaw_rate_;
 
+  // 相机参数
   CameraParam::Ptr camera_param_ = nullptr;
 };
 
@@ -270,6 +282,10 @@ public:
 
   static GlobalParam getGlobalParam() {
     return param_g_;
+  }
+
+  static double sigmoid(const double k, const double x) {
+    return 1 / (1 + std::exp(-k * x));
   }
 
   static Quaterniond calcOrientation(const double& yaw, const Vector3d& acc) {

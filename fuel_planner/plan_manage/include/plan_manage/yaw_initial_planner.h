@@ -48,17 +48,18 @@ public:
   vector<YawVertex::Ptr> edges_;     // 记录了以该节点为父节点的边
   YawVertex::Ptr parent_ = nullptr;  // 父节点
 
-  int candiate_parent_num_ = 0;  // 候选的父节点数量
-  int graph_id_;                 // 在图搜索中的id
-  size_t layer_;                 // 在图中所属的层数
-  double g_value_;               // A*算法的g_score
-  double h_value_;               // A*算法的h_score
-  double f_value_;               // A*算法的f_score
-  double yaw_;                   // 航向角
-  int yaw_id_;                   // 航向角的id
-  vector<int> features_id_;      // 自身能看到的特征点的id
-  set<int> frontiers_id_;        // 自身能看到的frontier的id
-  set<int> frontiers_id_path_;   // 在路径上到该节点总共能看到的frontier的ids
+  int candiate_parent_num_ = 0;     // 候选的父节点数量
+  int graph_id_;                    // 在图搜索中的id
+  size_t layer_;                    // 在图中所属的层数
+  double g_value_;                  // A*算法的g_score
+  double h_value_;                  // A*算法的h_score
+  double f_value_;                  // A*算法的f_score
+  double yaw_;                      // 航向角
+  int yaw_id_;                      // 航向角的id
+  vector<int> features_id_;         // 自身能看到的特征点的id
+  set<int> frontiers_id_;           // 自身能看到的frontier的id
+  set<int> frontiers_id_path_;      // 在路径上到该节点总共能看到的frontier的ids
+  bool if_vis_final_goal_ = false;  // 是否能看到最终目标点
 };
 
 class YawNodeComparator {
@@ -74,8 +75,13 @@ public:
 
   YawInitialPlanner(ros::NodeHandle& nh);
 
+  void setFinalGoal(const Vector3d& final_goal) {
+    final_goal_ = final_goal;
+  }
+
   void setTargetFrontier(const vector<Vector3d>& target_frontier) {
     target_frontier_ = target_frontier;
+    preprocessFrontier();
   }
 
   void setFrontierFinder(const shared_ptr<FrontierFinder>& frontier_finder) {
@@ -98,10 +104,13 @@ public:
   void setVisbleFeatures(const YawVertex::Ptr& v);
   int getCoVisibileNum(const YawVertex::Ptr& v1, const YawVertex::Ptr& v2);
 
+  void preprocessFrontier();
+
   void yaw2id(const YawVertex::Ptr& node);
   void id2yaw(const YawVertex::Ptr& node);
   void addVertex(YawVertex::Ptr& vertex);
   void estimateHeuristic(const YawVertex::Ptr& v);
+  void checkIfVisGoal(const YawVertex::Ptr& v);
   double calEdgeCost(const YawVertex::Ptr& from, const YawVertex::Ptr& to);
 
   bool checkFeasibility(const YawVertex::Ptr& v1, const YawVertex::Ptr& v2);
@@ -110,7 +119,9 @@ public:
   bool search(const double start_yaw, const double end_yaw, const double& dt, vector<double>& path);
 
   void publishYawPath();
-  void extractObservedFeatures(vector<vector<Vector3d>>& observed_features);
+  // void extractObservedFeatures(vector<vector<Vector3d>>& observed_features);
+  void prepareOptData(const YawOptData::Ptr& data);
+  int getObservedNum();
 
 private:
   struct Param {
@@ -118,6 +129,7 @@ private:
     vector<double> yaw_samples_;  // yaw采样
     double basic_cost_;           // 基础代价
     double ld_frontier_;
+    double ld_final_goal_;
     double max_yaw_rate_;            // 最大角速度
     int max_diff_yaw_id_;            // 两层之间最大的yaw_id差值
     double dt_;                      // 时间间隔
@@ -140,8 +152,10 @@ private:
   shared_ptr<FeatureMap> feature_map_ = nullptr;
   shared_ptr<FrontierFinder> frontier_finder_ = nullptr;
   vector<Vector3d> target_frontier_;
+  vector<vector<int>> target_frontier_aft_preprocess_;
   vector<Vector3d> pos_;
   vector<Vector3d> acc_;
+  Vector3d final_goal_;
 
   // 规划过程调用的函数
   bool astarSearch(const int start, const int goal);

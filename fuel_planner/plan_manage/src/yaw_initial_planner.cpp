@@ -19,6 +19,7 @@ YawInitialPlanner::YawInitialPlanner(ros::NodeHandle& nh) {
 
   nh.param("yaw_initial/piece_num", param_.piece_num_, -1);
   nh.param("yaw_initial/ld_frontier", param_.ld_frontier_, 0.0);
+  nh.param("yaw_initial/ld_final_goal", param_.ld_final_goal_, 0.0);
 
   param_.basic_cost_ = 2 * M_PI / param_.piece_num_;
 
@@ -26,12 +27,31 @@ YawInitialPlanner::YawInitialPlanner(ros::NodeHandle& nh) {
   for (int i = 0; i < param_.piece_num_; ++i) {
     param_.yaw_samples_[i] = i * 2 * M_PI / param_.piece_num_ - M_PI;
   }
+}
 
-  cout << "param_.piece_num_: " << param_.piece_num_ << endl;
-  cout << "param_.yaw_samples_: " << endl;
-  for (auto yaw : param_.yaw_samples_) {
-    cout << yaw << endl;
+void YawInitialPlanner::preprocessFrontier() {
+  // 根据每一层的pos排除掉：1、太近或太远的frontier;2、被障碍物遮挡的frontier
+  size_t num_layers = pos_.size();
+  ROS_ASSERT(num_layers >= 2);
+
+  target_frontier_aft_preprocess_.clear();
+  target_frontier_aft_preprocess_.resize(num_layers);
+
+  // ROS_INFO_STREAM("[yaw initial planner]: target_frontier size: " << target_frontier_.size());
+
+  for (size_t i = 0; i < num_layers; i++) {
+    Vector3d pos = pos_[i];
+    for (size_t j = 0; j < target_frontier_.size(); j++) {
+      Vector3d cell = target_frontier_[j];
+      if (frontier_finder_->getVisibility(pos, cell)) target_frontier_aft_preprocess_[i].emplace_back(j);
+    }
   }
+
+  // for (size_t i = 0; i < num_layers; i++) {
+  //   cout << "layer " << i << endl;
+  //   for (const auto& id : target_frontier_aft_preprocess_[i]) cout << id << " ";
+  //   cout << endl;
+  // }
 }
 
 void YawInitialPlanner::yaw2id(const YawVertex::Ptr& v) {
@@ -58,8 +78,10 @@ double YawInitialPlanner::calEdgeCost(const YawVertex::Ptr& from, const YawVerte
   new_frontier_ids.insert(from->frontiers_id_path_.begin(), from->frontiers_id_path_.end());
 
   int new_frontier_num = from->frontiers_id_path_.size() + to->frontiers_id_.size() - new_frontier_ids.size();
+  ROS_ASSERT(new_frontier_num >= 0);
 
-  return (diff + param_.basic_cost_) * (1 + std::exp(-param_.ld_frontier_ * new_frontier_num));
+  return (diff + param_.basic_cost_) *
+         (1 + std::exp(-param_.ld_frontier_ * new_frontier_num + (to->if_vis_final_goal_ ? -param_.ld_final_goal_ : 0)));
 };
 
 void YawInitialPlanner::estimateHeuristic(const YawVertex::Ptr& v) {
@@ -67,6 +89,13 @@ void YawInitialPlanner::estimateHeuristic(const YawVertex::Ptr& v) {
   double diff_yaw = end_vert_->calEdgeDiff(v);
 
   v->h_value_ = diff_layer * param_.basic_cost_ + diff_yaw;
+}
+
+void YawInitialPlanner::checkIfVisGoal(const YawVertex::Ptr& v) {
+  v->if_vis_final_goal_ = frontier_finder_->getVisibility(pos_[v->layer_], v->yaw_, final_goal_);
+  // if (v->if_vis_final_goal_) {
+  //   ROS_INFO_STREAM("YawInitialPlanner::checkIfVisGoal: " << pos_[v->layer_].transpose() << " can see final goal!");
+  // }
 }
 
 bool YawInitialPlanner::checkFeasibility(const YawVertex::Ptr& v1, const YawVertex::Ptr& v2) {
@@ -137,7 +166,13 @@ bool YawInitialPlanner::astarSearch(const int start, const int goal) {
 
 void YawInitialPlanner::setVisbleFrontiers(const YawVertex::Ptr& v) {
   v->frontiers_id_.clear();
-  frontier_finder_->countVisibleCells(pos_[v->layer_], v->yaw_, target_frontier_, v->frontiers_id_);
+
+  frontier_finder_->countVisibleCells(
+      pos_[v->layer_], v->yaw_, target_frontier_, target_frontier_aft_preprocess_[v->layer_], v->frontiers_id_);
+
+  // cout << "result: " << endl;
+  // for (const auto& id : v->frontiers_id_) cout << id << " ";
+  // cout << endl;
 }
 
 void YawInitialPlanner::setVisbleFeatures(const YawVertex::Ptr& v) {
@@ -206,6 +241,7 @@ bool YawInitialPlanner::search(const double start_yaw, const double end_yaw, con
   }
   setVisbleFrontiers(end_vert_);
   estimateHeuristic(end_vert_);
+  checkIfVisGoal(end_vert_);
 
   vector<YawVertex::Ptr> layer, last_layer;
 
@@ -228,6 +264,7 @@ bool YawInitialPlanner::search(const double start_yaw, const double end_yaw, con
         if (static_cast<int>(vert->features_id_.size()) <= param_.min_feature_num_) continue;
         setVisbleFrontiers(vert);
         estimateHeuristic(vert);
+        checkIfVisGoal(vert);
 
         // addVertex(vert);
         layer.push_back(vert);
@@ -334,8 +371,41 @@ void YawInitialPlanner::publishYawPath() {
   yaw_path_pub_.publish(mk);
 }
 
-void YawInitialPlanner::extractObservedFeatures(vector<vector<Vector3d>>& observed_features) {
-  observed_features.resize(vert_path_.size() - 1);
+// void YawInitialPlanner::extractObservedFeatures(vector<vector<Vector3d>>& observed_features) {
+//   observed_features.resize(vert_path_.size() - 1);
+
+//   for (size_t i = 0; i < vert_path_.size() - 1; ++i) {
+//     YawVertex::Ptr v1 = vert_path_[i];
+//     YawVertex::Ptr v2 = vert_path_[i + 1];
+
+//     vector<pair<int, Vector3d>> features_1;
+//     Quaterniond ori_1 = Utils::calcOrientation(v1->yaw_, acc_[v1->layer_]);
+//     feature_map_->get_NumCloud_using_Odom(pos_[v1->layer_], ori_1, features_1);
+
+//     vector<pair<int, Vector3d>> features_2;
+//     Quaterniond ori_2 = Utils::calcOrientation(v2->yaw_, acc_[v2->layer_]);
+//     feature_map_->get_NumCloud_using_Odom(pos_[v2->layer_], ori_2, features_2);
+
+//     for (size_t j = 0; j < features_1.size(); j++) {
+//       int id1 = features_1[j].first;
+
+//       for (size_t k = 0; k < features_2.size(); k++) {
+//         int id2 = features_2[k].first;
+
+//         if (id1 == id2) {
+//           observed_features[i].push_back(features_1[j].second);
+//           continue;
+//         }
+//       }
+//     }
+
+//     ROS_ASSERT(static_cast<int>(observed_features[i].size()) > param_.min_covisible_feature_num_);
+//   }
+// }
+
+void YawInitialPlanner::prepareOptData(const YawOptData::Ptr& data) {
+  // Step1: 准备观测特征点数据
+  data->observed_features_.resize(vert_path_.size() - 1);
 
   for (size_t i = 0; i < vert_path_.size() - 1; ++i) {
     YawVertex::Ptr v1 = vert_path_[i];
@@ -356,14 +426,50 @@ void YawInitialPlanner::extractObservedFeatures(vector<vector<Vector3d>>& observ
         int id2 = features_2[k].first;
 
         if (id1 == id2) {
-          observed_features[i].push_back(features_1[j].second);
+          data->observed_features_[i].push_back(features_1[j].second);
           continue;
         }
       }
     }
 
-    ROS_ASSERT(observed_features[i].size() > param_.min_covisible_feature_num_);
+    // ROS_ASSERT(static_cast<int>(data->observed_features_[i].size()) > param_.min_covisible_feature_num_);
   }
+
+  // Step2: 准备观测frontier数据
+  data->frontier_status_.resize(vert_path_.size());
+
+  for (size_t layer = 0; layer < vert_path_.size(); ++layer) {
+    // cout << "layer: " << layer << endl;
+    data->frontier_status_[layer].resize(target_frontier_.size(), 0);  // 默认为0，代表不可能被观测到
+    for (const auto& id : target_frontier_aft_preprocess_[layer]) {
+      data->frontier_status_[layer][id] = 3;  // 3代表可能被观测到
+      // cout << "type 3 id: " << id << endl;
+    }
+
+    YawVertex::Ptr vertex = vert_path_[layer];
+    for (const auto& id : vertex->frontiers_id_) {
+      data->frontier_status_[layer][id] = 2;  // 2代表当前节点观测到
+      // cout << "type 2 id: " << id << endl;
+    }
+
+    // 要写在后面覆盖掉2的情况
+    if (layer != 0) {
+      YawVertex::Ptr parent_vertex = vert_path_[layer - 1];
+      for (const auto& id : parent_vertex->frontiers_id_path_) {
+        data->frontier_status_[layer][id] = 1;  // 1代表先前节点已经观测到
+        // cout << "type 1 id: " << id << endl;
+      }
+    }
+
+    // cout << "result: " << endl;
+    // for (size_t i = 0; i < data->frontier_status_[layer].size(); i++) {
+    //   cout << i << ": " << data->frontier_status_[layer][i] << endl;
+    // }
+  }
+}
+
+int YawInitialPlanner::getObservedNum() {
+  return end_vert_->frontiers_id_path_.size();
 }
 
 }  // namespace fast_planner

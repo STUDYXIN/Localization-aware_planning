@@ -89,12 +89,6 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
     topo_prm_->init(nh);
   }
 
-  if (use_active_perception) {
-    visib_util_.reset(new VisibilityUtil(nh));
-    visib_util_->setEDTEnvironment(edt_environment_);
-    plan_data_.view_cons_.idx_ = -1;
-  }
-
   yaw_initial_planner_.reset(new YawInitialPlanner(nh));
 }
 
@@ -238,21 +232,23 @@ bool FastPlannerManager::checkTrajExplorationOnKnots(const vector<Vector3d>& tar
     observed_features.insert(observed_features_knots.begin(), observed_features_knots.end());
   }
 
+  statistics_.observed_frontier_num_ = observed_features.size();
+
   double ratio = static_cast<double>(observed_features.size()) / target_frontier.size();
-  ROS_INFO("[FastPlannerManager::checkTrajLocalizabilityOnKnots] Exploration Info: %ld/%ld", observed_features.size(),
-      target_frontier.size());
+  // ROS_INFO("[FastPlannerManager::checkTrajLocalizabilityOnKnots] Exploration Info: %ld/%ld", observed_features.size(),
+  //     target_frontier.size());
   if (ratio < pp_.min_observed_ratio_) {
-    ROS_WARN("[FastPlannerManager::checkTrajExplorationOnKnots] Poor exploration");
+    // ROS_WARN("[FastPlannerManager::checkTrajExplorationOnKnots] Poor exploration");
     return false;
   }
 
   return true;
 }
 
-void FastPlannerManager::printStatistics() {
+void FastPlannerManager::printStatistics(const vector<Vector3d>& target_frontier) {
   cout << ANSI_COLOR_GREEN_BOLD;
   cout << "====================Local Planner Statistics====================" << endl;
-  cout << fixed << setprecision(6);
+  cout << fixed << setprecision(3);
   cout << "Time of Kinodynamic A*:      " << statistics_.time_kinodynamic_astar_ << " (sec)" << endl;
   cout << "Time of Pos Traj Optimize:   " << statistics_.time_pos_traj_opt_ << " (sec)" << endl;
   cout << "Time of Yaw Initial Planner: " << statistics_.time_yaw_initial_planner_ << " (sec)" << endl;
@@ -262,12 +258,15 @@ void FastPlannerManager::printStatistics() {
   cout << "Time of Total Planning:      " << statistics_.time_total_ << " (sec)" << endl;
 
   cout << fixed << setprecision(3);
-  cout << "Mean Vel on Pos Traj:     " << statistics_.mean_vel_ << " (m/s)" << endl;
-  cout << "Max Vel on Pos Traj:      " << statistics_.max_vel_ << " (m/s)" << endl;
-  cout << "Mean Acc on Pos Traj:     " << statistics_.mean_acc_ << " (m^2/s)" << endl;
-  cout << "Max Acc on Pos Traj:      " << statistics_.max_acc_ << " (m^2/s)" << endl;
-  cout << "Max Yaw Rate on Yaw Traj: " << statistics_.max_yaw_rate_ << " (rad/s)" << endl;
-  cout << "Knot Span:                " << statistics_.dt_ << " (s)" << endl;
+  cout << "Mean Vel on Pos Traj:               " << statistics_.mean_vel_ << " (m/s)" << endl;
+  cout << "Max Vel on Pos Traj:                " << statistics_.max_vel_ << " (m/s)" << endl;
+  cout << "Mean Acc on Pos Traj:               " << statistics_.mean_acc_ << " (m^2/s)" << endl;
+  cout << "Max Acc on Pos Traj:                " << statistics_.max_acc_ << " (m^2/s)" << endl;
+  cout << "Max Yaw Rate on Yaw Traj:           " << statistics_.max_yaw_rate_ << " (rad/s)" << endl;
+  cout << "Knot Span:                          " << statistics_.dt_ << " (s)" << endl;
+  cout << "Observed Frontiers Num(Yaw Intial): " << statistics_.observed_frontier_num_yaw_initial_ << "/"
+       << target_frontier.size() << endl;
+  cout << "Observed Frontiers Num:             " << statistics_.observed_frontier_num_ << "/" << target_frontier.size() << endl;
   cout.unsetf(ios::fixed);
   cout << "===============================================================" << endl;
   cout << NORMAL_FONT;
@@ -307,7 +306,9 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
       return PATH_SEARCH_ERROR;
     }
     plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
-  } else {
+  }
+
+  else {
     kino_path_finder_->reset();
     cout << "-start_pt  " << start_pt.transpose() << endl
          << "-start_vel " << start_vel.transpose() << endl
@@ -329,16 +330,13 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
     plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
   }
 
-  // double time_search = (ros::Time::now() - time_start).toSec();
-  // ROS_WARN("Time cost of kinodynamic A*: %lf(sec)", time_search);
-
   statistics_.time_kinodynamic_astar_ = (ros::Time::now() - time_start).toSec();
 
   // Step2: 基于B样条曲线的轨迹优化，首先生成一条均匀B样条曲线
   auto time_start_2 = ros::Time::now();
 
   double dt = pp_.ctrl_pt_dist / pp_.max_vel_;
-  vector<Eigen::Vector3d> point_set, start_end_derivatives;
+  vector<Vector3d> point_set, start_end_derivatives;
   if (use_4degree_kinoAstar)
     kino_path_4degree_finder_->getSamples(dt, point_set, start_end_derivatives);
   else
@@ -376,6 +374,7 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
   cost_func |= BsplineOptimizer::END;
   cost_func |= BsplineOptimizer::MINTIME;
   cost_func |= BsplineOptimizer::DISTANCE;
+
   if (use_apace_pose_opt_) {
     cost_func |= BsplineOptimizer::PARALLAX;
     cost_func |= BsplineOptimizer::VERTICALVISIBILITY;
@@ -723,7 +722,7 @@ void FastPlannerManager::planYawExplore(
 }
 
 int FastPlannerManager::planYawPerceptionAware(
-    const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells) {
+    const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal) {
 
   // Yaw b-spline has same segment number as position b-spline
   Eigen::MatrixXd position_ctrl_pts = local_data_.position_traj_.getControlPoint();
@@ -753,9 +752,11 @@ int FastPlannerManager::planYawPerceptionAware(
   vector<double> yaw_waypoints;
   yaw_initial_planner_->setFeatureMap(feature_map_);
   yaw_initial_planner_->setFrontierFinder(frontier_finder_);
-  yaw_initial_planner_->setTargetFrontier(frontier_cells);
+  yaw_initial_planner_->setFinalGoal(final_goal);
   yaw_initial_planner_->setPos(knot_pos);
   yaw_initial_planner_->setAcc(knot_acc);
+  // yaw_initial_planner预处理frontier过程需要用到pos和acc信息，所以必须最后设置frontier
+  yaw_initial_planner_->setTargetFrontier(frontier_cells);
 
   auto time_start = ros::Time::now();
 
@@ -763,6 +764,8 @@ int FastPlannerManager::planYawPerceptionAware(
     ROS_ERROR("Yaw Trajectory Planning Failed in Graph Search!!!");
     return YAW_INIT_ERROR;
   }
+
+  statistics_.observed_frontier_num_yaw_initial_ = yaw_initial_planner_->getObservedNum();
 
   statistics_.time_yaw_initial_planner_ = (ros::Time::now() - time_start).toSec();
 
@@ -805,14 +808,14 @@ int FastPlannerManager::planYawPerceptionAware(
   cost_func |= BsplineOptimizer::START;
   cost_func |= BsplineOptimizer::END;
   cost_func |= BsplineOptimizer::YAWCOVISIBILITY;
-  // cost_func |= BsplineOptimizer::FRONTIERVISIBILITY_YAW;
+  cost_func |= BsplineOptimizer::FRONTIERVISIBILITY_YAW;
 
   if (cost_func & BsplineOptimizer::YAWCOVISIBILITY || cost_func & BsplineOptimizer::FRONTIERVISIBILITY_YAW) {
     bspline_optimizers_[1]->setPosAndAcc(knot_pos, knot_acc);
 
-    vector<vector<Vector3d>> observed_features;
-    yaw_initial_planner_->extractObservedFeatures(observed_features);
-    bspline_optimizers_[1]->setInitialPlannerData(observed_features);
+    YawOptData::Ptr opt_data = make_shared<YawOptData>();
+    yaw_initial_planner_->prepareOptData(opt_data);
+    bspline_optimizers_[1]->setOptData(opt_data);
 
     if (cost_func & BsplineOptimizer::FRONTIERVISIBILITY_YAW) {
       bspline_optimizers_[1]->setFrontierCells(frontier_cells);
@@ -824,28 +827,25 @@ int FastPlannerManager::planYawPerceptionAware(
   bspline_optimizers_[1]->setFeatureMap(feature_map_);
 
   // Add noise to yaw if variance is too small
-  double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
-  if (yaw_variance < 1e-4) {
-    cout << "add gaussian noise to yaw control points" << endl;
+  // double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
+  // if (yaw_variance < 1e-4) {
+  //   cout << "add gaussian noise to yaw control points" << endl;
 
-    double sigma = 0.1;  // adjust the noise level as needed
+  //   double sigma = 0.1;  // adjust the noise level as needed
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<double> distribution(0.0, sigma);  // 均值为 0，标准差为 0.1
+  //   std::random_device rd;
+  //   std::mt19937 gen(rd());
+  //   std::normal_distribution<double> distribution(0.0, sigma);  // 均值为 0，标准差为 0.1
 
-    for (int i = 0; i < yaw.rows(); ++i) {
-      double noise = distribution(gen);  // 生成一个符合正态分布的随机数
-      yaw(i, 0) += noise;
-    }
-    // cout << "yaw control point before optimize(add noise): " << yaw << endl;
-  }
+  //   for (int i = 0; i < yaw.rows(); ++i) {
+  //     double noise = distribution(gen);  // 生成一个符合正态分布的随机数
+  //     yaw(i, 0) += noise;
+  //   }
+  //   // cout << "yaw control point before optimize(add noise): " << yaw << endl;
+  // }
 
-  // cout << "[FastPlannerManager::planYawPerceptionAware] Begin yaw optimize!!!!!" << endl;
   bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
   if (!bspline_optimizers_[1]->issuccess) return YAW_OPT_ERROR;
-  // double time_opt = (ros::Time::now() - time_start_2).toSec();
-  // ROS_WARN("Time cost of yaw traj optimize: %lf(sec)", time_opt);
 
   statistics_.time_yaw_traj_opt_ = (ros::Time::now() - time_start_2).toSec();
 
@@ -857,18 +857,6 @@ int FastPlannerManager::planYawPerceptionAware(
 
   local_data_.yaw_traj_.getMeanAndMaxVel(statistics_.mean_yaw_rate_, statistics_.max_yaw_rate_);
 
-  // Step3: 更新yaw及其导数的轨迹W
-  // vector<double> knot_yaw;
-  // for (int i = 0; i < ctrl_pts_num - 2; ++i) {
-  //   double t = i * dt_yaw;
-  //   knot_yaw.emplace_back(local_data_.yaw_traj_.evaluateDeBoorT(t)[0]);
-  // }
-
-  // // ROS_INFO("Compare knot point of yaw");
-  // ROS_ASSERT(knot_yaw.size() == yaw_waypoints.size());
-  // // for (size_t i = 0; i < knot_yaw.size(); ++i) {
-  // //   cout << "knot_yaw: " << knot_yaw[i] << ", yaw_waypoints: " << yaw_waypoints[i] << endl;
-  // // }
   return SUCCESS_FIND_YAW_TRAJ;
 }
 

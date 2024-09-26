@@ -1,6 +1,4 @@
 #include <active_perception/frontier_finder.h>
-#include <active_perception/graph_node.h>
-#include <active_perception/graph_search.h>
 #include <active_perception/perception_utils.h>
 #include <exploration_manager/expl_data.h>
 #include <exploration_manager/perception_aware_exploration_manager.h>
@@ -71,12 +69,6 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   nh.param("exploration/tsp_dir", ep_->tsp_dir_, string("null"));
   nh.param("exploration/relax_time", ep_->relax_time_, 1.0);
 
-  nh.param("exploration/vm", ViewNode::vm_, -1.0);
-  nh.param("exploration/am", ViewNode::am_, -1.0);
-  nh.param("exploration/yd", ViewNode::yd_, -1.0);
-  nh.param("exploration/ydd", ViewNode::ydd_, -1.0);
-  nh.param("exploration/w_dir", ViewNode::w_dir_, -1.0);
-
   nh.param("exploration/feature_num_max", ep_->feature_num_max, -1);
   nh.param("exploration/visb_max", ep_->visb_max, -1);
   nh.param("exploration/we", ep_->we, -1.0);
@@ -84,15 +76,11 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   nh.param("exploration/wf", ep_->wf, -1.0);
   nh.param("exploration/wc", ep_->wc, -1.0);
 
-  ViewNode::astar_.reset(new Astar);
-  ViewNode::astar_->init(nh, edt_environment_);
-  ViewNode::map_ = sdf_map_;
-
   double resolution_ = sdf_map_->getResolution();
   Eigen::Vector3d origin, size;
   sdf_map_->getRegion(origin, size);
-  ViewNode::caster_.reset(new RayCaster);
-  ViewNode::caster_->setParams(resolution_, origin);
+  // ViewNode::caster_.reset(new RayCaster);
+  // ViewNode::caster_->setParams(resolution_, origin);
 }
 
 NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& next_yaw) {
@@ -108,7 +96,8 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
 
   // 目标点已经出现在已知区域，直接前往
   if (sdf_map_->getOccupancy(final_goal) == SDFMap::FREE && sdf_map_->getDistance(final_goal) > 0.2) {
-    last_fail_reason = planToFinalGoal(next_pos, next_yaw, frontier_cells);
+    vector<Vector3d> empty;
+    last_fail_reason = planToNextGoal(next_pos, next_yaw, empty, false);  // 已经可以去终点就不用关心探索的事了
     if (last_fail_reason == NO_NEED_CHANGE) {
       ROS_INFO("SUCCESS FIND END!!!!!.");
       return REACH_END;
@@ -120,14 +109,14 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
 
   if (ed_->frontiers_.empty()) return NO_FRONTIER;
 
-  last_fail_reason = planToNextGoal(next_pos, next_yaw, frontier_cells);
+  last_fail_reason = planToNextGoal(next_pos, next_yaw, frontier_cells, true);
   if (last_fail_reason == NO_NEED_CHANGE) return SEARCH_FRONTIER;
 
   return NO_AVAILABLE_FRONTIER;
-}  // namespace fast_planner
+}
 
 VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
-    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells) {
+    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells, const bool check_exploration) {
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -135,19 +124,12 @@ VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
   const auto& final_goal = expl_fsm_.lock()->final_goal_;
 
   double diff = fabs(next_yaw - start_yaw[0]);
-  double time_lb = min(diff, 2 * M_PI - diff) / ViewNode::yd_;
+  double max_yaw_rate = Utils::getGlobalParam().max_yaw_rate_;
+  double time_lb = min(diff, 2 * M_PI - diff) / max_yaw_rate;
 
-  // if (!planner_manager_->kinodynamicReplan(
-  //         start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, time_lb)) {
-  //   return false;
-  // }
-
-  // if (!planner_manager_->sampleBasedReplan(start_pos, start_vel, start_acc, start_yaw(0), next_pos, next_yaw, time_lb)) {
-  //   return false;
-  // }
-  // setLastErrorType(expl_fsm_.lock()->last_fail_reason);
   const auto& last_fail_reason = expl_fsm_.lock()->last_fail_reason;
-  //简单先把pos和yaw分开来
+
+  // 简单先把pos和yaw分开来
   int position_traj_statu = planner_manager_->planPosPerceptionAware(
       start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, frontire_cells, time_lb);
   if (position_traj_statu == PATH_SEARCH_ERROR)
@@ -155,12 +137,13 @@ VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
   else if (position_traj_statu == POSISION_OPT_ERROR)
     return POSITION_OPT_FAIL;
 
+  // ROS_INFO("time_lb: %f", time_lb);
   if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1) {
-    ROS_ERROR("Lower bound not satified!");
+    ROS_ERROR("Time lower bound not satified!");
   }
 
   // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
-  int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells);
+  int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells, final_goal);
   if (yaw_traj_statu == YAW_INIT_ERROR)
     return YAW_INIT_FAIL;
   else if (yaw_traj_statu == YAW_OPT_ERROR)
@@ -168,86 +151,11 @@ VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
 
   if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return LOCABILITY_CHECK_FAIL;
 
-  if (!planner_manager_->checkTrajExplorationOnKnots(frontire_cells)) return EXPLORABILITI_CHECK_FAIL;
+  if (check_exploration && !planner_manager_->checkTrajExplorationOnKnots(frontire_cells)) return EXPLORABILITI_CHECK_FAIL;
 
-  planner_manager_->printStatistics();
-
-  return NO_NEED_CHANGE;
-}
-
-VIEWPOINT_CHANGE_REASON PAExplorationManager::planToFinalGoal(
-    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells) {
-  const auto& start_pos = expl_fsm_.lock()->start_pos_;
-  const auto& start_vel = expl_fsm_.lock()->start_vel_;
-  const auto& start_acc = expl_fsm_.lock()->start_acc_;
-  const auto& start_yaw = expl_fsm_.lock()->start_yaw_;
-
-  double diff = fabs(next_yaw - start_yaw[0]);
-  double time_lb = min(diff, 2 * M_PI - diff) / ViewNode::yd_;
-
-  const auto& last_fail_reason = expl_fsm_.lock()->last_fail_reason;
-  //简单先把pos和yaw分开来
-  int position_traj_statu = planner_manager_->planPosPerceptionAware(
-      start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, frontire_cells, time_lb);
-  if (position_traj_statu == PATH_SEARCH_ERROR)
-    return PATH_SEARCH_FAIL;
-  else if (position_traj_statu == POSISION_OPT_ERROR)
-    return POSITION_OPT_FAIL;
-
-  if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1) {
-    ROS_ERROR("Lower bound not satified!");
-  }
-
-  // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
-  int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells);
-  if (yaw_traj_statu == YAW_INIT_ERROR)
-    return YAW_INIT_FAIL;
-  else if (yaw_traj_statu == YAW_OPT_ERROR)
-    return YAW_OPT_FAIL;
-
-  if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return LOCABILITY_CHECK_FAIL;
-
-  planner_manager_->printStatistics();
+  planner_manager_->printStatistics(frontire_cells);
 
   return NO_NEED_CHANGE;
-}
-
-void PAExplorationManager::shortenPath(vector<Vector3d>& path) {
-  if (path.empty()) {
-    ROS_ERROR("Empty path to shorten");
-    return;
-  }
-
-  // Shorten the tour, only critical intermediate points are reserved.
-  const double dist_thresh = 3.0;
-  vector<Vector3d> short_tour = { path.front() };
-  for (int i = 1; i < path.size() - 1; ++i) {
-    if ((path[i] - short_tour.back()).norm() > dist_thresh)
-      short_tour.push_back(path[i]);
-    else {
-      // Add waypoints to shorten path only to avoid collision
-      ViewNode::caster_->input(short_tour.back(), path[i + 1]);
-      Eigen::Vector3i idx;
-      while (ViewNode::caster_->nextId(idx) && ros::ok()) {
-        if (edt_environment_->sdf_map_->getInflateOccupancy(idx) == 1 ||
-            edt_environment_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-          short_tour.push_back(path[i]);
-          break;
-        }
-      }
-    }
-  }
-
-  if ((path.back() - short_tour.back()).norm() > 1e-3) {
-    short_tour.push_back(path.back());
-  }
-
-  // Ensure at least three points in the path
-  if (short_tour.size() == 2) {
-    short_tour.insert(short_tour.begin() + 1, 0.5 * (short_tour[0] + short_tour[1]));
-  }
-
-  path = short_tour;
 }
 
 bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw) {

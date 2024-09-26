@@ -162,7 +162,7 @@ public:
     sort_refer_.pos_now_ = cur_pos;
     sort_refer_.yaw_now_ = yaw_now;
     sort_refer_.pos_refer_ = refer_pos;
-    sort_refer_.has_pos_refer_ = true;  //给了终点为参考值，防止A*失败导致无人机回头
+    sort_refer_.has_pos_refer_ = true;  // 给了终点为参考值，防止A*失败导致无人机回头
   }
   void ComputeScoreUnrelatedwithyaw(Viewpoint& viewpoint);
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, int visib_num_, int feature_num_);
@@ -195,8 +195,12 @@ public:
   void sampleViewpoints(Frontier& frontier);
   void sampleBetterViewpoints(Frontier& frontier);
 
+  bool getVisibility(const Vector3d& pos, const Vector3d& point);
+  bool getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point);
   int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
   void countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res);
+  void countVisibleCells(
+      const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res);
   double computeExplorebility(const Vector3d& pos, const double& yaw, const Vector3d& start, const Vector3d& end);
 
   bool isNearUnknown(const Vector3d& pos);

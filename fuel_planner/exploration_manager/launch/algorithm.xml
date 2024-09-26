@@ -137,6 +137,7 @@
     <param name="fsm/thresh_replan_viewpoint_length" value="0.8" type="double" />
     <param name="fsm/do_replan" value="$(arg do_replan)" type="bool" />
     <param name="fsm/replan_time" value="$(arg replan_time)" type="double" />
+    <param name="fsm/replan_out" value="1.0" type="double" />
     <!-- param for rechoose viewpoint -->
     <param name="fsm/draw_line2feature" value="false" type="bool" />
     <param name="fsm/one_viewpoint_max_searchtimes" value="2" type="int" />
@@ -159,6 +160,8 @@
     <param name="fsm/wp3_x" value="$(arg point3_x)" type="double" />
     <param name="fsm/wp3_y" value="$(arg point3_y)" type="double" />
     <param name="fsm/wp3_z" value="$(arg point3_z)" type="double" />
+
+    <param name="fsm/run_continued" value="false" type="bool" />
 
     <!-- Exploration manager -->
 
@@ -195,7 +198,7 @@
     <param name="frontier/z_sample_num" value="5" type="int" />
     <param name="frontier/down_sample" value="3" type="int" />
     <param name="frontier/min_visib_num" value="15" type="int" />
-    <param name="frontier/min_view_finish_fraction" value="0.2" type="double" />
+    <param name="frontier/min_view_finish_fraction" value="0.8" type="double" />
     <param name="frontier/min_view_feature_num_of_viewpoint" value="$(arg min_covisible_feature_num_plan)" type="int" />
     <param name="frontier/feature_sample_dphi" value="$(eval 15 * 3.1415926 / 180.0)" type="double" />
     <!-- 排序参数 -->
@@ -295,7 +298,7 @@
     <param name="optimization/ld_dist" value="20.0" type="double" />
     <param name="optimization/ld_feasi" value="2.0" type="double" />
     <param name="optimization/ld_feasi_yaw" value="5.0" type="double" />
-    <param name="optimization/ld_start" value="500.0" type="double" />
+    <param name="optimization/ld_start" value="5000.0" type="double" />
     <param name="optimization/ld_end" value="500.0" type="double" />
     <param name="optimization/ld_guide" value="1.5" type="double" />
     <param name="optimization/ld_waypt" value="0.2" type="double" />

@@ -309,14 +309,20 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
     plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
   } else {
     kino_path_finder_->reset();
+    cout << "-start_pt  " << start_pt.transpose() << endl
+         << "-start_vel " << start_vel.transpose() << endl
+         << "-start_acc " << start_acc.transpose() << endl
+         << "-end_pt    " << end_pt.transpose() << endl
+         << "-end_vel   " << end_vel.transpose() << endl
+         << "-distance  " << (end_pt - start_pt).norm() << endl;
     status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
     if (status == KinodynamicAstar::NO_PATH) {
-      ROS_ERROR("search 1 fail");
+      cout << "[Kino replan]: search 1 fail." << endl;
       // Retry
       kino_path_finder_->reset();
       status = kino_path_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
       if (status == KinodynamicAstar::NO_PATH) {
-        cout << "[Kino replan]: Can't find path." << endl;
+        ROS_ERROR("[Kino replan]: Can't find path.");
         return PATH_SEARCH_ERROR;
       }
     }

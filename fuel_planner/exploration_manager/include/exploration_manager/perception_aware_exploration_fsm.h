@@ -3,6 +3,7 @@
 #include <exploration_manager/expl_data.h>
 #include <exploration_manager/perception_aware_exploration_manager.h>
 #include <plan_manage/plan_container.hpp>
+#include <time_debug.hpp>
 
 #include <bspline/Bspline.h>
 #include <nav_msgs/Odometry.h>
@@ -32,6 +33,7 @@ namespace fast_planner {
 class FastPlannerManager;
 class PAExplorationManager;
 class PlanningVisualization;
+class DebugTimer;
 struct FSMParam;
 struct FSMData;
 struct M2GData;
@@ -88,6 +90,9 @@ public:
   /* Debug utils */
   vector<int> last_viewpoint_line, last_feature_line;
   bool draw_line2feature;
+  DebugTimer debug_timer;
+  bool run_continued_;
+  bool direct_replan;
 
   /* ROS utils */
   ros::NodeHandle node_;
@@ -140,8 +145,9 @@ public:
   void setdata(const REPLAN_TYPE& replan_start_type);
   void setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoint_change_reason);
   void setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type = NO_REPLAN);
-};
 
+  void continued_run();
+};
 }  // namespace fast_planner
 
 #endif

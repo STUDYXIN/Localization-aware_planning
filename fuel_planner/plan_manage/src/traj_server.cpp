@@ -200,7 +200,7 @@ void emergencyStopCallback(std_msgs::Empty msg) {
 
 void replanCallback(std_msgs::Empty msg) {
   // Informed of new replan, end the current traj after some time
-  const double time_out = 0.5;
+  const double time_out = 1.0;
   ros::Time time_now = ros::Time::now();
   double t_stop = (time_now - start_time_).toSec() + time_out + replan_time_;
   // traj_duration_ = max(t_stop, traj_duration_);  //这里的修改是如果状态机规划时间过长，也让无人机走完轨迹（安全性有待商榷）

@@ -1,6 +1,8 @@
-feature:
+camera:
   feature_visual_max: 6.0
   feature_visual_min: 0.3
+  frontier_visual_max: 5.0
+  frontier_visual_min: 0.2
   cam_cx: 321.04638671875
   cam_cy: 243.44969177246094
   cam_fx: 387.229248046875

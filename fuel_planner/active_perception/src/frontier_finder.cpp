@@ -502,6 +502,7 @@ void FrontierFinder::computeFrontiersToVisit() {
   first_new_ftr_ = frontiers_.end();
   int new_num = 0;
   int new_dormant_num = 0;
+  time_debug_.setstart_time("computeFrontiersToVisit", false);
   if (!using_feature_threshold_compute_viewpoint) {
     // Try find viewpoints for each cluster and categorize them according to viewpoint number
     for (auto& tmp_ftr : tmp_frontiers_) {
@@ -524,7 +525,10 @@ void FrontierFinder::computeFrontiersToVisit() {
     // Try find viewpoints for each cluster and categorize them according to viewpoint number with feature number threshold
     for (auto& tmp_ftr : tmp_frontiers_) {
       // Search viewpoints around frontier
+      time_debug_.function_start("sampleBetterViewpoints");
       sampleBetterViewpoints(tmp_ftr);
+      time_debug_.function_end("sampleBetterViewpoints");
+      time_debug_.function_start("sortViewpoint_insertnewFrontier");
       if (!tmp_ftr.viewpoints_.empty()) {
         ++new_num;
         list<Frontier>::iterator inserted = frontiers_.insert(frontiers_.end(), tmp_ftr);
@@ -538,11 +542,13 @@ void FrontierFinder::computeFrontiersToVisit() {
         dormant_frontiers_.push_back(tmp_ftr);
         ++new_dormant_num;
       }
+      time_debug_.function_end("sortViewpoint_insertnewFrontier");
     }
   }
   // cout << "dormant_frontiers_.size: " << dormant_frontiers_.size() << " frontiers_.size: " << frontiers_.size()
   //      << " tmp_frontiers_.size: " << tmp_frontiers_.size() << " frontier_id_count: " << frontier_id_count << endl;
   // Reset indices of frontiers
+  time_debug_.function_start("sortFrontier");
   int idx = 0;
   //定义id
   for (auto& ft : frontiers_) ft.id_ = idx++;
@@ -557,6 +563,9 @@ void FrontierFinder::computeFrontiersToVisit() {
     // 比较两个 Frontier 的 viewpoints_.front().final_score
     return frontier_iterators[i1]->viewpoints_.front().final_score > frontier_iterators[i2]->viewpoints_.front().final_score;
   });
+  time_debug_.function_end("sortFrontier");
+  time_debug_.output_time();
+
   // for (auto& ft : frontiers_) ft.id_ = frontier_id_count++;
 
   // std::cout << "new num: " << new_num << ", new dormant: " << new_dormant_num << std::endl;
@@ -658,13 +667,16 @@ void FrontierFinder::sampleViewpoints(Frontier& frontier) {
 
 void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
   // Evaluate sample viewpoints on circles, find ones that cover most cells
+  time_debug_.function_start("init_sampleBetterView");
   vector<double> sample_yaw;
   for (double phi = -M_PI; phi < M_PI; phi += feature_sample_dphi) {
     sample_yaw.push_back(phi);
   }
-  Vector3d start_ = frontier.average_, end_;
   auto& cells = frontier.filtered_cells_;
-  computeYawEndPoint(start_, end_, cells);
+  // Vector3d start_ = frontier.average_, end_;
+  // computeYawEndPoint(start_, end_, cells);
+  // time_debug_.function_end("init_sampleBetterView");
+
   //三层循环看着很吓人，但数量级基本上是5*5*60 = 1500 其实可以接受
   for (double rc = candidate_rmin_, dr = (candidate_rmax_ - candidate_rmin_) / candidate_rnum_; rc <= candidate_rmax_ + 1e-3;
        rc += dr)
@@ -673,7 +685,7 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
       for (double phi = -M_PI; phi < M_PI; phi += candidate_dphi_) {
         Vector3d sample_pos = frontier.average_ + rc * Vector3d(cos(phi), sin(phi), 0);
         sample_pos.z() = z;  //多一个采样项
-
+        time_debug_.function_start("compute_pos");
         // Qualified viewpoint is in bounding box and in safe region
         if (!edt_env_->sdf_map_->isInBox(sample_pos) || edt_env_->sdf_map_->getInflateOccupancy(sample_pos) == 1 ||
             isNearUnknown(sample_pos))
@@ -685,7 +697,15 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
         vp.pos_ = sample_pos;
         // cout << "begin_compute_score_pos" << endl;
         ComputeScoreUnrelatedwithyaw(vp);
+        time_debug_.function_end("compute_pos");
+        time_debug_.function_start("compute_yaw");
         // cout << "vp.score_pos " << vp.score_pos << endl;
+        // double yaw_ref_ = atan2(end_.y() - vp.pos_.y(), end_.x() - vp.pos_.x());
+        // int visib_num = countVisibleCells(sample_pos, yaw_ref_, cells);
+        // Eigen::Quaterniond q = Eigen::Quaterniond(Eigen::AngleAxisd(yaw_ref_, Eigen::Vector3d::UnitZ()));
+        // int feature_num = feature_map_->get_NumCloud_using_Odom(sample_pos, q);
+        // if (visib_num > min_visib_num_ && feature_num > 20) ComputeScoreRelatedwithyaw(vp, yaw_ref_, visib_num, feature_num);
+
         for (size_t i = 0; i < features_num_perYaw.size(); ++i) {
           // cout << " i: " << i << " yaw: " << features_num_perYaw[i];
           if (features_num_perYaw[i] < min_view_feature_num_of_viewpoint) continue;
@@ -694,7 +714,7 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
           int visib_num = countVisibleCells(sample_pos, feature_yaw, cells);
           if (visib_num > min_visib_num_) {
             // double yaw_ref_ = atan2(end_.y() - start_.y(), end_.x() - start_.x());
-            double yaw_ref_ = atan2(end_.y() - vp.pos_.y(), end_.x() - vp.pos_.x());
+            // double yaw_ref_ = atan2(end_.y() - vp.pos_.y(), end_.x() - vp.pos_.x());
             // wrapYaw(yaw_ref_);
             // ComputeScoreRelatedwithyaw(vp, feature_yaw, yaw_ref_, features_num_perYaw[i]);
             ComputeScoreRelatedwithyaw(vp, feature_yaw, visib_num, features_num_perYaw[i]);
@@ -705,6 +725,8 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
           }
           // }
         }
+        time_debug_.function_end("compute_yaw");
+
         // sort_yaw_score
         if (vp.yaw_available.size() > 0) {
           vp.sort_id.resize(vp.score_yaw.size());
@@ -783,6 +805,17 @@ bool FrontierFinder::isFrontierCovered() {
 
   if (checkChanges(frontiers_) || checkChanges(dormant_frontiers_)) return true;
 
+  return false;
+}
+
+bool FrontierFinder::isinterstFrontierCovered(vector<Vector3d>& frontier_cells) {
+  const int change_thresh = min_view_finish_fraction_ * frontier_cells.size();
+  int change_num = 0;
+  for (auto cell : frontier_cells) {
+    Eigen::Vector3i idx;
+    edt_env_->sdf_map_->posToIndex(cell, idx);
+    if (!(knownfree(idx) && isNeighborUnknown(idx)) && ++change_num >= change_thresh) return true;
+  }
   return false;
 }
 

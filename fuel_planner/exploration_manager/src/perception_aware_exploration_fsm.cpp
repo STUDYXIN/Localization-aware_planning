@@ -26,10 +26,12 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/thresh_replan3", fp_->replan_thresh3_, -1.0);
   nh.param("fsm/thresh_replan_viewpoint_length", fp_->replan_thresh_replan_viewpoint_length_, -1.0);
   nh.param("fsm/replan_time", fp_->replan_time_, -1.0);
+  nh.param("fsm/replan_out", fp_->replan_out_, -1.0);
   nh.param("fsm/do_replan", do_replan_, false);
   nh.param("fsm/one_viewpoint_max_searchtimes", fp_->one_viewpoint_max_searchtimes_, -1);
   nh.param("fsm/draw_line2feature", draw_line2feature, false);
   nh.param("fsm/still_choose_new_length_thr", still_choose_new_length_thr_, -1.0);
+  nh.param("fsm/run_continued", run_continued_, false);
 
   nh.param("fsm/wp_num", waypoint_num_, -1);
   for (int i = 0; i < waypoint_num_; i++) {
@@ -66,6 +68,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   search_times = 0;
   final_goal_ = Vector3d::Zero();
   do_final_plan = true;
+  direct_replan = false;
 }
 
 void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
@@ -74,7 +77,6 @@ void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
   ROS_WARN("Receive Goal!!!");
 
   vector<Eigen::Vector3d> global_wp;
-
   if (target_type_ == TARGET_TYPE::MANUAL_TARGET) {
     final_goal_(0) = msg->poses[0].pose.position.x;
     final_goal_(1) = msg->poses[0].pose.position.y;
@@ -220,7 +222,9 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         break;
       }
       // Replan if next frontier to be visited is covered
-      else if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
+      else if (do_replan_ && t_cur > fp_->replan_thresh2_ &&
+               expl_manager_->frontier_finder_->isinterstFrontierCovered(choose_frontier_cell)) {
+        // else if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, CLUSTER_COVER);
         ROS_WARN("Replan: cluster covered=====================================");
@@ -240,6 +244,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     case REPLAN: {
       static bool first_enter_replan_ = true;
       if (first_enter_replan_ && last_fail_reason != COLLISION_CHECK_FAIL) {
+        direct_replan = false;
         replan_begin_time = ros::Time::now();
         setdata(START_FROM_LAST_TRAJ);
         // Inform traj_server the replanning
@@ -417,15 +422,17 @@ void PAExplorationFSM::visualize() {
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
-  auto start = std::chrono::high_resolution_clock::now();
+  // debug_timer.setstart_time("frontierCallback", false);
+  if (direct_replan) return;
+  debug_timer.setstart_time("frontierCallback", 10);  //十次输出一次
   // 初始化
-  // cout << "[frontierCallback DEBUG] enter" << endl;
   static int delay = 0;
   if (++delay < 5) {
     return;
   }
   // Draw updated box
   Vector3d bmin, bmax;
+  debug_timer.function_start("init");
   planner_manager_->edt_environment_->sdf_map_->getUpdatedBox(bmin, bmax);
   // visualization_->drawBox((bmin + bmax) / 2.0, bmax - bmin, Vector4d(0, 1, 0, 0.3), "updated_box", 0, 4);
   // cout << "[frontierCallback] search begin!!" << endl;
@@ -435,13 +442,17 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   auto ep = expl_manager_->ep_;
   Vector3d refer_pos;
   double refer_yaw;
+  debug_timer.function_end("init");
   // 使用A*算法搜索一个的点，这个点是这条路径上靠近终点且在free区域的最后一个点，并被后面viewpoint计算提供其中一项=============
   pa->reset();
+  debug_timer.function_start("pa->search");
   bool is_best_viewpoint_searched = false;
-
   if (have_target_ && pa->search(odom_pos_, final_goal_) == Astar::REACH_END) {
     ed->path_next_goal_ = pa->getPath();
+    debug_timer.function_end("pa->search");
+    debug_timer.function_start("findJunction");
     is_best_viewpoint_searched = expl_manager_->findJunction(ed->path_next_goal_, refer_pos, refer_yaw);
+    debug_timer.function_end("findJunction");
   } else if (!is_best_viewpoint_searched && have_target_)
     refer_pos = final_goal_;
   else
@@ -449,27 +460,31 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
 
   visualization_->drawAstar(ed->path_next_goal_, refer_pos, refer_yaw, is_best_viewpoint_searched);
   // ===========================================================================================================
+  debug_timer.function_start("frontier_init");
   ft->setSortRefer(odom_pos_, odom_yaw_, refer_pos, is_best_viewpoint_searched);
   ft->searchFrontiers();
+  debug_timer.function_end("frontier_init");
+  debug_timer.function_start("computeFrontiersToVisit");
   ft->computeFrontiersToVisit();
+  debug_timer.function_end("computeFrontiersToVisit");
   ft->getFrontiers(ed->frontiers_);
   ft->getDormantFrontiers(ed->dead_frontiers_);
   // cout << " Frontiers num " << ed->frontiers_.size() << " DormantFrontiers num " << ed->dead_frontiers_.size() << endl;
   if (ed->frontiers_.size() == 0) return;
   vector<double> score;
+  debug_timer.function_start("getBestViewpointData");
   ft->getBestViewpointData(ed->point_now, ed->yaw_now, ed->frontier_now, score);
+  debug_timer.function_end("getBestViewpointData");
   visualization_->drawFrontiers(ed->frontiers_);
   visualization_->drawdeadFrontiers(ed->dead_frontiers_);
   visualization_->drawFrontiersAndViewpointBest(ed->point_now, ed->yaw_now, ed->frontier_now, score);
+  debug_timer.output_time();
   // cout << "sortrefer: pos_now " << odom_pos_.transpose() << " yaw_now " << odom_yaw_ << " refer_pos " << refer_pos.transpose()
   //      << " viewpoint_pos " << ed->point_now.transpose() << endl;
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = end - start;
-  // cout << "time: " << elapsed.count() << endl;
 }
 
 void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
-  if (!have_odom_) {
+  if (!have_odom_ || run_continued_) {
     return;
   }
 
@@ -538,6 +553,7 @@ void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string
   if (new_state == REPLAN) {
     best_frontier_id = 0;
     search_times = 0;
+    direct_replan = true;
     visualization_->clearUnreachableMarker();
   } else
     setVisualFSMType(new_state);
@@ -683,10 +699,10 @@ void PAExplorationFSM::setdata(const REPLAN_TYPE& replan_start_type) {
   double t_r = (ros::Time::now() - last_traj.start_time_).toSec() + fp_->replan_time_;
   double t_c = (ros::Time::now() - replan_begin_time).toSec();
 
-  if (!do_replan_                       // 不重规划
-      || t_r > last_traj.duration_      // 当前时间没有轨迹的运行时间
-      || odom_vel_.norm() < 0.01        // 当前无人机接近静止
-      || t_c > fp_->replan_time_ + 0.5  // replan时间过久，无人机已经被traj_server叫停
+  if (!do_replan_                                    // 不重规划
+      || t_r > last_traj.duration_                   // 当前时间没有轨迹的运行时间
+      || odom_vel_.norm() < 0.01                     // 当前无人机接近静止
+      || t_c > fp_->replan_time_ + fp_->replan_out_  // replan时间过久，无人机已经被traj_server叫停
   ) {
     // ROS_WARN("SWITCH TO START_FROM_ODOM");
     // cout << "t_r: " << t_r << " t_c: " << t_c << " duration_ " << last_traj.duration_ << " odom_vel_.norm() " <<
@@ -803,6 +819,20 @@ void PAExplorationFSM::setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const 
       fsm_data = PlanningVisualization::FSM_STATUS::INIT;
       break;
   }
+}
+
+void PAExplorationFSM::continued_run() {
+  final_goal_(0) = waypoints_[current_wp_][0];
+  final_goal_(1) = waypoints_[current_wp_][1];
+  final_goal_(2) = waypoints_[current_wp_][2];
+  current_wp_ = (current_wp_ + 1) % waypoint_num_;
+  cout << "final_goal_" << final_goal_.transpose() << endl;
+  // 清除frontier：
+  expl_manager_->frontier_finder_->clearAllFrontiers();
+  ros::Duration(2.0).sleep();
+
+  ROS_WARN("Restart=================================");
+  transitState(START_IN_STATIC, "TRIG");
 }
 
 }  // namespace fast_planner

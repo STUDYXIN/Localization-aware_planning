@@ -1,50 +1,51 @@
 {
-  "configurations": [
-    {
-      "browse": {
-        "databaseFilename": "${default}",
-        "limitSymbolsToIncludedHeaders": false
-      },
-      "includePath": [
-        "/home/star/ActiveSlam/rrt4/devel/include/**",
-        "/home/star/ActiveSlam/new_planner/devel/include/**",
-        "/home/star/ActiveSlam/my_git/devel/include/**",
-        "/opt/ros/noetic/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/active_perception/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/airsim_ctrl/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/airsim_ros_wrapper/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/bspline/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/bspline_opt/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/VINS-Fusion/camera_models/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/exploration_manager/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/utils/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/local_sensing/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/multi_map_server/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/RMUA_controller/odom_pub/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/path_searching/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/pathfinding/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/plan_env/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/plan_manage/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/poly_traj/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/pose_utils/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/RMUA_controller/px4ctrl/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/quadrotor_msgs/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/so3_control/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/so3_disturbance_generator/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/so3_quadrotor_simulator/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/traj_utils/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/trajectory/include/**",
-        "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/uav_utils/include/**",
-        "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/voxel_mapping/include/**",
-        "/usr/include/**"
-      ],
-      "name": "ROS",
-      "intelliSenseMode": "gcc-x64",
-      "compilerPath": "/usr/bin/gcc",
-      "cStandard": "gnu11",
-      "cppStandard": "c++14"
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "/home/star/ActiveSlam/rrt4/devel/include/**",
+                "/home/star/ActiveSlam/new_planner/devel/include/**",
+                "/home/star/ActiveSlam/my_git/devel/include/**",
+                "/opt/ros/noetic/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/active_perception/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/airsim_ctrl/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/airsim_ros_wrapper/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/bspline/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/bspline_opt/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/VINS-Fusion/camera_models/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/exploration_manager/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/utils/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/utils/lkh_tsp_solver/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/local_sensing/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/multi_map_server/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/RMUA_controller/odom_pub/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/path_searching/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/pathfinding/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/plan_env/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/plan_manage/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/poly_traj/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/pose_utils/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/RMUA_controller/px4ctrl/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/quadrotor_msgs/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/so3_control/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/so3_disturbance_generator/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/so3_quadrotor_simulator/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/fuel_planner/traj_utils/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/trajectory/include/**",
+                "/home/star/ActiveSlam/rrt4/src/Localization-aware_planning/uav_simulator/Utils/uav_utils/include/**",
+                "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/voxel_mapping/include/**",
+                "/usr/include/**",
+                "${workspaceFolder}/fuel_planner/utils/time_debug/include"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "c++14"
+        }
+    ],
+    "version": 4
 }

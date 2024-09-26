@@ -28,6 +28,8 @@ public:
   double fov_vertical;
   double feature_visual_min;
   double feature_visual_max;
+  double frontier_visual_min;
+  double frontier_visual_max;
   double wider_fov_horizontal;
   double wider_fov_vertical;
   double quarter_fov_horizontal_rad;
@@ -35,28 +37,30 @@ public:
   Eigen::Matrix4d sensor2body;
 
   void init(ros::NodeHandle& nh) {
-    nh.param("feature/cam_cx", cx, 321.046);
-    nh.param("feature/cam_cy", cy, 243.449);
-    nh.param("feature/cam_fx", fx, 387.229);
-    nh.param("feature/cam_fy", fy, 387.229);
-    nh.param("feature/cam_width", width, 640);
-    nh.param("feature/cam_height", height, 480);
-    nh.param("feature/feature_visual_max", feature_visual_max, 10.0);
-    nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
-    nh.param("feature/wider_fov_horizontal", wider_fov_horizontal, 0.1);
-    nh.param("feature/wider_fov_vertical", wider_fov_vertical, 0.1);
-    nh.param("feature/feature_visual_min", feature_visual_min, 0.1);
+    nh.param("camera/cam_cx", cx, 321.046);
+    nh.param("camera/cam_cy", cy, 243.449);
+    nh.param("camera/cam_fx", fx, 387.229);
+    nh.param("camera/cam_fy", fy, 387.229);
+    nh.param("camera/cam_width", width, 640);
+    nh.param("camera/cam_height", height, 480);
+    nh.param("camera/feature_visual_max", feature_visual_max, 10.0);
+    nh.param("camera/feature_visual_min", feature_visual_min, 0.1);
+    nh.param("camera/wider_fov_horizontal", wider_fov_horizontal, 0.1);
+    nh.param("camera/wider_fov_vertical", wider_fov_vertical, 0.1);
+    nh.param("camera/feature_visual_min", feature_visual_min, 0.1);
+    nh.param("camera/frontier_visual_min", frontier_visual_min, 0.1);
+    nh.param("camera/frontier_visual_max", frontier_visual_max, 0.1);
     std::vector<double> cam02body;
-    if (nh.getParam("feature/cam02body", cam02body)) {
+    if (nh.getParam("camera/cam02body", cam02body)) {
       if (cam02body.size() == 16) {
         sensor2body << cam02body[0], cam02body[1], cam02body[2], cam02body[3], cam02body[4], cam02body[5], cam02body[6],
             cam02body[7], cam02body[8], cam02body[9], cam02body[10], cam02body[11], cam02body[12], cam02body[13], cam02body[14],
             cam02body[15];
       } else {
-        ROS_ERROR("Parameter 'feature/cam02body' size is incorrect. Expected 16 values.");
+        ROS_ERROR("Parameter 'camera/cam02body' size is incorrect. Expected 16 values.");
       }
     } else {
-      ROS_ERROR("Failed to get parameter 'feature/cam02body'.");
+      ROS_ERROR("Failed to get parameter 'camera/cam02body'.");
     }
     fov_horizontal = 2 * atan(width / (2 * fx)) * 180 / M_PI;
     fov_vertical = 2 * atan(height / (2 * fy)) * 180 / M_PI;
@@ -77,8 +81,8 @@ public:
     std::cout << "FOV Vertical: " << fov_vertical << " degrees" << std::endl;
     std::cout << "Wider FOV Horizontal: " << wider_fov_horizontal << std::endl;
     std::cout << "Wider FOV Vertical: " << wider_fov_vertical << std::endl;
-    std::cout << "Feature Visual Max: " << feature_visual_max << std::endl;
-    std::cout << "Feature Visual Min: " << feature_visual_min << std::endl;
+    std::cout << "camera Visual Max: " << feature_visual_max << std::endl;
+    std::cout << "camera Visual Min: " << feature_visual_min << std::endl;
     std::cout << "Half FOV Horizontal Rad: " << quarter_fov_horizontal_rad << std::endl;
     std::cout << "Half FOV Vertical Rad: " << quarter_fov_vertical_rad << std::endl;
     std::cout << "-----------------------------------------------------:" << std::endl;
@@ -136,6 +140,81 @@ public:
     if (angle > quarter_fov_vertical_rad) return false;  // 在水平区之外，即与x-y 平面夹角大于quarter_fov_vertical_rad
     return true;
   }
+
+  void sampleInFOV(const Eigen::Vector3d& camera_p, const Eigen::Quaterniond& camera_q, std::vector<Eigen::Vector3d>& samples) {
+    samples.clear();
+    double length_thr = 0.5;  // 每个点之间的距离
+
+    for (double i = -frontier_visual_max; i < frontier_visual_max; i += length_thr) {
+      for (double j = -frontier_visual_max; j < frontier_visual_max; j += length_thr) {
+        for (double k = frontier_visual_min; k < frontier_visual_max; k += length_thr) {
+          Eigen::Vector3d point_camera(i, j, k);
+
+          // 检查点是否在有效深度范围内
+          if (point_camera.norm() < frontier_visual_min || point_camera.norm() > frontier_visual_max) continue;
+
+          // 检查点是否在 FOV 内
+          double fov_x = atan2(i, k) * 180 / M_PI;
+          double fov_y = atan2(j, k) * 180 / M_PI;
+
+          bool within_horizontal_fov = std::abs(fov_x) <= (fov_horizontal / 2.0);
+          bool within_vertical_fov = std::abs(fov_y) <= (fov_vertical / 2.0);
+
+          if (within_horizontal_fov && within_vertical_fov) {
+            Eigen::Vector3d point_world = camera_q * point_camera + camera_p;
+            samples.push_back(point_world);
+          }
+        }
+      }
+    }
+  }
+
+  // void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<double>& unknown_ratio) {
+  //   Matrix4d Pose_receive = Matrix4d::Identity();
+  //   unknown_ratio.resize(sample_yaw.size());
+  //   std::fill(unknown_ratio.begin(), unknown_ratio.end(), 0);
+  //   Pose_receive.block<3, 1>(0, 3) = pos;
+  //   Matrix4d camera_Pose = Pose_receive * sensor2body;
+  //   Eigen::Vector3d pos_in_camera = camera_Pose.block<3, 1>(0, 3);
+  //   if (features_cloud_.empty()) return;
+  //   int feature_num = 0;
+  //   pcl::PointXYZ searchPoint;
+  //   searchPoint.x = pos_transformed(0);
+  //   searchPoint.y = pos_transformed(1);
+  //   searchPoint.z = pos_transformed(2);
+
+  //   vector<int> pointIdxRadiusSearch;
+  //   vector<float> pointRadiusSquaredDistance;
+  //   features_kdtree_.radiusSearch(
+  //       searchPoint, camera_param->feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
+  //   // cout << " [FeatureMap::get_YawRange_using_Pos] debug yaw_range";
+  //   for (const auto& index : pointIdxRadiusSearch) {
+  //     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+  //     if (camera_param->is_depth_useful_at_level(pos_transformed, f) &&
+  //         !sdf_map->checkObstacleBetweenPoints(
+  //             pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+  //     {
+  //       Eigen::Vector2d yaw_range = camera_param->calculateYawRange(pos_transformed, f);
+  //       // cout << "  " << yaw_range.transpose();
+  //       for (size_t i = 0; i < sample_yaw.size(); ++i) {
+  //         double yaw = sample_yaw[i];
+  //         // 情况1：yaw_range(0) < yaw_range(1)，范围不跨越“π”
+  //         if (yaw_range(0) < yaw_range(1)) {
+  //           if (yaw >= yaw_range(0) && yaw <= yaw_range(1)) {
+  //             feature_visual_num[i] += 1;
+  //           }
+  //         }
+  //         // 情况2：yaw_range(0) > yaw_range(1)，范围跨越“π”
+  //         else {
+  //           if (yaw >= yaw_range(0) || yaw <= yaw_range(1)) {
+  //             feature_visual_num[i] += 1;
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  //   // cout << endl;
+  // }
 
   // 计算从 camera_p 看向 target_p 的可行 yaw 范围
   Eigen::Vector2d calculateYawRange(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {

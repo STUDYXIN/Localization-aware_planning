@@ -24,12 +24,13 @@ find_package(catkin REQUIRED COMPONENTS
   lkh_tsp_solver
   plan_manage
   cv_bridge
+  time_debug
 )
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES exploration_manager
- CATKIN_DEPENDS plan_env path_searching bspline bspline_opt active_perception traj_utils lkh_tsp_solver plan_manage
+ CATKIN_DEPENDS plan_env path_searching bspline bspline_opt active_perception traj_utils lkh_tsp_solver time_debug plan_manage
 #  DEPENDS system_lib
 )
 

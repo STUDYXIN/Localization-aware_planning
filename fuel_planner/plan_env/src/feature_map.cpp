@@ -99,6 +99,16 @@ void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
   vector<Eigen::Vector3d> visual_points_vec;
   int feature_num = get_NumCloud_using_Odom(msg, visual_points_vec);
 
+  //----------------------
+  // Eigen::Vector3d pos_odom(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+  // Eigen::Quaterniond orient_odom(
+  //     msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
+  // Eigen::Vector3d pos_camera;
+  // Eigen::Quaterniond orient_camera;
+  // camera_param->fromOdom2Camera(pos_odom, orient_odom, pos_camera, orient_camera);
+  // camera_param->sampleInFOV(pos_camera, orient_camera, visual_points_vec);
+  //----------------------
+
   pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
   pointcloud->width = visual_points_vec.size();
   pointcloud->height = 1;

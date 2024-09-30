@@ -168,6 +168,7 @@ public:
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, int visib_num_, int feature_num_);
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, double yaw_ref, int feature_num_);
   void getBestViewpointData(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
+  void getBestViewpointData(Vector3d& points, vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
   void updateScorePos();
   void computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells);
   // void getMessage2draw(vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages, vector<double>& gains);

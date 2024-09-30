@@ -93,6 +93,7 @@ public:
   DebugTimer debug_timer;
   bool run_continued_;
   bool direct_replan;
+  bool start_debug_mode_;
 
   /* ROS utils */
   ros::NodeHandle node_;

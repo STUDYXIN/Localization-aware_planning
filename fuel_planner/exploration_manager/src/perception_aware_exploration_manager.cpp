@@ -75,10 +75,17 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   nh.param("exploration/wg", ep_->wg, -1.0);
   nh.param("exploration/wf", ep_->wf, -1.0);
   nh.param("exploration/wc", ep_->wc, -1.0);
+  nh.param("debug/start_debug_mode", start_debug_mode_, false);
+
+  if (start_debug_mode_) {
+    stepping_debug_.reset(new SteppingDebug);
+    stepping_debug_->init();
+  }
 
   double resolution_ = sdf_map_->getResolution();
   Eigen::Vector3d origin, size;
   sdf_map_->getRegion(origin, size);
+
   // ViewNode::caster_.reset(new RayCaster);
   // ViewNode::caster_->setParams(resolution_, origin);
 }
@@ -108,7 +115,7 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   }
 
   if (ed_->frontiers_.empty()) return NO_FRONTIER;
-
+  if (start_debug_mode_) stepping_debug_->waitForInput("Begin planToNextGoal");
   last_fail_reason = planToNextGoal(next_pos, next_yaw, frontier_cells, true);
   if (last_fail_reason == NO_NEED_CHANGE) return SEARCH_FRONTIER;
 

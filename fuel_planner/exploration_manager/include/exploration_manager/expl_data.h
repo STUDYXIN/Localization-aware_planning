@@ -90,7 +90,7 @@ struct ExplorationData {
   vector<Vector3d> centers_, scales_;
 
   Vector3d point_now;
-  double yaw_now;
+  vector<double> yaw_vector;
   vector<Vector3d> frontier_now;
 };
 

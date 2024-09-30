@@ -177,6 +177,29 @@ void FrontierFinder::getBestViewpointData(
     return;
   }
 }
+
+void FrontierFinder::getBestViewpointData(
+    Vector3d& points, vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score) {
+  best_id = frontier_sort_id.front();
+  int id = 0;
+  if (frontier_sort_id.size() != frontiers_.size()) {
+    ROS_ERROR("[FrontierFinder::getBestViewpointData] frontier sort fail!!!!!");
+    return;
+  }
+  for (const auto& frontier : frontiers_) {
+    if (id++ != best_id) continue;
+    auto& view = frontier.viewpoints_.front();
+    points = view.pos_;
+    yaws = view.yaw_available;
+    frontier_cells = frontier.filtered_cells_;
+    best_viewpoint = view;
+    score.clear();
+    score.push_back(view.score_pos);
+    score.push_back(view.score_yaw.front());
+    score.push_back(view.final_score);
+    return;
+  }
+}
 void FrontierFinder::updateScorePos() {
   for (auto& ftr : frontiers_) {
     if ((ftr.average_ - sort_refer_.pos_now_).norm() > domant_frontier_length_thr_) {

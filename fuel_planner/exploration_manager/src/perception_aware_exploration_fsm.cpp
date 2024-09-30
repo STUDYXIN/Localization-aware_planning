@@ -32,7 +32,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/draw_line2feature", draw_line2feature, false);
   nh.param("fsm/still_choose_new_length_thr", still_choose_new_length_thr_, -1.0);
   nh.param("fsm/run_continued", run_continued_, false);
-
+  nh.param("debug/start_debug_mode", start_debug_mode_, false);
   nh.param("fsm/wp_num", waypoint_num_, -1);
   for (int i = 0; i < waypoint_num_; i++) {
     nh.param("fsm/wp" + to_string(i) + "_x", waypoints_[i][0], -1.0);
@@ -137,7 +137,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         // Inform traj_server the replanning
         replan_pub_.publish(std_msgs::Empty());
         choose_pos_ = expl_manager_->ed_->point_now;
-        choose_yaw_ = expl_manager_->ed_->yaw_now;
+        choose_yaw_ = expl_manager_->ed_->yaw_vector.front();
         choose_frontier_cell = expl_manager_->ed_->frontier_now;
         origin_pos_ = choose_pos_;
         expl_manager_->frontier_finder_->store_init_state();
@@ -150,7 +150,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         last_fail_reason = NO_NEED_CHANGE;
         visualization_->drawFrontiersGo(
-            expl_manager_->ed_->frontier_now, expl_manager_->ed_->point_now, expl_manager_->ed_->yaw_now);
+            expl_manager_->ed_->frontier_now, expl_manager_->ed_->point_now, expl_manager_->ed_->yaw_vector.front());
         transitState(PUB_TRAJ, "FSM");
         first_enter_start_ = true;
       }
@@ -195,7 +195,30 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       double time_to_end = info->duration_ - t_cur;
       // cout << " debug time2end: " << time_to_end << endl;
       setVisualErrorType(last_fail_reason);
-      if (time_to_end < fp_->replan_thresh1_) {
+      if (start_debug_mode_) {  //如果启动DEBUG模式，后面的转化就不用看了
+        if (time_to_end < fp_->replan_thresh1_) {
+          if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
+            ROS_ERROR("Invalid next goal type!!!");
+            ROS_BREAK();
+          }
+
+          if (next_goal_ == REACH_END) {
+            // if (checkReachFinalGoal()) {
+            transitState(WAIT_TARGET, "FSM");
+            last_arrive_goal_time_ = ros::Time::now().toSec();
+            ROS_WARN("Replan: reach final goal=================================");
+          }
+
+          else {
+            transitState(START_IN_STATIC, "FSM");  //固定从当前里程开始
+            // transitState(REPLAN, "FSM");
+            setVisualFSMType(REPLAN, REACH_TMP);
+            last_arrive_goal_time_ = ros::Time::now().toSec();
+            ROS_WARN("Replan: reach tmp viewpoint=================================");
+          }
+          return;
+        }
+      } else if (time_to_end < fp_->replan_thresh1_) {
         if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
           ROS_ERROR("Invalid next goal type!!!");
           ROS_BREAK();
@@ -250,7 +273,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         // Inform traj_server the replanning
         replan_pub_.publish(std_msgs::Empty());
         choose_pos_ = expl_manager_->ed_->point_now;
-        choose_yaw_ = expl_manager_->ed_->yaw_now;
+        choose_yaw_ = expl_manager_->ed_->yaw_vector.front();
         choose_frontier_cell = expl_manager_->ed_->frontier_now;
         origin_pos_ = choose_pos_;
         expl_manager_->frontier_finder_->store_init_state();
@@ -473,11 +496,11 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   if (ed->frontiers_.size() == 0) return;
   vector<double> score;
   debug_timer.function_start("getBestViewpointData");
-  ft->getBestViewpointData(ed->point_now, ed->yaw_now, ed->frontier_now, score);
+  ft->getBestViewpointData(ed->point_now, ed->yaw_vector, ed->frontier_now, score);
   debug_timer.function_end("getBestViewpointData");
   visualization_->drawFrontiers(ed->frontiers_);
   visualization_->drawdeadFrontiers(ed->dead_frontiers_);
-  visualization_->drawFrontiersAndViewpointBest(ed->point_now, ed->yaw_now, ed->frontier_now, score);
+  visualization_->drawFrontiersAndViewpointBest(ed->point_now, ed->yaw_vector.front(), ed->frontier_now, score);
   debug_timer.output_time();
   // cout << "sortrefer: pos_now " << odom_pos_.transpose() << " yaw_now " << odom_yaw_ << " refer_pos " << refer_pos.transpose()
   //      << " viewpoint_pos " << ed->point_now.transpose() << endl;
@@ -595,7 +618,7 @@ bool PAExplorationFSM::transitViewpoint() {
         if (length2best > still_choose_new_length_thr_ && new_change > still_choose_new_length_thr_) {
           cout << "choose new!" << length2best << endl;
           choose_pos_ = ed->point_now;
-          choose_yaw_ = ed->yaw_now;
+          choose_yaw_ = ed->yaw_vector.front();
           choose_frontier_cell = ed->frontier_now;
           last_used_viewpoint_pos = choose_pos_;
         }

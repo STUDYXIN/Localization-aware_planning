@@ -61,6 +61,7 @@
 
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
+    <param name="debug/start_debug_mode" value="false" type="bool" />
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
     <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" type="int" />
     <param name="global/min_feature_num_plan" value="$(arg min_feature_num_plan)" type="int" />
@@ -190,9 +191,9 @@
     <param name="frontier/min_candidate_dist" value="0.75" type="double" />
     <param name="frontier/min_candidate_clearance" value="0.21" type="double" />
     <param name="frontier/candidate_dphi" value="$(eval 15 * 3.1415926 / 180.0)" type="double" />
-    <param name="frontier/candidate_rnum" value="5" type="int" />
+    <param name="frontier/candidate_rnum" value="8" type="int" />
     <param name="frontier/candidate_rmin" value="0.5" type="double" />
-    <param name="frontier/candidate_rmax" value="1.5" type="double" />
+    <param name="frontier/candidate_rmax" value="2.0" type="double" />
     <!-- 上下z_sample_max_length的长度采样-->
     <param name="frontier/z_sample_max_length" value="1.0" type="double" />
     <param name="frontier/z_sample_num" value="5" type="int" />
@@ -206,7 +207,7 @@
     <param name="frontier/visb_max" value="200" type="int" />
     <param name="frontier/we" value="0.8" type="double" />
     <param name="frontier/wg" value="1.2" type="double" />
-    <param name="frontier/wf" value="0.8" type="double" />
+    <param name="frontier/wf" value="1.0" type="double" />
     <param name="frontier/wc" value="0.8" type="double" />
     <param name="frontier/domant_frontier_length_thr" value="8.0" type="double" />
 

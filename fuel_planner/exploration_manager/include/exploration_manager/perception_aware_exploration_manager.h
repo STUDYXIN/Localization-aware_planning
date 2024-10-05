@@ -7,7 +7,6 @@
 #include <Eigen/Eigen>
 #include <memory>
 #include <vector>
-#include <stepping_debug.hpp>
 
 using Eigen::Vector3d;
 using std::shared_ptr;
@@ -48,7 +47,10 @@ public:
   shared_ptr<FrontierFinder> frontier_finder_;
   shared_ptr<FeatureMap> feature_map_;
   shared_ptr<SteppingDebug> stepping_debug_;
-  bool start_debug_mode_;
+  void getSteppingDebug(shared_ptr<SteppingDebug> stepping_debug) {
+    stepping_debug_ = stepping_debug;
+  }
+
   // 为终点选择合适的采样点
   vector<double> yaw_samples;
   int yaw_choose_id;

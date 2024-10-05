@@ -13,6 +13,7 @@
 
 #include <plan_manage/perception_aware_planner_manager.h>
 #include <plan_env/utils.hpp>
+#include <stepping_debug.hpp>
 
 #include <visualization_msgs/Marker.h>
 
@@ -36,6 +37,7 @@ PAExplorationManager::PAExplorationManager(shared_ptr<PAExplorationFSM> expl_fsm
 
 void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   planner_manager_.reset(new FastPlannerManager);
+  planner_manager_->getSteppingDebug(stepping_debug_);
   planner_manager_->initPlanModules(nh);
   edt_environment_ = planner_manager_->edt_environment_;
   sdf_map_ = edt_environment_->sdf_map_;
@@ -75,12 +77,6 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   nh.param("exploration/wg", ep_->wg, -1.0);
   nh.param("exploration/wf", ep_->wf, -1.0);
   nh.param("exploration/wc", ep_->wc, -1.0);
-  nh.param("debug/start_debug_mode", start_debug_mode_, false);
-
-  if (start_debug_mode_) {
-    stepping_debug_.reset(new SteppingDebug);
-    stepping_debug_->init();
-  }
 
   double resolution_ = sdf_map_->getResolution();
   Eigen::Vector3d origin, size;
@@ -115,7 +111,8 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   }
 
   if (ed_->frontiers_.empty()) return NO_FRONTIER;
-  if (start_debug_mode_) stepping_debug_->waitForInput("Begin planToNextGoal");
+  stepping_debug_->debug_type_now_ = DEBUG_TYPE::BEFORE_COMPUTE;
+  stepping_debug_->calldebug(DEBUG_TYPE::BEFORE_COMPUTE);
   last_fail_reason = planToNextGoal(next_pos, next_yaw, frontier_cells, true);
   if (last_fail_reason == NO_NEED_CHANGE) return SEARCH_FRONTIER;
 

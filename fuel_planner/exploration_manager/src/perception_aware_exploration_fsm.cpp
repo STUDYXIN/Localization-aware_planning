@@ -7,6 +7,7 @@
 
 #include <plan_manage/perception_aware_planner_manager.h>
 #include <traj_utils/planning_visualization.h>
+#include <stepping_debug.hpp>
 #include <chrono>
 
 #include <thread>
@@ -42,13 +43,18 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
 
   /* Initialize main modules */
   Utils::initialize(nh);
+  visualization_.reset(new PlanningVisualization(nh));
+  stepping_debug_.reset(new SteppingDebug);
+  if (start_debug_mode_) {
+    stepping_debug_->getvisualization(visualization_);
+    stepping_debug_->init(nh);
+  }
 
   expl_manager_ = make_shared<PAExplorationManager>(shared_from_this());
+  expl_manager_->getSteppingDebug(stepping_debug_);
   expl_manager_->initialize(nh);
 
   planner_manager_ = expl_manager_->planner_manager_;
-
-  visualization_.reset(new PlanningVisualization(nh));
 
   state_str_ = { "INIT", "WAIT_TARGET", "START_IN_STATIC", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP",
     "FIND_FINAL_GOAL" };
@@ -106,7 +112,7 @@ void PAExplorationFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
 
 void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
   ROS_INFO_STREAM_THROTTLE(1.0, "[FSM]: state: " << state_str_[int(exec_state_)]);
-
+  stepping_debug_->debug_count = 0;  //重新计数debug信息
   switch (exec_state_) {
     case INIT: {
       if (!have_odom_) {

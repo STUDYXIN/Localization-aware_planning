@@ -9,7 +9,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   cv_bridge
+  traj_utils
   tf
+  bspline
 )
 
 find_package(Eigen3 REQUIRED)
@@ -27,6 +29,7 @@ include_directories(${MATPLOTLIBCPP_DIR})
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES stepping_debug
+ CATKIN_DEPENDS traj_utils bspline
 )
 
 include_directories(

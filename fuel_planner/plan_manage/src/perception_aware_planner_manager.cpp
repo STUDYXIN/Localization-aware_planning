@@ -10,6 +10,7 @@
 #include <visualization_msgs/Marker.h>
 
 #include <thread>
+#include <stepping_debug.hpp>
 
 #define ANSI_COLOR_YELLOW_BOLD "\033[1;33m"
 #define ANSI_COLOR_GREEN_BOLD "\033[1;32m"
@@ -78,6 +79,7 @@ void FastPlannerManager::initPlanModules(ros::NodeHandle& nh) {
     bspline_optimizers_.resize(10);
     for (int i = 0; i < 10; ++i) {
       bspline_optimizers_[i].reset(new BsplineOptimizer);
+      bspline_optimizers_[i]->getSteppingDebug(stepping_debug_);
       bspline_optimizers_[i]->setParam(nh);
       bspline_optimizers_[i]->setEnvironment(edt_environment_);
     }
@@ -329,7 +331,8 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
     }
     plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
   }
-
+  stepping_debug_->debug_type_now_ = DEBUG_TYPE::BEFORE_POS_OPT;
+  stepping_debug_->calldebug(DEBUG_TYPE::BEFORE_POS_OPT, plan_data_.kino_path_);
   statistics_.time_kinodynamic_astar_ = (ros::Time::now() - time_start).toSec();
 
   // Step2: 基于B样条曲线的轨迹优化，首先生成一条均匀B样条曲线
@@ -396,13 +399,12 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
   //     // bspline_optimizers_[0]->setFrontierCells(frontier_cells);
   //   }
   // }
-
+  stepping_debug_->debug_type_now_ = DEBUG_TYPE::EVERY_POS_OPT;
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
   if (!bspline_optimizers_[0]->issuccess) return POSISION_OPT_ERROR;
   local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
 
   statistics_.time_pos_traj_opt_ = (ros::Time::now() - time_start_2).toSec();
-
   updateTrajInfo();
 
   return SUCCESS_FIND_POSISION_TRAJ;
@@ -821,7 +823,10 @@ int FastPlannerManager::planYawPerceptionAware(
       bspline_optimizers_[1]->setFrontierCells(frontier_cells);
     }
   }
-
+  stepping_debug_->getPosBspline(local_data_.position_traj_);
+  stepping_debug_->debug_type_now_ = DEBUG_TYPE::YAW_INIT;
+  stepping_debug_->calldebug(DEBUG_TYPE::YAW_INIT, waypts);
+  stepping_debug_->debug_type_now_ = DEBUG_TYPE::EVERY_YAW_OPT;
   bspline_optimizers_[1]->setBoundaryStates(start, end, start_idx, end_idx);
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
   bspline_optimizers_[1]->setFeatureMap(feature_map_);

@@ -61,7 +61,16 @@
 
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
-    <param name="debug/start_debug_mode" value="false" type="bool" />
+    <param name="debug/start_debug_mode" value="true" type="bool" />
+    <!-- input 'enter' to step debug if debug_delay_time < 0 -->
+    <param name="debug/debug_delay_time" value="0.2" type="double" />
+
+    <param name="debug/stop_before_compute" value="true" type="bool" />
+    <param name="debug/stop_before_pos_opt" value="true" type="bool" />
+    <param name="debug/stop_every_pos_opt" value="true" type="bool" />
+    <param name="debug/stop_before_yaw_init" value="true" type="bool" />
+    <param name="debug/stop_every_yaw_opt" value="true" type="bool" />
+
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
     <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" type="int" />
     <param name="global/min_feature_num_plan" value="$(arg min_feature_num_plan)" type="int" />

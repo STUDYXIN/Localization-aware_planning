@@ -88,7 +88,9 @@ private:
     BEST_FRONTIER = 1500,
     UNREACHABLE_POSTTAJ = 1600,
     UNREACHABLE_YAWTAJ = 10000,  // 100递增
-    SHOW_FEATURE_TEXT = 1700
+    SHOW_FEATURE_TEXT = 1700,
+    DEBUG_POS = 1800,
+    DEBUG_YAW = 1900
   };
 
   enum TOPOLOGICAL_PATH_PLANNING_ID { GRAPH_NODE = 1, GRAPH_EDGE = 100, RAW_PATH = 200, FILTERED_PATH = 300, SELECT_PATH = 400 };
@@ -203,6 +205,7 @@ public:
   void drawNextGoal(Eigen::Vector3d goal, double resolution, const Eigen::Vector4d& color, int id = 0);
   void displayText(
       const Eigen::Vector3d& position, const std::string& text, const Eigen::Vector4d& color, double scale, int id, int pub_id);
+  void drawDebugPosBspline(NonUniformBspline& bspline, const int& debug_count);
 
   Eigen::Vector4d getColor(const double& h, double alpha = 1.0);
 
@@ -211,6 +214,7 @@ public:
   // SECTION developing
   void drawFrontier(const vector<vector<Eigen::Vector3d>>& frontiers);
   void drawYawTraj(NonUniformBspline& pos, NonUniformBspline& yaw, const double& dt, int id = 0);
+  void drawYawTraj(const vector<Eigen::Vector3d>& pos, const vector<Eigen::Vector3d>& yaw, int id = 0);
   void drawYawPath(NonUniformBspline& pos, const vector<double>& yaw, const double& dt);
   Eigen::Vector3d calculateTopMiddlePoint(const std::vector<Eigen::Vector3d>& points) {
     if (points.empty()) {

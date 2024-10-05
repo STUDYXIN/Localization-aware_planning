@@ -1,8 +1,37 @@
 # 更新日志
 
-## 9月25日更新：
+## 10月5日更新
 
-### 将这些天改动的yaw轨迹规划内容部分合并到现有代码中：
+### 步进调试
+
+- **逻辑说明**
+
+  ```xml
+      <param name="debug/start_debug_mode" value="true" type="bool" />
+    <!-- input 'enter' to step debug if debug_delay_time < 0 -->
+    <param name="debug/debug_delay_time" value="0.2" type="double" />
+
+    <param name="debug/stop_before_compute" value="true" type="bool" />
+    <param name="debug/stop_before_pos_opt" value="true" type="bool" />
+    <param name="debug/stop_every_pos_opt" value="true" type="bool" />
+    <param name="debug/stop_before_yaw_init" value="true" type="bool" />
+    <param name="debug/stop_every_yaw_opt" value="true" type="bool" />
+  ```
+
+  - `start_debug_mode` 用来开关此功能，设为false和上一版理论上无区别
+  - `debug_delay_time` < 0 的时候，在终端按下`Enter`程序继续运行，否则延迟`debug_delay_time`时间继续
+  - 其他变量用于定义代码停止的位置
+
+  > 注：启动后飞机默认不重规划，这导致一些小bug，若轨迹检测到碰撞，可能会让飞机在原地反复计算。
+
+- **现象**
+  
+  - pos轨迹一开始轨迹特别远，smooth_cost特别大
+  - yaw轨迹优化过程很奇怪，具体可以运行一下看现象
+
+## 9月25日更新
+
+### 将这些天改动的yaw轨迹规划内容部分合并到现有代码中
 
 针对探索frontier:
 

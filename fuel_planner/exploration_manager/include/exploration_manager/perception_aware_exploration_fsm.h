@@ -33,6 +33,7 @@ namespace fast_planner {
 class FastPlannerManager;
 class PAExplorationManager;
 class PlanningVisualization;
+class SteppingDebug;
 class DebugTimer;
 struct FSMParam;
 struct FSMData;
@@ -51,6 +52,9 @@ public:
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<PAExplorationManager> expl_manager_;
   shared_ptr<PlanningVisualization> visualization_;
+
+  bool start_debug_mode_;
+  shared_ptr<SteppingDebug> stepping_debug_;
 
   shared_ptr<FSMParam> fp_;
 
@@ -93,7 +97,6 @@ public:
   DebugTimer debug_timer;
   bool run_continued_;
   bool direct_replan;
-  bool start_debug_mode_;
 
   /* ROS utils */
   ros::NodeHandle node_;

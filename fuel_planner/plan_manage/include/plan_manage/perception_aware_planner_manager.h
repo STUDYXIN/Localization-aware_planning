@@ -43,7 +43,7 @@ struct Statistics {
   double last_success_time_;               // 上一次成功局部规划的时间
   int local_plan_time_ = 0;                // 局部规划总次数，每次成功后清零
 };
-
+class SteppingDebug;
 class FastPlannerManager {
   // SECTION stable
 public:
@@ -98,9 +98,14 @@ public:
   shared_ptr<Astar> path_finder_;
   unique_ptr<TopologyPRM> topo_prm_;
   shared_ptr<FrontierFinder> frontier_finder_;
+  shared_ptr<SteppingDebug> stepping_debug_;
+  void getSteppingDebug(shared_ptr<SteppingDebug> stepping_debug) {
+    stepping_debug_ = stepping_debug;
+  }
 
   int last_error_type;
   bool is_pos_search_reach_end;
+  vector<BsplineOptimizer::Ptr> bspline_optimizers_;
 
 private:
   /* main planning algorithms & modules */
@@ -110,7 +115,6 @@ private:
   unique_ptr<KinodynamicAstar> kino_path_finder_;
   unique_ptr<KinodynamicAstar4Degree> kino_path_4degree_finder_;
   unique_ptr<RRTStar> sample_path_finder_;
-  vector<BsplineOptimizer::Ptr> bspline_optimizers_;
 
   void updateTrajInfo();
 

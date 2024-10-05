@@ -22,13 +22,14 @@ find_package(catkin REQUIRED COMPONENTS
   traj_utils
   active_perception
   cv_bridge
+  stepping_debug
 )
 
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES plan_manage
- CATKIN_DEPENDS plan_env path_searching bspline bspline_opt active_perception traj_utils)
+ CATKIN_DEPENDS plan_env path_searching bspline bspline_opt active_perception traj_utils stepping_debug)
 
 include_directories(
   include

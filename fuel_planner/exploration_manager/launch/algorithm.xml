@@ -72,9 +72,11 @@
     <param name="debug/stop_every_yaw_opt" value="true" type="bool" />
 
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
-    <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" type="int" />
+    <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)"
+      type="int" />
     <param name="global/min_feature_num_plan" value="$(arg min_feature_num_plan)" type="int" />
-    <param name="global/min_covisible_feature_num_plan" value="$(arg min_covisible_feature_num_plan)" type="int" />
+    <param name="global/min_covisible_feature_num_plan"
+      value="$(arg min_covisible_feature_num_plan)" type="int" />
 
     <param name="global/max_vel" value="$(arg max_vel)" type="double" />
     <param name="global/max_acc" value="$(arg max_acc)" type="double" />
@@ -209,7 +211,8 @@
     <param name="frontier/down_sample" value="3" type="int" />
     <param name="frontier/min_visib_num" value="15" type="int" />
     <param name="frontier/min_view_finish_fraction" value="0.8" type="double" />
-    <param name="frontier/min_view_feature_num_of_viewpoint" value="$(arg min_covisible_feature_num_plan)" type="int" />
+    <param name="frontier/min_view_feature_num_of_viewpoint"
+      value="$(arg min_covisible_feature_num_plan)" type="int" />
     <param name="frontier/feature_sample_dphi" value="$(eval 15 * 3.1415926 / 180.0)" type="double" />
     <!-- 排序参数 -->
     <param name="frontier/feature_num_max" value="200" type="int" />
@@ -339,10 +342,12 @@
     <param name="optimization/max_iteration_time4" value="0.003" type="double" />
 
     <param name="optimization/parallax/estimator_freq" value="10.0" type="double" />
-    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/parallax/max_parallax" value="$(eval 10 * 3.1415926 / 180.0)"
+      type="double" />
     <param name="optimization/parallax/pot_a" value="20.0" type="double" />
 
-    <param name="optimization/max_feature_and_frontier_convisual_angle" value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
+    <param name="optimization/max_feature_and_frontier_convisual_angle"
+      value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
     <param name="optimization/min_covisible_feature_cost_" value="0.6" type="double" />
     <param name="optimization/min_frontier_see_feature_num" value="15.0" type="double" />
     <param name="optimization/pot_fafv" value="20.0" type="double" />

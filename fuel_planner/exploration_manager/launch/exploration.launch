@@ -181,7 +181,6 @@
     output="screen">
     <param name="min_feature_num" value="$(arg min_feature_num_act)" />
     <param name="min_co_feature_num" value="$(arg min_covisible_feature_num_act)" />
-
   </node>
 
 </launch>

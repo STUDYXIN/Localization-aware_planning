@@ -219,7 +219,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
           if (next_goal_ == REACH_END) {
             // if (checkReachFinalGoal()) {
             transitState(WAIT_TARGET, "FSM");
-            last_arrive_goal_time_ = ros::Time::now().toSec();
             ROS_WARN("Replan: reach final goal=================================");
           }
 
@@ -227,7 +226,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
             transitState(START_IN_STATIC, "FSM");  // 固定从当前里程开始
             // transitState(REPLAN, "FSM");
             setVisualFSMType(REPLAN, REACH_TMP);
-            last_arrive_goal_time_ = ros::Time::now().toSec();
             ROS_WARN("Replan: reach tmp viewpoint=================================");
           }
           return;
@@ -579,334 +577,333 @@ void PAExplorationFSM::transitState(const FSM_EXEC_STATE new_state, const string
   cout << "[" + pos_call + "]: from " + state_str_[pre_s] + " to " + state_str_[int(new_state)] << endl;
   // 如果是转向replan，把一些累加值置0
   if (new_state == REPLAN) {
-    best_frontier_id = 0;
-    search_times = 0;
     direct_replan = true;
     visualization_->clearUnreachableMarker();
-    else setVisualFSMType(new_state);
-  }
+  } else
+    setVisualFSMType(new_state);
+}
 
-  bool PAExplorationFSM::transitViewpoint() {
-    // return false 表示极端坏情况，如代码错误,遍历完所有frontier，这个时候返回false，状态机中让无人机停止
-    auto ed = expl_manager_->ed_;
-    auto ft = expl_manager_->frontier_finder_;
-    auto info = &planner_manager_->local_data_;
-    auto plan_data = &planner_manager_->plan_data_;
-    setVisualErrorType(last_fail_reason);
-    // visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
-    visualization_->drawFrontiersUnreachable(choose_frontier_cell, choose_pos_, choose_yaw_, plan_data->kino_path_,
-        info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
+bool PAExplorationFSM::transitViewpoint() {
+  // return false 表示极端坏情况，如代码错误,遍历完所有frontier，这个时候返回false，状态机中让无人机停止
+  auto ed = expl_manager_->ed_;
+  auto ft = expl_manager_->frontier_finder_;
+  auto info = &planner_manager_->local_data_;
+  auto plan_data = &planner_manager_->plan_data_;
+  setVisualErrorType(last_fail_reason);
+  // visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
+  visualization_->drawFrontiersUnreachable(choose_frontier_cell, choose_pos_, choose_yaw_, plan_data->kino_path_,
+      info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
 
-    double length2best = (ed->point_now - origin_pos_).norm();
-    double new_change = (ed->point_now - last_used_viewpoint_pos).norm();
+  double length2best = (ed->point_now - origin_pos_).norm();
+  double new_change = (ed->point_now - last_used_viewpoint_pos).norm();
 
-    static int position_fail_count = 0;
-    static int yaw_fail_count = 0;
-    bool need_cycle = true;
-    while (need_cycle) {  // 这里之所以执行循环是因为有些情况需要跳转 last_fail_reason, need_cycle =true表示当下循环即可结束
-      switch (last_fail_reason) {
-        /**
-         *正常进来这个函数不可能是 NO_NEED_CHANGE，直接返回 false
-         */
-        case NO_NEED_CHANGE: {
-          ROS_ERROR("[PAExplorationFSM::transitViewpoint]: ERROR ENTER!!! CHECK CODE!!");
-          return false;
-          break;
-        }
-
-        /**
-         *位置轨迹出错，先观察是否frontier已经变化很多了，
-         *若有，直接起点和终点更新，重新规划，
-         *若没有，找到位置没被选择过的，最好的viewpoint（每个frontier的viewpoint只被选择前三个）
-         */
-        case PATH_SEARCH_FAIL: {
-          ROS_INFO("[PAExplorationFSM::transitViewpoint] Last Path Search Fail");
-          if (length2best > still_choose_new_length_thr_ && new_change > still_choose_new_length_thr_) {
-            cout << "choose new!" << length2best << endl;
-            choose_pos_ = ed->point_now;
-            choose_yaw_ = ed->yaw_vector.front();
-            choose_frontier_cell = ed->frontier_now;
-            last_used_viewpoint_pos = choose_pos_;
-          }
-
-          else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
-            if (!ft->get_next_viewpoint_forbadpos(choose_pos_, choose_yaw_, choose_frontier_cell)) {
-              // 遍历完所有情况依然失败
-              cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
-              return false;
-            }
-          }
-          need_cycle = false;
-          setStartState(START_FROM_LAST_TRAJ);
-          break;
-        }
-        /**
-         *优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
-         */
-        case POSITION_OPT_FAIL: {
-          cout << "[transitViewpoint] POSITION_OPT_FAIL" << endl;
-          // 优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
-          if (position_fail_count < 1) {
-            position_fail_count++;
-            need_cycle = false;
-            // 初始状态和末状态都不进行设置，即不变
-          } else {
-            position_fail_count = 0;
-            last_fail_reason = PATH_SEARCH_FAIL;
-            need_cycle = true;
-            // 转向 PATH_SEARCH_FAIL
-          }
-          break;
-        }
-        /**
-         *YAW轨迹出错，如果最好的frontier已经变了，位置需要重新规划，否则，保持路径搜索的结果不变，从位置轨迹开始
-         */
-        case YAW_INIT_FAIL: {
-          cout << "[transitViewpoint] YAW_INIT_FAIL" << endl;
-          if (length2best > still_choose_new_length_thr_) {  // 最好的frontier已经变了，位置需要重新规划
-            last_fail_reason = PATH_SEARCH_FAIL;
-            need_cycle = true;
-            break;
-          }
-
-          else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
-            if (!ft->get_next_viewpoint_forbadyaw(choose_pos_, choose_yaw_, choose_frontier_cell)) {
-              // 遍历完所有情况依然失败
-              cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
-              return false;
-            }
-            cout << "[transitViewpoint DEBUG] choose pos: " << choose_pos_.transpose() << " choose_yaw_: " << choose_yaw_ << endl;
-            need_cycle = false;
-            last_fail_reason = PATH_SEARCH_FAIL;
-            break;
-          }
-        }
-        /**
-         *优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
-         */
-        case YAW_OPT_FAIL: {
-          cout << "[transitViewpoint] YAW_OPT_FAIL" << endl;
-          // 优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
-          if (yaw_fail_count < 1) {
-            yaw_fail_count++;
-            need_cycle = false;
-            // 初始状态和末状态都不进行设置，即不变
-          }
-
-          else {
-            yaw_fail_count = 0;
-            last_fail_reason = YAW_INIT_FAIL;
-            need_cycle = true;
-            // 转向 PATH_SEARCH_FAIL
-          }
-          break;
-        }
-
-        /**
-         *可定位性失效和可探索性失效，重新选择轨迹
-         */
-        case LOCABILITY_CHECK_FAIL: {
-          ROS_INFO("[PAExplorationFSM::transitViewpoint] Locability Check Fail");
-          last_fail_reason = PATH_SEARCH_FAIL;
-          need_cycle = true;
-          break;
-        }
-        case EXPLORABILITI_CHECK_FAIL: {
-          ROS_INFO("[PAExplorationFSM::transitViewpoint]: Explorability Check Fail");
-          last_fail_reason = PATH_SEARCH_FAIL;
-          need_cycle = true;
-          break;
-        }
-
-        case COLLISION_CHECK_FAIL: {
-          ROS_INFO("[PAExplorationFSM::transitViewpoint]: Collision Check Fail");
-          last_fail_reason = PATH_SEARCH_FAIL;
-          need_cycle = true;
-          break;
-        }
-
-        default:
-          return false;
-      }
-    }
-    return true;
-  }
-
-  void PAExplorationFSM::setStartState(REPLAN_TYPE replan_switch) {
-
-    double t_r = (ros::Time::now() - last_traj.start_time_).toSec() + fp_->replan_time_;
-    double t_c = (ros::Time::now() - replan_begin_time).toSec();
-
-    if (!do_replan_                                    // 不重规划
-        || t_r > last_traj.duration_                   // 当前时间没有轨迹的运行时间
-        || odom_vel_.norm() < 0.01                     // 当前无人机接近静止
-        || t_c > fp_->replan_time_ + fp_->replan_out_  // replan时间过久，无人机已经被traj_server叫停
-    ) {
-      // ROS_WARN("SWITCH TO START_FROM_ODOM");
-      // cout << "t_r: " << t_r << " t_c: " << t_c << " duration_ " << last_traj.duration_ << " odom_vel_.norm() " <<
-      // odom_vel_.norm()
-      //      << endl;
-      replan_switch = START_FROM_ODOM;
-    }
-
-    switch (replan_switch) {
-      case START_FROM_LAST_TRAJ: {
-        if (!is_last_traj_init) {
-          cout << "[PAExplorationFSM::setStartState]: Start from odom" << endl;
-          start_pos_ = odom_pos_;
-          start_vel_ = odom_vel_;
-          start_acc_.setZero();
-          start_yaw_.setZero();
-          start_yaw_(0) = odom_yaw_;
-        }
-
-        else {
-          cout << "[PAExplorationFSM::setStartState]: Start from last traj" << endl;
-          start_pos_ = last_traj.position_traj_.evaluateDeBoorT(t_r);
-          start_vel_ = last_traj.velocity_traj_.evaluateDeBoorT(t_r);
-          start_acc_ = last_traj.acceleration_traj_.evaluateDeBoorT(t_r);
-          start_yaw_(0) = last_traj.yaw_traj_.evaluateDeBoorT(t_r)[0];
-          start_yaw_(1) = last_traj.yawdot_traj_.evaluateDeBoorT(t_r)[0];
-          start_yaw_(2) = last_traj.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
-        }
-
+  static int position_fail_count = 0;
+  static int yaw_fail_count = 0;
+  bool need_cycle = true;
+  while (need_cycle) {  // 这里之所以执行循环是因为有些情况需要跳转 last_fail_reason, need_cycle =true表示当下循环即可结束
+    switch (last_fail_reason) {
+      /**
+       *正常进来这个函数不可能是 NO_NEED_CHANGE，直接返回 false
+       */
+      case NO_NEED_CHANGE: {
+        ROS_ERROR("[PAExplorationFSM::transitViewpoint]: ERROR ENTER!!! CHECK CODE!!");
+        return false;
         break;
       }
 
-      case START_FROM_ODOM: {
+      /**
+       *位置轨迹出错，先观察是否frontier已经变化很多了，
+       *若有，直接起点和终点更新，重新规划，
+       *若没有，找到位置没被选择过的，最好的viewpoint（每个frontier的viewpoint只被选择前三个）
+       */
+      case PATH_SEARCH_FAIL: {
+        ROS_INFO("[PAExplorationFSM::transitViewpoint] Last Path Search Fail");
+        if (length2best > still_choose_new_length_thr_ && new_change > still_choose_new_length_thr_) {
+          cout << "choose new!" << length2best << endl;
+          choose_pos_ = ed->point_now;
+          choose_yaw_ = ed->yaw_vector.front();
+          choose_frontier_cell = ed->frontier_now;
+          last_used_viewpoint_pos = choose_pos_;
+        }
+
+        else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
+          if (!ft->get_next_viewpoint_forbadpos(choose_pos_, choose_yaw_, choose_frontier_cell)) {
+            // 遍历完所有情况依然失败
+            cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
+            return false;
+          }
+        }
+        need_cycle = false;
+        setStartState(START_FROM_LAST_TRAJ);
+        break;
+      }
+      /**
+       *优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
+       */
+      case POSITION_OPT_FAIL: {
+        cout << "[transitViewpoint] POSITION_OPT_FAIL" << endl;
+        // 优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
+        if (position_fail_count < 1) {
+          position_fail_count++;
+          need_cycle = false;
+          // 初始状态和末状态都不进行设置，即不变
+        } else {
+          position_fail_count = 0;
+          last_fail_reason = PATH_SEARCH_FAIL;
+          need_cycle = true;
+          // 转向 PATH_SEARCH_FAIL
+        }
+        break;
+      }
+      /**
+       *YAW轨迹出错，如果最好的frontier已经变了，位置需要重新规划，否则，保持路径搜索的结果不变，从位置轨迹开始
+       */
+      case YAW_INIT_FAIL: {
+        cout << "[transitViewpoint] YAW_INIT_FAIL" << endl;
+        if (length2best > still_choose_new_length_thr_) {  // 最好的frontier已经变了，位置需要重新规划
+          last_fail_reason = PATH_SEARCH_FAIL;
+          need_cycle = true;
+          break;
+        }
+
+        else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
+          if (!ft->get_next_viewpoint_forbadyaw(choose_pos_, choose_yaw_, choose_frontier_cell)) {
+            // 遍历完所有情况依然失败
+            cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
+            return false;
+          }
+          cout << "[transitViewpoint DEBUG] choose pos: " << choose_pos_.transpose() << " choose_yaw_: " << choose_yaw_ << endl;
+          need_cycle = false;
+          last_fail_reason = PATH_SEARCH_FAIL;
+          break;
+        }
+      }
+      /**
+       *优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
+       */
+      case YAW_OPT_FAIL: {
+        cout << "[transitViewpoint] YAW_OPT_FAIL" << endl;
+        // 优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
+        if (yaw_fail_count < 1) {
+          yaw_fail_count++;
+          need_cycle = false;
+          // 初始状态和末状态都不进行设置，即不变
+        }
+
+        else {
+          yaw_fail_count = 0;
+          last_fail_reason = YAW_INIT_FAIL;
+          need_cycle = true;
+          // 转向 PATH_SEARCH_FAIL
+        }
+        break;
+      }
+
+      /**
+       *可定位性失效和可探索性失效，重新选择轨迹
+       */
+      case LOCABILITY_CHECK_FAIL: {
+        ROS_INFO("[PAExplorationFSM::transitViewpoint] Locability Check Fail");
+        last_fail_reason = PATH_SEARCH_FAIL;
+        need_cycle = true;
+        break;
+      }
+      case EXPLORABILITI_CHECK_FAIL: {
+        ROS_INFO("[PAExplorationFSM::transitViewpoint]: Explorability Check Fail");
+        last_fail_reason = PATH_SEARCH_FAIL;
+        need_cycle = true;
+        break;
+      }
+
+      case COLLISION_CHECK_FAIL: {
+        ROS_INFO("[PAExplorationFSM::transitViewpoint]: Collision Check Fail");
+        last_fail_reason = PATH_SEARCH_FAIL;
+        need_cycle = true;
+        break;
+      }
+
+      default:
+        return false;
+    }
+  }
+  return true;
+}
+
+void PAExplorationFSM::setStartState(REPLAN_TYPE replan_switch) {
+
+  double t_r = (ros::Time::now() - last_traj.start_time_).toSec() + fp_->replan_time_;
+  double t_c = (ros::Time::now() - replan_begin_time).toSec();
+
+  if (!do_replan_                                    // 不重规划
+      || t_r > last_traj.duration_                   // 当前时间没有轨迹的运行时间
+      || odom_vel_.norm() < 0.01                     // 当前无人机接近静止
+      || t_c > fp_->replan_time_ + fp_->replan_out_  // replan时间过久，无人机已经被traj_server叫停
+  ) {
+    // ROS_WARN("SWITCH TO START_FROM_ODOM");
+    // cout << "t_r: " << t_r << " t_c: " << t_c << " duration_ " << last_traj.duration_ << " odom_vel_.norm() " <<
+    // odom_vel_.norm()
+    //      << endl;
+    replan_switch = START_FROM_ODOM;
+  }
+
+  switch (replan_switch) {
+    case START_FROM_LAST_TRAJ: {
+      if (!is_last_traj_init) {
         cout << "[PAExplorationFSM::setStartState]: Start from odom" << endl;
         start_pos_ = odom_pos_;
         start_vel_ = odom_vel_;
         start_acc_.setZero();
         start_yaw_.setZero();
         start_yaw_(0) = odom_yaw_;
-        break;
+      }
+
+      else {
+        cout << "[PAExplorationFSM::setStartState]: Start from last traj" << endl;
+        start_pos_ = last_traj.position_traj_.evaluateDeBoorT(t_r);
+        start_vel_ = last_traj.velocity_traj_.evaluateDeBoorT(t_r);
+        start_acc_ = last_traj.acceleration_traj_.evaluateDeBoorT(t_r);
+        start_yaw_(0) = last_traj.yaw_traj_.evaluateDeBoorT(t_r)[0];
+        start_yaw_(1) = last_traj.yawdot_traj_.evaluateDeBoorT(t_r)[0];
+        start_yaw_(2) = last_traj.yawdotdot_traj_.evaluateDeBoorT(t_r)[0];
+      }
+
+      break;
+    }
+
+    case START_FROM_ODOM: {
+      cout << "[PAExplorationFSM::setStartState]: Start from odom" << endl;
+      start_pos_ = odom_pos_;
+      start_vel_ = odom_vel_;
+      start_acc_.setZero();
+      start_yaw_.setZero();
+      start_yaw_(0) = odom_yaw_;
+      break;
+    }
+  }
+}
+
+void PAExplorationFSM::setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoint_change_reason) {
+  auto& visual_data = visualization_->fail_reason;
+  switch (viewpoint_change_reason) {
+    case PATH_SEARCH_FAIL:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::PATH_SEARCH_FAIL;
+      break;
+    case POSITION_OPT_FAIL:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::POSITION_OPT_FAIL;
+      break;
+    case YAW_INIT_FAIL:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::YAW_INIT_FAIL;
+      break;
+    case YAW_OPT_FAIL:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::YAW_OPT_FAIL;
+      break;
+    case LOCABILITY_CHECK_FAIL:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::LOCABILITY_CHECK_FAIL;
+      break;
+    case EXPLORABILITI_CHECK_FAIL:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::EXPLORABILITI_CHECK_FAIL;
+      break;
+    case COLLISION_CHECK_FAIL:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::COLLISION_CHECK_FAIL;
+      break;
+    default:
+      visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::NO_NEED_CHANGE;
+      break;
+  }
+}
+
+void PAExplorationFSM::setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type) {
+  auto& fsm_data = visualization_->fsm_status;
+  switch (fsm_status) {
+    case INIT:
+      fsm_data = PlanningVisualization::FSM_STATUS::INIT;
+      break;
+    case WAIT_TARGET:
+      fsm_data = PlanningVisualization::FSM_STATUS::WAIT_TARGET;
+      break;
+    case START_IN_STATIC:
+      fsm_data = PlanningVisualization::FSM_STATUS::START_IN_STATIC;
+      break;
+    case PUB_TRAJ:
+      fsm_data = PlanningVisualization::FSM_STATUS::PUB_TRAJ;
+      break;
+    case MOVE_TO_NEXT_GOAL:
+      fsm_data = PlanningVisualization::FSM_STATUS::MOVE_TO_NEXT_GOAL;
+      break;
+    case REPLAN:
+      if (replan_type == REACH_TMP)
+        fsm_data = PlanningVisualization::FSM_STATUS::REACH_TMP_REPLAN;
+      else if (replan_type == CLUSTER_COVER)
+        fsm_data = PlanningVisualization::FSM_STATUS::CLUSTER_COVER_REPLAN;
+      else if (replan_type == TIME_OUT)
+        fsm_data = PlanningVisualization::FSM_STATUS::TIME_OUT_REPLAN;
+      else if (replan_type == COLLISION_CHECK)
+        fsm_data = PlanningVisualization::FSM_STATUS::COLLISION_CHECK_REPLAN;
+      else
+        fsm_data = PlanningVisualization::FSM_STATUS::ERROR_FSM_TYPE;
+      break;
+    case EMERGENCY_STOP:
+      fsm_data = PlanningVisualization::FSM_STATUS::EMERGENCY_STOP;
+      break;
+    default:
+      fsm_data = PlanningVisualization::FSM_STATUS::INIT;
+      break;
+  }
+}
+
+void PAExplorationFSM::continued_run() {
+  final_goal_(0) = waypoints_[current_wp_][0];
+  final_goal_(1) = waypoints_[current_wp_][1];
+  final_goal_(2) = waypoints_[current_wp_][2];
+  current_wp_ = (current_wp_ + 1) % waypoint_num_;
+  cout << "final_goal_" << final_goal_.transpose() << endl;
+  // 清除frontier：
+  expl_manager_->frontier_finder_->clearAllFrontiers();
+  ros::Duration(2.0).sleep();
+
+  ROS_WARN("Restart=================================");
+  transitState(START_IN_STATIC, "TRIG");
+}
+
+void PAExplorationFSM::updatePubData() {
+  start_time_for_pub = newest_traj_.start_time;
+  duration_for_pub = last_traj.position_traj_.getTimeSum();
+  choose_frontier_cell_for_pub = choose_frontier_cell;
+}
+
+void PAExplorationFSM::pubData(const nav_msgs::OdometryConstPtr& msg) {
+  // 获取当前帧的可视特征点数
+  int feature_num = expl_manager_->feature_map_->get_NumCloud_using_Odom(msg, cur_visible_feature_);
+
+  // 获取前后共视特征点数
+  int co_feature_num = 0;
+  for (const auto& p1 : last_visible_feature_) {
+    for (const auto& p2 : cur_visible_feature_) {
+      if (p1.first == p2.first) {
+        co_feature_num++;
       }
     }
   }
 
-  void PAExplorationFSM::setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoint_change_reason) {
-    auto& visual_data = visualization_->fail_reason;
-    switch (viewpoint_change_reason) {
-      case PATH_SEARCH_FAIL:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::PATH_SEARCH_FAIL;
-        break;
-      case POSITION_OPT_FAIL:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::POSITION_OPT_FAIL;
-        break;
-      case YAW_INIT_FAIL:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::YAW_INIT_FAIL;
-        break;
-      case YAW_OPT_FAIL:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::YAW_OPT_FAIL;
-        break;
-      case LOCABILITY_CHECK_FAIL:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::LOCABILITY_CHECK_FAIL;
-        break;
-      case EXPLORABILITI_CHECK_FAIL:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::EXPLORABILITI_CHECK_FAIL;
-        break;
-      case COLLISION_CHECK_FAIL:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::COLLISION_CHECK_FAIL;
-        break;
-      default:
-        visual_data = PlanningVisualization::VIEWPOINT_CHANGE_REASON_VISUAL::NO_NEED_CHANGE;
-        break;
+  last_visible_feature_.swap(cur_visible_feature_);
+
+  std_msgs::Int32MultiArray vis_num_msg;
+  vis_num_msg.data.push_back(feature_num);
+  vis_num_msg.data.push_back(co_feature_num);
+  vis_num_pub_.publish(vis_num_msg);
+
+  if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL || exec_state_ == FSM_EXEC_STATE::REPLAN) {
+    if (!choose_frontier_cell_for_pub.empty()) {
+      std_msgs::Float32MultiArray expl_msg;
+      double t_cur = (ros::Time::now() - start_time_for_pub).toSec();
+      double t_cur_ratio = t_cur / duration_for_pub;
+      double expl_ratio = expl_manager_->frontier_finder_->getExplorationRatio(choose_frontier_cell_for_pub);
+      // expl_msg.data.push_back(t_cur);
+      expl_msg.data.push_back(t_cur_ratio);
+      expl_msg.data.push_back(expl_ratio);
+      exploration_ratio_pub_.publish(expl_msg);
     }
   }
-
-  void PAExplorationFSM::setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type) {
-    auto& fsm_data = visualization_->fsm_status;
-    switch (fsm_status) {
-      case INIT:
-        fsm_data = PlanningVisualization::FSM_STATUS::INIT;
-        break;
-      case WAIT_TARGET:
-        fsm_data = PlanningVisualization::FSM_STATUS::WAIT_TARGET;
-        break;
-      case START_IN_STATIC:
-        fsm_data = PlanningVisualization::FSM_STATUS::START_IN_STATIC;
-        break;
-      case PUB_TRAJ:
-        fsm_data = PlanningVisualization::FSM_STATUS::PUB_TRAJ;
-        break;
-      case MOVE_TO_NEXT_GOAL:
-        fsm_data = PlanningVisualization::FSM_STATUS::MOVE_TO_NEXT_GOAL;
-        break;
-      case REPLAN:
-        if (replan_type == REACH_TMP)
-          fsm_data = PlanningVisualization::FSM_STATUS::REACH_TMP_REPLAN;
-        else if (replan_type == CLUSTER_COVER)
-          fsm_data = PlanningVisualization::FSM_STATUS::CLUSTER_COVER_REPLAN;
-        else if (replan_type == TIME_OUT)
-          fsm_data = PlanningVisualization::FSM_STATUS::TIME_OUT_REPLAN;
-        else if (replan_type == COLLISION_CHECK)
-          fsm_data = PlanningVisualization::FSM_STATUS::COLLISION_CHECK_REPLAN;
-        else
-          fsm_data = PlanningVisualization::FSM_STATUS::ERROR_FSM_TYPE;
-        break;
-      case EMERGENCY_STOP:
-        fsm_data = PlanningVisualization::FSM_STATUS::EMERGENCY_STOP;
-        break;
-      default:
-        fsm_data = PlanningVisualization::FSM_STATUS::INIT;
-        break;
-    }
-  }
-
-  void PAExplorationFSM::continued_run() {
-    final_goal_(0) = waypoints_[current_wp_][0];
-    final_goal_(1) = waypoints_[current_wp_][1];
-    final_goal_(2) = waypoints_[current_wp_][2];
-    current_wp_ = (current_wp_ + 1) % waypoint_num_;
-    cout << "final_goal_" << final_goal_.transpose() << endl;
-    // 清除frontier：
-    expl_manager_->frontier_finder_->clearAllFrontiers();
-    ros::Duration(2.0).sleep();
-
-    ROS_WARN("Restart=================================");
-    transitState(START_IN_STATIC, "TRIG");
-  }
-
-  void PAExplorationFSM::updatePubData() {
-    start_time_for_pub = newest_traj_.start_time;
-    duration_for_pub = last_traj.position_traj_.getTimeSum();
-    choose_frontier_cell_for_pub = choose_frontier_cell;
-  }
-
-  void PAExplorationFSM::pubData(const nav_msgs::OdometryConstPtr& msg) {
-    // 获取当前帧的可视特征点数
-    int feature_num = expl_manager_->feature_map_->get_NumCloud_using_Odom(msg, cur_visible_feature_);
-
-    // 获取前后共视特征点数
-    int co_feature_num = 0;
-    for (const auto& p1 : last_visible_feature_) {
-      for (const auto& p2 : cur_visible_feature_) {
-        if (p1.first == p2.first) {
-          co_feature_num++;
-        }
-      }
-    }
-
-    last_visible_feature_.swap(cur_visible_feature_);
-
-    std_msgs::Int32MultiArray vis_num_msg;
-    vis_num_msg.data.push_back(feature_num);
-    vis_num_msg.data.push_back(co_feature_num);
-    vis_num_pub_.publish(vis_num_msg);
-
-    if (exec_state_ == FSM_EXEC_STATE::MOVE_TO_NEXT_GOAL || exec_state_ == FSM_EXEC_STATE::REPLAN) {
-      if (!choose_frontier_cell_for_pub.empty()) {
-        std_msgs::Float32MultiArray expl_msg;
-        double t_cur = (ros::Time::now() - start_time_for_pub).toSec();
-        double t_cur_ratio = t_cur / duration_for_pub;
-        double expl_ratio = expl_manager_->frontier_finder_->getExplorationRatio(choose_frontier_cell_for_pub);
-        // expl_msg.data.push_back(t_cur);
-        expl_msg.data.push_back(t_cur_ratio);
-        expl_msg.data.push_back(expl_ratio);
-        exploration_ratio_pub_.publish(expl_msg);
-      }
-    }
-  }
+}
 
 }  // namespace fast_planner

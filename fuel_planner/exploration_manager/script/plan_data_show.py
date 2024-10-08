@@ -100,6 +100,12 @@ class PAExplorationVisualizer:
 
     def visNumCallback(self, msg):
         time_now = rospy.Time.now().to_sec() - self.start_time.to_sec()
+
+        # if self.t1_data:
+        #     print(
+        #         f"time_now: {time_now}, last_t1_data: {self.t1_data[-1]}, difference: {time_now - self.t1_data[-1]}"
+        #     )
+
         self.t1_data.append(time_now)
         self.vis_num_data.append(msg.data[0])
         self.co_vis_num_data.append(msg.data[1])
@@ -109,6 +115,12 @@ class PAExplorationVisualizer:
 
     def explRatioCallback(self, msg):
         time_now = rospy.Time.now().to_sec() - self.start_time.to_sec()
+
+        # if self.t2_data:
+        #     print(
+        #         f"time_now: {time_now}, last_t2_data: {self.t2_data[-1]}, difference: {time_now - self.t2_data[-1]}"
+        #     )
+
         self.t2_data.append(time_now)
         self.t_cur_data.append(msg.data[0])
         self.expl_ratio_data.append(msg.data[1])

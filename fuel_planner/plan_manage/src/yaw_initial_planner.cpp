@@ -225,7 +225,6 @@ bool YawInitialPlanner::search(const double start_yaw, const double end_yaw, con
   // Step2: 设置起始节点(不检查定位约束，传都传进来了)
   start_vert_.reset(new YawVertex(start_yaw, 0));
   yaw2id(start_vert_);
-  // cout << "start_vert_ layer: " << start_vert_->layer_ << endl;
   setVisbleFeatures(start_vert_);
   setVisbleFrontiers(start_vert_);
   start_vert_->frontiers_id_path_ = start_vert_->frontiers_id_;
@@ -278,7 +277,9 @@ bool YawInitialPlanner::search(const double start_yaw, const double end_yaw, con
       // cout << "layer size: " << layer.size() << endl;
 
       for (const auto& v1 : last_layer) {
+        // if (i == num_layers - 1) cout << v1->yaw_ << endl;
         for (const auto& v2 : layer) {
+          // if (i == num_layers - 1) cout << v2->yaw_ << endl;
           if (checkFeasibility(v1, v2) && getCoVisibileNum(v1, v2) > param_.min_covisible_feature_num_) {
             v1->edges_.push_back(v2);
             add_edge_num++;
@@ -295,7 +296,8 @@ bool YawInitialPlanner::search(const double start_yaw, const double end_yaw, con
       }
 
       if (add_edge_num == 0) {
-        ROS_ERROR("[yaw initial planner]: Fail to build graph %zu/%zu", i, num_layers);
+        ROS_ERROR(
+            "[yaw initial planner]: Fail to add edge between layer %zu and layer %zu,total tayer: %zu", i, i + 1, num_layers);
         return false;  // 中间有断裂的层，search失败
       }
     }

@@ -37,6 +37,7 @@ public:
   static const int YAWCOVISIBILITY;
   static const int FRONTIERVISIBILITY_POS;
   static const int FRONTIERVISIBILITY_YAW;
+  static const int FINAL_GOAL;
 
   static const int GUIDE_PHASE;
   static const int NORMAL_PHASE;
@@ -148,6 +149,10 @@ private:
 
   void calcFrontierVisbilityCostYaw(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
 
+  void calcFinalGoalCostKnots(const vector<Vector3d>& q_cur, const Vector3d& knots_pos, const Vector3d& knots_acc,
+      const int layer, double& cost, vector<Vector3d>& dcost_dq);
+  void calcFinalGoalCostYaw(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
+
   static Vector3d getThrustDirection(const Vector3d& acc) {
     Vector3d gravity(0, 0, -9.81);
     Vector3d thrust_dir = (acc - gravity).normalized();
@@ -181,7 +186,6 @@ private:
   int order_;  // bspline degree
   int bspline_degree_;
   double ld_smooth_, ld_dist_, ld_feasi_, ld_feasi_yaw_, ld_start_, ld_end_, ld_guide_, ld_waypt_, ld_view_, ld_time_;
-  double ld_weight1_, ld_weight2_;
 
   // SECTION Perception Aware Optimization
   double ld_parallax_;
@@ -189,6 +193,8 @@ private:
   double ld_frontier_visibility_pos_;
   double ld_yaw_covisib_;
   double ld_frontier_visibility_yaw_;
+  double ld_final_goal_;
+  double ld_weight1_, ld_weight2_;
 
   vector<Eigen::Vector3d> pos_, acc_;                 // knot points position and acceleration
   vector<vector<Eigen::Vector3d>> knot_nn_features_;  // neighboring features at each knot midpoint

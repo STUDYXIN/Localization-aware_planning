@@ -19,6 +19,7 @@ struct YawOptData {
   using Ptr = std::shared_ptr<YawOptData>;
 
   vector<vector<int>> frontier_status_;
+  vector<char> final_goal_status_;
   vector<vector<Vector3d>> observed_features_;
 };
 

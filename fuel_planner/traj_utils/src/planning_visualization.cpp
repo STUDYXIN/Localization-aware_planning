@@ -184,7 +184,7 @@ void PlanningVisualization::drawScoreforFrontiers(const vector<Eigen::Vector3d>&
   static int last_num = 0;
   Vector4d color(0.0, 0.0, 0.0, 1.0);
   Vector3d empty_3d(0.0, 0.0, 0.0);
-  for (int i = gains.size(); i < last_num; ++i) {  //删除上一次的比这一次多的marker
+  for (int i = gains.size(); i < last_num; ++i) {  // 删除上一次的比这一次多的marker
     std::string text = "";
     // std::string text = "score: " + std::to_string(gains[i].second);
     displayText(empty_3d, text, color, 0.3, COMMON_TEXT + i, 7);
@@ -324,7 +324,7 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
 }
 
 void PlanningVisualization::clearUnreachableMarker() {
-  cout << "clearUnreachableMarker" << endl;
+  // cout << "clearUnreachableMarker" << endl;
   message_drawn.clear();
   vector<Eigen::Vector3d> empty_vector_Vector3d;
   Vector4d black_color(0, 0, 0, 1);

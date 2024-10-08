@@ -83,7 +83,13 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   // ViewNode::caster_->setParams(resolution_, origin);
 }
 
-NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& next_yaw) {
+bool PAExplorationManager::FindFinalGoal() {
+  const auto& final_goal = expl_fsm_.lock()->final_goal_;
+
+  return (sdf_map_->getOccupancy(final_goal) == SDFMap::FREE && sdf_map_->getDistance(final_goal) > 0.2);
+}
+
+NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(const Vector3d& next_pos, const double& next_yaw) {
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -95,13 +101,16 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, double& 
   bool reach_end_flag = false;
 
   // 目标点已经出现在已知区域，直接前往
-  if (sdf_map_->getOccupancy(final_goal) == SDFMap::FREE && sdf_map_->getDistance(final_goal) > 0.2) {
+  if (FindFinalGoal()) {
     vector<Vector3d> empty;
     last_fail_reason = planToNextGoal(next_pos, next_yaw, empty, false);  // 已经可以去终点就不用关心探索的事了
+
     if (last_fail_reason == NO_NEED_CHANGE) {
       ROS_INFO("SUCCESS FIND END!!!!!.");
       return REACH_END;
-    } else {
+    }
+
+    else {
       ROS_WARN("FAIL TO FIND END!!!!!.");
       return NO_AVAILABLE_FRONTIER;
     }
@@ -137,7 +146,6 @@ VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
   else if (position_traj_statu == POSISION_OPT_ERROR)
     return POSITION_OPT_FAIL;
 
-  // ROS_INFO("time_lb: %f", time_lb);
   if (planner_manager_->local_data_.position_traj_.getTimeSum() < time_lb - 0.1) {
     ROS_ERROR("Time lower bound not satified!");
   }

@@ -47,18 +47,18 @@ public:
     last_time_inc_ = 0.0;
   }
 
-  void setLocalTraj(const NonUniformBspline& traj, const double& local_ts, const double& local_te, const double& time_change) {
-    local_traj_.resize(3);
-    local_traj_[0] = traj;
-    local_traj_[1] = local_traj_[0].getDerivative();
-    local_traj_[2] = local_traj_[1].getDerivative();
+  // void setLocalTraj(const NonUniformBspline& traj, const double& local_ts, const double& local_te, const double& time_change) {
+  //   local_traj_.resize(3);
+  //   local_traj_[0] = traj;
+  //   local_traj_[1] = local_traj_[0].getDerivative();
+  //   local_traj_[2] = local_traj_[1].getDerivative();
 
-    local_start_time_ = local_ts;
-    local_end_time_ = local_te;
-    global_duration_ += time_change;
-    time_change_ += time_change;
-    last_time_inc_ = time_change;
-  }
+  //   local_start_time_ = local_ts;
+  //   local_end_time_ = local_te;
+  //   global_duration_ += time_change;
+  //   time_change_ += time_change;
+  //   last_time_inc_ = time_change;
+  // }
 
   Eigen::Vector3d getState(const double& t, const int& k) {
     if (t >= -1e-3 && t <= local_start_time_)
@@ -151,8 +151,6 @@ public:
   LocalTrajServer(/* args */) {
     traj1_.traj_id_ = 0;
     traj2_.traj_id_ = 0;
-  }
-  ~LocalTrajServer() {
   }
 
   void addTraj(const LocalTrajData& traj) {

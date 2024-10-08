@@ -134,6 +134,7 @@ bool FastPlannerManager::checkTrajCollision(double& distance) {
   return true;
 }
 
+// 获取当前帧的可视特征点数量，连续几帧不满足才返回false
 bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Quaterniond& orient, int& feature_num) {
   if (feature_map_ == nullptr) return true;
 
@@ -152,6 +153,7 @@ bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Q
   return feature_num > min_feature_num || error_times <= 10;
 }
 
+// 获取当前帧的可视特征点数量，一旦不满足直接返回false
 bool FastPlannerManager::checkCurrentLocalizability(const Vector3d& pos, const Quaterniond& orient) {
   if (feature_map_ == nullptr) return true;
   int feature_num = feature_map_->get_NumCloud_using_Odom(pos, orient);
@@ -203,8 +205,7 @@ bool FastPlannerManager::checkTrajLocalizabilityOnKnots() {
 
   for (size_t i = 0; i < knots_pos.size(); i++) {
     Quaterniond orient = Utils::calcOrientation(knots_yaw[i][0], knots_acc[i]);
-    int feature_num;
-    if (!checkCurrentLocalizability(knots_pos[i], orient, feature_num)) {
+    if (!checkCurrentLocalizability(knots_pos[i], orient)) {
       ROS_WARN("[FastPlannerManager::checkTrajLocalizabilityOnKnots] Poor localizability");
       return false;
     }
@@ -235,8 +236,7 @@ bool FastPlannerManager::checkTrajExplorationOnKnots(const vector<Vector3d>& tar
   statistics_.observed_frontier_num_ = observed_features.size();
 
   double ratio = static_cast<double>(observed_features.size()) / target_frontier.size();
-  // ROS_INFO("[FastPlannerManager::checkTrajLocalizabilityOnKnots] Exploration Info: %ld/%ld", observed_features.size(),
-  //     target_frontier.size());
+
   if (ratio < pp_.min_observed_ratio_) {
     // ROS_WARN("[FastPlannerManager::checkTrajExplorationOnKnots] Poor exploration");
     return false;
@@ -264,9 +264,12 @@ void FastPlannerManager::printStatistics(const vector<Vector3d>& target_frontier
   cout << "Max Acc on Pos Traj:                " << statistics_.max_acc_ << " (m^2/s)" << endl;
   cout << "Max Yaw Rate on Yaw Traj:           " << statistics_.max_yaw_rate_ << " (rad/s)" << endl;
   cout << "Knot Span:                          " << statistics_.dt_ << " (s)" << endl;
-  cout << "Observed Frontiers Num(Yaw Intial): " << statistics_.observed_frontier_num_yaw_initial_ << "/"
-       << target_frontier.size() << endl;
-  cout << "Observed Frontiers Num:             " << statistics_.observed_frontier_num_ << "/" << target_frontier.size() << endl;
+
+  if (!target_frontier.empty()) {
+    cout << "Observed Frontiers Num(Yaw Intial): " << statistics_.observed_frontier_num_yaw_initial_ << "/"
+         << target_frontier.size() << endl;
+    cout << "Observed Frontiers Num:             " << statistics_.observed_frontier_num_ << "/" << target_frontier.size() << endl;
+  }
   cout.unsetf(ios::fixed);
   cout << "===============================================================" << endl;
   cout << NORMAL_FONT;
@@ -718,6 +721,8 @@ void FastPlannerManager::planYawExplore(
 int FastPlannerManager::planYawPerceptionAware(
     const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal) {
 
+  auto time_start = ros::Time::now();
+
   // Yaw b-spline has same segment number as position b-spline
   Eigen::MatrixXd position_ctrl_pts = local_data_.position_traj_.getControlPoint();
   int ctrl_pts_num = position_ctrl_pts.rows();
@@ -751,8 +756,6 @@ int FastPlannerManager::planYawPerceptionAware(
   yaw_initial_planner_->setAcc(knot_acc);
   // yaw_initial_planner预处理frontier过程需要用到pos和acc信息，所以必须最后设置frontier
   yaw_initial_planner_->setTargetFrontier(frontier_cells);
-
-  auto time_start = ros::Time::now();
 
   if (!yaw_initial_planner_->search(start_yaw[0], end_yaw, dt_yaw, yaw_waypoints)) {
     ROS_ERROR("Yaw Trajectory Planning Failed in Graph Search!!!");

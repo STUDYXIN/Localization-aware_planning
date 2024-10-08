@@ -1,8 +1,15 @@
 <launch>
   <!-- size of map, change the size in x, y, z according to your application -->
-  <arg name="map_size_x" value="50.0" />
-  <arg name="map_size_y" value="50.0" />
-  <arg name="map_size_z" value=" 5.1" />
+  <arg name="import_map_size_x" default="50.0" />
+  <arg name="import_map_size_y" default="50.0" />
+  <arg name="import_map_size_z" default=" 5.1" />
+
+  <arg name="import_box_min_x" default="-15.0" />
+  <arg name="import_box_min_y" default="-15.0" />
+  <arg name="import_box_min_z" default="0.5" />
+  <arg name="import_box_max_x" default="15.0" />
+  <arg name="import_box_max_y" default="15.0" />
+  <arg name="import_box_max_z" default=" 4.0" />
 
   <arg name="init_x" default="-13.0" />
   <arg name="init_y" default="0.0" />
@@ -28,9 +35,9 @@
   <!-- main algorithm params -->
   <include file="$(find exploration_manager)/launch/algorithm.xml">
     <arg name="feature_filename" value="$(find map_publisher)/data/$(arg feature_filename_)" />
-    <arg name="map_size_x_" value="$(arg map_size_x)" />
-    <arg name="map_size_y_" value="$(arg map_size_y)" />
-    <arg name="map_size_z_" value="$(arg map_size_z)" />
+    <arg name="map_size_x_" value="$(arg import_map_size_x)" />
+    <arg name="map_size_y_" value="$(arg import_map_size_y)" />
+    <arg name="map_size_z_" value="$(arg import_map_size_z)" />
 
     <!-- <arg name="box_min_x" value="-10.0"/>
     <arg name="box_min_y" value="-15.0"/>
@@ -39,12 +46,12 @@
     <arg name="box_max_y" value="15.0"/>
     <arg name="box_max_z" value=" 2.0"/> -->
 
-    <arg name="box_min_x" value="-15.0" />
-    <arg name="box_min_y" value="-15.0" />
-    <arg name="box_min_z" value="0.5" />
-    <arg name="box_max_x" value="15.0" />
-    <arg name="box_max_y" value="15.0" />
-    <arg name="box_max_z" value=" 4.0" />
+    <arg name="box_min_x" value="$(arg import_box_min_x)" />
+    <arg name="box_min_y" value="$(arg import_box_min_y)" />
+    <arg name="box_min_z" value="$(arg import_box_min_z)" />
+    <arg name="box_max_x" value="$(arg import_box_max_x)" />
+    <arg name="box_max_y" value="$(arg import_box_max_y)" />
+    <arg name="box_max_z" value="$(arg import_box_max_z)" />
 
     <arg name="odometry_topic" value="$(arg odom_topic)" />
     <!-- sensor pose: transform of camera frame in the world frame -->
@@ -64,23 +71,23 @@
     <!-- maximum velocity and acceleration the drone will reach -->
 
     <!-- 慢速可运行参数 -->
-    <arg name="max_vel" value="0.4" />
+    <arg name="max_vel" value="0.3" />
     <arg name="max_acc" value="0.15" />
     <arg name="do_replan" value="true" />
-    <arg name="replan_time" value="0.2" />
+    <arg name="replan_time" value="0.1" />
     <arg name="thresh_replan1" value="0.5" />
     <arg name="thresh_replan2" value="1.5" />
     <arg name="thresh_replan3" value="4.0" />
     <arg name="max_yaw_rate" value="0.6" />
     <!-- 中速参数 -->
     <!-- <arg name="max_vel" value="1.0" />
-    <arg name="max_acc" value="0.4" />
+    <arg name="max_acc" value="0.2" />
     <arg name="do_replan" value="true" />
-    <arg name="replan_time" value="0.2" />
+    <arg name="replan_time" value="0.1" />
     <arg name="thresh_replan1" value="0.5" />
     <arg name="thresh_replan2" value="1.0" />
     <arg name="thresh_replan3" value="2.0" />
-    <arg name="max_yaw_rate" value="0.6" /> -->
+    <arg name="max_yaw_rate" value="1.0" /> -->
     <!-- 快速参数 -->
     <!-- <arg name="max_vel" value="4.0" />
     <arg name="max_acc" value="2.5" />
@@ -98,19 +105,25 @@
     <arg name="min_feature_num_plan" value="$(arg min_feature_num_plan)" />
     <arg name="min_covisible_feature_num_plan" value="$(arg min_covisible_feature_num_plan)" />
 
+    <!-- <arg name="min_feature_num_act" value="5" />
+    <arg name="min_covisible_feature_num_act" value="3" />
+
+    <arg name="min_feature_num_plan" value="10" />
+    <arg name="min_covisible_feature_num_plan" value="6" /> -->
+
     <!-- 1: use 2D Nav Goal to select goal  -->
     <!-- 2: use global waypoints below  -->
     <arg name="flight_type" value="2" />
 
-    <arg name="point_num" value="4" />
+    <arg name="point_num" value="2" />
 
     <arg name="point0_x" value="$(arg goal_x)" />
     <arg name="point0_y" value="$(arg goal_y)" />
     <arg name="point0_z" value="$(arg goal_z)" />
 
-    <arg name="point1_x" value="-8.0" />
-    <arg name="point1_y" value="-1.5" />
-    <arg name="point1_z" value="1.0" />
+    <arg name="point1_x" value="$(arg init_x)" />
+    <arg name="point1_y" value="$(arg init_y)" />
+    <arg name="point1_z" value="$(arg init_z)" />
 
     <arg name="point2_x" value="-6.0" />
     <arg name="point2_y" value="-1.7" />
@@ -150,9 +163,9 @@
 
   <!-- use simulator -->
   <include file="$(find exploration_manager)/launch/simulator.xml">
-    <arg name="map_size_x_" value="$(arg map_size_x)" />
-    <arg name="map_size_y_" value="$(arg map_size_y)" />
-    <arg name="map_size_z_" value="$(arg map_size_z)" />
+    <arg name="map_size_x_" value="$(arg import_map_size_x)" />
+    <arg name="map_size_y_" value="$(arg import_map_size_y)" />
+    <arg name="map_size_z_" value="$(arg import_map_size_z)" />
 
     <arg name="init_x" value="$(arg init_x)" />
     <arg name="init_y" value="$(arg init_y)" />

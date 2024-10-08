@@ -12,6 +12,7 @@
 #include <vector>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_types.h>
+#include <time_debug.hpp>
 
 using Eigen::Vector3d;
 using std::list;
@@ -28,6 +29,7 @@ class EDTEnvironment;
 class PerceptionUtils;
 class FeatureMap;
 class CameraParam;
+class DebugTimer;
 // Viewpoint to cover a frontier cluster
 struct Viewpoint {
   // Position
@@ -127,7 +129,15 @@ class FrontierFinder {
 public:
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, ros::NodeHandle& nh);
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, const shared_ptr<FeatureMap>& fea, ros::NodeHandle& nh);
-
+  void clearAllFrontiers() {
+    frontiers_.clear();
+    dormant_frontiers_.clear();
+    tmp_frontiers_.clear();
+    removed_ids_.clear();
+    unavailableViewpointManage_.clear();
+    frontier_sort_id.clear();
+    for (auto& flag : frontier_flag_) flag = 0;
+  }
   void searchFrontiers();
   void computeFrontiersToVisit();
 
@@ -158,6 +168,7 @@ public:
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, int visib_num_, int feature_num_);
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, double yaw_ref, int feature_num_);
   void getBestViewpointData(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
+  void getBestViewpointData(Vector3d& points, vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
   void updateScorePos();
   void computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells);
   // void getMessage2draw(vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages, vector<double>& gains);
@@ -168,6 +179,7 @@ public:
   bool getBestViewpointinPath(Viewpoint& refactorViewpoint, vector<Vector3d>& path);
   // Get several viewpoints for a subset of frontiers
   bool isFrontierCovered();
+  bool isinterstFrontierCovered(vector<Vector3d>& frontier_cells);
   void wrapYaw(double& yaw);
 
   shared_ptr<PerceptionUtils> percep_utils_;
@@ -214,6 +226,7 @@ public:
   list<Frontier>::iterator first_new_ftr_;
   Frontier next_frontier_;
   int frontier_id_count;
+  DebugTimer time_debug_;
 
   UnavailableViewpointManage unavailableViewpointManage_;
   Viewpoint best_viewpoint, init_viewpoint;

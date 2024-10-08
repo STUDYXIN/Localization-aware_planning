@@ -4,6 +4,7 @@
 #include <exploration_manager/expl_data.h>
 #include <exploration_manager/perception_aware_exploration_manager.h>
 #include <plan_manage/plan_container.hpp>
+#include <time_debug.hpp>
 
 #include <bspline/Bspline.h>
 #include <nav_msgs/Odometry.h>
@@ -33,6 +34,8 @@ namespace fast_planner {
 class FastPlannerManager;
 class PAExplorationManager;
 class PlanningVisualization;
+class SteppingDebug;
+class DebugTimer;
 struct FSMParam;
 struct FSMData;
 struct M2GData;
@@ -50,6 +53,9 @@ public:
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<PAExplorationManager> expl_manager_;
   shared_ptr<PlanningVisualization> visualization_;
+
+  bool start_debug_mode_;
+  shared_ptr<SteppingDebug> stepping_debug_;
 
   shared_ptr<FSMParam> fp_;
 
@@ -88,6 +94,9 @@ public:
   /* Debug utils */
   vector<int> last_viewpoint_line, last_feature_line;
   bool draw_line2feature;
+  DebugTimer debug_timer;
+  bool run_continued_;
+  bool direct_replan;
 
   /* ROS utils */
   ros::NodeHandle node_;
@@ -142,10 +151,11 @@ public:
   void setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoint_change_reason);
   void setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type = NO_REPLAN);
 
+  void continued_run();
+
   void updatePubData();
   void pubData(const nav_msgs::OdometryConstPtr& msg);
 };
-
 }  // namespace fast_planner
 
 #endif

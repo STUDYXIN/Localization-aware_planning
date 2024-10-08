@@ -11,6 +11,8 @@
 #include <nlopt.hpp>
 #include <thread>
 
+#include <stepping_debug.hpp>
+
 using namespace std;
 using namespace Eigen;
 
@@ -317,7 +319,10 @@ void BsplineOptimizer::calcSmoothnessCost(const vector<Vector3d>& q, double& cos
 
     // Test jerk cost
     Eigen::Vector3d ji = (q[i + 3] - 3 * q[i + 2] + 3 * q[i + 1] - q[i]) / pt_dist_;
-    cost += ji.squaredNorm();
+    double cost_this = ji.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::SMOOTHNESS, cost_this);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::SMOOTHNESS, cost_this);
+    cost += cost_this;
     temp_j = 2 * ji / pt_dist_;
 
     gradient_q[i + 0] += -temp_j;
@@ -339,9 +344,12 @@ void BsplineOptimizer::calcDistanceCost(const vector<Eigen::Vector3d>& q, double
     if (dist_grad.norm() > 1e-4) dist_grad.normalize();
 
     if (dist < dist0_) {
-      cost += pow(dist - dist0_, 2);
+      double cost_this = pow(dist - dist0_, 2);
+      stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::DISTANCE, cost_this);
+      cost += cost_this;
       gradient_q[i] += 2.0 * (dist - dist0_) * dist_grad;
-    }
+    } else
+      stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::DISTANCE, 0.0);
   }
 }
 
@@ -356,7 +364,6 @@ void BsplineOptimizer::calcFeasibilityCost(
   // Abbreviation of params
   const double dt_inv = 1 / dt;
   const double dt_inv2 = dt_inv * dt_inv;
-
   for (size_t i = 0; i < q.size() - 1; ++i) {
     // Control point of velocity
     Eigen::Vector3d vi = (q[i + 1] - q[i]) * dt_inv;
@@ -364,13 +371,16 @@ void BsplineOptimizer::calcFeasibilityCost(
       // Calculate cost for each axis
       double vd = fabs(vi[k]) - max_vel_;
       if (vd > 0.0) {
-        cost += pow(vd, 2);
+        double cost_this = pow(vd, 2);
+        stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::FEASIBILITY_VEL, cost_this);
+        cost += cost_this;
         double sign = vi[k] > 0 ? 1.0 : -1.0;
         double tmp = 2 * vd * sign * dt_inv;
         gradient_q[i][k] += -tmp;
         gradient_q[i + 1][k] += tmp;
         if (optimize_time_) gt += tmp * (-vi[k]);
-      }
+      } else
+        stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::FEASIBILITY_VEL, 0.0);
     }
   }
 
@@ -380,14 +390,17 @@ void BsplineOptimizer::calcFeasibilityCost(
     for (int k = 0; k < 3; ++k) {
       double ad = fabs(ai[k]) - max_acc_;
       if (ad > 0.0) {
-        cost += pow(ad, 2);
+        double cost_this = pow(ad, 2);
+        stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::FEASIBILITY_ACC, cost_this);
+        cost += cost_this;
         double sign = ai[k] > 0 ? 1.0 : -1.0;
         double tmp = 2 * ad * sign * dt_inv2;
         gradient_q[i][k] += tmp;
         gradient_q[i + 1][k] += -2 * tmp;
         gradient_q[i + 2][k] += tmp;
         if (optimize_time_) gt += tmp * ai[k] * (-2) * dt;
-      }
+      } else
+        stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::FEASIBILITY_ACC, 0.0);
     }
   }
 }
@@ -410,13 +423,16 @@ void BsplineOptimizer::calcFeasibilityCostYaw(
     double max_yaw_rate = Utils::getGlobalParam().max_yaw_rate_;
     double vd = fabs(vi[0]) - max_yaw_rate;
     if (vd > 0.0) {
-      cost += pow(vd, 2);
+      double cost_this = pow(vd, 2);
+      stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::FEASIBILITY_YAW, cost_this);
+      cost += cost_this;
       double sign = vi[0] > 0 ? 1.0 : -1.0;
       double tmp = 2 * vd * sign * dt_inv;
       gradient_q[i][0] -= tmp;
       gradient_q[i + 1][0] += tmp;
       if (optimize_time_) gt += tmp * (-vi[0]);
-    }
+    } else
+      stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::FEASIBILITY_YAW, 0);
   }
 }
 
@@ -442,7 +458,10 @@ void BsplineOptimizer::calcStartCost(
 
     static const double w_pos = 10.0;
     dq = 1 / 6.0 * (q1 + 4 * q2 + q3) - start_state_[0];
-    cost += w_pos * dq.squaredNorm();
+    double cost_this = w_pos * dq.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::START_POS, cost_this);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::START_POS, cost_this);
+    cost += cost_this;
     gradient_q[0] += w_pos * 2 * dq * (1 / 6.0);
     gradient_q[1] += w_pos * 2 * dq * (4 / 6.0);
     gradient_q[2] += w_pos * 2 * dq * (1 / 6.0);
@@ -453,7 +472,10 @@ void BsplineOptimizer::calcStartCost(
     if (start_state_.size() < 2) ROS_ERROR_STREAM("(start vel),start state size: " << start_state_.size());
 
     dq = 1 / (2 * dt) * (q3 - q1) - start_state_[1];
-    cost += dq.squaredNorm();
+    double cost_this = dq.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::START_VEL, cost_this);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::START_VEL, cost_this);
+    cost += cost_this;
     gradient_q[0] += 2 * dq * (-1.0) / (2 * dt);
     gradient_q[2] += 2 * dq * 1.0 / (2 * dt);
     if (optimize_time_) gt += dq.dot(q3 - q1) / (-dt * dt);
@@ -464,7 +486,10 @@ void BsplineOptimizer::calcStartCost(
     if (start_state_.size() < 3) ROS_ERROR_STREAM("(start acc),start state size: " << start_state_.size());
 
     dq = 1 / (dt * dt) * (q1 - 2 * q2 + q3) - start_state_[2];
-    cost += dq.squaredNorm();
+    double cost_this = dq.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::START_ACC, cost_this);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::START_ACC, cost_this);
+    cost += cost_this;
     gradient_q[0] += 2 * dq * 1.0 / (dt * dt);
     gradient_q[1] += 2 * dq * (-2.0) / (dt * dt);
     gradient_q[2] += 2 * dq * 1.0 / (dt * dt);
@@ -493,7 +518,10 @@ void BsplineOptimizer::calcEndCost(
     if (end_state_.size() < 1) ROS_ERROR_STREAM("(end pos),end state size: " << end_state_.size());
 
     dq = 1 / 6.0 * (q_1 + 4 * q_2 + q_3) - end_state_[0];
-    cost += dq.squaredNorm();
+    double cost_this = dq.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::END_POS, cost_this);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::END_POS, cost_this);
+    cost += cost_this;
     gradient_q[q.size() - 1] += 2 * dq * (1 / 6.0);
     gradient_q[q.size() - 2] += 2 * dq * (4 / 6.0);
     gradient_q[q.size() - 3] += 2 * dq * (1 / 6.0);
@@ -504,7 +532,10 @@ void BsplineOptimizer::calcEndCost(
     if (end_state_.size() < 2) ROS_ERROR_STREAM("(end vel),end state size: " << end_state_.size());
 
     dq = 1 / (2 * dt) * (q_1 - q_3) - end_state_[1];
-    cost += dq.squaredNorm();
+    double cost_this = dq.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::END_VEL, cost_this);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::END_VEL, cost_this);
+    cost += cost_this;
     gradient_q[q.size() - 1] += 2 * dq * 1.0 / (2 * dt);
     gradient_q[q.size() - 3] += 2 * dq * (-1.0) / (2 * dt);
     if (optimize_time_) gt += dq.dot(q_1 - q_3) / (-dt * dt);
@@ -515,7 +546,10 @@ void BsplineOptimizer::calcEndCost(
     if (end_state_.size() < 3) ROS_ERROR_STREAM("(end acc),end state size: " << end_state_.size());
 
     dq = 1 / (dt * dt) * (q_1 - 2 * q_2 + q_3) - end_state_[2];
-    cost += dq.squaredNorm();
+    double cost_this = dq.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::END_ACC, cost_this);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::END_ACC, cost_this);
+    cost += cost_this;
     gradient_q[q.size() - 1] += 2 * dq * 1.0 / (dt * dt);
     gradient_q[q.size() - 2] += 2 * dq * (-2.0) / (dt * dt);
     gradient_q[q.size() - 3] += 2 * dq * 1.0 / (dt * dt);
@@ -540,7 +574,9 @@ void BsplineOptimizer::calcWaypointsCost(const vector<Eigen::Vector3d>& q, doubl
     q3 = q[idx + 2];
 
     dq = (q1 + 4 * q2 + q3) / 6 - waypt;
-    cost += dq.squaredNorm();
+    double cost_this = dq.squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::WAYPOINTS, cost_this);
+    cost += cost_this;
 
     gradient_q[idx] += dq * (2.0 / 6.0);      // 2*dq*(1/6)
     gradient_q[idx + 1] += dq * (8.0 / 6.0);  // 2*dq*(4/6)
@@ -560,7 +596,9 @@ void BsplineOptimizer::calcGuideCost(const vector<Eigen::Vector3d>& q, double& c
 
   for (int i = order_; i < end_idx; i++) {
     Vector3d gpt = guide_pts_[i - order_];
-    cost += (q[i] - gpt).squaredNorm();
+    double cost_this = (q[i] - gpt).squaredNorm();
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::GUIDE, cost_this);
+    cost += cost_this;
     gradient_q[i] += 2 * (q[i] - gpt);
   }
 }
@@ -574,8 +612,12 @@ void BsplineOptimizer::calcTimeCost(const double& dt, double& cost, double& gt) 
   // Time lower bound
   if (time_lb_ > 0 && duration < time_lb_) {
     static const double w_lb = 10;
-    cost += w_lb * pow(duration - time_lb_, 2);
+    double cost_this = w_lb * pow(duration - time_lb_, 2);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::MINTIME, cost_this);
+    cost += cost_this;
     gt += w_lb * 2 * (duration - time_lb_) * (point_num_ - order_);
+  } else {
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::MINTIME, duration);
   }
 }
 
@@ -860,7 +902,11 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
     calcVCVCostAndGradientsKnots(q_cur, dt, features, cost_vcv, dcost_vcv_dq);
 
     // cost += ld_para * cost_para;
-    cost += ld_vcv * cost_vcv;
+    // cost += ld_vcv * cost_vcv;
+
+    double cost_this = ld_para * cost_para + ld_vcv * cost_vcv;
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::APACE_POS, cost_this);
+    cost += cost_this;
 
     for (int j = 0; j < 4; j++) {
       gradient_q[i + j] += ld_para * dcost_para_dq[j];
@@ -1012,6 +1058,8 @@ void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vect
     // cout << "cost_fvb: " << cost_fvb << endl;
     // 累加cos和gradient到每一个控制点上
     cost += cost_fvb;
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::FRONTIERVIS_POS, cost_fvb);
+
     for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dfvb_q[j];
   }
 }
@@ -1452,7 +1500,7 @@ void BsplineOptimizer::calcYawCoVisbilityCost(const vector<Vector3d>& q, double&
 
     // cost += cost_i;
     // for (int j = 0; j < 4; j++) gradient_q[i + j] += dcost_dq_i[j];
-
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::YAWCOVISIBILITY, pot_cost);
     cost += pot_cost;
     for (int j = 0; j < 4; j++) {
       gradient_q[i + j] += dpot_cost_dq_i[j];
@@ -1477,6 +1525,7 @@ void BsplineOptimizer::calcFrontierVisbilityCostYaw(const vector<Vector3d>& q, d
     Vector3d knots_acc = acc_[i];
 
     calcFrontierVisibilityCostAndGradientsKnots(q_cur, knots_pos, knots_acc, i, cost_i, dcost_dq_i);
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_YAW_OPT, COST_TYPE::FRONTIERVIS_YAW, cost_i);
 
     cost += cost_i;
     for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dq_i[j];
@@ -1609,11 +1658,11 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   f_combine = 0.0;
   grad.resize(variable_num_);
   fill(grad.begin(), grad.end(), 0.0);
-
   // Cost1：平滑度约束
   if (cost_function_ & SMOOTHNESS) {
     calcSmoothnessCost(g_q_, f_smoothness_, g_smoothness_);
     f_combine += ld_smooth_ * f_smoothness_;
+    // cout << " f_smoothness_: " << ld_smooth_ * f_smoothness_ << endl;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_smooth_ * g_smoothness_[i](j);
   }
@@ -1622,6 +1671,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   if (cost_function_ & DISTANCE) {
     calcDistanceCost(g_q_, f_distance_, g_distance_);
     f_combine += ld_dist_ * f_distance_;
+    // cout << " f_distance_: " << ld_dist_ * f_distance_ << endl;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_dist_ * g_distance_[i](j);
   }
@@ -1630,6 +1680,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   if (cost_function_ & FEASIBILITY) {
     double gt_feasibility = 0.0;
     calcFeasibilityCost(g_q_, dt, f_feasibility_, g_feasibility_, gt_feasibility);
+    // cout << " f_feasibility_: " << ld_feasi_ * f_feasibility_ << endl;
     f_combine += ld_feasi_ * f_feasibility_;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_feasi_ * g_feasibility_[i](j);
@@ -1640,6 +1691,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   if (cost_function_ & FEASIBILITY_YAW) {
     double gt_feasibility_yaw = 0.0;
     calcFeasibilityCostYaw(g_q_, dt, f_feasibility_yaw_, g_feasibility_yaw_, gt_feasibility_yaw);
+    // cout << " f_feasibility_yaw_: " << ld_feasi_yaw_ * f_feasibility_yaw_ << endl;
     f_combine += ld_feasi_yaw_ * f_feasibility_yaw_;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_feasi_yaw_ * g_feasibility_yaw_[i](j);
@@ -1650,6 +1702,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   if (cost_function_ & START) {
     double gt_start = 0.0;
     calcStartCost(g_q_, dt, f_start_, g_start_, gt_start);
+    // cout << " f_start_: " << ld_start_ * f_start_ << endl;
     f_combine += ld_start_ * f_start_;
     for (int i = 0; i < 3; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_start_ * g_start_[i](j);
@@ -1660,6 +1713,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   if (cost_function_ & END) {
     double gt_end = 0.0;
     calcEndCost(g_q_, dt, f_end_, g_end_, gt_end);
+    // cout << " f_end_: " << ld_end_ * f_end_ << endl;
     f_combine += ld_end_ * f_end_;
     for (int i = point_num_ - 3; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_end_ * g_end_[i](j);
@@ -1670,6 +1724,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   // Cost6：引导约束，指定的是控制点约束
   if (cost_function_ & GUIDE) {
     calcGuideCost(g_q_, f_guide_, g_guide_);
+    // cout << " f_guide_: " << ld_guide_ * f_guide_ << endl;
     f_combine += ld_guide_ * f_guide_;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_guide_ * g_guide_[i](j);
@@ -1679,6 +1734,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   if (cost_function_ & WAYPOINTS) {
     calcWaypointsCost(g_q_, f_waypoints_, g_waypoints_);
     f_combine += ld_waypt_ * f_waypoints_;
+    // cout << " f_waypoints_: " << ld_waypt_ * f_waypoints_ << endl;
     for (int i = 0; i < point_num_; i++)
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_waypt_ * g_waypoints_[i](j);
   }
@@ -1687,6 +1743,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   if (cost_function_ & MINTIME) {
     double gt_time = 0.0;
     calcTimeCost(dt, f_time_, gt_time);
+    // cout << " f_time_: " << ld_time_ * f_time_ << endl;
     f_combine += ld_time_ * f_time_;
     grad[variable_num_ - 1] += ld_time_ * gt_time;
   }
@@ -1696,25 +1753,27 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   /// APACE新加的
   /// 用于Position Trajectory Optimization阶段
   /// Cost10：视差约束和垂直共视性约束
-  if (cost_function_ & VERTICALVISIBILITY) {
-    calcPerceptionCost(g_q_, dt, f_parallax_, g_parallax_, ld_parallax_, ld_vertical_visibility_);
-    f_combine += f_parallax_;
-    for (int i = 0; i < point_num_; i++) {
-      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
-    }
-  }
-
-  // if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY)) {
+  // if (cost_function_ & VERTICALVISIBILITY) {
   //   calcPerceptionCost(g_q_, dt, f_parallax_, g_parallax_, ld_parallax_, ld_vertical_visibility_);
   //   f_combine += f_parallax_;
   //   for (int i = 0; i < point_num_; i++) {
   //     for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
   //   }
   // }
+
+  if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY)) {
+    calcPerceptionCost(g_q_, dt, f_parallax_, g_parallax_, ld_parallax_, ld_vertical_visibility_);
+    f_combine += f_parallax_;
+    // cout << " f_parallax_: " << f_parallax_ << endl;
+    for (int i = 0; i < point_num_; i++) {
+      for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
+    }
+  }
   // Cost11：FRONTIER可见性约束
   if ((cost_function_ & FRONTIERVISIBILITY_POS)) {
     calcFVBCost(g_q_, f_frontier_visibility_pos_, g_frontier_visibility_pos_);
     f_combine += ld_frontier_visibility_pos_ * f_frontier_visibility_pos_;
+    // cout << " f_frontier_visibility_pos_: " << ld_frontier_visibility_pos_ * f_frontier_visibility_pos_ << endl;
     for (int i = 0; i < point_num_; i++) {
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_frontier_visibility_pos_ * g_frontier_visibility_pos_[i](j);
     }
@@ -1724,6 +1783,7 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   /// Cost12：yaw共视性约束
   if (cost_function_ & YAWCOVISIBILITY) {
     calcYawCoVisbilityCost(g_q_, f_yaw_covisibility_, g_yaw_covisibility_);
+    // cout << " f_yaw_covisibility_: " << ld_yaw_covisib_ * f_yaw_covisibility_ << endl;
     f_combine += ld_yaw_covisib_ * f_yaw_covisibility_;
     for (int i = 0; i < point_num_; i++) {
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_yaw_covisib_ * g_yaw_covisibility_[i](j);
@@ -1740,11 +1800,16 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     // for (const auto& g : g_frontier_visibility_yaw_) {
     //   cout << g.transpose() << endl;
     // }
+    // cout << " f_frontier_visibility_yaw_: " << ld_frontier_visibility_yaw_ * f_frontier_visibility_yaw_ << endl;
     f_combine += ld_frontier_visibility_yaw_ * f_frontier_visibility_yaw_;
     for (int i = 0; i < point_num_; i++) {
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_frontier_visibility_yaw_ * g_frontier_visibility_yaw_[i](j);
     }
   }
+  // cout << " f_combine: " << f_combine << endl;
+  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_POS_OPT, g_q_, order_, dt);
+  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
+  // stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
 
   if (cost_function_ & FINAL_GOAL) {
     // calcFinalGoalCost(g_q_, f_final_goal_, g_final_goal_);

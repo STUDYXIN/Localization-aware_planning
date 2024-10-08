@@ -20,6 +20,7 @@ namespace fast_planner {
 class EDTEnvironment;
 class FeatureMap;
 class FrontierFinder;
+class SteppingDebug;
 
 class BsplineOptimizer {
 public:
@@ -291,6 +292,13 @@ public:
     opt_data_ = data;
   }
 
+  // !SECTION
+
+  // SECTION Debug msg
+  shared_ptr<SteppingDebug> stepping_debug_;
+  void getSteppingDebug(shared_ptr<SteppingDebug> stepping_debug) {
+    stepping_debug_ = stepping_debug;
+  }
   // !SECTION
 
   void resetCostAndGrad();

@@ -680,7 +680,7 @@ void PlanningVisualization::displayArrowList(
   visualization_msgs::MarkerArray markerArray;
   if (list1.empty() || list2.empty()) {
     ROS_ERROR("CLEAR YAW!!!");
-    for (ssize_t i = id; i < 100 + id; ++i) {
+    for (size_t i = id; i < 100 + id; ++i) {
       visualization_msgs::Marker mk;
       mk.header.frame_id = "world";
       mk.header.stamp = ros::Time::now();
@@ -712,13 +712,14 @@ void PlanningVisualization::displayArrowList(
     mk.color.a = color(3);
 
     geometry_msgs::Point pt;
-    pt.x = list1[i](0);
-    pt.y = list1[i](1);
-    pt.z = list1[i](2);
+    int idx = i - id;
+    pt.x = list1[idx](0);
+    pt.y = list1[idx](1);
+    pt.z = list1[idx](2);
     mk.points.push_back(pt);
-    pt.x = list2[i](0);
-    pt.y = list2[i](1);
-    pt.z = list2[i](2);
+    pt.x = list2[idx](0);
+    pt.y = list2[idx](1);
+    pt.z = list2[idx](2);
     mk.points.push_back(pt);
 
     markerArray.markers.push_back(mk);
@@ -740,6 +741,14 @@ void PlanningVisualization::displayArrowList(
 
 void PlanningVisualization::drawGeometricPath(const vector<Vector3d>& path, double resolution, const Vector4d& color, int id) {
   displaySphereList(path, resolution, color, PATH + id % 100);
+}
+
+void PlanningVisualization::drawDebugPosBspline(NonUniformBspline& bspline, const int& debug_count) {
+  double size1 = 0.03;
+  double size2 = 0.06;
+  Vector4d color1(1.0, 0.647, 0.0, 0.8);
+  Vector4d color2(0.5, 0.0, 0.5, 1.0);
+  drawBspline(bspline, size1, color1, true, size2, color2, DEBUG_POS + debug_count % 100);
 }
 
 void PlanningVisualization::drawBspline(NonUniformBspline& bspline, double size, const Eigen::Vector4d& color, bool show_ctrl_pts,
@@ -841,6 +850,23 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBsplin
   displayArrowList(pts1, pts2, 0.05, Color::Pink(), id, 5);
 }
 
+void PlanningVisualization::drawYawTraj(const vector<Vector3d>& pos, const vector<Vector3d>& yaw, int id) {
+  if (pos.size() != yaw.size()) {
+    ROS_ERROR("[PlanningVisualization::drawYawTraj] pos.size(): %zu != yaw.size() %zu !!!!!!", pos.size(), yaw.size());
+    return;
+  }
+
+  vector<Vector3d> pts2;
+  for (int i = 0; i < pos.size(); ++i) {
+    auto& pos_waypt = pos[i];
+    auto& yaw_waypt = yaw[i][0];
+    Vector3d dir(cos(yaw_waypt), sin(yaw_waypt), 0);
+    Vector3d pdir = pos_waypt + 1.0 * dir;
+    pts2.push_back(pdir);
+  }
+  displayArrowList(pos, pts2, 0.02, Eigen::Vector4d(0.5, 0.0, 0.0, 1.0), DEBUG_YAW + id % 100, 5);
+}
+
 void PlanningVisualization::drawYawPath(NonUniformBspline& pos, const vector<double>& yaw, const double& dt) {
   vector<Eigen::Vector3d> pts1, pts2;
 
@@ -852,7 +878,7 @@ void PlanningVisualization::drawYawPath(NonUniformBspline& pos, const vector<dou
     pts1.push_back(pc);
     pts2.push_back(pdir);
   }
-  displayLineList(pts1, pts2, 0.04, Eigen::Vector4d(1, 0, 1, 1), 1, 5);
+  displayLineList(pts1, pts2, 0.04, Eigen::Vector4d(1, 0, 1, 1), 1, 6);
 }
 
 void PlanningVisualization::displayText(

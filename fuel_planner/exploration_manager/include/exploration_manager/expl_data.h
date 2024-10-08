@@ -55,6 +55,7 @@ struct FSMParam {
   double replan_thresh3_;
   double replan_thresh_replan_viewpoint_length_;
   double replan_time_;  // second
+  double replan_out_;
   int one_viewpoint_max_searchtimes_;
 };
 
@@ -89,7 +90,7 @@ struct ExplorationData {
   vector<Vector3d> centers_, scales_;
 
   Vector3d point_now;
-  double yaw_now;
+  vector<double> yaw_vector;
   vector<Vector3d> frontier_now;
 };
 

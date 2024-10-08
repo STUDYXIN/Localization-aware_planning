@@ -51,7 +51,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>std_msgs</build_depend>
-  
+
   <build_depend>plan_env</build_depend>
   <build_depend>path_searching</build_depend>
   <build_depend>bspline</build_depend>
@@ -59,6 +59,8 @@
   <build_depend>active_perception</build_depend>
   <build_depend>traj_utils</build_depend>
   <build_depend>lkh_tsp_solver</build_depend>
+  <build_depend>time_debug</build_depend>
+  <build_depend>stepping_debug</build_depend>
   <build_depend>plan_manage</build_depend>
   <build_depend>quadrotor_msgs</build_depend>
 
@@ -75,9 +77,10 @@
   <exec_depend>active_perception</exec_depend>
   <exec_depend>traj_utils</exec_depend>
   <exec_depend>lkh_tsp_solver</exec_depend>
+  <exec_depend>time_debug</exec_depend>
+  <exec_depend>stepping_debug</exec_depend>
   <exec_depend>plan_manage</exec_depend>
   <exec_depend>quadrotor_msgs</exec_depend>
-  
 
 
   <!-- The export tag contains other, unspecified, tags -->

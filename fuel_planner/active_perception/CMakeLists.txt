@@ -16,13 +16,14 @@ plan_env
 bspline
 path_searching
 cv_bridge
+time_debug
 )
 
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES active_perception
- CATKIN_DEPENDS plan_env bspline path_searching
+ CATKIN_DEPENDS plan_env bspline path_searching time_debug
  DEPENDS system_lib
 )
 

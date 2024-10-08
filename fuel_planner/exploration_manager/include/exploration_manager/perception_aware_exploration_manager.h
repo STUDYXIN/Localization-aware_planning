@@ -23,6 +23,7 @@ class PAExplorationFSM;
 class FrontierFinder;
 struct ExplorationParam;
 struct ExplorationData;
+class SteppingDebug;
 
 enum NEXT_GOAL_TYPE { REACH_END, SEARCH_FRONTIER, NO_FRONTIER, NO_AVAILABLE_FRONTIER };
 
@@ -47,6 +48,11 @@ public:
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FrontierFinder> frontier_finder_;
   shared_ptr<FeatureMap> feature_map_;
+  shared_ptr<SteppingDebug> stepping_debug_;
+  void getSteppingDebug(shared_ptr<SteppingDebug> stepping_debug) {
+    stepping_debug_ = stepping_debug;
+  }
+
   // 为终点选择合适的采样点
   vector<double> yaw_samples;
   int yaw_choose_id;

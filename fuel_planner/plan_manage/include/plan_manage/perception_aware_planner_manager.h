@@ -64,7 +64,6 @@ public:
   void planExploreTraj(const vector<Eigen::Vector3d>& tour, const Eigen::Vector3d& cur_vel, const Eigen::Vector3d& cur_acc,
       const double& time_lb = -1);
 
-  void planYawExplore(const Eigen::Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time);
   int planYawPerceptionAware(
       const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal);
 

@@ -301,6 +301,7 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
 
   // Step1: 调用混合A*得到初始waypoints
   auto time_start = ros::Time::now();
+
   int status;
   if (use_4degree_kinoAstar) {
     kino_path_4degree_finder_->setFeatureMap(feature_map_);
@@ -635,97 +636,6 @@ void FastPlannerManager::planExploreTraj(
 
 // !SECTION
 
-void FastPlannerManager::planYawExplore(
-    const Vector3d& start_yaw, const double& end_yaw, bool lookfwd, const double& relax_time) {
-  const int seg_num = 12;
-  double dt_yaw = local_data_.duration_ / seg_num;  // time of B-spline segment
-  Eigen::Vector3d start_yaw3d = start_yaw;
-  // std::cout << "dt_yaw: " << dt_yaw << ", start yaw: " << start_yaw3d.transpose() << ", end: " << end_yaw << std::endl;
-
-  while (start_yaw3d[0] < -M_PI) start_yaw3d[0] += 2 * M_PI;
-  while (start_yaw3d[0] > M_PI) start_yaw3d[0] -= 2 * M_PI;
-  double last_yaw = start_yaw3d[0];
-
-  // Yaw traj control points
-  Eigen::MatrixXd yaw(seg_num + 3, 1);
-  yaw.setZero();
-
-  // Initial state
-  Eigen::Matrix3d states2pts;
-  states2pts << 1.0, -dt_yaw, (1 / 3.0) * dt_yaw * dt_yaw, 1.0, 0.0, -(1 / 6.0) * dt_yaw * dt_yaw, 1.0, dt_yaw,
-      (1 / 3.0) * dt_yaw * dt_yaw;
-  yaw.block<3, 1>(0, 0) = states2pts * start_yaw3d;
-
-  // Add waypoint constraints if look forward is enabled
-  vector<Eigen::Vector3d> waypts;
-  vector<int> waypt_idx;
-  if (lookfwd) {
-    const double forward_t = 2.0;
-    const int relax_num = relax_time / dt_yaw;
-    for (int i = 1; i < seg_num - relax_num; ++i) {
-      double tc = i * dt_yaw;
-      Eigen::Vector3d pc = local_data_.position_traj_.evaluateDeBoorT(tc);
-      double tf = min(local_data_.duration_, tc + forward_t);
-      Eigen::Vector3d pf = local_data_.position_traj_.evaluateDeBoorT(tf);
-      Eigen::Vector3d pd = pf - pc;
-      Eigen::Vector3d waypt;
-      if (pd.norm() > 1e-6) {
-        waypt(0) = atan2(pd(1), pd(0));
-        waypt(1) = waypt(2) = 0.0;
-        Utils::calcNextYaw(last_yaw, waypt(0));
-      }
-
-      else
-        waypt = waypts.back();
-
-      last_yaw = waypt(0);
-      waypts.push_back(waypt);
-      waypt_idx.push_back(i);
-    }
-  }
-
-  // Final state
-  Eigen::Vector3d end_yaw3d(end_yaw, 0, 0);
-  Utils::calcNextYaw(last_yaw, end_yaw3d(0));
-  yaw.block<3, 1>(seg_num, 0) = states2pts * end_yaw3d;
-
-  // cout << "states2pts * start_yaw3d: " << (states2pts * start_yaw3d).transpose() << endl;
-  // cout << "yaw waypts: " << endl;
-  // for (const auto& waypt : waypts) cout << "yaw: " << waypt[0] << endl;
-  // cout << "dt_yaw: " << dt_yaw << endl;
-  // cout << "states2pts * end_yaw3d: " << (states2pts * end_yaw3d).transpose() << endl;
-
-  // Debug rapid change of yaw
-  // if (fabs(start_yaw3d[0] - end_yaw3d[0]) >= M_PI) {
-  //   ROS_ERROR("Yaw change rapidly!");
-  //   std::cout << "start yaw: " << start_yaw3d[0] << ", " << end_yaw3d[0] << std::endl;
-  // }
-
-  // Call B-spline optimization solver
-  // int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::START | BsplineOptimizer::END | BsplineOptimizer::WAYPOINTS;
-  int cost_func = BsplineOptimizer::SMOOTHNESS | BsplineOptimizer::START | BsplineOptimizer::WAYPOINTS;
-  vector<Eigen::Vector3d> start = { Eigen::Vector3d(start_yaw3d[0], 0, 0), Eigen::Vector3d(start_yaw3d[1], 0, 0),
-    Eigen::Vector3d(start_yaw3d[2], 0, 0) };
-  vector<Eigen::Vector3d> end = { Eigen::Vector3d(end_yaw3d[0], 0, 0), Eigen::Vector3d(0, 0, 0) };
-
-  vector<bool> start_idx = { true, true, true };
-  vector<bool> end_idx = { true, true, false };
-
-  bspline_optimizers_[1]->setBoundaryStates(start, end, start_idx, end_idx);
-  bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
-  bspline_optimizers_[1]->setFeatureMap(feature_map_);
-  bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
-
-  // cout << "yaw after optimize: " << endl;
-  cout << yaw << endl;
-
-  // Update traj info
-  local_data_.yaw_traj_.setUniformBspline(yaw, 3, dt_yaw);
-  local_data_.yawdot_traj_ = local_data_.yaw_traj_.getDerivative();
-  local_data_.yawdotdot_traj_ = local_data_.yawdot_traj_.getDerivative();
-  plan_data_.dt_yaw_ = dt_yaw;
-}
-
 int FastPlannerManager::planYawPerceptionAware(
     const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal) {
 
@@ -826,10 +736,12 @@ int FastPlannerManager::planYawPerceptionAware(
       bspline_optimizers_[1]->setFrontierCells(frontier_cells);
     }
   }
+
   stepping_debug_->getPosBspline(local_data_.position_traj_);
   stepping_debug_->debug_type_now_ = DEBUG_TYPE::YAW_INIT;
   stepping_debug_->calldebug(DEBUG_TYPE::YAW_INIT, waypts);
   stepping_debug_->debug_type_now_ = DEBUG_TYPE::EVERY_YAW_OPT;
+
   bspline_optimizers_[1]->setBoundaryStates(start, end, start_idx, end_idx);
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
   bspline_optimizers_[1]->setFeatureMap(feature_map_);

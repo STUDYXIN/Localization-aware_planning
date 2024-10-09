@@ -211,30 +211,26 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       setVisualErrorType(last_fail_reason);
       if (start_debug_mode_) {  // 如果启动DEBUG模式，后面的转化就不用看了
         if (time_to_end < fp_->replan_thresh1_) {
-          if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
-            ROS_ERROR("Invalid next goal type!!!");
-            ROS_BREAK();
-          }
+          ROS_ASSERT(next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER);
 
           if (next_goal_ == REACH_END) {
             // if (checkReachFinalGoal()) {
             transitState(WAIT_TARGET, "FSM");
-            ROS_WARN("Replan: reach final goal=================================");
+            ROS_WARN("[Replan]: Reach final goal=================================");
           }
 
           else {
             transitState(START_IN_STATIC, "FSM");  // 固定从当前里程开始
             // transitState(REPLAN, "FSM");
             setVisualFSMType(REPLAN, REACH_TMP);
-            ROS_WARN("Replan: reach tmp viewpoint=================================");
+            ROS_WARN("[Replan]: Reach tmp viewpoint=================================");
           }
           return;
         }
-      } else if (time_to_end < fp_->replan_thresh1_) {
-        if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
-          ROS_ERROR("Invalid next goal type!!!");
-          ROS_BREAK();
-        }
+      }
+
+      else if (time_to_end < fp_->replan_thresh1_) {
+        ROS_ASSERT(next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER);
 
         if (next_goal_ == REACH_END) {
           transitState(WAIT_TARGET, "FSM");
@@ -260,14 +256,14 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         // else if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, CLUSTER_COVER);
-        ROS_WARN("Replan: Cluster covered=====================================");
+        ROS_WARN("[Replan]: Cluster covered=====================================");
       }
 
       // Replan after some time
       else if (t_cur > fp_->replan_thresh3_) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, TIME_OUT);
-        ROS_WARN("Replan: Periodic call=================================");
+        ROS_WARN("[Replan]: Periodic call=================================");
       }
 
       break;
@@ -533,7 +529,7 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
     // Check safety and trigger replan if necessary
     double dist;
     if (!planner_manager_->checkTrajCollision(dist)) {
-      ROS_WARN("Replan: collision detected==================================");
+      ROS_WARN("[Replan]: Collision detected==================================");
       last_fail_reason = COLLISION_CHECK_FAIL;
       setStartState(START_FROM_ODOM);
       replan_pub_.publish(std_msgs::Empty());

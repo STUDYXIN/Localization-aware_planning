@@ -6,6 +6,11 @@
 
 #include <iostream>
 
+#define ANSI_COLOR_YELLOW_BOLD "\033[1;33m"
+#define ANSI_COLOR_GREEN_BOLD "\033[1;32m"
+#define ANSI_COLOR_RED_BOLD "\033[1;31m"
+#define NORMAL_FONT "\033[0m"
+
 using namespace std;
 
 namespace fast_planner {
@@ -117,9 +122,6 @@ bool YawInitialPlanner::astarSearch(const int start, const int goal) {
   open_set_id.emplace(start_v->graph_id_);
 
   while (!open_set_.empty()) {
-    // auto vc = open_set_.front();
-    // open_set_.pop();
-
     auto vc = open_set_.top();
     open_set_.pop();
     open_set_id.erase(vc->graph_id_);
@@ -442,15 +444,19 @@ void YawInitialPlanner::prepareOptData(const YawOptData::Ptr& data) {
 
   for (size_t layer = 0; layer < vert_path_.size(); ++layer) {
     // cout << "layer: " << layer << endl;
-    data->frontier_status_[layer].resize(target_frontier_.size(), 0);  // 默认为0，代表不可能被观测到
+    data->frontier_status_[layer].resize(target_frontier_.size(), NOT_AVAILABLE);  // 不可能被观测到
+
     for (const auto& id : target_frontier_aft_preprocess_[layer]) {
-      data->frontier_status_[layer][id] = 3;  // 3代表可能被观测到
+      data->frontier_status_[layer][id] = AVAILABLE;  // 可能被观测到
       // cout << "type 3 id: " << id << endl;
     }
 
     YawVertex::Ptr vertex = vert_path_[layer];
     for (const auto& id : vertex->frontiers_id_) {
-      data->frontier_status_[layer][id] = 2;  // 2代表当前节点观测到
+      ROS_ASSERT(std::find(target_frontier_aft_preprocess_[layer].begin(), target_frontier_aft_preprocess_[layer].end(), id) !=
+                 target_frontier_aft_preprocess_[layer].end());
+
+      data->frontier_status_[layer][id] = VISIBLE;  // 当前节点已经观测到
       // cout << "type 2 id: " << id << endl;
     }
 
@@ -458,7 +464,7 @@ void YawInitialPlanner::prepareOptData(const YawOptData::Ptr& data) {
     if (layer != 0) {
       YawVertex::Ptr parent_vertex = vert_path_[layer - 1];
       for (const auto& id : parent_vertex->frontiers_id_path_) {
-        data->frontier_status_[layer][id] = 1;  // 1代表先前节点已经观测到
+        data->frontier_status_[layer][id] = HAS_BEEN_OBSERVED;  // 先前节点已经观测到
         // cout << "type 1 id: " << id << endl;
       }
     }
@@ -468,6 +474,50 @@ void YawInitialPlanner::prepareOptData(const YawOptData::Ptr& data) {
     //   cout << i << ": " << data->frontier_status_[layer][i] << endl;
     // }
   }
+
+  // Step3: 顺便在这里把yaw initial planner的一些统计数据打印出来
+  cout << ANSI_COLOR_GREEN_BOLD;
+  cout << "================================================================== Yaw Initial Planner "
+          "Statistics=================================================================="
+       << endl;
+  cout << std::setw(15) << std::right << "layer_id: ";
+  for (size_t i = 0; i < vert_path_.size(); ++i) cout << std::setw(10) << std::right << i << " ";
+  cout << endl;
+  cout << "------------------------------------------------------------------------------"
+          "------------------------------------------------------------------------------\n";
+
+  cout << std::setw(15) << "not available: ";
+  for (size_t layer = 0; layer < vert_path_.size(); ++layer) {
+    int count = std::count(data->frontier_status_[layer].begin(), data->frontier_status_[layer].end(), NOT_AVAILABLE);
+    cout << std::setw(10) << std::right << count << " ";
+  }
+  std::cout << std::endl;
+
+  cout << std::setw(15) << "has observed: ";
+  for (size_t layer = 0; layer < vert_path_.size(); ++layer) {
+    int count = std::count(data->frontier_status_[layer].begin(), data->frontier_status_[layer].end(), HAS_BEEN_OBSERVED);
+    cout << std::setw(10) << std::right << count << " ";
+  }
+  std::cout << std::endl;
+
+  cout << std::setw(15) << "available: ";
+  for (size_t layer = 0; layer < vert_path_.size(); ++layer) {
+    int count = std::count(data->frontier_status_[layer].begin(), data->frontier_status_[layer].end(), AVAILABLE);
+    cout << std::setw(10) << std::right << count << " ";
+  }
+  std::cout << std::endl;
+
+  cout << std::setw(15) << "visible: ";
+  for (size_t layer = 0; layer < vert_path_.size(); ++layer) {
+    int count = std::count(data->frontier_status_[layer].begin(), data->frontier_status_[layer].end(), VISIBLE);
+    cout << std::setw(10) << std::right << count << " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "=============================================================================="
+               "==============================================================================\n"
+            << std::endl;
+  cout << NORMAL_FONT;
 }
 
 int YawInitialPlanner::getObservedNum() {

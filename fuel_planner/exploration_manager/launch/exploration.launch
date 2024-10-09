@@ -177,10 +177,10 @@
   </include>
 
   <!-- plan data visualize -->
-  <node pkg="exploration_manager" name="plan_data_visualize" type="plan_data_show.py"
+  <!-- <node pkg="exploration_manager" name="plan_data_visualize" type="plan_data_show.py"
     output="screen">
     <param name="min_feature_num" value="$(arg min_feature_num_act)" />
     <param name="min_co_feature_num" value="$(arg min_covisible_feature_num_act)" />
-  </node>
+  </node> -->
 
 </launch>

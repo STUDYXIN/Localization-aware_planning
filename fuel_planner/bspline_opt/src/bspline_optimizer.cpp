@@ -1369,12 +1369,12 @@ void BsplineOptimizer::calcFrontierVisibilityCostAndGradientsKnots(const vector<
   double total_weight = 0.0;
   // for (const auto& cell : frontier_cells) {
   for (size_t i = 0; i < frontier_cells_.size(); i++) {
-    if (status_vec[i] == 0 || status_vec[i] == 1) continue;
+    if (status_vec[i] == NOT_AVAILABLE || status_vec[i] == HAS_BEEN_OBSERVED) continue;
 
     double w;
-    if (status_vec[i] == 2)
+    if (status_vec[i] == VISIBLE)
       w = ld_weight1_;
-    else if (status_vec[i] == 3)
+    else if (status_vec[i] == AVAILABLE)
       w = ld_weight2_;
 
     Vector3d cell = frontier_cells_[i];
@@ -1806,10 +1806,6 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
       for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_frontier_visibility_yaw_ * g_frontier_visibility_yaw_[i](j);
     }
   }
-  // cout << " f_combine: " << f_combine << endl;
-  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_POS_OPT, g_q_, order_, dt);
-  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
-  // stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
 
   if (cost_function_ & FINAL_GOAL) {
     // calcFinalGoalCost(g_q_, f_final_goal_, g_final_goal_);
@@ -1817,6 +1813,10 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     // for (int i = 0; i < point_num_; i++)
     //   for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_final_goal_ * g_final_goal_[i](j);
   }
+
+  // cout << " f_combine: " << f_combine << endl;
+  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_POS_OPT, g_q_, order_, dt);
+  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
 
   // !SECTION
 

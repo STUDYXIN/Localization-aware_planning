@@ -81,9 +81,6 @@ void PAExplorationManager::initialize(ros::NodeHandle& nh) {
   double resolution_ = sdf_map_->getResolution();
   Eigen::Vector3d origin, size;
   sdf_map_->getRegion(origin, size);
-
-  // ViewNode::caster_.reset(new RayCaster);
-  // ViewNode::caster_->setParams(resolution_, origin);
 }
 
 bool PAExplorationManager::FindFinalGoal() {
@@ -145,6 +142,7 @@ VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
   // 简单先把pos和yaw分开来
   int position_traj_statu = planner_manager_->planPosPerceptionAware(
       start_pos, start_vel, start_acc, start_yaw(0), next_pos, Vector3d::Zero(), next_yaw, frontire_cells, time_lb);
+
   if (position_traj_statu == PATH_SEARCH_ERROR)
     return PATH_SEARCH_FAIL;
   else if (position_traj_statu == POSISION_OPT_ERROR)
@@ -154,7 +152,6 @@ VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
     ROS_ERROR("Time lower bound not satified!");
   }
 
-  // planner_manager_->planYawExplore(start_yaw, next_yaw, true, ep_->relax_time_);
   int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells, final_goal);
   if (yaw_traj_statu == YAW_INIT_ERROR)
     return YAW_INIT_FAIL;

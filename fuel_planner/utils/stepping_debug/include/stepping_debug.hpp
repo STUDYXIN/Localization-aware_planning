@@ -25,8 +25,9 @@ using std::vector;
 namespace fast_planner {
 class PlanningVisualization;
 
-enum DEBUG_TYPE { BEFORE_COMPUTE = 0, BEFORE_POS_OPT = 1, EVERY_POS_OPT = 2, YAW_INIT = 3, EVERY_YAW_OPT = 4 };
-const string debugTypeStrings[] = { "BEFORE_COMPUTE", "BEFORE_POS_OPT", "EVERY_POS_OPT", "YAW_INIT", "EVERY_YAW_OPT" };
+enum DEBUG_TYPE { BEFORE_COMPUTE = 0, BEFORE_POS_OPT = 1, EVERY_POS_OPT = 2, YAW_INIT = 3, EVERY_YAW_OPT = 4, SHOW_VERVIS = 5 };
+const string debugTypeStrings[] = { "BEFORE_COMPUTE", "BEFORE_POS_OPT", "EVERY_POS_OPT", "YAW_INIT", "EVERY_YAW_OPT",
+  "SHOW_VERVIS" };
 
 enum COST_TYPE {
   SMOOTHNESS,
@@ -89,6 +90,33 @@ public:
   void getPosBspline(NonUniformBspline bspline_pos) {
     if (!init_visual || !init_success) return;
     bspline_pos_ = bspline_pos;
+  }
+  vector<Eigen::Vector3d> control_point_, cloud_;
+  vector<double> intense_;
+  vector<Eigen::Vector3d> control_point_grad_;
+  bool showcloud;
+  void getCloudForVisualization(DEBUG_TYPE type, const vector<Eigen::Vector3d>& control_point,
+      const vector<Eigen::Vector3d>& cloud1, const vector<double>& intense, const vector<vector<Eigen::Vector3d>>& intense_grad) {
+    if (!init_visual || !init_success) return;
+    if (!debug_map[type]) return;
+    if (control_point.size() != 3) {
+      ROS_ERROR("[getCloudForVisualization] CONTROL POINT SIZE ERROR: %zu", control_point.size());
+      return;
+    }
+    showcloud = true;
+    control_point_ = control_point;
+    cloud_ = cloud1;
+    intense_ = intense;
+    control_point_grad_.assign(3, Eigen::Vector3d::Zero());
+    for (size_t i = 0; i < intense_grad.size(); i++) {
+      if (intense_grad[i].size() != 3) {
+        ROS_ERROR("[getCloudForVisualization] INPUT SIZE ERROR: %zu", intense_grad[i].size());
+        return;
+      }
+      control_point_grad_[0] += intense_grad[i][0];
+      control_point_grad_[1] += intense_grad[i][1];
+      control_point_grad_[2] += intense_grad[i][2];
+    }
   }
 };
 

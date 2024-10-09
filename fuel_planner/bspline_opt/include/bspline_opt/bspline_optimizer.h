@@ -119,6 +119,10 @@ private:
       double& cost, vector<Vector3d>& dcost_dq);
   void calcFVBCostAndGradientsKnots(
       const vector<Vector3d>& q, const Vector3d& knots_pos, double& cost, vector<Vector3d>& dcost_dq);
+  // EXPLORE UNKNOWN AREA
+  void calcEUACostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span, double& cost, vector<Vector3d>& dcost_dq);
+  void calcEUAGoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient, const bool& use_grad,
+      vector<vector<Eigen::Vector3d>>& dcoefficient_dq);
   // ===========
   void calcParaCostAndGradientsKnots(
       const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
@@ -137,6 +141,7 @@ private:
       const double ld_para, const double ld_vcv);
 
   void calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
+  void calcEUACost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q);
 
   void calcYawCVCostAndGradientsKnots(const vector<Vector3d>& q, const vector<Vector3d>& knots_pos,
       const vector<Vector3d>& knots_acc, const vector<Vector3d>& features, double& pot_cost, vector<Vector3d>& dpot_dq);
@@ -208,7 +213,12 @@ private:
   // Data of opt
   vector<Eigen::Vector3d> g_q_, g_smoothness_, g_distance_, g_feasibility_, g_feasibility_yaw_, g_start_, g_end_, g_guide_,
       g_waypoints_, g_view_, g_time_;
-
+  void printVector(const std::vector<Eigen::Vector3d>& vec, const std::string& name) {
+    std::cout << name << " contains " << vec.size() << " elements:\n";
+    for (const auto& elem : vec) {
+      std::cout << "[" << elem.x() << ", " << elem.y() << ", " << elem.z() << "]\n";
+    }
+  }
   double f_smoothness_;
   double f_distance_;
   double f_feasibility_;

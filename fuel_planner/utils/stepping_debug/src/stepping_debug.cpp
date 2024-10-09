@@ -13,6 +13,7 @@ const std::string COLOR_RESET = "\033[0m";
 SteppingDebug::SteppingDebug() {
   init_visual = false;
   init_success = false;
+  showcloud = false;
   debug_count = 0;
 }
 
@@ -25,11 +26,13 @@ void SteppingDebug::init(ros::NodeHandle& nh) {
   debug_map[EVERY_POS_OPT] = false;
   debug_map[YAW_INIT] = false;
   debug_map[EVERY_YAW_OPT] = false;
+  debug_map[SHOW_VERVIS] = false;
   nh.param("debug/stop_before_compute", debug_map[BEFORE_COMPUTE], false);
   nh.param("debug/stop_before_pos_opt", debug_map[BEFORE_POS_OPT], false);
   nh.param("debug/stop_every_pos_opt", debug_map[EVERY_POS_OPT], false);
   nh.param("debug/stop_before_yaw_init", debug_map[YAW_INIT], false);
   nh.param("debug/stop_every_yaw_opt", debug_map[EVERY_YAW_OPT], false);
+  nh.param("debug/show_vertical_visibility_cost_every_control_point", debug_map[SHOW_VERVIS], false);
   nh.param("debug/debug_delay_time", debug_delay_time_, -1.0);
 
   nh.param("optimization/ld_smooth", ld_cost[SMOOTHNESS], -1.0);
@@ -54,7 +57,7 @@ void SteppingDebug::init(ros::NodeHandle& nh) {
 
 void SteppingDebug::calldebug(DEBUG_TYPE type, const vector<Eigen::Vector3d>& path, const int& order, const double& interval) {
   if (!init_visual || !init_success) return;
-  if (type != debug_type_now_) return;
+  if (type != debug_type_now_ && !showcloud) return;
   if (!debug_map[type]) return;
 
   if (debug_count == 0) reason_count_[debugTypeStrings[type]] = 0;
@@ -85,14 +88,16 @@ void SteppingDebug::calldebug(DEBUG_TYPE type, const vector<Eigen::Vector3d>& pa
       visualization_->drawYawTraj(bspline_pos_, bspline, bspline.getKnotSpan());
       coutDebugMsg(type, path.size());
       break;
+    case SHOW_VERVIS:
+      visualization_->drawDebugControlpoint(control_point_, control_point_grad_);
+      visualization_->drawDebugCloud(cloud_, intense_);
+      showcloud = false;
+      break;
     default:
       break;
   }
   debug_count++;
-  last_cost_record = cost_record;
-  last_ctrl_point_cost = ctrl_point_cost;
-  cost_record.clear();
-  ctrl_point_cost.clear();
+
   if (debug_delay_time_ < 0)
     waitForInput(debugTypeStrings[type]);
   else
@@ -246,9 +251,13 @@ void SteppingDebug::coutDebugMsg(DEBUG_TYPE type, const size_t& max_size) {
   ctrl_point_cost[max_size] = ctrl_point_total;
   std::cout << std::endl;
   //结束
+  last_cost_record = cost_record;
+  last_ctrl_point_cost = ctrl_point_cost;
+  cost_record.clear();
+  ctrl_point_cost.clear();
   std::cout << "=============================================================================="
                "==============================================================================\n"
             << std::endl;
-}  // namespace fast_planner
+}
 
 }  // namespace fast_planner

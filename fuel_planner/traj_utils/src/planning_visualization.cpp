@@ -122,7 +122,7 @@ void PlanningVisualization::drawFrontiers(const vector<vector<Eigen::Vector3d>>&
 }
 void PlanningVisualization::drawFrontiersAndViewpointBest(Eigen::Vector3d& viewpoint_points, const double& viewpoint_yaw,
     vector<Eigen::Vector3d>& frontiers, const vector<double>& score) {
-  Vector4d color_this(0.0, 0.0, 1.0, 0.8);
+  Vector4d color_this(0.0, 0.0, 1.0, 0.3);
   drawCubes(frontiers, 0.2, color_this, "frontier", BEST_FRONTIER, 4);
   vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
   thisviewpoint.push_back(viewpoint_points);
@@ -749,6 +749,132 @@ void PlanningVisualization::drawDebugPosBspline(NonUniformBspline& bspline, cons
   Vector4d color1(1.0, 0.647, 0.0, 0.8);
   Vector4d color2(0.5, 0.0, 0.5, 1.0);
   drawBspline(bspline, size1, color1, true, size2, color2, DEBUG_POS + debug_count % 100);
+}
+
+void PlanningVisualization::drawDebugControlpoint(
+    const vector<Eigen::Vector3d>& contrtol_point, const vector<Eigen::Vector3d>& grad) {
+  if (grad.size() != 3 || contrtol_point.size() != 3) {
+    ROS_ERROR("[PlanningVisualization::drawYawTraj] contrtol_point.size(): %zu != grad.size() %zu !!!!!!", contrtol_point.size(),
+        grad.size());
+    return;
+  }
+
+  Eigen::Vector3d knot = (contrtol_point[0] + 4 * contrtol_point[1] + contrtol_point[2]) / 6;
+  Eigen::Vector3d knot_grad = (grad[0] + 4 * grad[1] + grad[2]) / 6;
+
+  // 绘制knot
+  vector<Vector3d> pts1, pts2;
+  pts1.push_back(knot);
+  pts2.push_back(knot - 1.0 * knot_grad);
+  displayArrowList(pts1, pts2, 0.03, Eigen::Vector4d(0.5, 0.0, 0.0, 1.0), DEBUG_CONTROL_POINT, 5);
+
+  // 绘制control_point
+  vector<Vector3d> pts3;
+  for (int i = 0; i < contrtol_point.size(); ++i) {
+    Vector3d pdir = contrtol_point[i] - 1.0 * grad[i];
+    // Vector3d pdir = contrtol_point[i] + 0.001 * grad[i];
+    pts3.push_back(pdir);
+  }
+  displayArrowList(contrtol_point, pts3, 0.02, Eigen::Vector4d(0.5, 0.5, 0.0, 1.0), DEBUG_CONTROL_POINT + 1, 5);
+}
+
+void PlanningVisualization::drawDebugCloud(const vector<Eigen::Vector3d>& cloud, const vector<double>& intense) {
+  // Step 1: Check if cloud and intense sizes match
+  if (cloud.size() != intense.size()) {
+    ROS_WARN("[PlanningVisualization] Cloud and intense size mismatch!");
+    return;
+  }
+
+  // // Step 2: Normalize intense values to [0, 1]
+  // vector<double> normalized_intense(intense.size(), 0.0);
+  // cout << "intense input ";
+  // for (size_t i = 0; i < intense.size(); ++i) {
+  //   cout << intense[i] << " ";
+  //   if (intense[i] < 0) {
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is less than 0. Setting it to 0.");
+  //     normalized_intense[i] = 0.0;
+  //   } else if (intense[i] > 1.0) {
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is greater than 1.0. Setting it to 1.0");
+  //     normalized_intense[i] = 1.0;
+  //   } else {
+  //     normalized_intense[i] = intense[i];
+  //   }
+  // }
+  // cout << endl;
+
+  // // Step 2: Normalize intense values to [-1, 1]
+  // vector<double> normalized_intense(intense.size(), 0.0);
+  // cout << "intense input ";
+  // for (size_t i = 0; i < intense.size(); ++i) {
+  //   cout << intense[i] << " ";
+  //   if (intense[i] < -1.0) {
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is less than -1.0. Setting it to -1.0.");
+  //     normalized_intense[i] = -1.0;
+  //   } else if (intense[i] > 1.0) {
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is greater than 1.0. Setting it to 1.0");
+  //     normalized_intense[i] = 1.0;
+  //   } else {
+  //     normalized_intense[i] = intense[i];
+  //   }
+  // }
+  // cout << endl;
+
+  // Step 2: Normalize intense values to [0, 1]
+  vector<double> normalized_intense(intense.size(), 0.0);
+  // 找到intense中的最小值和最大值
+  double min_value = *std::min_element(intense.begin(), intense.end());
+  double max_value = *std::max_element(intense.begin(), intense.end());
+
+  // 遍历intense并将每个值归一化到[0, 1]范围
+  for (size_t i = 0; i < intense.size(); ++i) {
+    if (max_value != min_value) {  // 确保不会除以零
+      normalized_intense[i] = (intense[i] - min_value) / (max_value - min_value);
+    } else {
+      normalized_intense[i] = 0.0;  // 如果所有值相同，将其归一化为0
+    }
+  }
+
+  // Step 3: Create a marker for the cloud
+  visualization_msgs::Marker mk;
+  fillBasicInfo(
+      mk, Eigen::Vector3d(0.1, 0.1, 0.1), Eigen::Vector4d(0, 0, 0, 1), "debug_cloud", 0, visualization_msgs::Marker::SPHERE_LIST);
+
+  // Step 4: Clean old marker
+  mk.action = visualization_msgs::Marker::DELETE;
+  pubs_[4].publish(mk);
+
+  // Step 5: Fill in the points and colors for the cloud visualization
+  mk.action = visualization_msgs::Marker::ADD;  // Reset the action to ADD for the new marker
+  for (size_t i = 0; i < cloud.size(); ++i) {
+    geometry_msgs::Point pt;
+    pt.x = cloud[i][0];
+    pt.y = cloud[i][1];
+    pt.z = cloud[i][2];
+    mk.points.push_back(pt);
+
+    std_msgs::ColorRGBA color;
+    // color.r = 1.0 - normalized_intense[i];  // Red component decreases as intensity increases
+    // color.g = normalized_intense[i];        // Green component increases as intensity increases
+    // color.b = 0.0;
+
+    if (normalized_intense[i] >= 0) {
+      // 当 normalized_intense >= 0 时，从红变绿
+      color.r = 1.0 - normalized_intense[i];  // 红色随着值的增加减弱
+      color.g = normalized_intense[i];        // 绿色随着值的增加增强
+      color.b = 0.0;                          // 蓝色始终为0
+    } else {
+      // 当 normalized_intense < 0 时，从红变蓝
+      color.r = 1.0 + normalized_intense[i];  // 红色随着值的减小增强
+      color.g = 0.0;                          // 绿色始终为0
+      color.b = -normalized_intense[i];       // 蓝色随着值的减小增强
+    }
+    color.a = 1.0;
+    mk.colors.push_back(color);
+  }
+
+  // Step 6: Publish the marker
+  pubs_[4].publish(mk);
+  ros::Duration(0.0005).sleep();
 }
 
 void PlanningVisualization::drawBspline(NonUniformBspline& bspline, double size, const Eigen::Vector4d& color, bool show_ctrl_pts,

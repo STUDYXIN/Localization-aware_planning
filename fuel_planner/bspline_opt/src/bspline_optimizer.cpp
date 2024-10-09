@@ -191,6 +191,22 @@ void BsplineOptimizer::resetCostAndGrad() {
   g_frontier_visibility_pos_.resize(point_num_);
   g_yaw_covisibility_.resize(point_num_);
   g_frontier_visibility_yaw_.resize(point_num_);
+
+  std::fill(g_q_.begin(), g_q_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_smoothness_.begin(), g_smoothness_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_distance_.begin(), g_distance_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_feasibility_.begin(), g_feasibility_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_feasibility_yaw_.begin(), g_feasibility_yaw_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_start_.begin(), g_start_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_end_.begin(), g_end_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_guide_.begin(), g_guide_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_waypoints_.begin(), g_waypoints_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_view_.begin(), g_view_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_time_.begin(), g_time_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_parallax_.begin(), g_parallax_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_frontier_visibility_pos_.begin(), g_frontier_visibility_pos_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_yaw_covisibility_.begin(), g_yaw_covisibility_.end(), Eigen::Vector3d::Zero());
+  std::fill(g_frontier_visibility_yaw_.begin(), g_frontier_visibility_yaw_.end(), Eigen::Vector3d::Zero());
 }
 
 void BsplineOptimizer::optimize(
@@ -1023,6 +1039,213 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(
   dcost_dq[1] += dcost_dknot * (4.0 / 6.0);
   dcost_dq[2] += dcost_dknot * (1.0 / 6.0);
 }
+void BsplineOptimizer::calcEUAGoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient,
+    const bool& use_grad, vector<vector<Eigen::Vector3d>>& dcoefficient_dq) {
+  coefficient.clear();
+  dcoefficient_dq.clear();
+
+  double knot_span_inv2 = 1 / pow(knot_span, 2);
+  Eigen::Vector3d gravity(0, 0, -9.81);
+  double fov_vertical = camera_param_->fov_vertical * M_PI / 180.0;
+  double fov_horizontal = camera_param_->fov_horizontal * M_PI / 180.0;
+
+  Eigen::Vector3d acc = knot_span_inv2 * (q[0] - 2 * q[1] + q[2]);
+  Eigen::Vector3d a = acc - gravity;  // thrust
+  Eigen::Vector3d knot = (q[0] + 4 * q[1] + q[2]) / 6;
+  Eigen::Vector3d da_dq(1, -2, 1);
+  da_dq *= knot_span_inv2;
+  Eigen::Vector3d db_dq(-1 / 6.0, -4 / 6.0, -1 / 6.0);
+  vector<Eigen::Vector3d> zero_vec_q(3, Eigen::Vector3d::Zero());
+
+  //首先计算垂直可见性===================================================================================
+  vector<double> sin_theta_pot_vec;
+  vector<vector<Eigen::Vector3d>> dpot_dqj_vec;
+  sin_theta_pot_vec.reserve(frontier_cells_.size());
+  dpot_dqj_vec.reserve(frontier_cells_.size());
+  for (size_t i = 0; i < frontier_cells_.size(); i++) {
+    Eigen::Vector3d b = frontier_cells_[i] - knot;
+
+    // 计算sin_theta
+    double sin_theta;
+    Eigen::Vector3d dsin_theta_da, dsin_theta_db;
+
+    double a_norm = a.norm();
+    double b_norm = b.norm();
+    double a_norm_inv = 1 / a_norm;
+    double b_norm_inv = 1 / b_norm;
+    Eigen::Vector3d cross_ab = a.cross(b);
+    double cross_ab_norm = cross_ab.norm();
+
+    if (a_norm == 0 || b_norm == 0 || cross_ab_norm == 0) {
+      ROS_WARN("[BsplineOptimizer] Vector magnitude is zero, cannot compute gradients.");
+      sin_theta_pot_vec.push_back(0);
+      vector<Eigen::Vector3d> grad_zero(3, Eigen::Vector3d::Zero());
+      dpot_dqj_vec.push_back(grad_zero);
+      continue;
+    }
+
+    sin_theta = cross_ab_norm * a_norm_inv * b_norm_inv;
+
+    // 计算 dsin_theta/da 和 dsin_theta/db
+    dsin_theta_da = (b_norm_inv / cross_ab_norm) * cross_ab.cross(b) - (sin_theta / a_norm) * a;
+    dsin_theta_db = (a_norm_inv / cross_ab_norm) * a.cross(cross_ab) - (sin_theta / b_norm) * b;
+
+    // 对应论文公式(4)
+    double sin_theta_pot, dpot_dsin_theta;
+    double k1 = 60;
+    double sin_alpha = sin((M_PI - fov_vertical) / 2.0);
+    sin_theta_pot = 1.0 / (1 + exp(-k1 * (sin_theta - sin_alpha)));
+    dpot_dsin_theta = k1 * sin_theta_pot * (1 - sin_theta_pot);
+
+    // Calculate gradients of potential cost
+    vector<Eigen::Vector3d> dpot_dqj;
+    dpot_dqj.reserve(3);
+    for (int j = 0; j < 3; j++) {
+      Eigen::Vector3d dpoti_dqj = dpot_dsin_theta * (dsin_theta_da * da_dq[j] + dsin_theta_db * db_dq[j]);
+      dpot_dqj.push_back(dpoti_dqj);
+    }
+
+    sin_theta_pot_vec.push_back(sin_theta_pot);
+    dpot_dqj_vec.push_back(dpot_dqj);
+  }
+  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, sin_theta_pot_vec, dpot_dqj_vec);
+  // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+  // std::fill(sin_theta_pot_vec.begin(), sin_theta_pot_vec.end(), 1.0);
+  std::fill(dpot_dqj_vec.begin(), dpot_dqj_vec.end(), zero_vec_q);
+  //==================================================================================================
+
+  //用viewpoint和frontier_Cell的连线近似为cell所在平面====================================================
+  vector<double> cos_alpha_coe_vec;
+  vector<vector<Eigen::Vector3d>> dcoe_dqj_vec;
+  cos_alpha_coe_vec.reserve(frontier_cells_.size());
+  dcoe_dqj_vec.reserve(frontier_cells_.size());
+  for (size_t i = 0; i < frontier_cells_.size(); i++) {
+    Eigen::Vector3d knot2fc = frontier_cells_[i] - knot;
+    Eigen::Vector3d vp2fc = frontier_cells_[i] - view_point_pos_;
+
+    double cos_alpha;
+    Eigen::Vector3d dcos_alpha_dknot;
+    cos_alpha = knot2fc.dot(vp2fc) / (knot2fc.norm() * vp2fc.norm());
+    Eigen::Vector3d dcos_alpha_dknot2fc =
+        (vp2fc / knot2fc.norm() - knot2fc.dot(vp2fc) / pow(knot2fc.norm(), 3) * knot2fc) / vp2fc.norm();
+    dcos_alpha_dknot = -dcos_alpha_dknot2fc;
+
+    double cos_alpha_L, dcos_alpha_Ldcos_alpha;
+    Eigen::Vector3d dcos_alpha_Ldknot;
+    double mu = 0.1;
+    if (cos_alpha <= 0) {
+      cos_alpha_L = 0;
+      dcos_alpha_Ldcos_alpha = 0;
+    } else if (cos_alpha <= mu) {
+      double factor = (mu - cos_alpha / 2) * (cos_alpha / mu) * (cos_alpha / mu);
+      cos_alpha_L = factor * (cos_alpha / mu);
+      dcos_alpha_Ldcos_alpha =
+          (3 * (mu - cos_alpha / 2) * cos_alpha * cos_alpha) / (mu * mu * mu) - 0.5 * (cos_alpha / mu) * (cos_alpha / mu);
+    } else {  // cos_alpha > mu
+      cos_alpha_L = cos_alpha - mu / 2;
+      dcos_alpha_Ldcos_alpha = 1;
+    }
+
+    dcos_alpha_Ldknot = dcos_alpha_Ldcos_alpha * dcos_alpha_dknot;
+
+    vector<Eigen::Vector3d> dcoe_dqj;
+    dcoe_dqj.resize(3);
+    dcoe_dqj[0] = dcos_alpha_Ldknot * (1.0 / 6.0);
+    dcoe_dqj[1] = dcos_alpha_Ldknot * (4.0 / 6.0);
+    dcoe_dqj[2] = dcos_alpha_Ldknot * (1.0 / 6.0);
+
+    cos_alpha_coe_vec.push_back(cos_alpha_L);
+    dcoe_dqj_vec.push_back(dcoe_dqj);
+  }
+  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, cos_alpha_coe_vec, dcoe_dqj_vec);
+  // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+  // std::fill(cos_alpha_coe_vec.begin(), cos_alpha_coe_vec.end(), 1.0);
+  // std::fill(dcoe_dqj_vec.begin(), dcoe_dqj_vec.end(), zero_vec_q);
+  //==================================================================================================
+
+  for (size_t i = 0; i < frontier_cells_.size(); i++) {
+    double cost_each_goe = sin_theta_pot_vec[i] * cos_alpha_coe_vec[i];
+    coefficient.push_back(cost_each_goe);
+    std::vector<Eigen::Vector3d> dcost_each_goe_dqj(3);
+    for (int j = 0; j < 3; ++j)
+      dcost_each_goe_dqj[j] = dpot_dqj_vec[i][j] * cos_alpha_coe_vec[i] + sin_theta_pot_vec[i] * dcoe_dqj_vec[i][j];
+    dcoefficient_dq.push_back(dcost_each_goe_dqj);
+  }
+
+  if (!use_grad) std::fill(dcoefficient_dq.begin(), dcoefficient_dq.end(), zero_vec_q);
+}
+
+void BsplineOptimizer::calcEUACostAndGradientsKnots(
+    const vector<Vector3d>& q, const double& knot_span, double& cost, vector<Vector3d>& dcost_dq) {
+  // 初始化以及一些可行性检查
+  cost = 0;
+  dcost_dq.clear();
+  for (int i = 0; i < 3; i++) dcost_dq.push_back(Eigen::Vector3d::Zero());
+
+  if (view_point_yaw_ == 2 * M_PI) {
+    // 有点丑陋的验证viewpoint有没有被初始化的方法...
+    ROS_ERROR("[BsplineOptimizer::calcEUACostAndGradientsKnots] NO Viewpoint!!!!");
+    return;
+  }
+
+  if (frontier_cells_.size() == 0) {
+    ROS_ERROR("[BsplineOptimizer::calcEUACostAndGradientsKnots] NO Frontiers!!!!");
+    return;
+  }
+
+  if (q.size() != 3) {
+    ROS_ERROR("[BsplineOptimizer::calcEUACostAndGradientsKnots] Control points set should have exactly 3 points!");
+    return;
+  }
+  vector<double> coefficient;
+  vector<vector<Eigen::Vector3d>> dcoefficient_dq;
+  //计算系数
+  calcEUAGoefficient(q, knot_span, coefficient, true, dcoefficient_dq);
+  //扩张多少============================================================================================
+  Eigen::Vector3d knot = (q[0] + 4 * q[1] + q[2]) / 6;
+  vector<double> explan_scale_vec;
+  vector<vector<Eigen::Vector3d>> dexplan_scale_dqj_vec;
+  explan_scale_vec.reserve(frontier_cells_.size());
+  dexplan_scale_dqj_vec.reserve(frontier_cells_.size());
+  double max_length = camera_param_->frontier_visual_max;
+  for (size_t i = 0; i < frontier_cells_.size(); i++) {
+    auto& fc = frontier_cells_[i];
+    double length_known = (fc - knot).norm();
+    double explan_scale = length_known / max_length;
+    Eigen::Vector3d dlength_known_dknot = (knot - fc) / length_known;
+    Eigen::Vector3d dexplan_scale_dknot = dlength_known_dknot / max_length;
+
+    vector<Eigen::Vector3d> des_dqj;
+    des_dqj.resize(3);
+    des_dqj[0] = dexplan_scale_dknot * (1.0 / 6.0);
+    des_dqj[1] = dexplan_scale_dknot * (4.0 / 6.0);
+    des_dqj[2] = dexplan_scale_dknot * (1.0 / 6.0);
+
+    explan_scale_vec.push_back(explan_scale);
+    dexplan_scale_dqj_vec.push_back(des_dqj);
+  }
+
+  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, explan_scale_vec,
+  // dexplan_scale_dqj_vec); stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+  //====================================================================================================
+
+  //融合每个frontier的cost 和 grad
+  vector<double> cost_each_fc_vec;
+  vector<vector<Eigen::Vector3d>> dcost_each_fc_dqj_vec;
+  for (size_t i = 0; i < frontier_cells_.size(); i++) {
+    double cost_each_fc = coefficient[i] * explan_scale_vec[i];
+    cost_each_fc_vec.push_back(cost_each_fc);
+    std::vector<Eigen::Vector3d> dcost_each_fc_dqj(3);
+    for (int j = 0; j < 3; ++j)
+      dcost_each_fc_dqj[j] = dcoefficient_dq[i][j] * explan_scale_vec[i] + coefficient[i] * dexplan_scale_dqj_vec[i][j];
+    dcost_each_fc_dqj_vec.push_back(dcost_each_fc_dqj);
+
+    cost += cost_each_fc;
+    for (int j = 0; j < 3; ++j) dcost_dq[j] += dcost_each_fc_dqj[j];
+  }
+  stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, cost_each_fc_vec, dcost_each_fc_dqj_vec);
+  stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+}
 
 // 原本考虑的太复杂，更换方法
 //  void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q) {
@@ -1063,7 +1286,6 @@ void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vect
   double cost_fvb;
   vector<Vector3d> dcost_dfvb_q;
   // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] Begin!: " << endl;
-
   for (size_t i = 0; i < q.size() - 2; ++i) {
     // 获得q_cur和knot_pos，用于对这个knot进行优化
     vector<Vector3d> q_cur;
@@ -1077,6 +1299,30 @@ void BsplineOptimizer::calcFVBCost(const vector<Vector3d>& q, double& cost, vect
     stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::FRONTIERVIS_POS, cost_fvb);
 
     for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_dfvb_q[j];
+  }
+}
+
+void BsplineOptimizer::calcEUACost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q) {
+  ros::Time start_time = ros::Time::now();
+
+  cost = 0.0;
+  Vector3d zero(0, 0, 0);
+  std::fill(gradient_q.begin(), gradient_q.end(), zero);
+
+  double cost_eua;
+  vector<Vector3d> dcost_deua_q;
+  // cout << "[BsplineOptimizer::calcFrontierVisbilityCost] Begin!: " << endl;
+  for (size_t i = 0; i < q.size() - 2; ++i) {
+    // 获得q_cur和knot_pos，用于对这个knot进行优化
+    vector<Vector3d> q_cur;
+    for (int j = 0; j < 3; j++) q_cur.push_back(q[i + j]);
+    calcEUACostAndGradientsKnots(q_cur, dt, cost_eua, dcost_deua_q);
+    // cout << "cost_eua: " << cost_eua << endl;
+    // 累加cos和gradient到每一个控制点上
+    cost += cost_eua;
+    stepping_debug_->addDebugCost(DEBUG_TYPE::EVERY_POS_OPT, COST_TYPE::FRONTIERVIS_POS, cost_eua);
+
+    for (int j = 0; j < 3; j++) gradient_q[i + j] += dcost_deua_q[j];
   }
 }
 
@@ -1676,7 +1922,8 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   }
   // Cost11：FRONTIER可见性约束
   if ((cost_function_ & FRONTIERVISIBILITY_POS)) {
-    calcFVBCost(g_q_, f_frontier_visibility_pos_, g_frontier_visibility_pos_);
+    calcEUACost(g_q_, dt, f_frontier_visibility_pos_, g_frontier_visibility_pos_);
+    // calcFVBCost(g_q_, f_frontier_visibility_pos_, g_frontier_visibility_pos_);
     f_combine += ld_frontier_visibility_pos_ * f_frontier_visibility_pos_;
     // cout << " f_frontier_visibility_pos_: " << ld_frontier_visibility_pos_ * f_frontier_visibility_pos_ << endl;
     for (int i = 0; i < point_num_; i++) {
@@ -1712,8 +1959,25 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     }
   }
   // cout << " f_combine: " << f_combine << endl;
+
   stepping_debug_->calldebug(DEBUG_TYPE::EVERY_POS_OPT, g_q_, order_, dt);
   stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
+
+  // printVector(g_q_, "g_q_");
+  // printVector(g_smoothness_, "g_smoothness_");
+  // printVector(g_distance_, "g_distance_");
+  // printVector(g_feasibility_, "g_feasibility_");
+  // printVector(g_feasibility_yaw_, "g_feasibility_yaw_");
+  // printVector(g_start_, "g_start_");
+  // printVector(g_end_, "g_end_");
+  // printVector(g_guide_, "g_guide_");
+  // printVector(g_waypoints_, "g_waypoints_");
+  // printVector(g_view_, "g_view_");
+  // printVector(g_time_, "g_time_");
+  // printVector(g_parallax_, "g_parallax_");
+  // printVector(g_frontier_visibility_pos_, "g_frontier_visibility_pos_");
+  // printVector(g_yaw_covisibility_, "g_yaw_covisibility_");
+  // printVector(g_frontier_visibility_yaw_, "g_frontier_visibility_yaw_");
   // stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
 
   // !SECTION
@@ -1739,8 +2003,8 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     //   cout << "[bspline optimizer]:parallax cost: " << f_parallax_ << endl;
     // if (cost_function_ & FRONTIERVISIBILITY_POS)
     //   cout << "[bspline optimizer]:view frontier(pos) cost: " << f_frontier_visibility_pos_ << endl;
-    // if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ << endl;
-    // if (cost_function_ & FRONTIERVISIBILITY_YAW)
+    // if (cost_function_ & YAWCOVISIBILITY) cout << "[bspline optimizer]:yaw covisibility cost: " << f_yaw_covisibility_ <<
+    // endl; if (cost_function_ & FRONTIERVISIBILITY_YAW)
     //   cout << "[bspline optimizer]:view frontier(yaw) cost: " << f_frontier_visibility_yaw_ << endl;
     // cout << "---------------------------------------------------------------------------" << endl;
   }

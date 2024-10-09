@@ -61,15 +61,16 @@
 
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
-    <param name="debug/start_debug_mode" value="true" type="bool" />
+    <param name="debug/start_debug_mode" value="false " type="bool" />
     <!-- input 'enter' to step debug if debug_delay_time < 0 -->
-    <param name="debug/debug_delay_time" value="0.2" type="double" />
+    <param name="debug/debug_delay_time" value="-0.05" type="double" />
 
-    <param name="debug/stop_before_compute" value="true" type="bool" />
-    <param name="debug/stop_before_pos_opt" value="true" type="bool" />
+    <param name="debug/stop_before_compute" value="false" type="bool" />
+    <param name="debug/stop_before_pos_opt" value="false" type="bool" />
     <param name="debug/stop_every_pos_opt" value="true" type="bool" />
-    <param name="debug/stop_before_yaw_init" value="true" type="bool" />
-    <param name="debug/stop_every_yaw_opt" value="true" type="bool" />
+    <param name="debug/stop_before_yaw_init" value="false" type="bool" />
+    <param name="debug/stop_every_yaw_opt" value="false" type="bool" />
+    <param name="debug/show_vertical_visibility_cost_every_control_point" value="true" type="bool" />
 
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
     <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" type="int" />
@@ -310,7 +311,7 @@
     <param name="optimization/ld_feasi" value="2.0" type="double" />
     <param name="optimization/ld_feasi_yaw" value="5.0" type="double" />
     <param name="optimization/ld_start" value="5000.0" type="double" />
-    <param name="optimization/ld_end" value="500.0" type="double" />
+    <param name="optimization/ld_end" value="50.0" type="double" />
     <param name="optimization/ld_guide" value="1.5" type="double" />
     <param name="optimization/ld_waypt" value="0.2" type="double" />
     <param name="optimization/ld_view" value="0.0" type="double" />
@@ -318,7 +319,7 @@
     <param name="optimization/ld_parallax" value="5.0" type="double" />
     <param name="optimization/ld_vertical_visibility" value="10.0" type="double" />
     <param name="optimization/ld_yaw_covisibility" value="10.0" type="double" />
-    <param name="optimization/ld_frontier_visibility_pos" value="50.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_pos" value="1.0" type="double" />
     <param name="optimization/ld_frontier_visibility_yaw" value="30.0" type="double" />
     <param name="optimization/ld_weight1" value="50.0" type="double" />
     <param name="optimization/ld_weight2" value="10.0" type="double" />

@@ -753,19 +753,19 @@ void PlanningVisualization::drawDebugPosBspline(NonUniformBspline& bspline, cons
 
 void PlanningVisualization::drawDebugControlpoint(
     const vector<Eigen::Vector3d>& contrtol_point, const vector<Eigen::Vector3d>& grad) {
-  if (grad.size() != 3 || contrtol_point.size() != 3) {
+  if (grad.size() != contrtol_point.size()) {
     ROS_ERROR("[PlanningVisualization::drawYawTraj] contrtol_point.size(): %zu != grad.size() %zu !!!!!!", contrtol_point.size(),
         grad.size());
     return;
   }
-
-  Eigen::Vector3d knot = (contrtol_point[0] + 4 * contrtol_point[1] + contrtol_point[2]) / 6;
-  Eigen::Vector3d knot_grad = (grad[0] + 4 * grad[1] + grad[2]) / 6;
-
   // 绘制knot
   vector<Vector3d> pts1, pts2;
-  pts1.push_back(knot);
-  pts2.push_back(knot - 1.0 * knot_grad);
+  for (int j = 0; j < contrtol_point.size() - 3; ++j) {
+    Eigen::Vector3d knot = (contrtol_point[j] + 4 * contrtol_point[j + 1] + contrtol_point[j + 2]) / 6;
+    Eigen::Vector3d knot_grad = (grad[j] + 4 * grad[j + 1] + grad[j + 2]) / 6;
+    pts1.push_back(knot);
+    pts2.push_back(knot - 1.0 * knot_grad);
+  }
   displayArrowList(pts1, pts2, 0.03, Eigen::Vector4d(0.5, 0.0, 0.0, 1.0), DEBUG_CONTROL_POINT, 5);
 
   // 绘制control_point

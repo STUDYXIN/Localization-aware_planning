@@ -125,8 +125,8 @@ private:
   void calcEUAGoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient, const bool& use_grad,
       vector<vector<Eigen::Vector3d>>& dcoefficient_dq);
   // ===========
-  void calcParaCostAndGradientsKnots(
-      const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq);
+  void calcParaCostAndGradientsKnots(const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost,
+      vector<Vector3d>& dcost_dq, const bool& use_hard_constraint);
 
   void calcVVValueAndGradients(
       const Vector3d& a, const Vector3d& b, double& cos_theta, bool calc_grad, Vector3d& dcos_theta_da, Vector3d& dcos_theta_db);
@@ -135,11 +135,11 @@ private:
 
   // 计算单个pos knot垂直共视性cost
   void calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span, const vector<Vector3d> features,
-      double& cost, vector<Vector3d>& dcost_dq);
+      double& cost, vector<Vector3d>& dcost_dq, const bool& use_hard_constrai);
 
   // 计算整条位置轨迹的percpetion aware cost，包含视差和垂直共视性cost
   void calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
-      const double ld_para, const double ld_vcv);
+      const double ld_para, const double ld_vcv, const bool& use_hard_constraint);
 
   void calcFVBCost(const vector<Vector3d>& q, double& cost, vector<Vector3d>& gradient_q);
   void calcEUACost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q);

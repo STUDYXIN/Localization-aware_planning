@@ -729,8 +729,8 @@ double BsplineOptimizer::calcVCWeight(const Eigen::Vector3d& knot, const Eigen::
   return weight;
 }
 
-void BsplineOptimizer::calcParaCostAndGradientsKnots(
-    const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost, vector<Vector3d>& dcost_dq) {
+void BsplineOptimizer::calcParaCostAndGradientsKnots(const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features,
+    double& cost, vector<Vector3d>& dcost_dq, const bool& use_hard_constraint) {
 
   if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
 
@@ -819,7 +819,7 @@ void BsplineOptimizer::calcVVPotentialAndGradients(const double cos_theta, doubl
 }
 
 void BsplineOptimizer::calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span,
-    const vector<Vector3d> features, double& cost, vector<Vector3d>& dcost_dq) {
+    const vector<Vector3d> features, double& cost, vector<Vector3d>& dcost_dq, const bool& use_hard_constraint) {
 
   if (q.size() != 4) ROS_ERROR("Control points set should have exactly 4 points!");
 
@@ -831,6 +831,12 @@ void BsplineOptimizer::calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, c
   Eigen::Vector3d gravity(0, 0, -9.81);
 
   double total_weight = 0.0;
+
+  vector<double> pot_vec;
+  vector<vector<Eigen::Vector3d>> dpot_dqj_vec;
+  pot_vec.reserve(features.size());
+  dpot_dqj_vec.reserve(features.size());
+
   for (const auto& f : features) {
     double w = 1.0;
 
@@ -878,23 +884,52 @@ void BsplineOptimizer::calcVCVCostAndGradientsKnots(const vector<Vector3d>& q, c
     // Calculate co-visbility potential cost function and its gradient
     // f_cov(theta_1, theta_2) = (f_v(theta_1) + 1)(f_v(theta_2) + 1) - 1
     // 对应论文公式(11)
-    double covisib_pot = (cos_theta_pot_vec[0] + 1) * (cos_theta_pot_vec[1] + 1) - 1;
+    if (!use_hard_constraint) {
+      double covisib_pot = (cos_theta_pot_vec[0] + 1) * (cos_theta_pot_vec[1] + 1) - 1;
 
-    // 怎么又是你这种阴间加权方式
-    cost = (cost * total_weight + covisib_pot * w) / (total_weight + w);
+      // 不使用硬约束，采取加权平均
+      cost = (cost * total_weight + covisib_pot * w) / (total_weight + w);
 
-    for (int j = 0; j < 4; j++) {
-      Eigen::Vector3d dcovisb_pot_dq_cur =
-          dpoti_dqj_vec[0][j] * (cos_theta_pot_vec[1] + 1) + dpoti_dqj_vec[1][j] * (cos_theta_pot_vec[0] + 1);
-      dcost_dq[j] = (dcost_dq[j] * total_weight + dcovisb_pot_dq_cur) / (total_weight + w);
+      for (int j = 0; j < 4; j++) {
+        Eigen::Vector3d dcovisb_pot_dq_cur =
+            dpoti_dqj_vec[0][j] * (cos_theta_pot_vec[1] + 1) + dpoti_dqj_vec[1][j] * (cos_theta_pot_vec[0] + 1);
+        dcost_dq[j] = (dcost_dq[j] * total_weight + dcovisb_pot_dq_cur) / (total_weight + w);
+      }
+
+      total_weight += w;
+    } else {  //采用硬约束，需要统计公式的总数量，最后套上一个硬约束的壳
+      double covisib_pot = (cos_theta_pot_vec[0] + 1) * (cos_theta_pot_vec[1] + 1) - 1;
+      pot_vec.push_back(covisib_pot);
+
+      vector<Eigen::Vector3d> dpot_dqj;
+      for (int j = 0; j < 4; j++) {
+        Eigen::Vector3d dcovisb_pot_dq_cur =
+            dpoti_dqj_vec[0][j] * (cos_theta_pot_vec[1] + 1) + dpoti_dqj_vec[1][j] * (cos_theta_pot_vec[0] + 1);
+        dpot_dqj.push_back(dcovisb_pot_dq_cur);
+      }
+      dpot_dqj_vec.push_back(dpot_dqj);
     }
+    //   //----------------------------------------临时-----------------------------------
+    //   double covisib_pot = (cos_theta_pot_vec[0] + 1) * (cos_theta_pot_vec[1] + 1) - 1;
 
-    total_weight += w;
+    //   // 不使用硬约束，采取加权平均
+    //   cost = (cost * total_weight + covisib_pot * w) / (total_weight + w);
+
+    //   for (int j = 0; j < 4; j++) {
+    //     Eigen::Vector3d dcovisb_pot_dq_cur =
+    //         dpoti_dqj_vec[0][j] * (cos_theta_pot_vec[1] + 1) + dpoti_dqj_vec[1][j] * (cos_theta_pot_vec[0] + 1);
+    //     dcost_dq[j] = (dcost_dq[j] * total_weight + dcovisb_pot_dq_cur) / (total_weight + w);
+    //   }
+
+    //   total_weight += w;
+    //   //-------------------------------------------------------------------------------------
   }
+  stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VCV, q, features, pot_vec, dpot_dqj_vec);
+  stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VCV);
 }
 
 void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const double& dt, double& cost, vector<Vector3d>& gradient_q,
-    const double ld_para, const double ld_vcv) {
+    const double ld_para, const double ld_vcv, const bool& use_hard_constraint) {
 
   cost = 0.0;
   Eigen::Vector3d zero(0, 0, 0);
@@ -913,9 +948,9 @@ void BsplineOptimizer::calcPerceptionCost(const vector<Vector3d>& q, const doubl
     feature_map_->getFeatures(knot_mid, features);
 
     // 对应论文第5章B节计算视差cost部分
-    calcParaCostAndGradientsKnots(q_cur, dt, features, cost_para, dcost_para_dq);
+    calcParaCostAndGradientsKnots(q_cur, dt, features, cost_para, dcost_para_dq, use_hard_constraint);
     // 对应论文第5章B节计算垂直共视性(vertical covisibility)cost部分
-    calcVCVCostAndGradientsKnots(q_cur, dt, features, cost_vcv, dcost_vcv_dq);
+    calcVCVCostAndGradientsKnots(q_cur, dt, features, cost_vcv, dcost_vcv_dq, use_hard_constraint);
 
     // cost += ld_para * cost_para;
     // cost += ld_vcv * cost_vcv;
@@ -2000,15 +2035,16 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
   /// 用于Position Trajectory Optimization阶段
   /// Cost10：视差约束和垂直共视性约束
   // if (cost_function_ & VERTICALVISIBILITY) {
-  //   calcPerceptionCost(g_q_, dt, f_parallax_, g_parallax_, ld_parallax_, ld_vertical_visibility_);
+  //   calcPerceptionCost(g_q_, dt, f_parallax_, g_parallax_, ld_parallax_, ld_vertical_visibility_, false);
   //   f_combine += f_parallax_;
   //   for (int i = 0; i < point_num_; i++) {
   //     for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += g_parallax_[i](j);
   //   }
   // }
 
+  /// 将APACE的约束加上硬约束的壳子
   if ((cost_function_ & PARALLAX) && (cost_function_ & VERTICALVISIBILITY)) {
-    calcPerceptionCost(g_q_, dt, f_parallax_, g_parallax_, ld_parallax_, ld_vertical_visibility_);
+    calcPerceptionCost(g_q_, dt, f_parallax_, g_parallax_, ld_parallax_, ld_vertical_visibility_, false);
     f_combine += f_parallax_;
     // cout << " f_parallax_: " << f_parallax_ << endl;
     for (int i = 0; i < point_num_; i++) {

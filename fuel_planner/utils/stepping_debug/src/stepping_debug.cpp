@@ -27,12 +27,14 @@ void SteppingDebug::init(ros::NodeHandle& nh) {
   debug_map[YAW_INIT] = false;
   debug_map[EVERY_YAW_OPT] = false;
   debug_map[SHOW_VERVIS] = false;
+  debug_map[SHOW_VCV] = false;
   nh.param("debug/stop_before_compute", debug_map[BEFORE_COMPUTE], false);
   nh.param("debug/stop_before_pos_opt", debug_map[BEFORE_POS_OPT], false);
   nh.param("debug/stop_every_pos_opt", debug_map[EVERY_POS_OPT], false);
   nh.param("debug/stop_before_yaw_init", debug_map[YAW_INIT], false);
   nh.param("debug/stop_every_yaw_opt", debug_map[EVERY_YAW_OPT], false);
   nh.param("debug/show_vertical_visibility_cost_every_control_point", debug_map[SHOW_VERVIS], false);
+  nh.param("debug/show_vcv_every_control_point", debug_map[SHOW_VCV], false);
   nh.param("debug/debug_delay_time", debug_delay_time_, -1.0);
 
   nh.param("optimization/ld_smooth", ld_cost[SMOOTHNESS], -1.0);
@@ -89,6 +91,11 @@ void SteppingDebug::calldebug(DEBUG_TYPE type, const vector<Eigen::Vector3d>& pa
       coutDebugMsg(type, path.size());
       break;
     case SHOW_VERVIS:
+      visualization_->drawDebugControlpoint(control_point_, control_point_grad_);
+      visualization_->drawDebugCloud(cloud_, intense_);
+      showcloud = false;
+      break;
+    case SHOW_VCV:
       visualization_->drawDebugControlpoint(control_point_, control_point_grad_);
       visualization_->drawDebugCloud(cloud_, intense_);
       showcloud = false;

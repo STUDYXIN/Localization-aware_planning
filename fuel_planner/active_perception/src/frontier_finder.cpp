@@ -157,12 +157,11 @@ void FrontierFinder::ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw
 
 void FrontierFinder::getBestViewpointData(
     Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score) {
+
+  ROS_ASSERT(frontier_sort_id.size() == frontiers_.size());
   best_id = frontier_sort_id.front();
   int id = 0;
-  if (frontier_sort_id.size() != frontiers_.size()) {
-    ROS_ERROR("[FrontierFinder::getBestViewpointData] frontier sort fail!!!!!");
-    return;
-  }
+
   for (const auto& frontier : frontiers_) {
     if (id++ != best_id) continue;
     auto& view = frontier.viewpoints_.front();
@@ -467,21 +466,6 @@ bool FrontierFinder::splitHorizontally(const Frontier& frontier, list<Frontier>&
   return true;
 }
 
-bool FrontierFinder::isInBoxes(const vector<pair<Vector3d, Vector3d>>& boxes, const Eigen::Vector3i& idx) {
-  Vector3d pt;
-  edt_env_->sdf_map_->indexToPos(idx, pt);
-  for (auto box : boxes) {
-    // Check if contained by a box
-    bool inbox = true;
-    for (int i = 0; i < 3; ++i) {
-      inbox = inbox && pt[i] > box.first[i] && pt[i] < box.second[i];
-      if (!inbox) break;
-    }
-    if (inbox) return true;
-  }
-  return false;
-}
-
 bool FrontierFinder::haveOverlap(const Vector3d& min1, const Vector3d& max1, const Vector3d& min2, const Vector3d& max2) {
   // Check if two box have overlap part
   Vector3d bmin, bmax;
@@ -702,7 +686,7 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
          z += 2 * z_sample_max_length_ / z_sample_num_)
       for (double phi = -M_PI; phi < M_PI; phi += candidate_dphi_) {
         Vector3d sample_pos = frontier.average_ + rc * Vector3d(cos(phi), sin(phi), 0);
-        sample_pos.z() = z;  //多一个采样项
+        sample_pos.z() = z;  // 多一个采样项
         time_debug_.function_start("compute_pos");
         // Qualified viewpoint is in bounding box and in safe region
         if (!edt_env_->sdf_map_->isInBox(sample_pos) || edt_env_->sdf_map_->getInflateOccupancy(sample_pos) == 1 ||
@@ -803,16 +787,28 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
   return true;
 }
 
+double FrontierFinder::getExplorationRatio(const vector<Vector3d>& frontier) {
+  size_t total = frontier.size();
+  size_t expl_num = 0;
+  for (const auto& cell : frontier) {
+    Eigen::Vector3i idx;
+    edt_env_->sdf_map_->posToIndex(cell, idx);
+    if (!(knownfree(idx) && isNeighborUnknown(idx))) expl_num++;
+  }
+
+  return static_cast<double>(expl_num) / total;
+}
+
 bool FrontierFinder::isFrontierCovered() {
   Vector3d update_min, update_max;
   edt_env_->sdf_map_->getUpdatedBox(update_min, update_max);
 
   auto checkChanges = [&](const list<Frontier>& frontiers) {
-    for (auto ftr : frontiers) {
+    for (const auto& ftr : frontiers) {
       if (!haveOverlap(ftr.box_min_, ftr.box_max_, update_min, update_max)) continue;
       const int change_thresh = min_view_finish_fraction_ * ftr.cells_.size();
       int change_num = 0;
-      for (auto cell : ftr.cells_) {
+      for (const auto& cell : ftr.cells_) {
         Eigen::Vector3i idx;
         edt_env_->sdf_map_->posToIndex(cell, idx);
         if (!(knownfree(idx) && isNeighborUnknown(idx)) && ++change_num >= change_thresh) return true;
@@ -850,11 +846,6 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
 }
 
 bool FrontierFinder::getVisibility(const Vector3d& pos, const Vector3d& point) {
-  // Eigen::Quaterniond odom_orient(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
-  // Eigen::Vector3d camera_pos;
-  // Eigen::Quaterniond camera_orient;
-  // camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pos, camera_orient);
-
   Eigen::Vector3d camera_pos = pos;  // 这里假设相机位置和机器人位置一样，以后记得改
   if (!camera_param_ptr->is_depth_useful(camera_pos, point)) return false;
 
@@ -991,34 +982,6 @@ void FrontierFinder::wrapYaw(double& yaw) {
   while (yaw > M_PI) yaw -= 2 * M_PI;
 }
 
-Eigen::Vector3i FrontierFinder::searchClearVoxel(const Eigen::Vector3i& pt) {
-  queue<Eigen::Vector3i> init_que;
-  vector<Eigen::Vector3i> nbrs;
-  Eigen::Vector3i cur, start_idx;
-  init_que.push(pt);
-  // visited_flag_[toadr(pt)] = 1;
-
-  while (!init_que.empty()) {
-    cur = init_que.front();
-    init_que.pop();
-    if (knownfree(cur)) {
-      start_idx = cur;
-      break;
-    }
-
-    nbrs = sixNeighbors(cur);
-    for (auto nbr : nbrs) {
-      int adr = toadr(nbr);
-      // if (visited_flag_[adr] == 0)
-      // {
-      //   init_que.push(nbr);
-      //   visited_flag_[adr] = 1;
-      // }
-    }
-  }
-  return start_idx;
-}
-
 inline vector<Eigen::Vector3i> FrontierFinder::sixNeighbors(const Eigen::Vector3i& voxel) {
   vector<Eigen::Vector3i> neighbors(6);
   Eigen::Vector3i tmp;
@@ -1073,9 +1036,10 @@ inline vector<Eigen::Vector3i> FrontierFinder::allNeighbors(const Eigen::Vector3
 inline bool FrontierFinder::isNeighborUnknown(const Eigen::Vector3i& voxel) {
   // At least one neighbor is unknown
   auto nbrs = sixNeighbors(voxel);
-  for (auto nbr : nbrs) {
+  for (const auto& nbr : nbrs) {
     if (edt_env_->sdf_map_->getOccupancy(nbr) == SDFMap::UNKNOWN) return true;
   }
+
   return false;
 }
 

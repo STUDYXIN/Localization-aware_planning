@@ -1,5 +1,37 @@
 # 更新日志
 
+## 10月8日更新
+
+### 加入可视化代码
+
+```xml
+  <node pkg="exploration_manager" name="plan_data_visualize" type="plan_data_show.py" output="screen">
+    <param name="min_feature_num" value="$(arg min_feature_num_act)" />
+    <param name="min_co_feature_num" value="$(arg min_covisible_feature_num_act)" />
+  </node>
+```
+
+不想开启可视化的话直接在exploration.launch里注释掉这段代码就行了
+
+<div align="center">
+<img src="img/Perception_Aware_Exploration_Visualization.png" alt="cover" width="640"/>
+</div>
+
+上面的子图中
+
+- 蓝色粗线条（vis_num）：当前帧FOV中特征点数量
+- 绿色粗线条（co_vis_num）：当前帧与上一帧FOV中共视特征点数量
+- 红色细线条（min_vis_num）：设定的最少特征点数量
+- 黄色细线条（min_co_vis_num）：设定的最少共视特征点数量
+
+下面的子图中
+
+- 蓝色粗线条（t_cur）：轨迹上当前时间在轨迹总时间上的比例，有的时候超过1.0就说明重规划又太慢了
+
+- 绿色粗线条（expl_ratio）：目标frontier已被探索的比例
+
+  
+
 ## 10月5日更新
 
 ### 步进调试
@@ -98,7 +130,7 @@
           */
       ...
         }}}
-  
+    
     ```
 
 - **修改VIEWPOINT内部机理**

@@ -21,9 +21,16 @@
 
   <arg name="feature_filename_" default="feature_map_sample1.ply" />
 
+  <arg name="min_feature_num_act" value="10" />
+  <arg name="min_covisible_feature_num_act" value="6" />
+
+  <arg name="min_feature_num_plan" value="15" />
+  <arg name="min_covisible_feature_num_plan" value="10" />
+
 
   <!-- topic of your odometry such as VIO or LIO -->
   <arg name="odom_topic" value="/state_ukf/odom" />
+
 
   <!-- main algorithm params -->
   <include file="$(find exploration_manager)/launch/algorithm.xml">
@@ -62,8 +69,7 @@
     <arg name="fy" value="387.229248046875" />
 
     <!-- maximum velocity and acceleration the drone will reach -->
-    <!-- <arg name="max_vel" value="1.0" />
-    <arg name="max_acc" value="0.4" /> -->
+
     <!-- 慢速可运行参数 -->
     <arg name="max_vel" value="0.5" />
     <arg name="max_acc" value="0.15" />
@@ -93,11 +99,11 @@
     <arg name="max_yaw_rate" value="1.0" /> -->
     <!-- ADD: maximum yaw rate the drone will reach -->
 
-    <arg name="min_feature_num_act" value="10" />
-    <arg name="min_covisible_feature_num_act" value="6" />
+    <arg name="min_feature_num_act" value="$(arg min_feature_num_act)" />
+    <arg name="min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" />
 
-    <arg name="min_feature_num_plan" value="15" />
-    <arg name="min_covisible_feature_num_plan" value="10" />
+    <arg name="min_feature_num_plan" value="$(arg min_feature_num_plan)" />
+    <arg name="min_covisible_feature_num_plan" value="$(arg min_covisible_feature_num_plan)" />
 
     <!-- <arg name="min_feature_num_act" value="5" />
     <arg name="min_covisible_feature_num_act" value="3" />
@@ -169,5 +175,12 @@
     <arg name="c_num" value="0" />
     <arg name="p_num" value="130" />
   </include>
+
+  <!-- plan data visualize -->
+  <node pkg="exploration_manager" name="plan_data_visualize" type="plan_data_show.py"
+    output="screen">
+    <param name="min_feature_num" value="$(arg min_feature_num_act)" />
+    <param name="min_co_feature_num" value="$(arg min_covisible_feature_num_act)" />
+  </node>
 
 </launch>

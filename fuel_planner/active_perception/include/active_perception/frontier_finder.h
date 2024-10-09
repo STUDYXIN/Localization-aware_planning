@@ -211,14 +211,13 @@ public:
   bool isNeighborUnknown(const Eigen::Vector3i& voxel);
   void expandFrontier(const Eigen::Vector3i& first /* , const int& depth, const int& parent_id */);
 
+  // New
+  double getExplorationRatio(const vector<Vector3d>& frontier);
+
   // Wrapper of sdf map
   int toadr(const Eigen::Vector3i& idx);
   bool knownfree(const Eigen::Vector3i& idx);
   bool inmap(const Eigen::Vector3i& idx);
-
-  // Deprecated
-  Eigen::Vector3i searchClearVoxel(const Eigen::Vector3i& pt);
-  bool isInBoxes(const vector<pair<Vector3d, Vector3d>>& boxes, const Eigen::Vector3i& idx);
 
   // Data
   vector<char> frontier_flag_;
@@ -229,10 +228,10 @@ public:
   int frontier_id_count;
   DebugTimer time_debug_;
 
-  // UnavailableViewpointManage
   UnavailableViewpointManage unavailableViewpointManage_;
   Viewpoint best_viewpoint, init_viewpoint;
   double viewpoint_used_thr;
+
   void store_init_state() {
     if (best_viewpoint.score_yaw.empty()) {
       ROS_ERROR("[FrontierFinder::store_init_state] best_viewpoint have not been init, or there is no available viewpoint!!!!!");

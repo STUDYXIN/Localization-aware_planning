@@ -108,10 +108,6 @@ void FastPlannerManager::updateTrajInfo() {
   statistics_.dt_ = local_data_.position_traj_.getKnotSpan();
 }
 
-void FastPlannerManager::setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints) {
-  plan_data_.global_waypoints_ = waypoints;
-}
-
 bool FastPlannerManager::checkTrajCollision(double& distance) {
   double t_now = (ros::Time::now() - local_data_.start_time_).toSec();
 
@@ -260,11 +256,30 @@ void FastPlannerManager::printStatistics(const vector<Vector3d>& target_frontier
   cout << "Time of Total Planning:      " << statistics_.time_total_ << " (sec)" << endl;
 
   cout << fixed << setprecision(3);
+  double max_vel = Utils::getGlobalParam().max_vel_;
+  double max_acc = Utils::getGlobalParam().max_acc_;
   cout << "Mean Vel on Pos Traj:               " << statistics_.mean_vel_ << " (m/s)" << endl;
-  cout << "Max Vel on Pos Traj:                " << statistics_.max_vel_ << " (m/s)" << endl;
+
+  if (statistics_.max_vel_ < max_vel * 1.5)
+    cout << ANSI_COLOR_GREEN_BOLD;
+  else
+    cout << ANSI_COLOR_RED_BOLD;
+  cout << "Max Vel on Pos Traj:                " << statistics_.max_vel_ << " (m/s)" << endl << ANSI_COLOR_GREEN_BOLD;
   cout << "Mean Acc on Pos Traj:               " << statistics_.mean_acc_ << " (m^2/s)" << endl;
-  cout << "Max Acc on Pos Traj:                " << statistics_.max_acc_ << " (m^2/s)" << endl;
-  cout << "Max Yaw Rate on Yaw Traj:           " << statistics_.max_yaw_rate_ << " (rad/s)" << endl;
+
+  if (statistics_.max_acc_ < max_acc * 1.5)
+    cout << ANSI_COLOR_GREEN_BOLD;
+  else
+    cout << ANSI_COLOR_RED_BOLD;
+  cout << "Max Acc on Pos Traj:                " << statistics_.max_acc_ << " (m^2/s)" << endl << ANSI_COLOR_GREEN_BOLD;
+
+  double max_yaw_rate = Utils::getGlobalParam().max_yaw_rate_;
+  if (statistics_.max_yaw_rate_ < max_yaw_rate)
+    cout << ANSI_COLOR_GREEN_BOLD;
+  else
+    cout << ANSI_COLOR_RED_BOLD;
+  cout << "Max Yaw Rate on Yaw Traj:           " << statistics_.max_yaw_rate_ << " (rad/s)" << endl << ANSI_COLOR_GREEN_BOLD;
+
   cout << "Knot Span:                          " << statistics_.dt_ << " (s)" << endl;
 
   if (!target_frontier.empty()) {
@@ -387,11 +402,11 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
     cost_func |= BsplineOptimizer::VERTICALVISIBILITY;
     bspline_optimizers_[0]->setFeatureMap(feature_map_);
   }
-  if (use_fvp_opt_) {
-    cost_func |= BsplineOptimizer::FRONTIERVISIBILITY_POS;
-    bspline_optimizers_[0]->setViewpoint(end_pt, end_yaw);
-    bspline_optimizers_[0]->setFrontierCells(frontier_cells);
-  }
+  // if (use_fvp_opt_) {
+  //   cost_func |= BsplineOptimizer::FRONTIERVISIBILITY_POS;
+  //   bspline_optimizers_[0]->setViewpoint(end_pt, end_yaw);
+  //   bspline_optimizers_[0]->setFrontierCells(frontier_cells);
+  // }
 
   // Set params
   // if (cost_func & BsplineOptimizer::PARALLAX || cost_func & BsplineOptimizer::VERTICALVISIBILITY ||
@@ -417,228 +432,8 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
 
 // !SECTION
 
-// SECTION sample-based replanning
-
-bool FastPlannerManager::sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel,
-    const Eigen::Vector3d& start_acc, const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw,
-    const double& time_lb) {
-
-  if ((start_pt - end_pt).norm() < 1e-2) {
-    cout << "Close goal" << endl;
-    return false;
-  }
-
-  // Kinodynamic path searching
-
-  auto time_start = ros::Time::now();
-
-  sample_path_finder_->setFeatureMap(feature_map_);
-  if (!sample_path_finder_->makeProblem(start_pt, start_yaw, end_pt, end_yaw)) {
-    return false;
-  }
-
-  auto status = sample_path_finder_->makePlan();
-  if (!status) {
-    ROS_ERROR("Sample based search fail!!!");
-    return false;
-  }
-
-  double time_search = (ros::Time::now() - time_start).toSec();
-  ROS_WARN("Time cost of waypoint search: %lf(sec)", time_search);
-
-  const auto tour = sample_path_finder_->getWaypoints();
-
-  // Generate traj through waypoints-based method
-  const int pt_num = tour.size();
-  Eigen::MatrixXd pos(pt_num, 3);
-  for (int i = 0; i < pt_num; ++i) {
-    pos.row(i) = tour[i];
-  }
-
-  Eigen::Vector3d zero(0, 0, 0);
-  Eigen::VectorXd times(pt_num - 1);
-  for (int i = 0; i < pt_num - 1; ++i) {
-    times(i) = (pos.row(i + 1) - pos.row(i)).norm() / (pp_.max_vel_ * 0.5);
-  }
-
-  PolynomialTraj init_traj;
-  PolynomialTraj::waypointsTraj(pos, start_vel, zero, start_acc, zero, times, init_traj);
-
-  // B-spline-based optimization
-  vector<Vector3d> points, boundary_deri;
-  double duration = init_traj.getTotalTime();
-  int seg_num = init_traj.getLength() / pp_.ctrl_pt_dist;
-  seg_num = max(8, seg_num);
-  double dt = duration / seg_num;
-
-  std::cout << "duration: " << duration << ", seg_num: " << seg_num << ", dt: " << dt << std::endl;
-
-  for (double ts = 0.0; ts <= duration + 1e-4; ts += dt) points.push_back(init_traj.evaluate(ts, 0));
-
-  boundary_deri.push_back(init_traj.evaluate(0.0, 1));
-  boundary_deri.push_back(init_traj.evaluate(duration, 1));
-  boundary_deri.push_back(init_traj.evaluate(0.0, 2));
-  boundary_deri.push_back(init_traj.evaluate(duration, 2));
-
-  Eigen::MatrixXd ctrl_pts;
-  NonUniformBspline::parameterizeToBspline(dt, points, boundary_deri, pp_.bspline_degree_, ctrl_pts);
-  NonUniformBspline tmp_traj(ctrl_pts, pp_.bspline_degree_, dt);
-
-  int cost_func = BsplineOptimizer::NORMAL_PHASE;
-  if (pp_.min_time_) cost_func |= BsplineOptimizer::MINTIME;
-
-  vector<Vector3d> start, end;
-  tmp_traj.getBoundaryStates(2, 0, start, end);
-  bspline_optimizers_[0]->setBoundaryStates(start, end);
-  if (time_lb > 0) {
-    bspline_optimizers_[0]->setTimeLowerBound(time_lb);
-  }
-
-  bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
-  local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
-
-  updateTrajInfo();
-
-  return true;
-}
-
-// !SECTION
-
-// SECTION kinodynamic replanning
-
-bool FastPlannerManager::kinodynamicReplan(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
-    const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw, const double& time_lb) {
-  std::cout << "[Kino replan]: start pos: " << start_pt.transpose() << endl;
-  std::cout << "[Kino replan]: start vel: " << start_vel.transpose() << endl;
-  std::cout << "[Kino replan]: start acc: " << start_acc.transpose() << endl;
-  std::cout << "[Kino replan]: start yaw: " << start_yaw << endl;
-  std::cout << "[Kino replan]: end pos: " << end_pt.transpose() << endl;
-  std::cout << "[Kino replan]: end vel: " << end_vel.transpose() << endl;
-  std::cout << "[Kino replan]: end yaw: " << end_yaw << endl;
-
-  if ((start_pt - end_pt).norm() < 1e-2) {
-    cout << "Close goal" << endl;
-    return false;
-  }
-
-  // Kinodynamic path searching
-
-  auto time_start = ros::Time::now();
-
-  kino_path_4degree_finder_->setFeatureMap(feature_map_);
-  kino_path_4degree_finder_->reset();
-  // int status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, true);
-  // if (status == KinodynamicAstar::NO_PATH) {
-  //   ROS_ERROR("Init kinodynamic A* search fail");
-  //   // Retry
-  //   kino_path_4degree_finder_->reset();
-  //   status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, end_pt, end_vel, false);
-  //   if (status == KinodynamicAstar::NO_PATH) {
-  //     return false;
-  //   }
-  // }
-
-  ROS_INFO("Start search");
-  int status = kino_path_4degree_finder_->search(start_pt, start_vel, start_acc, start_yaw, end_pt, end_vel, end_yaw);
-  ROS_INFO("End search");
-  if (status == KinodynamicAstar::NO_PATH) {
-    ROS_ERROR("Kinodynamic A* search fail");
-    return false;
-  }
-  plan_data_.kino_path_ = kino_path_4degree_finder_->getKinoTraj(0.01);
-
-  double time_search = (ros::Time::now() - time_start).toSec();
-  ROS_WARN("Time cost of kinodynamic A*: %lf(sec)", time_search);
-
-  auto time_start_2 = ros::Time::now();
-
-  // Parameterize path to B-spline
-  double ts = pp_.ctrl_pt_dist / pp_.max_vel_;
-  vector<Eigen::Vector3d> point_set, start_end_derivatives;
-  kino_path_4degree_finder_->getSamples(ts, point_set, start_end_derivatives);
-
-  Eigen::MatrixXd ctrl_pts;
-  NonUniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, pp_.bspline_degree_, ctrl_pts);
-  NonUniformBspline init(ctrl_pts, pp_.bspline_degree_, ts);
-
-  // B-spline-based optimization
-  int cost_function = BsplineOptimizer::NORMAL_PHASE;
-  if (pp_.min_time_) cost_function |= BsplineOptimizer::MINTIME;
-  vector<Eigen::Vector3d> start, end;
-  init.getBoundaryStates(2, 0, start, end);
-  vector<bool> start_idx = { true, true, true };
-  vector<bool> end_idx = { true, false, false };
-  bspline_optimizers_[0]->setBoundaryStates(start, end, start_idx, end_idx);
-  if (time_lb > 0) bspline_optimizers_[0]->setTimeLowerBound(time_lb);
-
-  bspline_optimizers_[0]->optimize(ctrl_pts, ts, cost_function, 1, 1);
-  local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, ts);
-
-  vector<Eigen::Vector3d> start2, end2;
-  local_data_.position_traj_.getBoundaryStates(2, 0, start2, end2);
-  std::cout << "State error: (" << (start2[0] - start[0]).norm() << ", " << (start2[1] - start[1]).norm() << ", "
-            << (start2[2] - start[2]).norm() << ")" << std::endl;
-
-  double time_opt = (ros::Time::now() - time_start_2).toSec();
-  ROS_WARN("Time cost of optimize: %lf(sec)", time_opt);
-
-  updateTrajInfo();
-
-  return true;
-}
-
-void FastPlannerManager::planExploreTraj(
-    const vector<Eigen::Vector3d>& tour, const Eigen::Vector3d& cur_vel, const Eigen::Vector3d& cur_acc, const double& time_lb) {
-  if (tour.empty()) ROS_ERROR("Empty path to traj planner");
-
-  // Generate traj through waypoints-based method
-  const int pt_num = tour.size();
-  Eigen::MatrixXd pos(pt_num, 3);
-  for (int i = 0; i < pt_num; ++i) pos.row(i) = tour[i];
-
-  Eigen::Vector3d zero(0, 0, 0);
-  Eigen::VectorXd times(pt_num - 1);
-  for (int i = 0; i < pt_num - 1; ++i) times(i) = (pos.row(i + 1) - pos.row(i)).norm() / (pp_.max_vel_ * 0.5);
-
-  PolynomialTraj init_traj;
-  PolynomialTraj::waypointsTraj(pos, cur_vel, zero, cur_acc, zero, times, init_traj);
-
-  // B-spline-based optimization
-  vector<Vector3d> points, boundary_deri;
-  double duration = init_traj.getTotalTime();
-  int seg_num = init_traj.getLength() / pp_.ctrl_pt_dist;
-  seg_num = max(8, seg_num);
-  double dt = duration / seg_num;
-
-  for (double ts = 0.0; ts <= duration + 1e-4; ts += dt) points.push_back(init_traj.evaluate(ts, 0));
-
-  boundary_deri.push_back(init_traj.evaluate(0.0, 1));
-  boundary_deri.push_back(init_traj.evaluate(duration, 1));
-  boundary_deri.push_back(init_traj.evaluate(0.0, 2));
-  boundary_deri.push_back(init_traj.evaluate(duration, 2));
-
-  Eigen::MatrixXd ctrl_pts;
-  NonUniformBspline::parameterizeToBspline(dt, points, boundary_deri, pp_.bspline_degree_, ctrl_pts);
-  NonUniformBspline tmp_traj(ctrl_pts, pp_.bspline_degree_, dt);
-
-  int cost_func = BsplineOptimizer::NORMAL_PHASE;
-  if (pp_.min_time_) cost_func |= BsplineOptimizer::MINTIME;
-
-  vector<Vector3d> start, end;
-  tmp_traj.getBoundaryStates(2, 0, start, end);
-  bspline_optimizers_[0]->setBoundaryStates(start, end);
-  if (time_lb > 0) bspline_optimizers_[0]->setTimeLowerBound(time_lb);
-
-  bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
-  local_data_.position_traj_.setUniformBspline(ctrl_pts, pp_.bspline_degree_, dt);
-
-  updateTrajInfo();
-}
-
-// !SECTION
-
-int FastPlannerManager::planYawPerceptionAware(
-    const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal) {
+int FastPlannerManager::planYawPerceptionAware(const Vector3d& start_yaw, const vector<double>& end_yaw_vec, double& end_yaw,
+    const vector<Vector3d>& frontier_cells, const Vector3d& final_goal) {
 
   auto time_start = ros::Time::now();
 
@@ -676,7 +471,7 @@ int FastPlannerManager::planYawPerceptionAware(
   // yaw_initial_planner预处理frontier过程需要用到pos和acc信息，所以必须最后设置frontier
   yaw_initial_planner_->setTargetFrontier(frontier_cells);
 
-  if (!yaw_initial_planner_->search(start_yaw[0], end_yaw, dt_yaw, yaw_waypoints)) {
+  if (!yaw_initial_planner_->search(start_yaw[0], end_yaw_vec, dt_yaw, yaw_waypoints)) {
     ROS_ERROR("Yaw Trajectory Planning Failed in Graph Search!!!");
     return YAW_INIT_ERROR;
   }
@@ -699,6 +494,7 @@ int FastPlannerManager::planYawPerceptionAware(
   }
 
   // 设置终止状态
+  end_yaw = yaw_waypoints.back();
   Eigen::Vector3d end_yaw3d(end_yaw, 0, 0);
   Utils::calcNextYaw(last_yaw, end_yaw3d(0));
   yaw.block<3, 1>(yaw.rows() - 3, 0) = states2pts * end_yaw3d;
@@ -708,7 +504,7 @@ int FastPlannerManager::planYawPerceptionAware(
   vector<Vector3d> start = { Vector3d(start_yaw3d[0], 0, 0), Vector3d(start_yaw3d[1], 0, 0), Vector3d(start_yaw3d[2], 0, 0) };
   vector<Vector3d> end = { Vector3d(end_yaw3d[0], 0, 0), zero, zero };
   vector<bool> start_idx = { true, true, true };
-  vector<bool> end_idx = { true, true, true };
+  vector<bool> end_idx = { true, false, false };
 
   statistics_.time_yaw_initial_planner_ = (ros::Time::now() - time_start).toSec();
 
@@ -747,25 +543,7 @@ int FastPlannerManager::planYawPerceptionAware(
   bspline_optimizers_[1]->setWaypoints(waypts, waypt_idx);
   bspline_optimizers_[1]->setFeatureMap(feature_map_);
 
-  // Add noise to yaw if variance is too small
-  // double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
-  // if (yaw_variance < 1e-4) {
-  //   cout << "add gaussian noise to yaw control points" << endl;
-
-  //   double sigma = 0.1;  // adjust the noise level as needed
-
-  //   std::random_device rd;
-  //   std::mt19937 gen(rd());
-  //   std::normal_distribution<double> distribution(0.0, sigma);  // 均值为 0，标准差为 0.1
-
-  //   for (int i = 0; i < yaw.rows(); ++i) {
-  //     double noise = distribution(gen);  // 生成一个符合正态分布的随机数
-  //     yaw(i, 0) += noise;
-  //   }
-  //   // cout << "yaw control point before optimize(add noise): " << yaw << endl;
-  // }
-
-  bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 1, 1);
+  bspline_optimizers_[1]->optimize(yaw, dt_yaw, cost_func, 2, 2);
   if (!bspline_optimizers_[1]->issuccess) return YAW_OPT_ERROR;
 
   statistics_.time_yaw_traj_opt_ = (ros::Time::now() - time_start_2).toSec();

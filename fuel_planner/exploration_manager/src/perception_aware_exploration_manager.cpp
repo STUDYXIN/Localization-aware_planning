@@ -89,7 +89,8 @@ bool PAExplorationManager::FindFinalGoal() {
   return (sdf_map_->getOccupancy(final_goal) == SDFMap::FREE && sdf_map_->getDistance(final_goal) > 0.2);
 }
 
-NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(const Vector3d& next_pos, const double& next_yaw) {
+NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(
+    const Vector3d& next_pos, const vector<double>& next_yaw_vec, double& next_yaw) {
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -103,7 +104,7 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(const Vector3d& next_pos, co
   // 目标点已经出现在已知区域，直接前往
   if (FindFinalGoal()) {
     vector<Vector3d> empty;
-    last_fail_reason = planToNextGoal(next_pos, next_yaw, empty, false);  // 已经可以去终点就不用关心探索的事了
+    last_fail_reason = planToNextGoal(next_pos, next_yaw_vec, next_yaw, empty, false);  // 已经可以去终点就不用关心探索的事了
 
     if (last_fail_reason == NO_NEED_CHANGE) {
       ROS_INFO("SUCCESS FIND END!!!!!.");
@@ -116,17 +117,22 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(const Vector3d& next_pos, co
     }
   }
 
+  // 没有可前往的frontier
   if (ed_->frontiers_.empty()) return NO_FRONTIER;
+
   stepping_debug_->debug_type_now_ = DEBUG_TYPE::BEFORE_COMPUTE;
   stepping_debug_->calldebug(DEBUG_TYPE::BEFORE_COMPUTE);
-  last_fail_reason = planToNextGoal(next_pos, next_yaw, frontier_cells, true);
+
+  // 局部规划前往下一个viewpoint
+  last_fail_reason = planToNextGoal(next_pos, next_yaw_vec, next_yaw, frontier_cells, true);
   if (last_fail_reason == NO_NEED_CHANGE) return SEARCH_FRONTIER;
 
   return NO_AVAILABLE_FRONTIER;
 }
 
-VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
-    const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells, const bool check_exploration) {
+VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(const Vector3d& next_pos, const vector<double>& next_yaw_vec,
+    double& next_yaw, const vector<Vector3d>& frontire_cells, const bool check_exploration) {
+
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -152,11 +158,13 @@ VIEWPOINT_CHANGE_REASON PAExplorationManager::planToNextGoal(
     ROS_ERROR("Time lower bound not satified!");
   }
 
-  int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw, frontire_cells, final_goal);
+  int yaw_traj_statu = planner_manager_->planYawPerceptionAware(start_yaw, next_yaw_vec, next_yaw, frontire_cells, final_goal);
   if (yaw_traj_statu == YAW_INIT_ERROR)
     return YAW_INIT_FAIL;
   else if (yaw_traj_statu == YAW_OPT_ERROR)
     return YAW_OPT_FAIL;
+
+  cout << "next yaw is: " << next_yaw << endl;
 
   if (!planner_manager_->checkTrajLocalizabilityOnKnots()) return LOCABILITY_CHECK_FAIL;
 
@@ -241,29 +249,6 @@ void PAExplorationManager::setSampleYaw(const Vector3d& pos, const double& yaw_n
 double PAExplorationManager::getNextYaw() {
   if (yaw_choose_id >= yaw_samples.size()) return std::numeric_limits<double>::quiet_NaN();
   return yaw_samples[yaw_choose_id++];
-}
-
-void PAExplorationManager::setLastErrorType(VIEWPOINT_CHANGE_REASON reason) {
-  switch (reason) {
-    case NO_NEED_CHANGE:
-      planner_manager_->last_error_type = SUCCESS_FIND_POSISION_TRAJ;  // 假设 NO_NEED_CHANGE 表示成功
-      break;
-    case PATH_SEARCH_FAIL:
-      planner_manager_->last_error_type = PATH_SEARCH_ERROR;
-      break;
-    case POSITION_OPT_FAIL:
-      planner_manager_->last_error_type = POSISION_OPT_ERROR;
-      break;
-    case YAW_INIT_FAIL:
-      planner_manager_->last_error_type = YAW_INIT_ERROR;
-      break;
-    case YAW_OPT_FAIL:
-      planner_manager_->last_error_type = YAW_OPT_ERROR;
-      break;
-    default:
-      planner_manager_->last_error_type = -1;  // 未知错误
-      break;
-  }
 }
 
 }  // namespace fast_planner

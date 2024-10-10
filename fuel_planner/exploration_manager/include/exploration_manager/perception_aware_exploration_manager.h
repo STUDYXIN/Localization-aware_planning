@@ -35,12 +35,11 @@ public:
 
   bool FindFinalGoal();
 
-  NEXT_GOAL_TYPE selectNextGoal(const Vector3d& next_pos, const double& next_yaw);
-  VIEWPOINT_CHANGE_REASON planToNextGoal(
-      const Vector3d& next_pos, const double& next_yaw, const vector<Vector3d>& frontire_cells, const bool check_exploration);
+  NEXT_GOAL_TYPE selectNextGoal(const Vector3d& next_pos, const vector<double>& next_yaw_vec, double& next_yaw);
+  VIEWPOINT_CHANGE_REASON planToNextGoal(const Vector3d& next_pos, const vector<double>& next_yaw_vec, double& next_yaw,
+      const vector<Vector3d>& frontire_cells, const bool check_exploration);
 
   bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
-  void setLastErrorType(VIEWPOINT_CHANGE_REASON reason);
   weak_ptr<PAExplorationFSM> expl_fsm_;
 
   shared_ptr<ExplorationData> ed_;
@@ -68,7 +67,6 @@ private:
   shared_ptr<EDTEnvironment> edt_environment_;
   shared_ptr<SDFMap> sdf_map_, global_sdf_map_;
 
-  void shortenPath(vector<Vector3d>& path);
   void searchYaw(const Vector3d& pos, vector<double>& yaw_samples_res);
 
 public:

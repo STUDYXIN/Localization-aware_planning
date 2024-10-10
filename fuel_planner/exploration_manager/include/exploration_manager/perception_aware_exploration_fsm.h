@@ -133,6 +133,7 @@ public:
   // Data
   VIEWPOINT_CHANGE_REASON last_fail_reason = VIEWPOINT_CHANGE_REASON::NO_NEED_CHANGE;
   Eigen::Vector3d choose_pos_, origin_pos_;
+  vector<double> choose_yaw_vec_;
   double choose_yaw_, origin_yaw_;
   vector<Eigen::Vector3d> choose_frontier_cell;
   ros::Time replan_begin_time;

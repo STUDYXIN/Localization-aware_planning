@@ -48,27 +48,14 @@ class FastPlannerManager {
   // SECTION stable
 public:
   /* main planning interface */
-  bool planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
-      const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel);
   int planPosPerceptionAware(const Vector3d& start_pt, const Vector3d& start_vel, const Vector3d& start_acc,
       const double start_yaw, const Vector3d& end_pt, const Vector3d& end_vel, const double end_yaw,
       const vector<Vector3d>& frontier_cells, const double& time_lb);
 
-  bool sampleBasedReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
-      const double start_yaw, const Eigen::Vector3d& end_pt, const double end_yaw, const double& time_lb = -1);
-
-  bool kinodynamicReplan(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
-      const double start_yaw, const Eigen::Vector3d& end_pt, const Eigen::Vector3d& end_vel, const double end_yaw,
-      const double& time_lb = -1);
-
-  void planExploreTraj(const vector<Eigen::Vector3d>& tour, const Eigen::Vector3d& cur_vel, const Eigen::Vector3d& cur_acc,
-      const double& time_lb = -1);
-
-  int planYawPerceptionAware(
-      const Vector3d& start_yaw, const double& end_yaw, const vector<Vector3d>& frontier_cells, const Vector3d& final_goal);
+  int planYawPerceptionAware(const Vector3d& start_yaw, const vector<double>& end_yaw_vec, double& end_yaw,
+      const vector<Vector3d>& frontier_cells, const Vector3d& final_goal);
 
   void initPlanModules(ros::NodeHandle& nh);
-  void setGlobalWaypoints(vector<Eigen::Vector3d>& waypoints);
 
   bool checkTrajCollision(double& distance);
   bool checkCurrentLocalizability(const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, int& feature_num);

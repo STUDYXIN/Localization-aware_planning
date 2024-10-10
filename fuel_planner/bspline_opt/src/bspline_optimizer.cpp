@@ -203,8 +203,8 @@ void BsplineOptimizer::optimize(
 
   control_points_ = points;
   knot_span_ = dt;
-  // max_num_id_ = max_num_id;
-  // max_time_id_ = max_time_id;
+  max_num_id_ = max_num_id;
+  max_time_id_ = max_time_id;
   setCostFunction(cost_function);
 
   // Set necessary data and flag
@@ -1023,6 +1023,7 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(
   dcost_dq[1] += dcost_dknot * (4.0 / 6.0);
   dcost_dq[2] += dcost_dknot * (1.0 / 6.0);
 }
+
 void BsplineOptimizer::calcEUAGoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient,
     const bool& use_grad, vector<vector<Eigen::Vector3d>>& dcoefficient_dq) {
   coefficient.clear();

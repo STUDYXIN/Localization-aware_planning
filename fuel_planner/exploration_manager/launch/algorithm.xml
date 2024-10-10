@@ -67,11 +67,11 @@
 
     <param name="debug/stop_before_compute" value="false" type="bool" />
     <param name="debug/stop_before_pos_opt" value="false" type="bool" />
-    <param name="debug/stop_every_pos_opt" value="true" type="bool" />
+    <param name="debug/stop_every_pos_opt" value="false" type="bool" />
     <param name="debug/stop_before_yaw_init" value="false" type="bool" />
-    <param name="debug/stop_every_yaw_opt" value="false" type="bool" />
+    <param name="debug/stop_every_yaw_opt" value="true" type="bool" />
     <param name="debug/show_vertical_visibility_cost_every_control_point" value="false" type="bool" />
-    <param name="debug/show_vcv_every_control_point" value="true" type="bool" />
+    <param name="debug/show_vcv_every_control_point" value="false" type="bool" />
 
     <param name="global/min_feature_num_act" value="$(arg min_feature_num_act)" type="int" />
     <param name="global/min_covisible_feature_num_act" value="$(arg min_covisible_feature_num_act)" type="int" />

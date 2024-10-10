@@ -1058,7 +1058,7 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(
   dcost_dq[1] += dcost_dknot * (4.0 / 6.0);
   dcost_dq[2] += dcost_dknot * (1.0 / 6.0);
 }
-void BsplineOptimizer::calcEUAGoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient,
+void BsplineOptimizer::calcEUACoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient,
     const bool& use_grad, vector<vector<Eigen::Vector3d>>& dcoefficient_dq) {
   coefficient.clear();
   dcoefficient_dq.clear();
@@ -1130,10 +1130,10 @@ void BsplineOptimizer::calcEUAGoefficient(const vector<Vector3d>& q, const doubl
   // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, sin_theta_pot_vec, dpot_dqj_vec);
   // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
   // std::fill(sin_theta_pot_vec.begin(), sin_theta_pot_vec.end(), 1.0);
-  std::fill(dpot_dqj_vec.begin(), dpot_dqj_vec.end(), zero_vec_q);
+  // std::fill(dpot_dqj_vec.begin(), dpot_dqj_vec.end(), zero_vec_q);
   //==================================================================================================
 
-  //用viewpoint和frontier_Cell的连线近似为cell所在平面====================================================
+  //用viewpoint和frontier_Cell的连线近似为cell所在切面====================================================
   vector<double> cos_alpha_coe_vec;
   vector<vector<Eigen::Vector3d>> dcoe_dqj_vec;
   cos_alpha_coe_vec.reserve(frontier_cells_.size());
@@ -1219,7 +1219,7 @@ void BsplineOptimizer::calcEUACostAndGradientsKnots(
   vector<double> coefficient;
   vector<vector<Eigen::Vector3d>> dcoefficient_dq;
   //计算系数
-  calcEUAGoefficient(q, knot_span, coefficient, true, dcoefficient_dq);
+  calcEUACoefficient(q, knot_span, coefficient, false, dcoefficient_dq);
   //扩张多少============================================================================================
   Eigen::Vector3d knot = (q[0] + 4 * q[1] + q[2]) / 6;
   vector<double> explan_scale_vec;

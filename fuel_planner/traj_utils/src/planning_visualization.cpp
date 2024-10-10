@@ -760,7 +760,7 @@ void PlanningVisualization::drawDebugControlpoint(
   }
   // 绘制knot
   vector<Vector3d> pts1, pts2;
-  for (int j = 0; j < contrtol_point.size() - 3; ++j) {
+  for (int j = 0; j <= contrtol_point.size() - 3; ++j) {
     Eigen::Vector3d knot = (contrtol_point[j] + 4 * contrtol_point[j + 1] + contrtol_point[j + 2]) / 6;
     Eigen::Vector3d knot_grad = (grad[j] + 4 * grad[j + 1] + grad[j + 2]) / 6;
     pts1.push_back(knot);

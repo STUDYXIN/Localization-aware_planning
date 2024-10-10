@@ -122,7 +122,7 @@ private:
       const vector<Vector3d>& q, const Vector3d& knots_pos, double& cost, vector<Vector3d>& dcost_dq);
   // EXPLORE UNKNOWN AREA
   void calcEUACostAndGradientsKnots(const vector<Vector3d>& q, const double& knot_span, double& cost, vector<Vector3d>& dcost_dq);
-  void calcEUAGoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient, const bool& use_grad,
+  void calcEUACoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient, const bool& use_grad,
       vector<vector<Eigen::Vector3d>>& dcoefficient_dq);
   // ===========
   void calcParaCostAndGradientsKnots(const vector<Vector3d>& q, const double dt, const vector<Vector3d>& features, double& cost,

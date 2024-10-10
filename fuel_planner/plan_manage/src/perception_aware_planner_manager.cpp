@@ -390,6 +390,7 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
   if (use_fvp_opt_) {
     cost_func |= BsplineOptimizer::FRONTIERVISIBILITY_POS;
     bspline_optimizers_[0]->setViewpoint(end_pt, end_yaw);
+    bspline_optimizers_[0]->setFrontierCells(frontier_cells);
   }
 
   // Set params

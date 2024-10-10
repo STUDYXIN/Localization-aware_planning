@@ -71,7 +71,7 @@
     <!-- maximum velocity and acceleration the drone will reach -->
 
     <!-- 慢速可运行参数 -->
-    <arg name="max_vel" value="0.3" />
+    <arg name="max_vel" value="0.5" />
     <arg name="max_acc" value="0.15" />
     <arg name="do_replan" value="true" />
     <arg name="replan_time" value="0.1" />

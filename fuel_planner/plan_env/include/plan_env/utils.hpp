@@ -136,6 +136,13 @@ public:
     camera_orient = Eigen::Quaterniond(cam_rot_matrix);
   }
 
+  void fromOdom2Camera(const Eigen::Vector3d& odom_pos, Eigen::Vector3d& camera_pose) {
+    Matrix4d Pose4d_receive = Eigen::Matrix4d::Identity();
+    Pose4d_receive.block<3, 1>(0, 3) = odom_pos;
+    Matrix4d camera_Pose4d = Pose4d_receive * sensor2body;
+    camera_pose = camera_Pose4d.block<3, 1>(0, 3);
+  }
+
   bool is_depth_useful(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {
     return (target_p - camera_p).norm() > feature_visual_min && (target_p - camera_p).norm() < feature_visual_max;
   }

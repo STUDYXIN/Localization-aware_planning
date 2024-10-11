@@ -43,7 +43,7 @@ void YawInitialPlanner::preprocessFrontier() {
     Vector3d pos = pos_[i];
     for (size_t j = 0; j < target_frontier_.size(); j++) {
       Vector3d cell = target_frontier_[j];
-      if (frontier_finder_->getVisibility(pos, cell)) target_frontier_aft_preprocess_[i].emplace_back(j);
+      if (sdf_map_->getVisibility(pos, cell)) target_frontier_aft_preprocess_[i].emplace_back(j);
     }
   }
 
@@ -92,7 +92,7 @@ void YawInitialPlanner::estimateHeuristic(const YawVertex::Ptr& v) {
 }
 
 void YawInitialPlanner::checkIfVisGoal(const YawVertex::Ptr& v) {
-  v->if_vis_final_goal_ = frontier_finder_->getVisibility(pos_[v->layer_], v->yaw_, final_goal_);
+  v->if_vis_final_goal_ = sdf_map_->getVisibility(pos_[v->layer_], v->yaw_, final_goal_);
   // if (v->if_vis_final_goal_) {
   //   ROS_INFO_STREAM("YawInitialPlanner::checkIfVisGoal: " << pos_[v->layer_].transpose() << " can see final goal!");
   // }
@@ -167,7 +167,7 @@ bool YawInitialPlanner::astarSearch(const int start, const int goal) {
 void YawInitialPlanner::setVisbleFrontiers(const YawVertex::Ptr& v) {
   v->frontiers_id_.clear();
 
-  frontier_finder_->countVisibleCells(
+  sdf_map_->countVisibleCells(
       pos_[v->layer_], v->yaw_, target_frontier_, target_frontier_aft_preprocess_[v->layer_], v->frontiers_id_);
 
   // cout << "result: " << endl;

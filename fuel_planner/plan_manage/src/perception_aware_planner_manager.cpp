@@ -231,7 +231,7 @@ bool FastPlannerManager::checkTrajExplorationOnKnots(const vector<Vector3d>& tar
 
   for (size_t i = 0; i < knots_pos.size(); i++) {
     set<int> observed_features_knots;
-    frontier_finder_->countVisibleCells(knots_pos[i], knots_yaw[i][0], target_frontier, observed_features_knots);
+    sdf_map_->countVisibleCells(knots_pos[i], knots_yaw[i][0], target_frontier, observed_features_knots);
     observed_features.insert(observed_features_knots.begin(), observed_features_knots.end());
   }
 
@@ -759,7 +759,8 @@ int FastPlannerManager::planYawPerceptionAware(
 
   vector<double> yaw_waypoints;
   yaw_initial_planner_->setFeatureMap(feature_map_);
-  yaw_initial_planner_->setFrontierFinder(frontier_finder_);
+  // yaw_initial_planner_->setFrontierFinder(frontier_finder_);
+  yaw_initial_planner_->setSDFmap(sdf_map_);
   yaw_initial_planner_->setFinalGoal(final_goal);
   yaw_initial_planner_->setPos(knot_pos);
   yaw_initial_planner_->setAcc(knot_acc);

@@ -93,6 +93,8 @@ void SDFMap::initMap(ros::NodeHandle& nh) {
 
   caster_.reset(new RayCaster);
   caster_->setParams(mp_->resolution_, mp_->map_origin_);
+
+  camera_param_ptr = Utils::getGlobalParam().camera_param_;
 }
 
 void SDFMap::resetBuffer() {
@@ -542,6 +544,122 @@ bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eige
     }
   }
   return false;  // 没有检测到障碍物
+}
+
+int SDFMap::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+  int visib_num = 0;
+  for (const auto& cell : cluster) {
+    // Check if frontier cell is inside FOV
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
+
+    // Check if frontier cell is visible (not occulded by obstacles)
+    caster_->input(cell, pos);
+    bool visib = true;
+    while (caster_->nextId(idx)) {
+      if (getInflateOccupancy(idx) == 1 || getOccupancy(idx) == SDFMap::UNKNOWN) {
+        visib = false;
+        break;
+      }
+    }
+    if (visib) visib_num++;
+  }
+  return visib_num;
+}
+
+void SDFMap::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+  for (int i = 0; i < static_cast<int>(cluster.size()); i++) {
+    const auto& cell = cluster[i];
+    // Check if frontier cell is inside FOV
+    // if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
+    // Check if frontier cell is visible (not occulded by obstacles)
+    caster_->input(cell, pos);
+    bool visib = true;
+    while (caster_->nextId(idx)) {
+      if (getInflateOccupancy(idx) == 1 || getOccupancy(idx) == SDFMap::UNKNOWN) {
+        visib = false;
+        break;
+      }
+    }
+
+    if (visib) res.emplace(i);
+  }
+}
+
+void SDFMap::countVisibleCells(
+    const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+  for (const auto& id : mask) {
+    const auto& cell = cluster[id];
+    // Check if frontier cell is inside FOV
+    // if (!percep_utils_->insideFOV(cell)) continue;
+    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
+    // Check if frontier cell is visible (not occulded by obstacles)
+    caster_->input(cell, pos);
+    bool visib = true;
+    while (caster_->nextId(idx)) {
+      if (getInflateOccupancy(idx) == 1 || getOccupancy(idx) == SDFMap::UNKNOWN) {
+        visib = false;
+        break;
+      }
+    }
+
+    if (visib) res.emplace(id);
+  }
+}
+
+bool SDFMap::getVisibility(const Vector3d& pos, const Vector3d& point) {
+  Eigen::Vector3d camera_pos;
+  camera_param_ptr->fromOdom2Camera(pos, camera_pos);  // 这里假设相机位置和机器人位置一样，以后记得改 ========改了！
+  if (!camera_param_ptr->is_depth_useful(camera_pos, point)) return false;
+
+  // Check if frontier cell is visible (not occulded by obstacles)
+  Eigen::Vector3i idx;
+  caster_->input(point, pos);
+  while (caster_->nextId(idx)) {
+    if (getInflateOccupancy(idx) == 1 || getOccupancy(idx) == SDFMap::UNKNOWN) {
+      return false;
+    }
+  }
+
+  return true;
+}
+bool SDFMap::getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point) {
+  Eigen::Vector3i idx;
+  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond odom_orient(angle_axis);
+  Eigen::Vector3d camera_pose;
+  Eigen::Quaterniond camera_orient;
+  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
+
+  if (!camera_param_ptr->is_in_FOV(camera_pose, point, camera_orient)) return false;
+
+  // Check if frontier cell is visible (not occulded by obstacles)
+  caster_->input(point, pos);
+  while (caster_->nextId(idx)) {
+    if (getInflateOccupancy(idx) == 1 || getOccupancy(idx) == SDFMap::UNKNOWN) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // 原先的逻辑，只检查最后两个点，这样侧面的特征点会看不到

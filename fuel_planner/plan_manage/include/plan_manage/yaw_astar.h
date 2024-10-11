@@ -1,10 +1,8 @@
 #ifndef _YAW_ASTAR_H_
 #define _YAW_ASTAR_H_
 
-#include "active_perception/frontier_finder.h"
-
 #include "plan_manage/yaw_graph_utils.h"
-
+#include "plan_env/sdf_map.h"
 using Eigen::Vector3d;
 using std::vector;
 
@@ -72,8 +70,8 @@ public:
     target_frontier_ = target_frontier;
   }
 
-  void setFrontierFinder(shared_ptr<FrontierFinder> frontier_finder) {
-    frontier_finder_ = frontier_finder;
+  void setSDFmap(shared_ptr<SDFMap> sdf_map) {
+    sdf_map_ = sdf_map;
   }
 
   void setFeatureMap(shared_ptr<FeatureMap>& feature_map) {
@@ -111,7 +109,7 @@ private:
 
   // 规划过程要用到的外部辅助类
   shared_ptr<FeatureMap> feature_map_ = nullptr;
-  shared_ptr<FrontierFinder> frontier_finder_ = nullptr;
+  shared_ptr<SDFMap> sdf_map_ = nullptr;
   vector<Vector3d> target_frontier_;
   vector<Vector3d> pos_;
   vector<Vector3d> acc_;

@@ -14,6 +14,10 @@
 #include <pcl/point_types.h>
 #include <time_debug.hpp>
 
+#include <thread>
+#include <atomic>
+#include <mutex>
+
 using Eigen::Vector3d;
 using std::list;
 using std::pair;
@@ -31,6 +35,24 @@ class FeatureMap;
 class CameraParam;
 class DebugTimer;
 // Viewpoint to cover a frontier cluster
+struct ShareFrontierParam {
+  // param_output
+  vector<vector<Eigen::Vector3d>> active_frontiers;
+  vector<vector<Eigen::Vector3d>> dead_frontiers;
+  vector<vector<Eigen::Vector3d>> filtered_frontiers_;
+
+  Vector3d viewpoint_pos;
+  vector<double> viewpoint_yaw_vector;
+  vector<Vector3d> viewpoint_frontier_cell;
+  vector<double> score;
+
+  // param_input
+  Vector3d cur_pos;
+  double yaw_now;
+  Vector3d refer_pos;
+  bool has_pos_refer_;
+};
+
 struct Viewpoint {
   // Position
   Vector3d pos_;
@@ -125,10 +147,10 @@ public:
 };
 
 class FrontierFinder {
-
 public:
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, ros::NodeHandle& nh);
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, const shared_ptr<FeatureMap>& fea, ros::NodeHandle& nh);
+  ~FrontierFinder();
   void clearAllFrontiers() {
     frontiers_.clear();
     dormant_frontiers_.clear();
@@ -142,6 +164,7 @@ public:
   void computeFrontiersToVisit();
 
   void getFrontiers(vector<vector<Vector3d>>& clusters);
+  void getFilteredFrontiers(vector<vector<Vector3d>>& clusters);
   void getDormantFrontiers(vector<vector<Vector3d>>& clusters);
   void getFrontierBoxes(vector<pair<Vector3d, Vector3d>>& boxes);
   int getVisibleFrontiersNum(const Vector3d& pos, const double& yaw);
@@ -196,12 +219,8 @@ public:
   void sampleViewpoints(Frontier& frontier);
   void sampleBetterViewpoints(Frontier& frontier);
 
-  bool getVisibility(const Vector3d& pos, const Vector3d& point);
-  bool getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point);
   int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
-  void countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res);
-  void countVisibleCells(
-      const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res);
+
   double computeExplorebility(const Vector3d& pos, const double& yaw, const Vector3d& start, const Vector3d& end);
 
   bool isNearUnknown(const Vector3d& pos);
@@ -256,6 +275,22 @@ public:
   unique_ptr<RayCaster> raycaster_;
   shared_ptr<FeatureMap> feature_map_;
   CameraParam::Ptr camera_param_ptr = nullptr;
+
+  //新开一个线程，进行搜索，数据交换
+private:
+  void compute_frontier_run();  // 独立线程的运行函数
+  void updateShareFrontierParam();
+  std::atomic<bool> running_;  // 控制线程运行状态的原子变量
+  std::thread worker_thread_;  // 独立线程
+  std::mutex data_mutex_;      // 互斥锁，用于保护共享数据
+
+  ShareFrontierParam shared_param_;  // 用于存储共享数据的结构体
+public:
+  //这个函数中完成数据交互
+  void getShareFrontierParam(const Vector3d& cur_pos, const double& yaw_now, const Vector3d& refer_pos,
+      bool has_pos_refer_,  // input
+      vector<vector<Eigen::Vector3d>>& active_frontiers, vector<vector<Eigen::Vector3d>>& dead_frontiers, Vector3d& points,
+      vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);  // out_put
 };
 
 }  // namespace fast_planner

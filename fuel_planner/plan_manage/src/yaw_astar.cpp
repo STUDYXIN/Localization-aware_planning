@@ -257,7 +257,7 @@ bool YawAStar::search(const double start_yaw, const double end_yaw, const double
 }
 
 int YawAStar::countVisibleCells(const Vector3d& pos, const double& yaw) {
-  return frontier_finder_->countVisibleCells(pos, yaw, target_frontier_);
+  return sdf_map_->countVisibleCells(pos, yaw, target_frontier_);
 }
 
 double YawAStar::calcInformationGain(const Vector3d& pos, const double& yaw) {

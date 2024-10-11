@@ -99,6 +99,7 @@ public:
   unique_ptr<TopologyPRM> topo_prm_;
   shared_ptr<FrontierFinder> frontier_finder_;
   shared_ptr<SteppingDebug> stepping_debug_;
+  shared_ptr<SDFMap> sdf_map_;
   void getSteppingDebug(shared_ptr<SteppingDebug> stepping_debug) {
     stepping_debug_ = stepping_debug;
   }
@@ -109,7 +110,6 @@ public:
 
 private:
   /* main planning algorithms & modules */
-  shared_ptr<SDFMap> sdf_map_;
   shared_ptr<FeatureMap> feature_map_;
 
   unique_ptr<KinodynamicAstar> kino_path_finder_;

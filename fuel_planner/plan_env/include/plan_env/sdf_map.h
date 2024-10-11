@@ -10,7 +10,16 @@
 #include <queue>
 #include <tuple>
 
+#include "plan_env/utils.hpp"
+
 using namespace std;
+using Eigen::Vector3d;
+using std::list;
+using std::pair;
+using std::set;
+using std::shared_ptr;
+using std::unique_ptr;
+using std::vector;
 
 namespace cv {
 class Mat;
@@ -23,6 +32,7 @@ struct MapParam;
 struct MapData;
 class MapROS;
 class FeatureMap;
+class CameraParam;
 
 class SDFMap {
 public:
@@ -84,6 +94,15 @@ private:
 public:
   typedef std::shared_ptr<SDFMap> Ptr;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+public:
+  CameraParam::Ptr camera_param_ptr = nullptr;
+  int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
+  void countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res);
+  void countVisibleCells(
+      const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res);
+  bool getVisibility(const Vector3d& pos, const Vector3d& point);
+  bool getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point);
 };
 
 struct MapParam {

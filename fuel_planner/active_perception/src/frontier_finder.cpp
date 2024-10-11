@@ -97,6 +97,63 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
   frontier_id_count = 0;
   viewpoint_used_thr = min(z_sample_max_length_ / z_sample_num_, (candidate_rmax_ - candidate_rmin_) / candidate_rnum_);
   cout << "frontier/viewpoint_used_thr: " << viewpoint_used_thr << endl;
+
+  // running_ = true;
+  // worker_thread_ = std::thread(&FrontierFinder::compute_frontier_run, this);  // 启动独立线程
+}
+
+FrontierFinder::~FrontierFinder() {
+  running_ = false;  // 停止线程
+  if (worker_thread_.joinable()) {
+    worker_thread_.join();  // 等待线程结束
+  }
+}
+
+void FrontierFinder::compute_frontier_run() {
+  while (running_) {
+    time_debug_.setstart_time("compute_frontier_run", 10);  // 十次输出一次
+    time_debug_.function_start("searchFrontiers");
+    searchFrontiers();  // 执行搜索操作
+    time_debug_.function_end("searchFrontiers");
+    time_debug_.function_start("computeFrontiersToVisit");
+    computeFrontiersToVisit();  // 计算需要访问的前沿
+    time_debug_.function_start("computeFrontiersToVisit");
+    time_debug_.output_time();                                   //输出计算时间
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));  // 控制线程的执行频率
+  }
+}
+
+void FrontierFinder::getShareFrontierParam(const Vector3d& cur_pos, const double& yaw_now, const Vector3d& refer_pos,
+    bool has_pos_refer_,  // input
+    vector<vector<Eigen::Vector3d>>& active_frontiers, vector<vector<Eigen::Vector3d>>& dead_frontiers, Vector3d& points,
+    vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score) {
+  std::lock_guard<std::mutex> lock(data_mutex_);  // 加锁以保护共享数据
+  // input
+  shared_param_.cur_pos = cur_pos;
+  shared_param_.yaw_now = yaw_now;
+  shared_param_.refer_pos = refer_pos;
+  shared_param_.has_pos_refer_ = has_pos_refer_;
+
+  // out_put
+  active_frontiers = shared_param_.active_frontiers;
+  dead_frontiers = shared_param_.dead_frontiers;
+  points = shared_param_.viewpoint_pos;
+  yaws = shared_param_.viewpoint_yaw_vector;
+  frontier_cells = shared_param_.viewpoint_frontier_cell;
+  score = shared_param_.score;
+}
+
+void FrontierFinder::updateShareFrontierParam() {
+  std::lock_guard<std::mutex> lock(data_mutex_);  // 加锁以保护共享数据
+  // input
+  setSortRefer(shared_param_.cur_pos, shared_param_.yaw_now, shared_param_.refer_pos, shared_param_.has_pos_refer_);
+
+  // out_put
+  getFrontiers(shared_param_.active_frontiers);
+  getFilteredFrontiers(shared_param_.filtered_frontiers_);
+  getDormantFrontiers(shared_param_.dead_frontiers);
+  getBestViewpointData(shared_param_.viewpoint_pos, shared_param_.viewpoint_yaw_vector, shared_param_.viewpoint_frontier_cell,
+      shared_param_.score);
 }
 
 void FrontierFinder::ComputeScoreUnrelatedwithyaw(Viewpoint& viewpoint) {
@@ -584,6 +641,12 @@ void FrontierFinder::getFrontiers(vector<vector<Eigen::Vector3d>>& clusters) {
   // clusters.push_back(frontier.filtered_cells_);
 }
 
+void FrontierFinder::getFilteredFrontiers(vector<vector<Eigen::Vector3d>>& clusters) {
+  clusters.clear();
+  for (const auto& frontier : frontiers_) clusters.push_back(frontier.filtered_cells_);
+  // clusters.push_back(frontier.filtered_cells_);
+}
+
 void FrontierFinder::getDormantFrontiers(vector<vector<Vector3d>>& clusters) {
   clusters.clear();
   for (auto ft : dormant_frontiers_) clusters.push_back(ft.cells_);
@@ -600,7 +663,7 @@ void FrontierFinder::getFrontierBoxes(vector<pair<Eigen::Vector3d, Eigen::Vector
 
 int FrontierFinder::getVisibleFrontiersNum(const Vector3d& pos, const double& yaw) {
   int visib_num = 0;
-  for (auto frontier : frontiers_) {
+  for (auto& frontier : frontiers_) {
     auto& cells = frontier.filtered_cells_;
     visib_num += countVisibleCells(pos, yaw, cells);
   }
@@ -788,6 +851,7 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
 }
 
 double FrontierFinder::getExplorationRatio(const vector<Vector3d>& frontier) {
+  std::lock_guard<std::mutex> lock(data_mutex_);
   size_t total = frontier.size();
   size_t expl_num = 0;
   for (const auto& cell : frontier) {
@@ -845,43 +909,6 @@ bool FrontierFinder::isNearUnknown(const Eigen::Vector3d& pos) {
   return false;
 }
 
-bool FrontierFinder::getVisibility(const Vector3d& pos, const Vector3d& point) {
-  Eigen::Vector3d camera_pos = pos;  // 这里假设相机位置和机器人位置一样，以后记得改
-  if (!camera_param_ptr->is_depth_useful(camera_pos, point)) return false;
-
-  // Check if frontier cell is visible (not occulded by obstacles)
-  Eigen::Vector3i idx;
-  raycaster_->input(point, pos);
-  while (raycaster_->nextId(idx)) {
-    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool FrontierFinder::getVisibility(const Vector3d& pos, const double& yaw, const Vector3d& point) {
-  Eigen::Vector3i idx;
-  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
-  Eigen::Quaterniond odom_orient(angle_axis);
-  Eigen::Vector3d camera_pose;
-  Eigen::Quaterniond camera_orient;
-  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
-
-  if (!camera_param_ptr->is_in_FOV(camera_pose, point, camera_orient)) return false;
-
-  // Check if frontier cell is visible (not occulded by obstacles)
-  raycaster_->input(point, pos);
-  while (raycaster_->nextId(idx)) {
-    if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
   Eigen::Vector3i idx;
   Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
@@ -906,59 +933,6 @@ int FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, co
     if (visib) visib_num++;
   }
   return visib_num;
-}
-
-void FrontierFinder::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, set<int>& res) {
-  Eigen::Vector3i idx;
-  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
-  Eigen::Quaterniond odom_orient(angle_axis);
-  Eigen::Vector3d camera_pose;
-  Eigen::Quaterniond camera_orient;
-  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
-  for (int i = 0; i < static_cast<int>(cluster.size()); i++) {
-    const auto& cell = cluster[i];
-    // Check if frontier cell is inside FOV
-    // if (!percep_utils_->insideFOV(cell)) continue;
-    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
-    // Check if frontier cell is visible (not occulded by obstacles)
-    raycaster_->input(cell, pos);
-    bool visib = true;
-    while (raycaster_->nextId(idx)) {
-      if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-        visib = false;
-        break;
-      }
-    }
-
-    if (visib) res.emplace(i);
-  }
-}
-
-void FrontierFinder::countVisibleCells(
-    const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<int>& mask, set<int>& res) {
-  Eigen::Vector3i idx;
-  Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());
-  Eigen::Quaterniond odom_orient(angle_axis);
-  Eigen::Vector3d camera_pose;
-  Eigen::Quaterniond camera_orient;
-  camera_param_ptr->fromOdom2Camera(pos, odom_orient, camera_pose, camera_orient);
-  for (const auto& id : mask) {
-    const auto& cell = cluster[id];
-    // Check if frontier cell is inside FOV
-    // if (!percep_utils_->insideFOV(cell)) continue;
-    if (!camera_param_ptr->is_in_FOV(camera_pose, cell, camera_orient)) continue;
-    // Check if frontier cell is visible (not occulded by obstacles)
-    raycaster_->input(cell, pos);
-    bool visib = true;
-    while (raycaster_->nextId(idx)) {
-      if (edt_env_->sdf_map_->getInflateOccupancy(idx) == 1 || edt_env_->sdf_map_->getOccupancy(idx) == SDFMap::UNKNOWN) {
-        visib = false;
-        break;
-      }
-    }
-
-    if (visib) res.emplace(id);
-  }
 }
 
 void FrontierFinder::downsample(const vector<Eigen::Vector3d>& cluster_in, vector<Eigen::Vector3d>& cluster_out) {

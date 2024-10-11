@@ -443,9 +443,9 @@ void PAExplorationFSM::visualize() {
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
-  // debug_timer.setstart_time("frontierCallback", false);
+  debug_timer.setstart_time("frontierCallback", false);
   if (direct_replan) return;
-  debug_timer.setstart_time("frontierCallback", 10);  // 十次输出一次
+  // debug_timer.setstart_time("frontierCallback", 10);  // 十次输出一次
   // 初始化
   static int delay = 0;
   if (++delay < 5) {

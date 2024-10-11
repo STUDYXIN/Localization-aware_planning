@@ -1,10 +1,9 @@
 #ifndef _YAW_GRAPH_UTILS_H_
 #define _YAW_GRAPH_UTILS_H_
 
-#include "active_perception/frontier_finder.h"
-
 #include "plan_env/feature_map.h"
 #include "plan_env/utils.hpp"
+#include "plan_env/sdf_map.h"
 
 #include <list>
 #include <memory>
@@ -84,8 +83,8 @@ public:
     preprocessFrontier();
   }
 
-  void setFrontierFinder(const shared_ptr<FrontierFinder>& frontier_finder) {
-    frontier_finder_ = frontier_finder;
+  void setSDFmap(shared_ptr<SDFMap> sdf_map) {
+    sdf_map_ = sdf_map;
   }
 
   void setFeatureMap(const shared_ptr<FeatureMap>& feature_map) {
@@ -150,7 +149,8 @@ private:
 
   // 规划过程要用到的外部辅助类
   shared_ptr<FeatureMap> feature_map_ = nullptr;
-  shared_ptr<FrontierFinder> frontier_finder_ = nullptr;
+  // shared_ptr<FrontierFinder> frontier_finder_ = nullptr;
+  shared_ptr<SDFMap> sdf_map_ = nullptr;
   vector<Vector3d> target_frontier_;
   vector<vector<int>> target_frontier_aft_preprocess_;
   vector<Vector3d> pos_;

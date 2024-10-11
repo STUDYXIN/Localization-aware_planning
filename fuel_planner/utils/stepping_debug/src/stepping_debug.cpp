@@ -68,7 +68,7 @@ void SteppingDebug::calldebug(DEBUG_TYPE type, const vector<Eigen::Vector3d>& pa
   vector<Vector3d> knot_pos;
   switch (type) {
     case BEFORE_POS_OPT:
-      visualization_->drawGeometricPath(path, 0.05, Eigen::Vector4d(1.0, 0.647, 0, 0.5), 99);  //新开一个id，防止被使用,使用橙色
+      visualization_->drawGeometricPath(path, 0.05, Eigen::Vector4d(1.0, 0.647, 0, 0.5), 99);  // 新开一个id，防止被使用,使用橙色
       break;
     case EVERY_POS_OPT:
       points.resize(path.size(), 3);
@@ -103,6 +103,7 @@ void SteppingDebug::calldebug(DEBUG_TYPE type, const vector<Eigen::Vector3d>& pa
     default:
       break;
   }
+
   debug_count++;
 
   if (debug_delay_time_ < 0)
@@ -159,7 +160,7 @@ void SteppingDebug::coutDebugMsg(DEBUG_TYPE type, const size_t& max_size) {
   if (!init_visual || !init_success) return;
   if (!debug_map[type]) return;
   if (type != debug_type_now_) return;
-  //用来记录每个控制点的总cost
+  // 用来记录每个控制点的总cost
   ctrl_point_cost.resize(max_size + 1);
   std::fill(ctrl_point_cost.begin(), ctrl_point_cost.end(), 0.0);
   // 表头
@@ -257,7 +258,7 @@ void SteppingDebug::coutDebugMsg(DEBUG_TYPE type, const size_t& max_size) {
     std::cout << std::setw(10) << std::right << ctrl_point_total;
   ctrl_point_cost[max_size] = ctrl_point_total;
   std::cout << std::endl;
-  //结束
+  // 结束
   last_cost_record = cost_record;
   last_ctrl_point_cost = ctrl_point_cost;
   cost_record.clear();

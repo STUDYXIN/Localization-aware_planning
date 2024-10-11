@@ -115,7 +115,8 @@ public:
   bool checkFeasibility(const YawVertex::Ptr& v1, const YawVertex::Ptr& v2);
 
   void reset();
-  bool search(const double start_yaw, const double end_yaw, const double& dt, vector<double>& path);
+  // bool search(const double start_yaw, const double end_yaw, const double& dt, vector<double>& path);
+  bool search(const double start_yaw, const vector<double>& end_yaw_vec, const double& dt, vector<double>& path);
 
   void publishYawPath();
   // void extractObservedFeatures(vector<vector<Vector3d>>& observed_features);
@@ -146,8 +147,10 @@ private:
 
   YawVertex::Ptr start_vert_ = nullptr;
   YawVertex::Ptr end_vert_ = nullptr;
+  vector<YawVertex::Ptr> end_vert_vec_;
 
   // 规划过程要用到的外部辅助类
+  CameraParam::Ptr camera_param_ = nullptr;
   shared_ptr<FeatureMap> feature_map_ = nullptr;
   // shared_ptr<FrontierFinder> frontier_finder_ = nullptr;
   shared_ptr<SDFMap> sdf_map_ = nullptr;
@@ -158,7 +161,7 @@ private:
   Vector3d final_goal_;
 
   // 规划过程调用的函数
-  bool astarSearch(const int start, const int goal);
+  bool astarSearch();
 
   // Visualization
   ros::Publisher yaw_path_pub_;

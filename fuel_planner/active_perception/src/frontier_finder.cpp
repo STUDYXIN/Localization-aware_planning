@@ -271,12 +271,9 @@ void FrontierFinder::updateScorePos() {
   }
 }
 
-bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells) {
-  // 这里的逻辑是同一个frontier中的viewpoint检查前3个，都失败后再往下遍历其他frontier
-  if (frontier_sort_id.size() != frontiers_.size()) {
-    ROS_ERROR("[FrontierFinder::get_next_viewpoint_forbadpos] frontier sort fail!!!!!");
-    return false;
-  }
+bool FrontierFinder::chooseNextViewpoint(Vector3d& point, vector<double>& yaws, vector<Vector3d>& frontier_cells) {
+  ROS_ASSERT(frontier_sort_id.size() == frontiers_.size());
+
   for (int sort_num = 0; sort_num < frontier_sort_id.size(); ++sort_num) {
     best_id = frontier_sort_id[sort_num];
     int id = 0;
@@ -286,8 +283,9 @@ bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws
            ++viewpoint_num) {  // frontier的viewpoint有按照好坏排序，这里简单选取分数高的，并把选择过的推入kd-tree中，用于下次排除。
         auto& view = frontier.viewpoints_[viewpoint_num];
         if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
-          points = view.pos_;
-          yaws = view.yaw_available[view.sort_id.front()];
+          point = view.pos_;
+          yaws.clear();
+          for (const auto& yaw_id : view.sort_id) yaws.push_back(view.yaw_available[yaw_id]);
           frontier_cells = frontier.filtered_cells_;
           unavailableViewpointManage_.addViewpoint(view);
           return true;
@@ -295,36 +293,10 @@ bool FrontierFinder::get_next_viewpoint_forbadpos(Vector3d& points, double& yaws
         // unavailableViewpointManage_.addViewpoint(view);
       }
     }
-    cout << "[get_next_viewpoint_forbadpos] search next frontier" << endl;
+    ROS_WARN("[FrontierFinder::chooseNextViewpoint] search next frontier");
   }
-  return false;
-}
 
-bool FrontierFinder::get_next_viewpoint_forbadyaw(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells) {
-  // 这里的逻辑是同一个frontier中的viewpoint的pos都失败后再往下遍历其他frontier 和上面一样
-  if (frontier_sort_id.size() != frontiers_.size()) {
-    ROS_ERROR("[FrontierFinder::get_next_viewpoint_forbadyaw] frontier sort fail!!!!!");
-    return false;
-  }
-  for (int sort_num = 0; sort_num < frontier_sort_id.size(); ++sort_num) {
-    best_id = frontier_sort_id[sort_num];
-    int id = 0;
-    for (const auto& frontier : frontiers_) {
-      if (id++ != best_id) continue;  // 遍历到需要的地方，有点蠢。。。
-      for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size(); ++viewpoint_num) {
-        auto& view = frontier.viewpoints_[viewpoint_num];
-        if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
-          points = view.pos_;
-          yaws = view.yaw_available[view.sort_id.front()];
-          frontier_cells = frontier.filtered_cells_;
-          unavailableViewpointManage_.addViewpoint(view);
-          return true;
-        }
-        // unavailableViewpointManage_.addViewpoint(view);
-      }
-    }
-    cout << "[get_next_viewpoint_forbadyaw] search next frontier" << endl;
-  }
+  ROS_ERROR("[FrontierFinder::chooseNextViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!");
   return false;
 }
 

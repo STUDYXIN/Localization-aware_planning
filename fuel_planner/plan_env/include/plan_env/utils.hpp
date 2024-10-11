@@ -15,10 +15,17 @@ using std::vector;
 
 namespace fast_planner {
 
+enum FrontierStatus {
+  NOT_AVAILABLE,      // 无论怎么调整Yaw角都无法被观测
+  HAS_BEEN_OBSERVED,  // 已经被先前的节点观测过
+  AVAILABLE,          // 通过优化Yaw角可能被观测到
+  VISIBLE             // 当前节点可以观测到
+};
+
 struct YawOptData {
   using Ptr = std::shared_ptr<YawOptData>;
 
-  vector<vector<int>> frontier_status_;
+  vector<vector<FrontierStatus>> frontier_status_;
   vector<char> final_goal_status_;
   vector<vector<Vector3d>> observed_features_;
 };

@@ -149,8 +149,10 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         replan_pub_.publish(std_msgs::Empty());
 
         choose_pos_ = expl_manager_->ed_->point_now;
-        choose_yaw_ = expl_manager_->ed_->yaw_vector.front();
+        // choose_yaw_ = expl_manager_->ed_->yaw_vector.front();
+        choose_yaw_vec_ = expl_manager_->ed_->yaw_vector;
         choose_frontier_cell = expl_manager_->ed_->frontier_now;
+
         origin_pos_ = choose_pos_;
         expl_manager_->frontier_finder_->store_init_state();
         first_enter_start_ = false;
@@ -160,8 +162,7 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
       if (next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER) {
         last_fail_reason = NO_NEED_CHANGE;
-        visualization_->drawFrontiersGo(
-            expl_manager_->ed_->frontier_now, expl_manager_->ed_->point_now, expl_manager_->ed_->yaw_vector.front());
+        visualization_->drawFrontiersGo(choose_frontier_cell, choose_pos_, choose_yaw_);
         transitState(PUB_TRAJ, "FSM");
         first_enter_start_ = true;
       }
@@ -211,30 +212,26 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
       setVisualErrorType(last_fail_reason);
       if (start_debug_mode_) {  // 如果启动DEBUG模式，后面的转化就不用看了
         if (time_to_end < fp_->replan_thresh1_) {
-          if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
-            ROS_ERROR("Invalid next goal type!!!");
-            ROS_BREAK();
-          }
+          ROS_ASSERT(next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER);
 
           if (next_goal_ == REACH_END) {
             // if (checkReachFinalGoal()) {
             transitState(WAIT_TARGET, "FSM");
-            ROS_WARN("Replan: reach final goal=================================");
+            ROS_WARN("[Replan]: Reach final goal=================================");
           }
 
           else {
             transitState(START_IN_STATIC, "FSM");  // 固定从当前里程开始
             // transitState(REPLAN, "FSM");
             setVisualFSMType(REPLAN, REACH_TMP);
-            ROS_WARN("Replan: reach tmp viewpoint=================================");
+            ROS_WARN("[Replan]: Reach tmp viewpoint=================================");
           }
           return;
         }
-      } else if (time_to_end < fp_->replan_thresh1_) {
-        if (next_goal_ != REACH_END && next_goal_ != SEARCH_FRONTIER) {
-          ROS_ERROR("Invalid next goal type!!!");
-          ROS_BREAK();
-        }
+      }
+
+      else if (time_to_end < fp_->replan_thresh1_) {
+        ROS_ASSERT(next_goal_ == REACH_END || next_goal_ == SEARCH_FRONTIER);
 
         if (next_goal_ == REACH_END) {
           transitState(WAIT_TARGET, "FSM");
@@ -260,14 +257,14 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         // else if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, CLUSTER_COVER);
-        ROS_WARN("Replan: Cluster covered=====================================");
+        ROS_WARN("[Replan]: Cluster covered=====================================");
       }
 
       // Replan after some time
       else if (t_cur > fp_->replan_thresh3_) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, TIME_OUT);
-        ROS_WARN("Replan: Periodic call=================================");
+        ROS_WARN("[Replan]: Periodic call=================================");
       }
 
       break;
@@ -282,7 +279,8 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         replan_pub_.publish(std_msgs::Empty());
 
         choose_pos_ = expl_manager_->ed_->point_now;
-        choose_yaw_ = expl_manager_->ed_->yaw_vector.front();
+        // choose_yaw_ = expl_manager_->ed_->yaw_vector.front();
+        choose_yaw_vec_ = expl_manager_->ed_->yaw_vector;
         choose_frontier_cell = expl_manager_->ed_->frontier_now;
         origin_pos_ = choose_pos_;
         expl_manager_->frontier_finder_->store_init_state();
@@ -366,7 +364,7 @@ int PAExplorationFSM::callExplorationPlanner() {
   ros::Time time_r = ros::Time::now() + ros::Duration(fp_->replan_time_);
 
   auto start_time = ros::Time::now();
-  auto res = expl_manager_->selectNextGoal(choose_pos_, choose_yaw_);
+  auto res = expl_manager_->selectNextGoal(choose_pos_, choose_yaw_vec_, choose_yaw_);
   auto end_time = ros::Time::now();
   double elapsed_time = (end_time - start_time).toSec();
   ROS_WARN("[callExplorationPlanner]: Time cost of selectNextGoal: %lf(sec)", elapsed_time);
@@ -430,7 +428,6 @@ int PAExplorationFSM::callExplorationPlanner() {
 void PAExplorationFSM::visualize() {
   auto info = &planner_manager_->local_data_;
   auto plan_data = &planner_manager_->plan_data_;
-  auto ed_ptr = expl_manager_->ed_;
 
   // 可视化混合A*搜索到的路径
   visualization_->drawGeometricPath(plan_data->kino_path_, 0.075, Eigen::Vector4d(1, 1, 0, 0.4));
@@ -438,8 +435,6 @@ void PAExplorationFSM::visualize() {
   visualization_->drawBspline(info->position_traj_, 0.1, Vector4d(1.0, 0.0, 0.0, 1), false, 0.15, Vector4d(1, 1, 0, 1));
   // 在位置轨迹的knot point上可视化对应时间的yaw
   visualization_->drawYawTraj(info->position_traj_, info->yaw_traj_, info->yaw_traj_.getKnotSpan());
-
-  // ROS_WARN("[PAExplorationFSM] path_next_goal_ SIZE: %zu", ed_ptr->path_next_goal_.size());
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
@@ -533,7 +528,7 @@ void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
     // Check safety and trigger replan if necessary
     double dist;
     if (!planner_manager_->checkTrajCollision(dist)) {
-      ROS_WARN("Replan: collision detected==================================");
+      ROS_WARN("[Replan]: Collision detected==================================");
       last_fail_reason = COLLISION_CHECK_FAIL;
       setStartState(START_FROM_ODOM);
       replan_pub_.publish(std_msgs::Empty());
@@ -621,18 +616,20 @@ bool PAExplorationFSM::transitViewpoint() {
         if (length2best > still_choose_new_length_thr_ && new_change > still_choose_new_length_thr_) {
           cout << "choose new!" << length2best << endl;
           choose_pos_ = ed->point_now;
-          choose_yaw_ = ed->yaw_vector.front();
+          // choose_yaw_ = ed->yaw_vector.front();
+          choose_yaw_vec_ = ed->yaw_vector;
           choose_frontier_cell = ed->frontier_now;
           last_used_viewpoint_pos = choose_pos_;
         }
 
         else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
-          if (!ft->get_next_viewpoint_forbadpos(choose_pos_, choose_yaw_, choose_frontier_cell)) {
+          if (!ft->chooseNextViewpoint(choose_pos_, choose_yaw_vec_, choose_frontier_cell)) {
             // 遍历完所有情况依然失败
-            cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
+            ROS_ERROR("[chooseNextViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!");
             return false;
           }
         }
+
         need_cycle = false;
         setStartState(START_FROM_LAST_TRAJ);
         break;
@@ -642,12 +639,15 @@ bool PAExplorationFSM::transitViewpoint() {
        */
       case POSITION_OPT_FAIL: {
         cout << "[transitViewpoint] POSITION_OPT_FAIL" << endl;
+
         // 优化失败尝试重新优化一次，若继续失败，则当做轨迹生成失败处理！
         if (position_fail_count < 1) {
           position_fail_count++;
           need_cycle = false;
           // 初始状态和末状态都不进行设置，即不变
-        } else {
+        }
+
+        else {
           position_fail_count = 0;
           last_fail_reason = PATH_SEARCH_FAIL;
           need_cycle = true;
@@ -655,6 +655,7 @@ bool PAExplorationFSM::transitViewpoint() {
         }
         break;
       }
+
       /**
        *YAW轨迹出错，如果最好的frontier已经变了，位置需要重新规划，否则，保持路径搜索的结果不变，从位置轨迹开始
        */
@@ -667,12 +668,12 @@ bool PAExplorationFSM::transitViewpoint() {
         }
 
         else {  // 在老的里面迭代，由于frontier的标号不明, 这里还是在新的里面迭代，但是通过距离排除旧的坏情况
-          if (!ft->get_next_viewpoint_forbadyaw(choose_pos_, choose_yaw_, choose_frontier_cell)) {
+          if (!ft->chooseNextViewpoint(choose_pos_, choose_yaw_vec_, choose_frontier_cell)) {
             // 遍历完所有情况依然失败
             cout << "[transitViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!" << endl;
             return false;
           }
-          cout << "[transitViewpoint DEBUG] choose pos: " << choose_pos_.transpose() << " choose_yaw_: " << choose_yaw_ << endl;
+
           need_cycle = false;
           last_fail_reason = PATH_SEARCH_FAIL;
           break;

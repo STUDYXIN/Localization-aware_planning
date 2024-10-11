@@ -203,8 +203,8 @@ void BsplineOptimizer::optimize(
 
   control_points_ = points;
   knot_span_ = dt;
-  // max_num_id_ = max_num_id;
-  // max_time_id_ = max_time_id;
+  max_num_id_ = max_num_id;
+  max_time_id_ = max_time_id;
   setCostFunction(cost_function);
 
   // Set necessary data and flag
@@ -1076,7 +1076,7 @@ void BsplineOptimizer::calcEUACoefficient(const vector<Vector3d>& q, const doubl
   Eigen::Vector3d db_dq(-1 / 6.0, -4 / 6.0, -1 / 6.0);
   vector<Eigen::Vector3d> zero_vec_q(3, Eigen::Vector3d::Zero());
 
-  //首先计算垂直可见性===================================================================================
+  // 首先计算垂直可见性===================================================================================
   vector<double> sin_theta_pot_vec;
   vector<vector<Eigen::Vector3d>> dpot_dqj_vec;
   sin_theta_pot_vec.reserve(frontier_cells_.size());
@@ -1134,6 +1134,7 @@ void BsplineOptimizer::calcEUACoefficient(const vector<Vector3d>& q, const doubl
   //==================================================================================================
 
   //用viewpoint和frontier_Cell的连线近似为cell所在切面====================================================
+
   vector<double> cos_alpha_coe_vec;
   vector<vector<Eigen::Vector3d>> dcoe_dqj_vec;
   cos_alpha_coe_vec.reserve(frontier_cells_.size());
@@ -1218,9 +1219,9 @@ void BsplineOptimizer::calcEUACostAndGradientsKnots(
   }
   vector<double> coefficient;
   vector<vector<Eigen::Vector3d>> dcoefficient_dq;
-  //计算系数
   calcEUACoefficient(q, knot_span, coefficient, false, dcoefficient_dq);
   //扩张多少============================================================================================
+
   Eigen::Vector3d knot = (q[0] + 4 * q[1] + q[2]) / 6;
   vector<double> explan_scale_vec;
   vector<vector<Eigen::Vector3d>> dexplan_scale_dqj_vec;
@@ -1248,7 +1249,7 @@ void BsplineOptimizer::calcEUACostAndGradientsKnots(
   // dexplan_scale_dqj_vec); stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
   //====================================================================================================
 
-  //融合每个frontier的cost 和 grad
+  // 融合每个frontier的cost 和 grad
   vector<double> cost_each_fc_vec;
   vector<vector<Eigen::Vector3d>> dcost_each_fc_dqj_vec;
   for (size_t i = 0; i < frontier_cells_.size(); i++) {
@@ -1650,12 +1651,12 @@ void BsplineOptimizer::calcFrontierVisibilityCostAndGradientsKnots(const vector<
   double total_weight = 0.0;
   // for (const auto& cell : frontier_cells) {
   for (size_t i = 0; i < frontier_cells_.size(); i++) {
-    if (status_vec[i] == 0 || status_vec[i] == 1) continue;
+    if (status_vec[i] == NOT_AVAILABLE || status_vec[i] == HAS_BEEN_OBSERVED) continue;
 
     double w;
-    if (status_vec[i] == 2)
+    if (status_vec[i] == VISIBLE)
       w = ld_weight1_;
-    else if (status_vec[i] == 3)
+    else if (status_vec[i] == AVAILABLE)
       w = ld_weight2_;
 
     Vector3d cell = frontier_cells_[i];
@@ -2117,6 +2118,10 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     // for (int i = 0; i < point_num_; i++)
     //   for (int j = 0; j < dim_; j++) grad[dim_ * i + j] += ld_final_goal_ * g_final_goal_[i](j);
   }
+
+  // cout << " f_combine: " << f_combine << endl;
+  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_POS_OPT, g_q_, order_, dt);
+  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
 
   // !SECTION
 

@@ -195,8 +195,7 @@ public:
   void updateScorePos();
   void computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells);
   // void getMessage2draw(vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages, vector<double>& gains);
-  bool get_next_viewpoint_forbadpos(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells);
-  bool get_next_viewpoint_forbadyaw(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells);
+  bool chooseNextViewpoint(Vector3d& point, vector<double>& yaws, vector<Vector3d>& frontier_cells);
 
   // get frontiers near new point
   bool getBestViewpointinPath(Viewpoint& refactorViewpoint, vector<Vector3d>& path);

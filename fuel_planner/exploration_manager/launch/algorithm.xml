@@ -68,6 +68,7 @@
     <param name="debug/stop_before_compute" value="false" type="bool" />
     <param name="debug/stop_before_pos_opt" value="false" type="bool" />
     <param name="debug/stop_every_pos_opt" value="false" type="bool" />
+
     <param name="debug/stop_before_yaw_init" value="false" type="bool" />
     <param name="debug/stop_every_yaw_opt" value="true" type="bool" />
     <param name="debug/show_vertical_visibility_cost_every_control_point" value="false" type="bool" />
@@ -244,7 +245,7 @@
     <param name="yaw_initial/max_yaw_rate2" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
     <param name="yaw_initial/w" value="100.0" type="double" />
     <param name="yaw_initial/min_info_gain" value="30" type="double" />
-    <param name="yaw_initial/piece_num" value="20" type="int" />
+    <param name="yaw_initial/piece_num" value="24" type="int" />
     <param name="yaw_initial/ld_frontier" value="1.0" type="double" />
     <param name="yaw_initial/ld_final_goal" value="100.0" type="double" />
 

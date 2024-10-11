@@ -2,6 +2,7 @@
 #define FEATURE_MAP_H
 
 #include "plan_env/utils.hpp"
+#include <plan_env/raycast.h>
 
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
@@ -67,7 +68,8 @@ public:
   int get_More_NumCloud_using_CamPosOrient(
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
 
-  void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num);
+  void get_YawRange_using_Pos(
+      const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num, RayCaster* raycaster);
   void getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_max, std::vector<double> sorted_yaw);
   shared_ptr<SDFMap> sdf_map;
   CameraParam::Ptr camera_param = nullptr;
@@ -78,6 +80,8 @@ public:
 private:
   pcl::PointCloud<pcl::PointXYZ> features_cloud_;
   pcl::KdTreeFLANN<pcl::PointXYZ> features_kdtree_;
+  std::vector<bool> has_been_observed;
+  bool is_feature_known_globally;
   // double feature_visual_max, feature_visual_min;
 };
 }  // namespace fast_planner

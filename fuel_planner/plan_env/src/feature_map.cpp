@@ -17,10 +17,12 @@ void FeatureMap::setMap(shared_ptr<SDFMap>& map) {
 void FeatureMap::initMap(ros::NodeHandle& nh) {
   bool load_from_file;
   std::string filename;
+  nh.param("feature/is_feature_known_globally", is_feature_known_globally, false);
   nh.param("feature/load_from_file", load_from_file, true);
   if (load_from_file) {
     nh.param<std::string>("feature/filename", filename, std::string(""));  // 显式指定默认值为 std::string
     loadMap(filename);
+    has_been_observed.assign(features_cloud_.size(), is_feature_known_globally);
   }
   nh.param("feature/yaw_samples_max", yaw_samples_max, 360);
   camera_param = Utils::getGlobalParam().camera_param_;
@@ -134,35 +136,26 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
   camera_p(2) = pose->pose.position.z;
   Eigen::Quaterniond camera_q =
       Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
-  vector<Eigen::Vector3d> visual_points_vec;
-  vector<pair<int, Eigen::Vector3d>> visual_points_vec_with_idx;
-  int feature_num = get_NumCloud_using_CamPosOrient(camera_p, camera_q, visual_points_vec);
-  get_More_NumCloud_using_CamPosOrient(camera_p, camera_q, visual_points_vec_with_idx);
+  if (!features_cloud_.empty() && !is_feature_known_globally) {
+    pcl::PointXYZ searchPoint;
+    searchPoint.x = camera_p(0);
+    searchPoint.y = camera_p(1);
+    searchPoint.z = camera_p(2);
 
-  // ROS_WARN("[FeatureMap::sensorposCallback] Test new feature map interface with wider FOV:---Origin Num: %zu --- New Num: "
-  //          "%zu",
-  //     visual_points_vec.size(), visual_points_vec_with_idx.size());
+    vector<int> pointIdxRadiusSearch;
+    vector<float> pointRadiusSquaredDistance;
+    features_kdtree_.radiusSearch(
+        searchPoint, camera_param->feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
 
-  visual_points_vec.clear();
-  for (const auto& pair : visual_points_vec_with_idx) {
-    visual_points_vec.push_back(pair.second);
+    for (const auto& index : pointIdxRadiusSearch) {
+      Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+      if (camera_param->is_in_FOV(camera_p, f, camera_q))  // 检查特征点是否在相机FOV中
+      {
+        if (!sdf_map->checkObstacleBetweenPoints(camera_p, f))  // 检查这个特征点与无人机之间有无障碍
+          has_been_observed[index] = true;
+      }
+    }
   }
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pointcloud->width = visual_points_vec.size();
-  pointcloud->height = 1;
-  pointcloud->is_dense = true;
-  pointcloud->header.frame_id = "world";
-  pointcloud->points.resize(pointcloud->width);
-  for (size_t i = 0; i < visual_points_vec.size(); ++i) {
-    pointcloud->points[i].x = visual_points_vec[i].x();
-    pointcloud->points[i].y = visual_points_vec[i].y();
-    pointcloud->points[i].z = visual_points_vec[i].z();
-  }
-
-  // ROS_WARN("[FeatureMap] Visualize feature size: %d", static_cast<int>(pointcloud->points.size()));
-  sensor_msgs::PointCloud2 pointcloud_msg;
-  pcl::toROSMsg(*pointcloud, pointcloud_msg);
-  // visual_feature_cloud_pub_.publish(pointcloud_msg);
   pubDebugmsg(2);
 }
 
@@ -193,7 +186,10 @@ void FeatureMap::pubDebugmsg(int debugMode) {
   } else if (debugMode == 2)  // 发布接受的特征点云
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
-    *pointcloud = features_cloud_;
+    for (size_t i = 0; i < features_cloud_.points.size(); ++i) {
+      if (has_been_observed[i]) pointcloud->points.push_back(features_cloud_.points[i]);
+    }
+    // *pointcloud = features_cloud_;
     pointcloud->width = pointcloud->points.size();
     pointcloud->height = 1;
     pointcloud->is_dense = true;
@@ -224,6 +220,7 @@ int FeatureMap::get_NumCloud_using_CamPosOrient(
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_in_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
     {
       if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
@@ -248,6 +245,7 @@ int FeatureMap::get_NumCloud_using_CamPosOrient(const Eigen::Vector3d& pos, cons
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_in_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
     {
       if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
@@ -307,6 +305,7 @@ int FeatureMap::get_NumCloud_using_CamPosOrient(
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_in_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
     {
       if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
@@ -350,6 +349,7 @@ int FeatureMap::get_More_NumCloud_using_CamPosOrient(
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_in_wider_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
     {
       if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
@@ -389,6 +389,7 @@ void FeatureMap::getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_m
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful(pos, f) &&
         !sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
     {
@@ -414,6 +415,7 @@ int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos) {
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful(pos_transformed, f) &&
         !sdf_map->checkObstacleBetweenPoints(
             pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
@@ -441,6 +443,7 @@ int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos, vector<Ei
 
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful(pos_transformed, f) &&
         !sdf_map->checkObstacleBetweenPoints(
             pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
@@ -450,7 +453,7 @@ int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos, vector<Ei
 }
 
 void FeatureMap::get_YawRange_using_Pos(
-    const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num) {
+    const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num, RayCaster* raycaster) {
   Matrix4d Pose_receive = Matrix4d::Identity();
   feature_visual_num.resize(sample_yaw.size());
   std::fill(feature_visual_num.begin(), feature_visual_num.end(), 0);
@@ -470,9 +473,10 @@ void FeatureMap::get_YawRange_using_Pos(
   // cout << " [FeatureMap::get_YawRange_using_Pos] debug yaw_range";
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
+    if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful_at_level(pos_transformed, f) &&
         !sdf_map->checkObstacleBetweenPoints(
-            pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+            pos_transformed, f, raycaster))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
     {
       Eigen::Vector2d yaw_range = camera_param->calculateYawRange(pos_transformed, f);
       // cout << "  " << yaw_range.transpose();

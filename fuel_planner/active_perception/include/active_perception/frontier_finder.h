@@ -35,23 +35,6 @@ class FeatureMap;
 class CameraParam;
 class DebugTimer;
 // Viewpoint to cover a frontier cluster
-struct ShareFrontierParam {
-  // param_output
-  vector<vector<Eigen::Vector3d>> active_frontiers;
-  vector<vector<Eigen::Vector3d>> dead_frontiers;
-  vector<vector<Eigen::Vector3d>> filtered_frontiers_;
-
-  Vector3d viewpoint_pos;
-  vector<double> viewpoint_yaw_vector;
-  vector<Vector3d> viewpoint_frontier_cell;
-  vector<double> score;
-
-  // param_input
-  Vector3d cur_pos;
-  double yaw_now;
-  Vector3d refer_pos;
-  bool has_pos_refer_;
-};
 
 struct Viewpoint {
   // Position
@@ -63,6 +46,7 @@ struct Viewpoint {
   vector<double> sort_id;
   // others
   double final_score;
+  vector<Vector3d> filtered_cells_;
 };
 
 struct Sortrefer {
@@ -146,6 +130,27 @@ public:
   }
 };
 
+struct ShareFrontierParam {
+  // param_output
+  vector<vector<Eigen::Vector3d>> active_frontiers;
+  vector<vector<Eigen::Vector3d>> dead_frontiers;
+  vector<vector<Eigen::Vector3d>> filtered_frontiers_;
+
+  Vector3d viewpoint_pos;
+  vector<double> viewpoint_yaw_vector;
+  vector<Vector3d> viewpoint_frontier_cell;
+  vector<double> score;
+
+  vector<Viewpoint> viewpoints;
+
+  // param_input
+  Vector3d cur_pos;
+  double yaw_now;
+  Vector3d refer_pos;
+  bool has_pos_refer_;
+  UnavailableViewpointManage unavailableViewpointManage_;
+};
+
 class FrontierFinder {
 public:
   FrontierFinder(const shared_ptr<EDTEnvironment>& edt, ros::NodeHandle& nh);
@@ -192,6 +197,7 @@ public:
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, double yaw_ref, int feature_num_);
   void getBestViewpointData(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
   void getBestViewpointData(Vector3d& points, vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
+  void getSortedViewpointVector(vector<Viewpoint>& viewpoints);
   void updateScorePos();
   void computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells);
   // void getMessage2draw(vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages, vector<double>& gains);
@@ -251,13 +257,19 @@ public:
   double viewpoint_used_thr;
 
   void store_init_state() {
-    if (best_viewpoint.score_yaw.empty()) {
-      ROS_ERROR("[FrontierFinder::store_init_state] best_viewpoint have not been init, or there is no available viewpoint!!!!!");
-      return;
+    if (!use_independent_thread) {
+      if (best_viewpoint.score_yaw.empty()) {
+        ROS_ERROR("[FrontierFinder::store_init_state] best_viewpoint have not been init, or there is no available "
+                  "viewpoint!!!!!");
+        return;
+      }
+      init_viewpoint = best_viewpoint;
+      unavailableViewpointManage_.clear();
+      unavailableViewpointManage_.addViewpoint(init_viewpoint);
+    } else {
+      std::lock_guard<std::mutex> lock(data_mutex_share_);  // 加锁以保护共享数据
+      shared_param_.unavailableViewpointManage_.clear();
     }
-    init_viewpoint = best_viewpoint;
-    unavailableViewpointManage_.clear();
-    unavailableViewpointManage_.addViewpoint(init_viewpoint);
   }
 
   // Params
@@ -268,6 +280,7 @@ public:
   bool using_feature_threshold_compute_viewpoint;
   double min_view_finish_fraction_, resolution_, z_sample_max_length_;
   int min_visib_num_, candidate_rnum_, z_sample_num_;
+  bool use_independent_thread;
 
   // Utils
   shared_ptr<EDTEnvironment> edt_env_;
@@ -279,9 +292,10 @@ public:
 private:
   void compute_frontier_run();  // 独立线程的运行函数
   void updateShareFrontierParam();
-  std::atomic<bool> running_;  // 控制线程运行状态的原子变量
-  std::thread worker_thread_;  // 独立线程
-  std::mutex data_mutex_;      // 互斥锁，用于保护共享数据
+  std::atomic<bool> running_;    // 控制线程运行状态的原子变量
+  std::thread worker_thread_;    // 独立线程
+  std::mutex data_mutex_share_;  // 互斥锁，用于保护共享数据
+  std::mutex data_mutex_run;     // 互斥锁，用于保护共享数据
 
   ShareFrontierParam shared_param_;  // 用于存储共享数据的结构体
 public:

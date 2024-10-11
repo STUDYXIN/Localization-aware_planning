@@ -73,6 +73,7 @@ public:
   double getResolution();
   int getVoxelNum();
   bool checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+  bool checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end, RayCaster* caster);
   bool using_global_map;
 
 private:

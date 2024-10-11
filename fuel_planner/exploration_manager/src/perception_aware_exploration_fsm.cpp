@@ -438,7 +438,7 @@ void PAExplorationFSM::visualize() {
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
-  debug_timer.setstart_time("frontierCallback", false);
+  debug_timer.setstart_time("frontierCallback", 10);
   if (direct_replan) return;
   // debug_timer.setstart_time("frontierCallback", 10);  // 十次输出一次
   // 初始化
@@ -449,7 +449,6 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
 
   // Draw updated box
   Vector3d bmin, bmax;
-  debug_timer.function_start("init");
   planner_manager_->edt_environment_->sdf_map_->getUpdatedBox(bmin, bmax);
 
   auto ft = expl_manager_->frontier_finder_;
@@ -458,44 +457,49 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   auto ep = expl_manager_->ep_;
   Vector3d refer_pos;
   double refer_yaw;
-  debug_timer.function_end("init");
+  debug_timer.function_start("pa->search");
   // 使用A*算法搜索一个的点，这个点是这条路径上靠近终点且在free区域的最后一个点，并被后面viewpoint计算提供其中一项=============
   pa->reset();
-  debug_timer.function_start("pa->search");
   bool is_best_viewpoint_searched = false;
   if (have_target_ && pa->search(odom_pos_, final_goal_) == Astar::REACH_END) {
     ed->path_next_goal_ = pa->getPath();
-    debug_timer.function_end("pa->search");
-    debug_timer.function_start("findJunction");
     is_best_viewpoint_searched = expl_manager_->findJunction(ed->path_next_goal_, refer_pos, refer_yaw);
-    debug_timer.function_end("findJunction");
   } else if (!is_best_viewpoint_searched && have_target_)
     refer_pos = final_goal_;
 
   else
     refer_pos = Vector3d::Zero();
-
+  debug_timer.function_end("pa->search");
   visualization_->drawAstar(ed->path_next_goal_, refer_pos, refer_yaw, is_best_viewpoint_searched);
   // ===========================================================================================================
-  debug_timer.function_start("frontier_init");
-  ft->setSortRefer(odom_pos_, odom_yaw_, refer_pos, is_best_viewpoint_searched);
-  ft->searchFrontiers();
-  debug_timer.function_end("frontier_init");
-  debug_timer.function_start("computeFrontiersToVisit");
-  ft->computeFrontiersToVisit();
-  debug_timer.function_end("computeFrontiersToVisit");
-  ft->getFrontiers(ed->frontiers_);
-  ft->getDormantFrontiers(ed->dead_frontiers_);
-  // cout << " Frontiers num " << ed->frontiers_.size() << " DormantFrontiers num " << ed->dead_frontiers_.size() << endl;
-  if (ed->frontiers_.size() == 0) return;
+  // debug_timer.function_start("frontier_init");
+  // ft->setSortRefer(odom_pos_, odom_yaw_, refer_pos, is_best_viewpoint_searched);
+  // ft->searchFrontiers();
+  // debug_timer.function_end("frontier_init");
+  // debug_timer.function_start("computeFrontiersToVisit");
+  // ft->computeFrontiersToVisit();
+  // debug_timer.function_end("computeFrontiersToVisit");
+  // ft->getFrontiers(ed->frontiers_);
+  // ft->getDormantFrontiers(ed->dead_frontiers_);
+  // // cout << " Frontiers num " << ed->frontiers_.size() << " DormantFrontiers num " << ed->dead_frontiers_.size() << endl;
+  // if (ed->frontiers_.size() == 0) return;
 
+  // vector<double> score;
+  // debug_timer.function_start("getBestViewpointData");
+  // ft->getBestViewpointData(ed->point_now, ed->yaw_vector, ed->frontier_now, score);
+  // debug_timer.function_end("getBestViewpointData");
+  //==============================================================================================================
   vector<double> score;
-  debug_timer.function_start("getBestViewpointData");
-  ft->getBestViewpointData(ed->point_now, ed->yaw_vector, ed->frontier_now, score);
-  debug_timer.function_end("getBestViewpointData");
+  debug_timer.function_start("getShareFrontierParam");
+  ft->getShareFrontierParam(odom_pos_, odom_yaw_, refer_pos, is_best_viewpoint_searched, ed->frontiers_, ed->dead_frontiers_,
+      ed->point_now, ed->yaw_vector, ed->frontier_now, score);
+  debug_timer.function_end("getShareFrontierParam");
+  if (ed->frontiers_.size() == 0) return;
+  debug_timer.function_start("visualization");
   visualization_->drawFrontiers(ed->frontiers_);
   visualization_->drawdeadFrontiers(ed->dead_frontiers_);
   visualization_->drawFrontiersAndViewpointBest(ed->point_now, ed->yaw_vector.front(), ed->frontier_now, score);
+  debug_timer.function_end("visualization");
   debug_timer.output_time();
   // cout << "sortrefer: pos_now " << odom_pos_.transpose() << " yaw_now " << odom_yaw_ << " refer_pos " << refer_pos.transpose()
   //      << " viewpoint_pos " << ed->point_now.transpose() << endl;

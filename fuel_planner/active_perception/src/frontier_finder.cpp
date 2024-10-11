@@ -85,6 +85,7 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
   nh.param("frontier/wf", sort_refer_.wf, -1.0);
   nh.param("frontier/wc", sort_refer_.wc, -1.0);
   nh.param("frontier/domant_frontier_length_thr", domant_frontier_length_thr_, -1.0);
+  nh.param("frontier/use_independent_thread", use_independent_thread, false);
 
   raycaster_.reset(new RayCaster);
   resolution_ = edt_env_->sdf_map_->getResolution();
@@ -97,9 +98,10 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
   frontier_id_count = 0;
   viewpoint_used_thr = min(z_sample_max_length_ / z_sample_num_, (candidate_rmax_ - candidate_rmin_) / candidate_rnum_);
   cout << "frontier/viewpoint_used_thr: " << viewpoint_used_thr << endl;
-
-  // running_ = true;
-  // worker_thread_ = std::thread(&FrontierFinder::compute_frontier_run, this);  // 启动独立线程
+  if (use_independent_thread) {
+    running_ = true;
+    worker_thread_ = std::thread(&FrontierFinder::compute_frontier_run, this);  // 启动独立线程
+  }
 }
 
 FrontierFinder::~FrontierFinder() {
@@ -111,15 +113,19 @@ FrontierFinder::~FrontierFinder() {
 
 void FrontierFinder::compute_frontier_run() {
   while (running_) {
-    time_debug_.setstart_time("compute_frontier_run", 10);  // 十次输出一次
+    // std::lock_guard<std::mutex> lock(data_mutex_run);
+    time_debug_.setstart_time("compute_frontier_run_in_independent_thread", 50);  // 50次输出一次
     time_debug_.function_start("searchFrontiers");
     searchFrontiers();  // 执行搜索操作
     time_debug_.function_end("searchFrontiers");
     time_debug_.function_start("computeFrontiersToVisit");
     computeFrontiersToVisit();  // 计算需要访问的前沿
-    time_debug_.function_start("computeFrontiersToVisit");
-    time_debug_.output_time();                                   //输出计算时间
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));  // 控制线程的执行频率
+    time_debug_.function_end("computeFrontiersToVisit");
+    time_debug_.function_start("updateShareFrontierParam");
+    updateShareFrontierParam();
+    time_debug_.function_end("updateShareFrontierParam");
+    time_debug_.output_time();                                    //输出计算时间
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));  // 控制线程的执行频率
   }
 }
 
@@ -127,33 +133,44 @@ void FrontierFinder::getShareFrontierParam(const Vector3d& cur_pos, const double
     bool has_pos_refer_,  // input
     vector<vector<Eigen::Vector3d>>& active_frontiers, vector<vector<Eigen::Vector3d>>& dead_frontiers, Vector3d& points,
     vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score) {
-  std::lock_guard<std::mutex> lock(data_mutex_);  // 加锁以保护共享数据
-  // input
-  shared_param_.cur_pos = cur_pos;
-  shared_param_.yaw_now = yaw_now;
-  shared_param_.refer_pos = refer_pos;
-  shared_param_.has_pos_refer_ = has_pos_refer_;
+  if (use_independent_thread) {
+    std::lock_guard<std::mutex> lock(data_mutex_share_);  // 加锁以保护共享数据
+    // input
+    shared_param_.cur_pos = cur_pos;
+    shared_param_.yaw_now = yaw_now;
+    shared_param_.refer_pos = refer_pos;
+    shared_param_.has_pos_refer_ = has_pos_refer_;
 
-  // out_put
-  active_frontiers = shared_param_.active_frontiers;
-  dead_frontiers = shared_param_.dead_frontiers;
-  points = shared_param_.viewpoint_pos;
-  yaws = shared_param_.viewpoint_yaw_vector;
-  frontier_cells = shared_param_.viewpoint_frontier_cell;
-  score = shared_param_.score;
+    // out_put
+    active_frontiers = shared_param_.active_frontiers;
+    dead_frontiers = shared_param_.dead_frontiers;
+    points = shared_param_.viewpoint_pos;
+    yaws = shared_param_.viewpoint_yaw_vector;
+    frontier_cells = shared_param_.viewpoint_frontier_cell;
+    score = shared_param_.score;
+  } else {
+    // input
+    setSortRefer(cur_pos, yaw_now, refer_pos, has_pos_refer_);
+    searchFrontiers();          // 执行搜索操作
+    computeFrontiersToVisit();  // 计算需要访问的前沿
+    // out_put
+    getFrontiers(active_frontiers);
+    getDormantFrontiers(dead_frontiers);
+    getBestViewpointData(points, yaws, frontier_cells, score);
+  }
 }
 
 void FrontierFinder::updateShareFrontierParam() {
-  std::lock_guard<std::mutex> lock(data_mutex_);  // 加锁以保护共享数据
+  std::lock_guard<std::mutex> lock(data_mutex_share_);  // 加锁以保护共享数据
   // input
   setSortRefer(shared_param_.cur_pos, shared_param_.yaw_now, shared_param_.refer_pos, shared_param_.has_pos_refer_);
 
   // out_put
   getFrontiers(shared_param_.active_frontiers);
-  getFilteredFrontiers(shared_param_.filtered_frontiers_);
   getDormantFrontiers(shared_param_.dead_frontiers);
   getBestViewpointData(shared_param_.viewpoint_pos, shared_param_.viewpoint_yaw_vector, shared_param_.viewpoint_frontier_cell,
       shared_param_.score);
+  getSortedViewpointVector(shared_param_.viewpoints);
 }
 
 void FrontierFinder::ComputeScoreUnrelatedwithyaw(Viewpoint& viewpoint) {
@@ -214,7 +231,10 @@ void FrontierFinder::ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw
 
 void FrontierFinder::getBestViewpointData(
     Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score) {
-
+  if (frontiers_.size() == 0 || frontier_sort_id.size() == 0) {
+    ROS_ERROR("[FrontierFinder::getBestViewpointData] NO FRONTIER!!!!!");
+    return;
+  }
   ROS_ASSERT(frontier_sort_id.size() == frontiers_.size());
   best_id = frontier_sort_id.front();
   int id = 0;
@@ -236,6 +256,10 @@ void FrontierFinder::getBestViewpointData(
 
 void FrontierFinder::getBestViewpointData(
     Vector3d& points, vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score) {
+  if (frontiers_.size() == 0 || frontier_sort_id.size() == 0) {
+    ROS_ERROR("[FrontierFinder::getBestViewpointData] NO FRONTIER!!!!!");
+    return;
+  }
   best_id = frontier_sort_id.front();
   int id = 0;
   if (frontier_sort_id.size() != frontiers_.size()) {
@@ -256,6 +280,17 @@ void FrontierFinder::getBestViewpointData(
     return;
   }
 }
+
+void FrontierFinder::getSortedViewpointVector(vector<Viewpoint>& viewpoints) {
+  viewpoints.clear();
+  for (const auto& frontier : frontiers_) {
+    for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size(); ++viewpoint_num)
+      viewpoints.push_back(frontier.viewpoints_[viewpoint_num]);
+  }
+  sort(viewpoints.begin(), viewpoints.end(),
+      [](const Viewpoint& v1, const Viewpoint& v2) { return v1.final_score > v2.final_score; });
+}
+
 void FrontierFinder::updateScorePos() {
   for (auto& ftr : frontiers_) {
     if ((ftr.average_ - sort_refer_.pos_now_).norm() > domant_frontier_length_thr_) {
@@ -272,31 +307,50 @@ void FrontierFinder::updateScorePos() {
 }
 
 bool FrontierFinder::chooseNextViewpoint(Vector3d& point, vector<double>& yaws, vector<Vector3d>& frontier_cells) {
-  ROS_ASSERT(frontier_sort_id.size() == frontiers_.size());
+  //=================================串行计算===================================
+  if (!use_independent_thread) {
+    ROS_ASSERT(frontier_sort_id.size() == frontiers_.size());
 
-  for (int sort_num = 0; sort_num < frontier_sort_id.size(); ++sort_num) {
-    best_id = frontier_sort_id[sort_num];
-    int id = 0;
-    for (const auto& frontier : frontiers_) {
-      if (id++ != best_id) continue;  // 遍历到需要的地方，有点蠢。。。
-      for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size();
-           ++viewpoint_num) {  // frontier的viewpoint有按照好坏排序，这里简单选取分数高的，并把选择过的推入kd-tree中，用于下次排除。
-        auto& view = frontier.viewpoints_[viewpoint_num];
-        if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
-          point = view.pos_;
-          yaws.clear();
-          for (const auto& yaw_id : view.sort_id) yaws.push_back(view.yaw_available[yaw_id]);
-          frontier_cells = frontier.filtered_cells_;
-          unavailableViewpointManage_.addViewpoint(view);
-          return true;
+    for (int sort_num = 0; sort_num < frontier_sort_id.size(); ++sort_num) {
+      best_id = frontier_sort_id[sort_num];
+      int id = 0;
+      for (const auto& frontier : frontiers_) {
+        if (id++ != best_id) continue;  // 遍历到需要的地方，有点蠢。。。
+        for (int viewpoint_num = 0; viewpoint_num < 5 && viewpoint_num < frontier.viewpoints_.size();
+             ++viewpoint_num) {  // frontier的viewpoint有按照好坏排序，这里简单选取分数高的，并把选择过的推入kd-tree中，用于下次排除。
+          auto& view = frontier.viewpoints_[viewpoint_num];
+          if (unavailableViewpointManage_.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
+            point = view.pos_;
+            yaws.clear();
+            for (const auto& yaw_id : view.sort_id) yaws.push_back(view.yaw_available[yaw_id]);
+            frontier_cells = frontier.filtered_cells_;
+            unavailableViewpointManage_.addViewpoint(view);
+            return true;
+          }
+          // unavailableViewpointManage_.addViewpoint(view);
         }
-        // unavailableViewpointManage_.addViewpoint(view);
+      }
+      ROS_WARN("[FrontierFinder::chooseNextViewpoint] search next frontier");
+    }
+  }
+  //=================================独立线程===================================
+  else {
+    std::lock_guard<std::mutex> lock(data_mutex_share_);  // 加锁以保护共享数据
+    for (const auto& view : shared_param_.viewpoints) {
+      auto& vpmgr = shared_param_.unavailableViewpointManage_;
+      if (vpmgr.queryNearestViewpoint(view.pos_) > viewpoint_used_thr) {
+        point = view.pos_;
+        yaws.clear();
+        for (const auto& yaw_id : view.sort_id) yaws.push_back(view.yaw_available[yaw_id]);
+        frontier_cells = view.filtered_cells_;
+        vpmgr.addViewpoint(view);
+        return true;
       }
     }
-    ROS_WARN("[FrontierFinder::chooseNextViewpoint] search next frontier");
   }
 
   ROS_ERROR("[FrontierFinder::chooseNextViewpoint] ERROR !!! NO AVAILABLE FRONTIER!!");
+
   return false;
 }
 
@@ -537,7 +591,6 @@ void FrontierFinder::computeFrontiersToVisit() {
   first_new_ftr_ = frontiers_.end();
   int new_num = 0;
   int new_dormant_num = 0;
-  time_debug_.setstart_time("computeFrontiersToVisit", false);
   if (!using_feature_threshold_compute_viewpoint) {
     // Try find viewpoints for each cluster and categorize them according to viewpoint number
     for (auto& tmp_ftr : tmp_frontiers_) {
@@ -560,10 +613,7 @@ void FrontierFinder::computeFrontiersToVisit() {
     // Try find viewpoints for each cluster and categorize them according to viewpoint number with feature number threshold
     for (auto& tmp_ftr : tmp_frontiers_) {
       // Search viewpoints around frontier
-      time_debug_.function_start("sampleBetterViewpoints");
       sampleBetterViewpoints(tmp_ftr);
-      time_debug_.function_end("sampleBetterViewpoints");
-      time_debug_.function_start("sortViewpoint_insertnewFrontier");
       if (!tmp_ftr.viewpoints_.empty()) {
         ++new_num;
         list<Frontier>::iterator inserted = frontiers_.insert(frontiers_.end(), tmp_ftr);
@@ -577,13 +627,11 @@ void FrontierFinder::computeFrontiersToVisit() {
         dormant_frontiers_.push_back(tmp_ftr);
         ++new_dormant_num;
       }
-      time_debug_.function_end("sortViewpoint_insertnewFrontier");
     }
   }
   // cout << "dormant_frontiers_.size: " << dormant_frontiers_.size() << " frontiers_.size: " << frontiers_.size()
   //      << " tmp_frontiers_.size: " << tmp_frontiers_.size() << " frontier_id_count: " << frontier_id_count << endl;
   // Reset indices of frontiers
-  time_debug_.function_start("sortFrontier");
   int idx = 0;
   // 定义id
   for (auto& ft : frontiers_) ft.id_ = idx++;
@@ -598,8 +646,6 @@ void FrontierFinder::computeFrontiersToVisit() {
     // 比较两个 Frontier 的 viewpoints_.front().final_score
     return frontier_iterators[i1]->viewpoints_.front().final_score > frontier_iterators[i2]->viewpoints_.front().final_score;
   });
-  time_debug_.function_end("sortFrontier");
-  time_debug_.output_time();
 
   // for (auto& ft : frontiers_) ft.id_ = frontier_id_count++;
 
@@ -708,7 +754,6 @@ void FrontierFinder::sampleViewpoints(Frontier& frontier) {
 
 void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
   // Evaluate sample viewpoints on circles, find ones that cover most cells
-  time_debug_.function_start("init_sampleBetterView");
   vector<double> sample_yaw;
   for (double phi = -M_PI; phi < M_PI; phi += feature_sample_dphi) {
     sample_yaw.push_back(phi);
@@ -722,20 +767,17 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
       for (double phi = -M_PI; phi < M_PI; phi += candidate_dphi_) {
         Vector3d sample_pos = frontier.average_ + rc * Vector3d(cos(phi), sin(phi), 0);
         sample_pos.z() = z;  // 多一个采样项
-        time_debug_.function_start("compute_pos");
         // Qualified viewpoint is in bounding box and in safe region
         if (!edt_env_->sdf_map_->isInBox(sample_pos) || edt_env_->sdf_map_->getInflateOccupancy(sample_pos) == 1 ||
             isNearUnknown(sample_pos))
           continue;
         vector<int> features_num_perYaw;
-        feature_map_->get_YawRange_using_Pos(sample_pos, sample_yaw, features_num_perYaw);
+        feature_map_->get_YawRange_using_Pos(sample_pos, sample_yaw, features_num_perYaw, raycaster_.get());
         // cout << "[FrontierFinder::sampleBetterViewpoints] yaw: ";
         Viewpoint vp;
         vp.pos_ = sample_pos;
         // cout << "begin_compute_score_pos" << endl;
         ComputeScoreUnrelatedwithyaw(vp);
-        time_debug_.function_end("compute_pos");
-        time_debug_.function_start("compute_yaw");
         // cout << "vp.score_pos " << vp.score_pos << endl;
         // double yaw_ref_ = atan2(end_.y() - vp.pos_.y(), end_.x() - vp.pos_.x());
         // int visib_num = countVisibleCells(sample_pos, yaw_ref_, cells);
@@ -762,7 +804,6 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
           }
           // }
         }
-        time_debug_.function_end("compute_yaw");
 
         // sort_yaw_score
         if (vp.yaw_available.size() > 0) {
@@ -770,6 +811,7 @@ void FrontierFinder::sampleBetterViewpoints(Frontier& frontier) {
           std::iota(vp.sort_id.begin(), vp.sort_id.end(), 0);
           std::sort(vp.sort_id.begin(), vp.sort_id.end(), [&vp](int i1, int i2) { return vp.score_yaw[i1] > vp.score_yaw[i2]; });
           vp.final_score = vp.score_pos + vp.score_yaw[vp.sort_id.front()];
+          vp.filtered_cells_ = frontier.filtered_cells_;
           // cout << "vp.final_score " << vp.final_score << endl;
           frontier.viewpoints_.push_back(vp);
         }
@@ -800,7 +842,7 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
         sample_yaw_near_input.push_back(phi);
       }
       vector<int> features_num_perYaw;
-      feature_map_->get_YawRange_using_Pos(input_pos, sample_yaw_near_input, features_num_perYaw);
+      feature_map_->get_YawRange_using_Pos(input_pos, sample_yaw_near_input, features_num_perYaw, raycaster_.get());
       double feature_yaw;
       int useful_yaw_count = 0;
       for (size_t j = 0; j < features_num_perYaw.size(); ++j) {
@@ -823,7 +865,7 @@ bool FrontierFinder::getBestViewpointinPath(Viewpoint& refactorViewpoint, vector
 }
 
 double FrontierFinder::getExplorationRatio(const vector<Vector3d>& frontier) {
-  std::lock_guard<std::mutex> lock(data_mutex_);
+  std::lock_guard<std::mutex> lock(data_mutex_share_);
   size_t total = frontier.size();
   size_t expl_num = 0;
   for (const auto& cell : frontier) {
@@ -859,6 +901,7 @@ bool FrontierFinder::isFrontierCovered() {
 }
 
 bool FrontierFinder::isinterstFrontierCovered(vector<Vector3d>& frontier_cells) {
+  std::lock_guard<std::mutex> lock(data_mutex_share_);
   const int change_thresh = min_view_finish_fraction_ * frontier_cells.size();
   int change_num = 0;
   for (auto cell : frontier_cells) {

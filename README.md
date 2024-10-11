@@ -1,5 +1,28 @@
 # 更新日志
 
+## 10月11日更新
+
+### 开关`frontier独立线程接口`
+
+  ```xml
+      <param name="frontier/use_independent_thread" value="true" type="bool" />
+  ```
+
+  开启后最明显的现象是只要不失败，基本上到达Viewpoint后规划的很快，我这边一开始frontier_callback时间是10ms，之后慢慢上升到30ms，统计下来发现是可视化Marker在耗时。。。
+
+### 开关`feature_map中feature是否全局已知`接口
+
+  ```xml
+      <param name="feature/is_feature_known_globally" value="true" />
+  ```
+
+  开启后基本上规划不到终点了，可以具体跑一下看看...，
+
+### 其他说明
+
+- 建议开关一下以上两个参数看看差异
+- 位置轨迹目前只使用APACE的优化项
+
 ## 10月8日更新
 
 ### 加入可视化代码
@@ -29,8 +52,6 @@
 - 蓝色粗线条（t_cur）：轨迹上当前时间在轨迹总时间上的比例，有的时候超过1.0就说明重规划又太慢了
 
 - 绿色粗线条（expl_ratio）：目标frontier已被探索的比例
-
-  
 
 ## 10月5日更新
 

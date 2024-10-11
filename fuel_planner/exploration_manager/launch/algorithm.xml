@@ -67,10 +67,10 @@
 
     <param name="debug/stop_before_compute" value="false" type="bool" />
     <param name="debug/stop_before_pos_opt" value="false" type="bool" />
-    <param name="debug/stop_every_pos_opt" value="false" type="bool" />
+    <param name="debug/stop_every_pos_opt" value="true" type="bool" />
 
     <param name="debug/stop_before_yaw_init" value="false" type="bool" />
-    <param name="debug/stop_every_yaw_opt" value="true" type="bool" />
+    <param name="debug/stop_every_yaw_opt" value="false" type="bool" />
     <param name="debug/show_vertical_visibility_cost_every_control_point" value="false" type="bool" />
     <param name="debug/show_vcv_every_control_point" value="false" type="bool" />
 
@@ -90,6 +90,7 @@
     <remap from="/map_ros/cloud" to="$(arg cloud_topic)" />
 
     <param name="feature/using_feature" value="true" />
+    <param name="feature/is_feature_known_globally" value="false" />
     <param name="feature/load_from_file" value="true" />
     <param name="feature/filename" value="$(arg feature_filename)" />
     <param name="feature/occupied_thr" value="3" />
@@ -197,6 +198,8 @@
     <param name="exploration/wf" value="0.8" type="double" />
     <param name="exploration/wc" value="1.5" type="double" />
 
+    <param name="frontier/use_independent_thread" value="true" type="bool" />
+    <param name="frontier/cluster_min" value="100" type="int" />
     <param name="frontier/cluster_min" value="100" type="int" />
     <param name="frontier/cluster_size_xy" value="2.0" type="double" />
     <param name="frontier/cluster_size_z" value="10.0" type="double" />
@@ -266,7 +269,7 @@
     <param name="manager/use_active_perception" value="true" type="bool" />
     <param name="manager/use_4degree_kinoAstar" value="false" type="bool" />
     <param name="manager/use_apace_pose_opt" value="true" type="bool" />
-    <param name="manager/use_fvp_opt" value="true" type="bool" />
+    <param name="manager/use_fvp_opt" value="false" type="bool" />
     <param name="manager/min_time" value="true" type="bool" />
 
     <!-- kinodynamic path searching -->

@@ -546,6 +546,28 @@ bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eige
   return false;  // 没有检测到障碍物
 }
 
+//传入caster，防止竞争
+bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end, RayCaster* caster) {
+  caster->input(start, end);
+  Eigen::Vector3i idx;
+  int occupied_count = 0;  //由于特征点是附着在表面的，可能会出现误判断的行为，这里取消检测后n个体素
+  while (caster->nextId(idx)) {
+    if (getOccupancy(idx) == OCCUPIED) {  //找到第一个占据点
+      while (caster->nextId(idx)) {
+        if (occupied_count < mp_->occupied_thr)  //忽略前mp_->occupied_thr个元素
+        {
+          occupied_count++;
+          continue;
+        } else {  //依然没有结束
+          return true;
+        }
+      }
+      return false;  // 没有检测到障碍物
+    }
+  }
+  return false;  // 没有检测到障碍物
+}
+
 int SDFMap::countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster) {
   Eigen::Vector3i idx;
   Eigen::AngleAxisd angle_axis(yaw, Eigen::Vector3d::UnitZ());

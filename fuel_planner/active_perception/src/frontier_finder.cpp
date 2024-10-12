@@ -124,7 +124,7 @@ void FrontierFinder::compute_frontier_run() {
     time_debug_.function_start("updateShareFrontierParam");
     updateShareFrontierParam();
     time_debug_.function_end("updateShareFrontierParam");
-    time_debug_.output_time();                                    //输出计算时间
+    time_debug_.output_time();                                    // 输出计算时间
     std::this_thread::sleep_for(std::chrono::milliseconds(100));  // 控制线程的执行频率
   }
 }
@@ -141,19 +141,21 @@ void FrontierFinder::getShareFrontierParam(const Vector3d& cur_pos, const double
     shared_param_.refer_pos = refer_pos;
     shared_param_.has_pos_refer_ = has_pos_refer_;
 
-    // out_put
+    // output
     active_frontiers = shared_param_.active_frontiers;
     dead_frontiers = shared_param_.dead_frontiers;
     points = shared_param_.viewpoint_pos;
     yaws = shared_param_.viewpoint_yaw_vector;
     frontier_cells = shared_param_.viewpoint_frontier_cell;
     score = shared_param_.score;
-  } else {
+  }
+
+  else {
     // input
     setSortRefer(cur_pos, yaw_now, refer_pos, has_pos_refer_);
     searchFrontiers();          // 执行搜索操作
     computeFrontiersToVisit();  // 计算需要访问的前沿
-    // out_put
+    // output
     getFrontiers(active_frontiers);
     getDormantFrontiers(dead_frontiers);
     getBestViewpointData(points, yaws, frontier_cells, score);
@@ -165,7 +167,7 @@ void FrontierFinder::updateShareFrontierParam() {
   // input
   setSortRefer(shared_param_.cur_pos, shared_param_.yaw_now, shared_param_.refer_pos, shared_param_.has_pos_refer_);
 
-  // out_put
+  // output
   getFrontiers(shared_param_.active_frontiers);
   getDormantFrontiers(shared_param_.dead_frontiers);
   getBestViewpointData(shared_param_.viewpoint_pos, shared_param_.viewpoint_yaw_vector, shared_param_.viewpoint_frontier_cell,

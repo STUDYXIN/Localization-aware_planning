@@ -89,8 +89,7 @@ bool PAExplorationManager::FindFinalGoal() {
   return (sdf_map_->getOccupancy(final_goal) == SDFMap::FREE && sdf_map_->getDistance(final_goal) > 0.2);
 }
 
-NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(
-    const Vector3d& next_pos, const vector<double>& next_yaw_vec, double& next_yaw) {
+NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(Vector3d& next_pos, vector<double>& next_yaw_vec, double& next_yaw) {
   const auto& start_pos = expl_fsm_.lock()->start_pos_;
   const auto& start_vel = expl_fsm_.lock()->start_vel_;
   const auto& start_acc = expl_fsm_.lock()->start_acc_;
@@ -104,16 +103,19 @@ NEXT_GOAL_TYPE PAExplorationManager::selectNextGoal(
   // 目标点已经出现在已知区域，直接前往
   if (FindFinalGoal()) {
     vector<Vector3d> empty;
-    last_fail_reason = planToNextGoal(next_pos, next_yaw_vec, next_yaw, empty, false);  // 已经可以去终点就不用关心探索的事了
+    vector<double> final_yaw_vec;
+    gereateEndYawForFinalGoal(final_goal, start_yaw(0), final_yaw_vec);
+    // for (const auto& yaw : final_yaw_vec) {
+    //   std::cout << "Final yaw: " << yaw << std::endl;
+    // }
+
+    last_fail_reason = planToNextGoal(final_goal, final_yaw_vec, next_yaw, empty, false);  // 已经可以去终点就不用关心探索的事了
 
     if (last_fail_reason == NO_NEED_CHANGE) {
-      ROS_INFO("SUCCESS FIND END!!!!!.");
+      ROS_INFO("[PAExplorationManager::selectNextGoal]: Successfully plan to final goal");
+      next_pos = final_goal;
+      next_yaw_vec.swap(final_yaw_vec);
       return REACH_END;
-    }
-
-    else {
-      ROS_WARN("FAIL TO FIND END!!!!!.");
-      return NO_AVAILABLE_FRONTIER;
     }
   }
 
@@ -200,6 +202,29 @@ bool PAExplorationManager::findJunction(const vector<Vector3d>& path, Vector3d& 
   ROS_ERROR("[PAExplorationManager] No free point found, defaulting to path's start point.");
   point = path.front();
   return false;
+}
+
+void PAExplorationManager::gereateEndYawForFinalGoal(
+    const Vector3d& pos, const double& cur_yaw, vector<double>& yaw_samples_res) {
+  yaw_samples_res.clear();
+
+  // 终点可以不用考虑看向未知区域，只用考虑特征点数量，和与当前状态的一致性，简单从当前yaw开始采样
+  double yaw_step = M_PI / 12.0;  // 15度一步进，一共24个采样点
+
+  // 遍历采样的 yaw 值
+  for (double yaw = -M_PI; yaw < M_PI; yaw += yaw_step) {
+    Vector3d acc = Vector3d::Zero();
+    Quaterniond ori = Utils::calcOrientation(yaw, acc);
+    auto f_num = feature_map_->get_NumCloud_using_Odom(pos, ori);
+    if (f_num > Utils::getGlobalParam().min_feature_num_plan_) yaw_samples_res.push_back(yaw);
+  }
+  double norm_target_yaw = normalizeYaw(cur_yaw);  // 归一化当前 yaw
+                                                   // 对 yaw_samples 按照与当前 yaw_now 的差值进行排序
+  std::sort(yaw_samples_res.begin(), yaw_samples_res.end(), [this, norm_target_yaw](double yaw1, double yaw2) {
+    double diff1 = this->normalizeYaw(yaw1 - norm_target_yaw);
+    double diff2 = this->normalizeYaw(yaw2 - norm_target_yaw);
+    return std::abs(diff1) < std::abs(diff2);
+  });
 }
 
 void PAExplorationManager::searchYaw(const Vector3d& pos, vector<double>& yaw_samples_res) {

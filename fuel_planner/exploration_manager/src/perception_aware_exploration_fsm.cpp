@@ -64,8 +64,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
 
   planner_manager_ = expl_manager_->planner_manager_;
 
-  state_str_ = { "INIT", "WAIT_TARGET", "START_IN_STATIC", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP",
-    "FIND_FINAL_GOAL" };
+  state_str_ = { "INIT", "WAIT_TARGET", "START_IN_STATIC", "PUB_TRAJ", "MOVE_TO_NEXT_GOAL", "REPLAN", "EMERGENCY_STOP" };
 
   /* Ros sub, pub and timer */
   exec_timer_ = nh.createTimer(ros::Duration(0.05), &PAExplorationFSM::FSMCallback, this);
@@ -245,16 +244,13 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         }
       }
 
-      // Replan if find final goal
-      else if (t_cur > fp_->replan_thresh2_ && expl_manager_->FindFinalGoal()) {
-        if (do_final_plan) transitState(FIND_FINAL_GOAL, "FSM");  // 如果终点被发现，转到FIND_FINAL_GOAL, 之后不考虑重规划
-        ROS_WARN("[Replan]: Find final goal=====================================");
+      else if (next_goal_ == REACH_END) {
+        ROS_WARN("[Replan]: Final final goal,reject to replan====================");
       }
 
       // Replan if next frontier to be visited is covered
       else if (do_replan_ && t_cur > fp_->replan_thresh2_ &&
                expl_manager_->frontier_finder_->isinterstFrontierCovered(choose_frontier_cell)) {
-        // else if (do_replan_ && t_cur > fp_->replan_thresh2_ && expl_manager_->frontier_finder_->isFrontierCovered()) {
         transitState(REPLAN, "FSM");
         setVisualFSMType(REPLAN, CLUSTER_COVER);
         ROS_WARN("[Replan]: Cluster covered=====================================");
@@ -313,48 +309,6 @@ void PAExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
     case EMERGENCY_STOP: {
       ROS_WARN_THROTTLE(1.0, "Emergency Stop.");
-      break;
-    }
-
-    case FIND_FINAL_GOAL: {
-      static bool first_enter_findend_ = true;
-      if (first_enter_findend_ && last_fail_reason != COLLISION_CHECK_FAIL) {
-
-        // Inform traj_server the replanning
-        replan_begin_time = ros::Time::now();
-        setStartState(START_FROM_LAST_TRAJ);
-        replan_pub_.publish(std_msgs::Empty());
-
-        expl_manager_->setSampleYaw(final_goal_, odom_yaw_);
-        choose_pos_ = final_goal_;
-        choose_yaw_ = expl_manager_->getNextYaw();
-        choose_frontier_cell = expl_manager_->ed_->frontier_now;
-        if (std::isnan(choose_yaw_)) {
-          first_enter_findend_ = true;
-          transitState(EMERGENCY_STOP, "FSM");
-          break;
-        }
-        first_enter_findend_ = false;
-      }
-      next_goal_ = callExplorationPlanner();
-
-      if (next_goal_ == REACH_END) {
-        last_fail_reason = NO_NEED_CHANGE;
-        visualization_->drawFrontiersGo(choose_frontier_cell, choose_pos_, choose_yaw_);
-        transitState(PUB_TRAJ, "FSM");
-        first_enter_findend_ = true;
-        do_final_plan = false;
-      }
-
-      else {
-        choose_yaw_ = expl_manager_->getNextYaw();
-        ROS_ERROR("Try end_yaw = %.2f But can't find path to end...-----------------------------", choose_yaw_);
-        if (std::isnan(choose_yaw_)) {
-          first_enter_findend_ = true;
-          transitState(REPLAN, "FSM");
-        }
-      }
-
       break;
     }
   }
@@ -448,9 +402,6 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   }
 
   // Draw updated box
-  Vector3d bmin, bmax;
-  planner_manager_->edt_environment_->sdf_map_->getUpdatedBox(bmin, bmax);
-
   auto ft = expl_manager_->frontier_finder_;
   auto ed = expl_manager_->ed_;
   auto pa = expl_manager_->planner_manager_->path_finder_;
@@ -495,11 +446,11 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
       ed->point_now, ed->yaw_vector, ed->frontier_now, score);
   debug_timer.function_end("getShareFrontierParam");
   if (ed->frontiers_.size() == 0) return;
-  debug_timer.function_start("visualization");
-  visualization_->drawFrontiers(ed->frontiers_);
-  visualization_->drawdeadFrontiers(ed->dead_frontiers_);
-  visualization_->drawFrontiersAndViewpointBest(ed->point_now, ed->yaw_vector.front(), ed->frontier_now, score);
-  debug_timer.function_end("visualization");
+  // debug_timer.function_start("visualization");
+  // visualization_->drawFrontiers(ed->frontiers_);
+  // visualization_->drawdeadFrontiers(ed->dead_frontiers_);
+  // visualization_->drawFrontiersAndViewpointBest(ed->point_now, ed->yaw_vector.front(), ed->frontier_now, score);
+  // debug_timer.function_end("visualization");
   debug_timer.output_time();
   // cout << "sortrefer: pos_now " << odom_pos_.transpose() << " yaw_now " << odom_yaw_ << " refer_pos " << refer_pos.transpose()
   //      << " viewpoint_pos " << ed->point_now.transpose() << endl;

@@ -512,6 +512,24 @@ int FastPlannerManager::planYawPerceptionAware(const Vector3d& start_yaw, const 
   // Call B-spline optimization solver
   auto time_start_2 = ros::Time::now();
 
+  // Add noise to yaw if variance is too small
+  double yaw_variance = Utils::calcMeanAndVariance(yaw).second;
+  if (yaw_variance < 1e-4) {
+    cout << "add gaussian noise to yaw control points" << endl;
+
+    double sigma = 0.1;  // adjust the noise level as needed
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<double> distribution(0.0, sigma);  // 均值为 0，标准差为 0.1
+
+    for (int i = 0; i < yaw.rows(); ++i) {
+      double noise = distribution(gen);  // 生成一个符合正态分布的随机数
+      yaw(i, 0) += noise;
+    }
+    // cout << "yaw control point before optimize(add noise): " << yaw << endl;
+  }
+
   // Step2: 调用B样条曲线优化器优化yaw轨迹
   // 这里使用了平滑约束、路径点约束、起点约束、终点约束、主要就是添加了yaw共视约束
   int cost_func = 0;

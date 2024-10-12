@@ -35,7 +35,7 @@ public:
 
   bool FindFinalGoal();
 
-  NEXT_GOAL_TYPE selectNextGoal(const Vector3d& next_pos, const vector<double>& next_yaw_vec, double& next_yaw);
+  NEXT_GOAL_TYPE selectNextGoal(Vector3d& next_pos, vector<double>& next_yaw_vec, double& next_yaw);
   VIEWPOINT_CHANGE_REASON planToNextGoal(const Vector3d& next_pos, const vector<double>& next_yaw_vec, double& next_yaw,
       const vector<Vector3d>& frontire_cells, const bool check_exploration);
 
@@ -62,6 +62,8 @@ public:
     while (yaw < -M_PI) yaw += 2.0 * M_PI;
     return yaw;
   }
+
+  void gereateEndYawForFinalGoal(const Vector3d& pos, const double& cur_yaw, vector<double>& yaw_samples_res);
 
 private:
   shared_ptr<EDTEnvironment> edt_environment_;

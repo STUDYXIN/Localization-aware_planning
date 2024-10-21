@@ -26,12 +26,13 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   time_debug
   stepping_debug
+  normal_estimator
 )
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES exploration_manager
- CATKIN_DEPENDS plan_env path_searching bspline bspline_opt active_perception traj_utils lkh_tsp_solver time_debug stepping_debug plan_manage
+ CATKIN_DEPENDS plan_env path_searching bspline bspline_opt active_perception traj_utils lkh_tsp_solver time_debug stepping_debug plan_manage normal_estimator
 #  DEPENDS system_lib
 )
 

@@ -32,10 +32,11 @@ enum DEBUG_TYPE {
   YAW_INIT = 3,
   EVERY_YAW_OPT = 4,
   SHOW_VERVIS = 5,
-  SHOW_VCV = 6
+  SHOW_VCV = 6,
+  SHOW_EUACOE = 7
 };
 const string debugTypeStrings[] = { "BEFORE_COMPUTE", "BEFORE_POS_OPT", "EVERY_POS_OPT", "YAW_INIT", "EVERY_YAW_OPT",
-  "SHOW_VERVIS", "SHOW_VCV" };
+  "SHOW_VERVIS", "SHOW_VCV", "SHOW_EUACOE" };
 
 enum COST_TYPE {
   SMOOTHNESS,
@@ -99,7 +100,7 @@ public:
     if (!init_visual || !init_success) return;
     bspline_pos_ = bspline_pos;
   }
-  vector<Eigen::Vector3d> control_point_, cloud_;
+  vector<Eigen::Vector3d> control_point_, cloud_, cloud_grad_;
   vector<double> intense_;
   vector<Eigen::Vector3d> control_point_grad_;
   bool showcloud;
@@ -116,6 +117,17 @@ public:
     cloud_ = cloud1;
     intense_ = intense;
     control_point_grad_.assign(control_point.size(), Eigen::Vector3d::Zero());
+    cloud_grad_.clear();
+    if (type == SHOW_EUACOE) {
+      for (size_t i = 0; i < intense_grad.size(); i++) {
+        if (intense_grad[i].size() != 3) {
+          ROS_ERROR("[getCloudForVisualization] INPUT SIZE ERROR: %zu", intense_grad[i].size());
+          return;
+        }
+        Eigen::Vector3d knot_grad = (intense_grad[i][0] + 4 * intense_grad[i][1] + intense_grad[i][2]) / 6;
+        cloud_grad_.push_back(knot_grad);
+      }
+    }
     for (size_t i = 0; i < intense_grad.size(); i++) {
       if (intense_grad[i].size() != control_point.size()) {
         ROS_ERROR("[getCloudForVisualization] INPUT SIZE ERROR: %zu", intense_grad[i].size());

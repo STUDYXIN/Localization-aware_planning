@@ -1060,139 +1060,195 @@ void BsplineOptimizer::calcFVBCostAndGradientsKnots(
 }
 void BsplineOptimizer::calcEUACoefficient(const vector<Vector3d>& q, const double& knot_span, vector<double>& coefficient,
     const bool& use_grad, vector<vector<Eigen::Vector3d>>& dcoefficient_dq) {
+  if (frontier_cells_.size() == 0 || frontier_cells_.size() != frontier_normals_.size()) {
+    ROS_ERROR("[BsplineOptimizer::calcEUACoefficient] NO Frontiers!!!! or No frontier_normals_");
+    return;
+  }
   coefficient.clear();
   dcoefficient_dq.clear();
 
   double knot_span_inv2 = 1 / pow(knot_span, 2);
   Eigen::Vector3d gravity(0, 0, -9.81);
   double fov_vertical = camera_param_->fov_vertical * M_PI / 180.0;
-  double fov_horizontal = camera_param_->fov_horizontal * M_PI / 180.0;
+  double wider_fov_vertical = camera_param_->wider_fov_vertical * M_PI / 180.0;
+  double sin_ref = sin(M_PI / 2 - wider_fov_vertical);
+  // cout << " wider_fov_vertical " << wider_fov_vertical << endl;
 
+  double fov_horizontal = camera_param_->fov_horizontal * M_PI / 180.0;
   Eigen::Vector3d acc = knot_span_inv2 * (q[0] - 2 * q[1] + q[2]);
   Eigen::Vector3d a = acc - gravity;  // thrust
   Eigen::Vector3d knot = (q[0] + 4 * q[1] + q[2]) / 6;
+  Eigen::Vector3d knot_camera;
+  camera_param_->fromOdom2Camera(knot, knot_camera);
+
   Eigen::Vector3d da_dq(1, -2, 1);
   da_dq *= knot_span_inv2;
   Eigen::Vector3d db_dq(-1 / 6.0, -4 / 6.0, -1 / 6.0);
   vector<Eigen::Vector3d> zero_vec_q(3, Eigen::Vector3d::Zero());
 
-  // 首先计算垂直可见性===================================================================================
-  vector<double> sin_theta_pot_vec;
-  vector<vector<Eigen::Vector3d>> dpot_dqj_vec;
-  sin_theta_pot_vec.reserve(frontier_cells_.size());
-  dpot_dqj_vec.reserve(frontier_cells_.size());
-  for (size_t i = 0; i < frontier_cells_.size(); i++) {
-    Eigen::Vector3d b = frontier_cells_[i] - knot;
+  if (!use_grad) {  // 简单计算，为每个frontier分布一个参数
 
-    // 计算sin_theta
-    double sin_theta;
-    Eigen::Vector3d dsin_theta_da, dsin_theta_db;
+    // 首先计算垂直可见性===================================================================================
+    vector<double> pot_vec;
+    pot_vec.reserve(frontier_cells_.size());
+    for (size_t i = 0; i < frontier_cells_.size(); i++) {
+      if (!camera_param_->is_depth_useful(knot_camera, frontier_cells_[i])) {
+        pot_vec.push_back(0);
+        continue;
+      }
+      Eigen::Vector3d b = frontier_cells_[i] - knot;
 
-    double a_norm = a.norm();
-    double b_norm = b.norm();
-    double a_norm_inv = 1 / a_norm;
-    double b_norm_inv = 1 / b_norm;
-    Eigen::Vector3d cross_ab = a.cross(b);
-    double cross_ab_norm = cross_ab.norm();
+      // 计算sin_theta
+      double sin_theta;
+      Eigen::Vector3d dsin_theta_da, dsin_theta_db;
 
-    if (a_norm == 0 || b_norm == 0 || cross_ab_norm == 0) {
-      ROS_WARN("[BsplineOptimizer] Vector magnitude is zero, cannot compute gradients.");
-      sin_theta_pot_vec.push_back(0);
-      vector<Eigen::Vector3d> grad_zero(3, Eigen::Vector3d::Zero());
-      dpot_dqj_vec.push_back(grad_zero);
-      continue;
+      double a_norm = a.norm();
+      double b_norm = b.norm();
+      double a_norm_inv = 1 / a_norm;
+      double b_norm_inv = 1 / b_norm;
+      Eigen::Vector3d cross_ab = a.cross(b);
+      double cross_ab_norm = cross_ab.norm();
+
+      if (a_norm == 0 || b_norm == 0 || cross_ab_norm == 0) {
+        ROS_WARN("[BsplineOptimizer] Vector magnitude is zero, cannot compute gradients.");
+        pot_vec.push_back(0);
+        continue;
+      }
+      sin_theta = cross_ab_norm * a_norm_inv * b_norm_inv;
+      if (sin_theta - sin_ref > 0)
+        pot_vec.push_back(1);
+      else
+        pot_vec.push_back(0);
+    }
+    //=========================================================================================
+
+    //扩张多少============================================================================================
+    vector<double> explan_scale_vec;
+    explan_scale_vec.reserve(frontier_cells_.size());
+    double max_length = camera_param_->frontier_visual_max;
+    for (size_t i = 0; i < frontier_cells_.size(); i++) {
+      auto& fc = frontier_cells_[i];
+      double length_known = (fc - knot).norm();
+      double explan_scale = 1.0 - length_known / max_length;
+      if (explan_scale < 0) explan_scale = 0;
+      explan_scale_vec.push_back(explan_scale);
     }
 
-    sin_theta = cross_ab_norm * a_norm_inv * b_norm_inv;
+    // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, explan_scale_vec,
+    // dexplan_scale_dqj_vec); stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+    //====================================================================================================
 
-    // 计算 dsin_theta/da 和 dsin_theta/db
-    dsin_theta_da = (b_norm_inv / cross_ab_norm) * cross_ab.cross(b) - (sin_theta / a_norm) * a;
-    dsin_theta_db = (a_norm_inv / cross_ab_norm) * a.cross(cross_ab) - (sin_theta / b_norm) * b;
+    // vector<Eigen::Vector3d> expand_dir;
+    for (size_t i = 0; i < frontier_cells_.size(); i++) {
+      double cost_each_goe = pot_vec[i] * explan_scale_vec[i];
+      // expand_dir.push_back(cost_each_goe * frontier_normals_[i]);
+      // cout << "frontier_normals_ " << frontier_normals_[i].transpose() << " pot_vec " << pot_vec[i] << " explan_scale_vec "
+      // << explan_scale_vec[i] << endl;
+      coefficient.push_back(cost_each_goe);
+    }
+    dcoefficient_dq.resize(frontier_cells_.size());
+    std::fill(dcoefficient_dq.begin(), dcoefficient_dq.end(), zero_vec_q);
 
-    // 对应论文公式(4)
-    double sin_theta_pot, dpot_dsin_theta;
-    double k1 = 60;
-    double sin_alpha = sin((M_PI - fov_vertical) / 2.0);
-    sin_theta_pot = 1.0 / (1 + exp(-k1 * (sin_theta - sin_alpha)));
-    dpot_dsin_theta = k1 * sin_theta_pot * (1 - sin_theta_pot);
+    // vector<vector<Eigen::Vector3d>> expand_dir_vec;
+    // expand_dir_vec.push_back(expand_dir);
+    // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_EUACOE, q, frontier_cells_, explan_scale_vec, expand_dir_vec);
+    // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_EUACOE);
 
-    // Calculate gradients of potential cost
-    vector<Eigen::Vector3d> dpot_dqj;
-    dpot_dqj.reserve(3);
-    for (int j = 0; j < 3; j++) {
-      Eigen::Vector3d dpoti_dqj = dpot_dsin_theta * (dsin_theta_da * da_dq[j] + dsin_theta_db * db_dq[j]);
-      dpot_dqj.push_back(dpoti_dqj);
+  } else {
+    // 首先计算垂直可见性===================================================================================
+    vector<double> sin_theta_pot_vec;
+    vector<vector<Eigen::Vector3d>> dpot_dqj_vec;
+    sin_theta_pot_vec.reserve(frontier_cells_.size());
+    dpot_dqj_vec.reserve(frontier_cells_.size());
+    for (size_t i = 0; i < frontier_cells_.size(); i++) {
+      Eigen::Vector3d b = frontier_cells_[i] - knot;
+
+      // 计算sin_theta
+      double sin_theta;
+      Eigen::Vector3d dsin_theta_da, dsin_theta_db;
+
+      double a_norm = a.norm();
+      double b_norm = b.norm();
+      double a_norm_inv = 1 / a_norm;
+      double b_norm_inv = 1 / b_norm;
+      Eigen::Vector3d cross_ab = a.cross(b);
+      double cross_ab_norm = cross_ab.norm();
+
+      if (a_norm == 0 || b_norm == 0 || cross_ab_norm == 0) {
+        ROS_WARN("[BsplineOptimizer] Vector magnitude is zero, cannot compute gradients.");
+        sin_theta_pot_vec.push_back(0);
+        vector<Eigen::Vector3d> grad_zero(3, Eigen::Vector3d::Zero());
+        dpot_dqj_vec.push_back(grad_zero);
+        continue;
+      }
+
+      sin_theta = cross_ab_norm * a_norm_inv * b_norm_inv;
+
+      // 计算 dsin_theta/da 和 dsin_theta/db
+      dsin_theta_da = (b_norm_inv / cross_ab_norm) * cross_ab.cross(b) - (sin_theta / a_norm) * a;
+      dsin_theta_db = (a_norm_inv / cross_ab_norm) * a.cross(cross_ab) - (sin_theta / b_norm) * b;
+
+      // 对应论文公式(4)
+      double sin_theta_pot, dpot_dsin_theta;
+      double k1 = 60;
+      double sin_alpha = sin((M_PI - fov_vertical) / 2.0);
+      sin_theta_pot = 1.0 / (1 + exp(-k1 * (sin_theta - sin_alpha)));
+      dpot_dsin_theta = k1 * sin_theta_pot * (1 - sin_theta_pot);
+
+      // Calculate gradients of potential cost
+      vector<Eigen::Vector3d> dpot_dqj;
+      dpot_dqj.reserve(3);
+      for (int j = 0; j < 3; j++) {
+        Eigen::Vector3d dpoti_dqj = dpot_dsin_theta * (dsin_theta_da * da_dq[j] + dsin_theta_db * db_dq[j]);
+        dpot_dqj.push_back(dpoti_dqj);
+      }
+
+      sin_theta_pot_vec.push_back(sin_theta_pot);
+      dpot_dqj_vec.push_back(dpot_dqj);
+    }
+    // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, sin_theta_pot_vec, dpot_dqj_vec);
+    // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+    // std::fill(sin_theta_pot_vec.begin(), sin_theta_pot_vec.end(), 1.0);
+    // std::fill(dpot_dqj_vec.begin(), dpot_dqj_vec.end(), zero_vec_q);
+    //=========================================================================================
+
+    //扩张多少============================================================================================
+
+    vector<double> explan_scale_vec;
+    vector<vector<Eigen::Vector3d>> dexplan_scale_dqj_vec;
+    explan_scale_vec.reserve(frontier_cells_.size());
+    dexplan_scale_dqj_vec.reserve(frontier_cells_.size());
+    double max_length = camera_param_->frontier_visual_max;
+    for (size_t i = 0; i < frontier_cells_.size(); i++) {
+      auto& fc = frontier_cells_[i];
+      double length_known = (fc - knot).norm();
+      double explan_scale = length_known / max_length;
+      Eigen::Vector3d dlength_known_dknot = (knot - fc) / length_known;
+      Eigen::Vector3d dexplan_scale_dknot = dlength_known_dknot / max_length;
+
+      vector<Eigen::Vector3d> des_dqj;
+      des_dqj.resize(3);
+      des_dqj[0] = dexplan_scale_dknot * (1.0 / 6.0);
+      des_dqj[1] = dexplan_scale_dknot * (4.0 / 6.0);
+      des_dqj[2] = dexplan_scale_dknot * (1.0 / 6.0);
+
+      explan_scale_vec.push_back(explan_scale);
+      dexplan_scale_dqj_vec.push_back(des_dqj);
     }
 
-    sin_theta_pot_vec.push_back(sin_theta_pot);
-    dpot_dqj_vec.push_back(dpot_dqj);
-  }
-  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, sin_theta_pot_vec, dpot_dqj_vec);
-  // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
-  // std::fill(sin_theta_pot_vec.begin(), sin_theta_pot_vec.end(), 1.0);
-  // std::fill(dpot_dqj_vec.begin(), dpot_dqj_vec.end(), zero_vec_q);
-  //==================================================================================================
+    // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, explan_scale_vec,
+    // dexplan_scale_dqj_vec); stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+    //====================================================================================================
 
-  //用viewpoint和frontier_Cell的连线近似为cell所在切面====================================================
-
-  vector<double> cos_alpha_coe_vec;
-  vector<vector<Eigen::Vector3d>> dcoe_dqj_vec;
-  cos_alpha_coe_vec.reserve(frontier_cells_.size());
-  dcoe_dqj_vec.reserve(frontier_cells_.size());
-  for (size_t i = 0; i < frontier_cells_.size(); i++) {
-    Eigen::Vector3d knot2fc = frontier_cells_[i] - knot;
-    Eigen::Vector3d vp2fc = frontier_cells_[i] - view_point_pos_;
-
-    double cos_alpha;
-    Eigen::Vector3d dcos_alpha_dknot;
-    cos_alpha = knot2fc.dot(vp2fc) / (knot2fc.norm() * vp2fc.norm());
-    Eigen::Vector3d dcos_alpha_dknot2fc =
-        (vp2fc / knot2fc.norm() - knot2fc.dot(vp2fc) / pow(knot2fc.norm(), 3) * knot2fc) / vp2fc.norm();
-    dcos_alpha_dknot = -dcos_alpha_dknot2fc;
-
-    double cos_alpha_L, dcos_alpha_Ldcos_alpha;
-    Eigen::Vector3d dcos_alpha_Ldknot;
-    double mu = 0.1;
-    if (cos_alpha <= 0) {
-      cos_alpha_L = 0;
-      dcos_alpha_Ldcos_alpha = 0;
-    } else if (cos_alpha <= mu) {
-      double factor = (mu - cos_alpha / 2) * (cos_alpha / mu) * (cos_alpha / mu);
-      cos_alpha_L = factor * (cos_alpha / mu);
-      dcos_alpha_Ldcos_alpha =
-          (3 * (mu - cos_alpha / 2) * cos_alpha * cos_alpha) / (mu * mu * mu) - 0.5 * (cos_alpha / mu) * (cos_alpha / mu);
-    } else {  // cos_alpha > mu
-      cos_alpha_L = cos_alpha - mu / 2;
-      dcos_alpha_Ldcos_alpha = 1;
+    for (size_t i = 0; i < frontier_cells_.size(); i++) {
+      double cost_each_goe = sin_theta_pot_vec[i] * explan_scale_vec[i];
+      coefficient.push_back(cost_each_goe);
+      std::vector<Eigen::Vector3d> dcost_each_goe_dqj(3);
+      for (int j = 0; j < 3; ++j)
+        dcost_each_goe_dqj[j] = dpot_dqj_vec[i][j] * explan_scale_vec[i] + sin_theta_pot_vec[i] * dexplan_scale_dqj_vec[i][j];
+      dcoefficient_dq.push_back(dcost_each_goe_dqj);
     }
-
-    dcos_alpha_Ldknot = dcos_alpha_Ldcos_alpha * dcos_alpha_dknot;
-
-    vector<Eigen::Vector3d> dcoe_dqj;
-    dcoe_dqj.resize(3);
-    dcoe_dqj[0] = dcos_alpha_Ldknot * (1.0 / 6.0);
-    dcoe_dqj[1] = dcos_alpha_Ldknot * (4.0 / 6.0);
-    dcoe_dqj[2] = dcos_alpha_Ldknot * (1.0 / 6.0);
-
-    cos_alpha_coe_vec.push_back(cos_alpha_L);
-    dcoe_dqj_vec.push_back(dcoe_dqj);
   }
-  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, cos_alpha_coe_vec, dcoe_dqj_vec);
-  // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
-  // std::fill(cos_alpha_coe_vec.begin(), cos_alpha_coe_vec.end(), 1.0);
-  // std::fill(dcoe_dqj_vec.begin(), dcoe_dqj_vec.end(), zero_vec_q);
-  //==================================================================================================
-
-  for (size_t i = 0; i < frontier_cells_.size(); i++) {
-    double cost_each_goe = sin_theta_pot_vec[i] * cos_alpha_coe_vec[i];
-    coefficient.push_back(cost_each_goe);
-    std::vector<Eigen::Vector3d> dcost_each_goe_dqj(3);
-    for (int j = 0; j < 3; ++j)
-      dcost_each_goe_dqj[j] = dpot_dqj_vec[i][j] * cos_alpha_coe_vec[i] + sin_theta_pot_vec[i] * dcoe_dqj_vec[i][j];
-    dcoefficient_dq.push_back(dcost_each_goe_dqj);
-  }
-
-  if (!use_grad) std::fill(dcoefficient_dq.begin(), dcoefficient_dq.end(), zero_vec_q);
 }
 
 void BsplineOptimizer::calcEUACostAndGradientsKnots(
@@ -1220,51 +1276,79 @@ void BsplineOptimizer::calcEUACostAndGradientsKnots(
   vector<double> coefficient;
   vector<vector<Eigen::Vector3d>> dcoefficient_dq;
   calcEUACoefficient(q, knot_span, coefficient, false, dcoefficient_dq);
-  //扩张多少============================================================================================
 
+  //用viewpoint和frontier_Cell的连线近似为cell所在切面====================================================
   Eigen::Vector3d knot = (q[0] + 4 * q[1] + q[2]) / 6;
-  vector<double> explan_scale_vec;
-  vector<vector<Eigen::Vector3d>> dexplan_scale_dqj_vec;
-  explan_scale_vec.reserve(frontier_cells_.size());
-  dexplan_scale_dqj_vec.reserve(frontier_cells_.size());
-  double max_length = camera_param_->frontier_visual_max;
+  vector<double> cos_alpha_coe_vec;
+  vector<vector<Eigen::Vector3d>> dcoe_dqj_vec;
+  cos_alpha_coe_vec.reserve(frontier_cells_.size());
+  dcoe_dqj_vec.reserve(frontier_cells_.size());
   for (size_t i = 0; i < frontier_cells_.size(); i++) {
-    auto& fc = frontier_cells_[i];
-    double length_known = (fc - knot).norm();
-    double explan_scale = length_known / max_length;
-    Eigen::Vector3d dlength_known_dknot = (knot - fc) / length_known;
-    Eigen::Vector3d dexplan_scale_dknot = dlength_known_dknot / max_length;
+    Eigen::Vector3d knot2fc = frontier_cells_[i] - knot;
+    Eigen::Vector3d vp2fc = frontier_normals_[i];
 
-    vector<Eigen::Vector3d> des_dqj;
-    des_dqj.resize(3);
-    des_dqj[0] = dexplan_scale_dknot * (1.0 / 6.0);
-    des_dqj[1] = dexplan_scale_dknot * (4.0 / 6.0);
-    des_dqj[2] = dexplan_scale_dknot * (1.0 / 6.0);
+    double cos_alpha;
+    Eigen::Vector3d dcos_alpha_dknot;
+    cos_alpha = knot2fc.dot(vp2fc) / (knot2fc.norm() * vp2fc.norm());
+    Eigen::Vector3d dcos_alpha_dknot2fc =
+        (vp2fc / knot2fc.norm() - knot2fc.dot(vp2fc) / pow(knot2fc.norm(), 3) * knot2fc) / vp2fc.norm();
+    dcos_alpha_dknot = -dcos_alpha_dknot2fc;
 
-    explan_scale_vec.push_back(explan_scale);
-    dexplan_scale_dqj_vec.push_back(des_dqj);
+    double cos_alpha_L, dcos_alpha_Ldcos_alpha;
+    Eigen::Vector3d dcos_alpha_Ldknot;
+    double mu = 0.1;
+    if (cos_alpha <= 0) {
+      cos_alpha_L = 0;
+      dcos_alpha_Ldcos_alpha = 0;
+    } else if (cos_alpha <= mu) {
+      double factor = (mu - cos_alpha / 2) * (cos_alpha / mu) * (cos_alpha / mu);
+      cos_alpha_L = factor * (cos_alpha / mu);
+      dcos_alpha_Ldcos_alpha =
+          (3 * (mu - cos_alpha / 2) * cos_alpha * cos_alpha) / (mu * mu * mu) - 0.5 * (cos_alpha / mu) * (cos_alpha / mu);
+    } else {  // cos_alpha > mu
+      cos_alpha_L = cos_alpha - mu / 2;
+      dcos_alpha_Ldcos_alpha = 1;
+    }
+
+    dcos_alpha_Ldknot = dcos_alpha_Ldcos_alpha * dcos_alpha_dknot;
+
+    double L;
+    Eigen::Vector3d dLdknot;
+    L = 1.0 - cos_alpha_L;
+    dLdknot = -dcos_alpha_Ldknot;
+
+    vector<Eigen::Vector3d> dcoe_dqj;
+    dcoe_dqj.resize(3);
+    dcoe_dqj[0] = dLdknot * (1.0 / 6.0);
+    dcoe_dqj[1] = dLdknot * (4.0 / 6.0);
+    dcoe_dqj[2] = dLdknot * (1.0 / 6.0);
+
+    cos_alpha_coe_vec.push_back(L);
+    dcoe_dqj_vec.push_back(dcoe_dqj);
   }
-
-  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, explan_scale_vec,
-  // dexplan_scale_dqj_vec); stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
-  //====================================================================================================
+  stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_EUACOE, q, frontier_cells_, cos_alpha_coe_vec, dcoe_dqj_vec);
+  stepping_debug_->calldebug(DEBUG_TYPE::SHOW_EUACOE);
+  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, cos_alpha_coe_vec, dcoe_dqj_vec);
+  // stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
 
   // 融合每个frontier的cost 和 grad
   vector<double> cost_each_fc_vec;
   vector<vector<Eigen::Vector3d>> dcost_each_fc_dqj_vec;
   for (size_t i = 0; i < frontier_cells_.size(); i++) {
-    double cost_each_fc = coefficient[i] * explan_scale_vec[i];
+    double cost_each_fc = coefficient[i] * cos_alpha_coe_vec[i];
     cost_each_fc_vec.push_back(cost_each_fc);
     std::vector<Eigen::Vector3d> dcost_each_fc_dqj(3);
     for (int j = 0; j < 3; ++j)
-      dcost_each_fc_dqj[j] = dcoefficient_dq[i][j] * explan_scale_vec[i] + coefficient[i] * dexplan_scale_dqj_vec[i][j];
+      dcost_each_fc_dqj[j] = dcoefficient_dq[i][j] * cos_alpha_coe_vec[i] + coefficient[i] * dcoe_dqj_vec[i][j];
     dcost_each_fc_dqj_vec.push_back(dcost_each_fc_dqj);
 
     cost += cost_each_fc;
     for (int j = 0; j < 3; ++j) dcost_dq[j] += dcost_each_fc_dqj[j];
   }
-  stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, cost_each_fc_vec, dcost_each_fc_dqj_vec);
-  stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
+  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_EUACOE, q, frontier_cells_, cost_each_fc_vec,
+  // dcost_each_fc_dqj_vec); stepping_debug_->calldebug(DEBUG_TYPE::SHOW_EUACOE);
+  // stepping_debug_->getCloudForVisualization(DEBUG_TYPE::SHOW_VERVIS, q, frontier_cells_, cost_each_fc_vec,
+  // dcost_each_fc_dqj_vec); stepping_debug_->calldebug(DEBUG_TYPE::SHOW_VERVIS);
 }
 
 // 原本考虑的太复杂，更换方法

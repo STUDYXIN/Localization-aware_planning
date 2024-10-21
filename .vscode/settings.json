@@ -83,6 +83,7 @@
         "*.ipp": "cpp",
         "valarray": "cpp",
         "core": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "dense": "cpp"
     }
 }

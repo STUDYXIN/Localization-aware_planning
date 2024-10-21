@@ -17,6 +17,7 @@
 #include <plan_manage/perception_aware_planner_manager.h>
 #include <traj_utils/planning_visualization.h>
 #include <stepping_debug.hpp>
+#include <normal_estimator.hpp>
 #include <chrono>
 
 #include <thread>
@@ -446,6 +447,19 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
       ed->point_now, ed->yaw_vector, ed->frontier_now, score);
   debug_timer.function_end("getShareFrontierParam");
   if (ed->frontiers_.size() == 0) return;
+
+  // 调试frontier上点的法向量
+  // debug_timer.function_start("computeNormals");
+  // std::vector<Eigen::Vector3d> normals;
+  // NormalEstimator estimator(9, ed->point_now);
+  // estimator.computeNormals(ed->frontier_now, normals);
+  // debug_timer.function_end("computeNormals");
+
+  // debug_timer.function_start("visualization_");
+  // visualization_->drawFrontiersAndViewpointBest(ed->point_now, ed->yaw_vector.front(), ed->frontier_now, score);
+  // visualization_->drawFrontierPointandNormals(ed->frontier_now, normals);
+  // debug_timer.function_end("visualization_");
+
   // debug_timer.function_start("visualization");
   // visualization_->drawFrontiers(ed->frontiers_);
   // visualization_->drawdeadFrontiers(ed->dead_frontiers_);

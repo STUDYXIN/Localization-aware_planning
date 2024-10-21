@@ -409,16 +409,17 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
   }
 
   // Set params
-  // if (cost_func & BsplineOptimizer::PARALLAX || cost_func & BsplineOptimizer::VERTICALVISIBILITY ||
-  //     cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
-  //   bspline_optimizers_[0]->setFeatureMap(feature_map_);
-  //   if (cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
-  //     // bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
-  //     // bspline_optimizers_[0]->setFrontiercenter(frontier_center);
-  //     bspline_optimizers_[0]->setViewpoint(end_pt, end_yaw);
-  //     // bspline_optimizers_[0]->setFrontierCells(frontier_cells);
-  //   }
-  // }
+  if (cost_func & BsplineOptimizer::PARALLAX || cost_func & BsplineOptimizer::VERTICALVISIBILITY ||
+      cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
+    bspline_optimizers_[0]->setFeatureMap(feature_map_);
+    if (cost_func & BsplineOptimizer::FRONTIERVISIBILITY_POS) {
+      // bspline_optimizers_[0]->setFrontierFinder(frontier_finder_);
+      // bspline_optimizers_[0]->setFrontiercenter(frontier_center);
+      bspline_optimizers_[0]->setViewpoint(end_pt, end_yaw);
+      bspline_optimizers_[0]->setFrontierCells(frontier_cells);
+      bspline_optimizers_[0]->setFrontierNormals();
+    }
+  }
   stepping_debug_->debug_type_now_ = DEBUG_TYPE::EVERY_POS_OPT;
   bspline_optimizers_[0]->optimize(ctrl_pts, dt, cost_func, 1, 1);
   if (!bspline_optimizers_[0]->issuccess) return POSISION_OPT_ERROR;

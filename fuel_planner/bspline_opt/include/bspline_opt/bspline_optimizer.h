@@ -3,6 +3,7 @@
 
 #include <plan_env/utils.hpp>
 #include <plan_env/edt_environment.h>
+#include <normal_estimator.hpp>
 #include <ros/ros.h>
 
 #include <Eigen/Eigen>
@@ -281,17 +282,23 @@ public:
     frontier_cells_ = frontier_cells;
   }
 
-  void setFrontiercenter(const Vector3d& frontier_centre) {
-    frontier_centre_ = frontier_centre;
-  }
-
   void setViewpoint(const Vector3d& view_point_pos, double view_point_yaw) {
     view_point_pos_ = view_point_pos;
     view_point_yaw_ = view_point_yaw;
   }
 
+  void setFrontierNormals() {
+    if (view_point_yaw_ == 2 * M_PI && frontier_cells_.size() == 0) {
+      // 有点丑陋的验证viewpoint有没有被初始化的方法...
+      ROS_ERROR("[BsplineOptimizer::setFrontierNormals] setFrontierNormals Fail!!!!!!");
+      return;
+    }
+    NormalEstimator estimator(9, view_point_pos_);
+    estimator.computeNormals(frontier_cells_, frontier_normals_);
+  }
+
   CameraParam::Ptr camera_param_ = nullptr;
-  vector<Vector3d> frontier_cells_;
+  vector<Vector3d> frontier_cells_, frontier_normals_;
 
   // vector<vector<int>> frontier_status_;
 

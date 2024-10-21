@@ -751,6 +751,25 @@ void PlanningVisualization::drawDebugPosBspline(NonUniformBspline& bspline, cons
   drawBspline(bspline, size1, color1, true, size2, color2, DEBUG_POS + debug_count % 100);
 }
 
+void PlanningVisualization::drawFrontierPointandNormals(
+    const vector<Eigen::Vector3d>& point, const vector<Eigen::Vector3d>& grad) {
+  if (grad.size() != point.size()) {
+    ROS_ERROR("[PlanningVisualization::drawFrontierPointandNormals] point.size(): %zu != grad.size() %zu !!!!!!", point.size(),
+        grad.size());
+    return;
+  }
+
+  // 绘制control_point
+  vector<Vector3d> pts3;
+  for (int i = 0; i < point.size(); ++i) {
+    // cout << " point[i] " << point[i].transpose() << " grad[i] " << grad[i].transpose() << endl;
+    Vector3d pdir = point[i] + 1.0 * grad[i];
+    // Vector3d pdir = point[i] + 0.001 * grad[i];
+    pts3.push_back(pdir);
+  }
+  displayArrowList(point, pts3, 0.03, Eigen::Vector4d(0.5, 0.5, 0.0, 1.0), DEBUG_CONTROL_POINT_ARROW + 1, 5);
+}
+
 void PlanningVisualization::drawDebugControlpoint(
     const vector<Eigen::Vector3d>& contrtol_point, const vector<Eigen::Vector3d>& grad) {
   if (grad.size() != contrtol_point.size()) {
@@ -766,7 +785,7 @@ void PlanningVisualization::drawDebugControlpoint(
     pts1.push_back(knot);
     pts2.push_back(knot - 1.0 * knot_grad);
   }
-  displayArrowList(pts1, pts2, 0.03, Eigen::Vector4d(0.5, 0.0, 0.0, 1.0), DEBUG_CONTROL_POINT, 5);
+  displayArrowList(pts1, pts2, 0.03, Eigen::Vector4d(0.5, 0.0, 0.0, 1.0), DEBUG_CONTROL_POINT_ARROW, 5);
 
   // 绘制control_point
   vector<Vector3d> pts3;
@@ -775,7 +794,7 @@ void PlanningVisualization::drawDebugControlpoint(
     // Vector3d pdir = contrtol_point[i] + 0.001 * grad[i];
     pts3.push_back(pdir);
   }
-  displayArrowList(contrtol_point, pts3, 0.02, Eigen::Vector4d(0.5, 0.5, 0.0, 1.0), DEBUG_CONTROL_POINT + 1, 5);
+  displayArrowList(contrtol_point, pts3, 0.02, Eigen::Vector4d(0.5, 0.5, 0.0, 1.0), DEBUG_CONTROL_POINT_ARROW + 1, 5);
 }
 
 void PlanningVisualization::drawDebugCloud(const vector<Eigen::Vector3d>& cloud, const vector<double>& intense) {

@@ -91,7 +91,8 @@ private:
     SHOW_FEATURE_TEXT = 1700,
     DEBUG_POS = 1800,
     DEBUG_YAW = 1900,
-    DEBUG_CONTROL_POINT = 2000
+    DEBUG_CONTROL_POINT_ARROW = 2000,
+    DEBUG_CONTROL_POINT = 2200,
   };
 
   enum TOPOLOGICAL_PATH_PLANNING_ID { GRAPH_NODE = 1, GRAPH_EDGE = 100, RAW_PATH = 200, FILTERED_PATH = 300, SELECT_PATH = 400 };
@@ -208,6 +209,8 @@ public:
       const Eigen::Vector3d& position, const std::string& text, const Eigen::Vector4d& color, double scale, int id, int pub_id);
   void drawDebugPosBspline(NonUniformBspline& bspline, const int& debug_count);
   void drawDebugControlpoint(const vector<Eigen::Vector3d>& contrtol_point, const vector<Eigen::Vector3d>& grad);
+  void drawDebugControlpoint(const vector<Eigen::Vector3d>& contrtol_point);
+  void drawFrontierPointandNormals(const vector<Eigen::Vector3d>& point, const vector<Eigen::Vector3d>& grad);
   void drawDebugCloud(const vector<Eigen::Vector3d>& cloud, const vector<double>& intense);
 
   Eigen::Vector4d getColor(const double& h, double alpha = 1.0);

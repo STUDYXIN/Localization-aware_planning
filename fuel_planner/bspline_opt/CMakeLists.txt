@@ -20,13 +20,14 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   plan_env
   stepping_debug
+  normal_estimator
   traj_utils
 )
  
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES bspline_opt
- CATKIN_DEPENDS plan_env active_perception stepping_debug traj_utils
+ CATKIN_DEPENDS plan_env active_perception stepping_debug normal_estimator traj_utils
 #  DEPENDS system_lib
 )
  

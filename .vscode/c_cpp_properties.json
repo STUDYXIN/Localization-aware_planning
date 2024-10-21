@@ -39,7 +39,8 @@
                 "/home/star/ActiveSlam/new_planner/src/Localization-aware_planning/APACE/voxel_mapping/include/**",
                 "/usr/include/**",
                 "${workspaceFolder}/fuel_planner/utils/time_debug/include",
-                "${workspaceFolder}/fuel_planner/utils/stepping_debug/include"
+                "${workspaceFolder}/fuel_planner/utils/stepping_debug/include",
+                "${workspaceFolder}/fuel_planner/utils/normal_estimator/include"
             ],
             "name": "ROS",
             "intelliSenseMode": "gcc-x64",

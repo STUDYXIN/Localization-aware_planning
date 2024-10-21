@@ -61,7 +61,7 @@
 
   <!-- main node -->
   <node pkg="exploration_manager" name="exploration_node" type="exploration_node" output="screen">
-    <param name="debug/start_debug_mode" value=" false " type="bool" />
+    <param name="debug/start_debug_mode" value="false" type="bool" />
     <!-- input 'enter' to step debug if debug_delay_time < 0 -->
     <param name="debug/debug_delay_time" value="-0.05" type="double" />
 
@@ -270,7 +270,7 @@
     <param name="manager/use_active_perception" value="true" type="bool" />
     <param name="manager/use_4degree_kinoAstar" value="false" type="bool" />
     <param name="manager/use_apace_pose_opt" value="false" type="bool" />
-    <param name="manager/use_fvp_opt" value="true" type="bool" />
+    <param name="manager/use_fvp_opt" value="false" type="bool" />
     <param name="manager/min_time" value="true" type="bool" />
 
     <!-- kinodynamic path searching -->

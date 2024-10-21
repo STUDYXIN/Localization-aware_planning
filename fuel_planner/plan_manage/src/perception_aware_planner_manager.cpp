@@ -393,7 +393,7 @@ int FastPlannerManager::planPosPerceptionAware(const Vector3d& start_pt, const V
   cost_func |= BsplineOptimizer::SMOOTHNESS;
   cost_func |= BsplineOptimizer::FEASIBILITY;
   cost_func |= BsplineOptimizer::START;
-  cost_func |= BsplineOptimizer::END;
+  // cost_func |= BsplineOptimizer::END;
   cost_func |= BsplineOptimizer::MINTIME;
   cost_func |= BsplineOptimizer::DISTANCE;
 

@@ -763,7 +763,7 @@ void PlanningVisualization::drawFrontierPointandNormals(
   vector<Vector3d> pts3;
   for (int i = 0; i < point.size(); ++i) {
     // cout << " point[i] " << point[i].transpose() << " grad[i] " << grad[i].transpose() << endl;
-    Vector3d pdir = point[i] + 1.0 * grad[i];
+    Vector3d pdir = point[i] + 10.0 * grad[i];
     // Vector3d pdir = point[i] + 0.001 * grad[i];
     pts3.push_back(pdir);
   }

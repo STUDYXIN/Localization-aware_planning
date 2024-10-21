@@ -62,6 +62,7 @@ void PAExplorationFSM::init(ros::NodeHandle& nh) {
   expl_manager_ = make_shared<PAExplorationManager>(shared_from_this());
   expl_manager_->getSteppingDebug(stepping_debug_);
   expl_manager_->initialize(nh);
+  expl_manager_->frontier_finder_->getvisualization(visualization_);
 
   planner_manager_ = expl_manager_->planner_manager_;
 
@@ -395,7 +396,7 @@ void PAExplorationFSM::visualize() {
 }
 
 void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
-  debug_timer.setstart_time("frontierCallback", 10);
+  debug_timer.setstart_time("frontierCallback", false);
   // debug_timer.setstart_time("frontierCallback", 10);  // 十次输出一次
   // 初始化
   static int delay = 0;

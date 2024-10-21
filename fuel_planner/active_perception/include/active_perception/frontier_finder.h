@@ -34,6 +34,7 @@ class PerceptionUtils;
 class FeatureMap;
 class CameraParam;
 class DebugTimer;
+class PlanningVisualization;
 // Viewpoint to cover a frontier cluster
 
 struct Viewpoint {
@@ -292,18 +293,26 @@ public:
 private:
   void compute_frontier_run();  // 独立线程的运行函数
   void updateShareFrontierParam();
+  void visualFrontier();         // 实时可视化frontier
   std::atomic<bool> running_;    // 控制线程运行状态的原子变量
   std::thread worker_thread_;    // 独立线程
   std::mutex data_mutex_share_;  // 互斥锁，用于保护共享数据
   std::mutex data_mutex_run;     // 互斥锁，用于保护共享数据
 
   ShareFrontierParam shared_param_;  // 用于存储共享数据的结构体
+  bool init_visual;
+
 public:
   //这个函数中完成数据交互
   void getShareFrontierParam(const Vector3d& cur_pos, const double& yaw_now, const Vector3d& refer_pos,
       bool has_pos_refer_,  // input
       vector<vector<Eigen::Vector3d>>& active_frontiers, vector<vector<Eigen::Vector3d>>& dead_frontiers, Vector3d& points,
       vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);  // out_put
+  shared_ptr<PlanningVisualization> visualization_;
+  void getvisualization(shared_ptr<PlanningVisualization> visualization) {
+    visualization_ = visualization;
+    init_visual = true;
+  }
 };
 
 }  // namespace fast_planner

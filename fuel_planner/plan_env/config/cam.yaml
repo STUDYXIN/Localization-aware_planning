@@ -1,5 +1,5 @@
 camera:
-  feature_visual_max: 6.0
+  feature_visual_max: 8.0
   feature_visual_min: 0.3
   frontier_visual_max: 5.0
   frontier_visual_min: 0.2

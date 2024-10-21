@@ -1,5 +1,6 @@
 #include <active_perception/frontier_finder.h>
 #include <active_perception/perception_utils.h>
+#include "traj_utils/planning_visualization.h"
 
 #include <plan_env/edt_environment.h>
 #include <plan_env/raycast.h>
@@ -102,6 +103,7 @@ FrontierFinder::FrontierFinder(const EDTEnvironment::Ptr& edt, const FeatureMap:
     running_ = true;
     worker_thread_ = std::thread(&FrontierFinder::compute_frontier_run, this);  // 启动独立线程
   }
+  init_visual = false;
 }
 
 FrontierFinder::~FrontierFinder() {
@@ -114,7 +116,7 @@ FrontierFinder::~FrontierFinder() {
 void FrontierFinder::compute_frontier_run() {
   while (running_) {
     // std::lock_guard<std::mutex> lock(data_mutex_run);
-    time_debug_.setstart_time("compute_frontier_run_in_independent_thread", 50);  // 50次输出一次
+    time_debug_.setstart_time("compute_frontier_run_in_independent_thread", false);  // 100次输出一次
     time_debug_.function_start("searchFrontiers");
     searchFrontiers();  // 执行搜索操作
     time_debug_.function_end("searchFrontiers");
@@ -124,8 +126,11 @@ void FrontierFinder::compute_frontier_run() {
     time_debug_.function_start("updateShareFrontierParam");
     updateShareFrontierParam();
     time_debug_.function_end("updateShareFrontierParam");
-    time_debug_.output_time();                                    // 输出计算时间
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));  // 控制线程的执行频率
+    time_debug_.function_start("visualFrontier");
+    visualFrontier();
+    time_debug_.function_end("visualFrontier");
+    time_debug_.output_time();                                   // 输出计算时间
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));  // 控制线程的执行频率
   }
 }
 
@@ -160,6 +165,25 @@ void FrontierFinder::getShareFrontierParam(const Vector3d& cur_pos, const double
     getDormantFrontiers(dead_frontiers);
     getBestViewpointData(points, yaws, frontier_cells, score);
   }
+}
+
+void FrontierFinder::visualFrontier() {
+  if (!init_visual) return;
+  vector<vector<Eigen::Vector3d>> active_frontiers;
+  vector<vector<Eigen::Vector3d>> dead_frontiers;
+  Vector3d points;
+  vector<double> yaws;
+  vector<Vector3d> frontier_cells;
+  vector<double> score;
+
+  getFrontiers(active_frontiers);
+  if (active_frontiers.size() == 0) return;
+  getDormantFrontiers(dead_frontiers);
+  getBestViewpointData(points, yaws, frontier_cells, score);
+
+  visualization_->drawFrontiers(active_frontiers);
+  visualization_->drawdeadFrontiers(dead_frontiers);
+  visualization_->drawFrontiersAndViewpointBest(points, yaws.front(), frontier_cells, score);
 }
 
 void FrontierFinder::updateShareFrontierParam() {

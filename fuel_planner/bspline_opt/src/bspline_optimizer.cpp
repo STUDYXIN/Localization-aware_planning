@@ -1277,7 +1277,7 @@ void BsplineOptimizer::calcEUACostAndGradientsKnots(
   vector<vector<Eigen::Vector3d>> dcoefficient_dq;
   calcEUACoefficient(q, knot_span, coefficient, false, dcoefficient_dq);
 
-  //用viewpoint和frontier_Cell的连线近似为cell所在切面====================================================
+  //====================================================
   Eigen::Vector3d knot = (q[0] + 4 * q[1] + q[2]) / 6;
   vector<double> cos_alpha_coe_vec;
   vector<vector<Eigen::Vector3d>> dcoe_dqj_vec;
@@ -1297,6 +1297,7 @@ void BsplineOptimizer::calcEUACostAndGradientsKnots(
     double cos_alpha_L, dcos_alpha_Ldcos_alpha;
     Eigen::Vector3d dcos_alpha_Ldknot;
     double mu = 0.1;
+
     if (cos_alpha <= 0) {
       cos_alpha_L = 0;
       dcos_alpha_Ldcos_alpha = 0;

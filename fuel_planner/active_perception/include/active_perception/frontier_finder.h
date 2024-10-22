@@ -196,6 +196,8 @@ public:
   void ComputeScoreUnrelatedwithyaw(Viewpoint& viewpoint);
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, int visib_num_, int feature_num_);
   void ComputeScoreRelatedwithyaw(Viewpoint& viewpoint, double yaw, double yaw_ref, int feature_num_);
+  double culExploreAbility(
+      const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster, const vector<Vector3d>& cluster_normors);
   void getBestViewpointData(Vector3d& points, double& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
   void getBestViewpointData(Vector3d& points, vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);
   void getSortedViewpointVector(vector<Viewpoint>& viewpoints);
@@ -226,8 +228,8 @@ public:
   void sampleBetterViewpoints(Frontier& frontier);
 
   int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster);
-
-  double computeExplorebility(const Vector3d& pos, const double& yaw, const Vector3d& start, const Vector3d& end);
+  int countVisibleCells(const Vector3d& pos, const double& yaw, const vector<Vector3d>& cluster,
+      const vector<Vector3d>& cluster_normors, vector<Vector3d>& cluster_visual, vector<Vector3d>& cluster_visual_normors);
 
   bool isNearUnknown(const Vector3d& pos);
   vector<Eigen::Vector3i> sixNeighbors(const Eigen::Vector3i& voxel);

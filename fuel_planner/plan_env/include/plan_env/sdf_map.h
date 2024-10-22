@@ -74,7 +74,7 @@ public:
   int getVoxelNum();
   bool checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
   bool checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end, RayCaster* caster);
-  bool using_global_map;
+  bool using_global_map, global_map_has_been_init;
 
 private:
   void clearAndInflateLocalMap();

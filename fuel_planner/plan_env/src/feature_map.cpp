@@ -136,7 +136,7 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
   camera_p(2) = pose->pose.position.z;
   Eigen::Quaterniond camera_q =
       Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
-  if (!features_cloud_.empty() && !is_feature_known_globally) {
+  if (!features_cloud_.empty() && !is_feature_known_globally && sdf_map->global_map_has_been_init) {
     pcl::PointXYZ searchPoint;
     searchPoint.x = camera_p(0);
     searchPoint.y = camera_p(1);

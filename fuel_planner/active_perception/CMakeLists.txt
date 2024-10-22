@@ -18,13 +18,14 @@ path_searching
 cv_bridge
 time_debug
 traj_utils
+normal_estimator
 )
 
 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES active_perception
- CATKIN_DEPENDS plan_env bspline path_searching time_debug traj_utils
+ CATKIN_DEPENDS plan_env bspline path_searching time_debug traj_utils normal_estimator
  DEPENDS system_lib
 )
 

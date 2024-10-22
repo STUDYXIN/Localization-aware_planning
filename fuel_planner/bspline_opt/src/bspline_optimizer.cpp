@@ -2176,10 +2176,6 @@ void BsplineOptimizer::combineCost(const std::vector<double>& x, vector<double>&
     }
   }
   // cout << " f_combine: " << f_combine << endl;
-
-  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_POS_OPT, g_q_, order_, dt);
-  stepping_debug_->calldebug(DEBUG_TYPE::EVERY_YAW_OPT, g_q_, order_, dt);
-
   // printVector(g_q_, "g_q_");
   // printVector(g_smoothness_, "g_smoothness_");
   // printVector(g_distance_, "g_distance_");

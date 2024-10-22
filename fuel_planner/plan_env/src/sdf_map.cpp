@@ -7,6 +7,7 @@
 namespace fast_planner {
 SDFMap::SDFMap() {
   using_global_map = false;
+  global_map_has_been_init = false;
 }
 
 SDFMap::~SDFMap() {
@@ -402,6 +403,7 @@ void SDFMap::inputGlobalPointCloud(const pcl::PointCloud<pcl::PointXYZ>& global_
   }
   clearAndInflateLocalMap();
   updateESDF3d();
+  global_map_has_been_init = true;
 }
 
 Eigen::Vector3d SDFMap::closetPointInMap(const Eigen::Vector3d& pt, const Eigen::Vector3d& camera_pt) {

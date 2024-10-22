@@ -179,26 +179,29 @@ void PlanningVisualization::drawFrontiersViewpointNow(const vector<vector<Eigen:
   }
 }
 
-void PlanningVisualization::drawScoreforFrontiers(const vector<Eigen::Vector3d>& frontier_average_pos,
-    const vector<std::pair<size_t, double>> gains, const vector<int>& frontier_ids_) {
-  static int last_num = 0;
-  Vector4d color(0.0, 0.0, 0.0, 1.0);
-  Vector3d empty_3d(0.0, 0.0, 0.0);
-  for (int i = gains.size(); i < last_num; ++i) {  // 删除上一次的比这一次多的marker
-    std::string text = "";
-    // std::string text = "score: " + std::to_string(gains[i].second);
-    displayText(empty_3d, text, color, 0.3, COMMON_TEXT + i, 7);
-  }
-
-  for (int i = 0; i < gains.size(); ++i) {
-    std::ostringstream ss;
-    // ss << i << ": " << std::fixed << std::setprecision(2) << gains[i].second;
-    ss << frontier_ids_[gains[i].first] << ": " << std::fixed << std::setprecision(2) << gains[i].second;
-    std::string text = ss.str();
-    // std::string text = "score: " + std::to_string(gains[i].second);
-    displayText(frontier_average_pos[gains[i].first], text, color, 0.3, COMMON_TEXT + i, 7);
-  }
-  last_num = gains.size();
+void PlanningVisualization::drawScoreforFrontiers(const Eigen::Vector3d& viewpoint_points, const double& viewpoint_yaw,
+    const vector<Eigen::Vector3d>& frontiers, const vector<double>& score, const int& id) {
+  Vector4d color_gray(0.5, 0.5, 0.5, 0.2);
+  Vector4d color_black(0.0, 0.0, 0.0, 1.0);
+  drawCubes(frontiers, 0.2, color_gray, "frontier", ACTIVE_FRONTIER + id % 100, 4);
+  vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
+  thisviewpoint.push_back(viewpoint_points);
+  Eigen::Vector3d direction(cos(viewpoint_yaw), sin(viewpoint_yaw), 0.0);
+  Eigen::Vector3d end_point = viewpoint_points + direction * 1.0;
+  viewpoint_line.push_back(viewpoint_points);
+  viewpoint_line.push_back(end_point);
+  displaySphereList(thisviewpoint, 0.2, color_gray, ACTIVE_FRONTIER + id % 100);
+  drawLines(viewpoint_line, 0.1, color_gray, "viewpoint_vectoer_line", ACTIVE_FRONTIER + id % 100, 1);
+  // 绘制这个分数
+  if (score.size() != 3) return;
+  std::ostringstream pos_score, yaw_score, final_score;
+  pos_score << std::fixed << std::setprecision(2) << score[0];
+  yaw_score << std::fixed << std::setprecision(2) << score[1];
+  final_score << std::fixed << std::setprecision(2) << score[2];
+  Vector3d show_pos = calculateTopMiddlePoint(frontiers);
+  show_pos[2] += 0.2;
+  std::string text = "score: " + pos_score.str() + "  " + yaw_score.str() + "  " + final_score.str();
+  displayText(show_pos, text, color_black, 0.2, COMMON_TEXT + id % 100, 7);
 }
 
 void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3d>& Unreachable_frontier,
@@ -763,7 +766,7 @@ void PlanningVisualization::drawFrontierPointandNormals(
   vector<Vector3d> pts3;
   for (int i = 0; i < point.size(); ++i) {
     // cout << " point[i] " << point[i].transpose() << " grad[i] " << grad[i].transpose() << endl;
-    Vector3d pdir = point[i] + 10.0 * grad[i];
+    Vector3d pdir = point[i] + 1.0 * grad[i];
     // Vector3d pdir = point[i] + 0.001 * grad[i];
     pts3.push_back(pdir);
   }

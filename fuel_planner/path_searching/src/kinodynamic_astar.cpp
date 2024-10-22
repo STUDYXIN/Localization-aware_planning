@@ -14,6 +14,7 @@ KinodynamicAstar::~KinodynamicAstar() {
 
 int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, Eigen::Vector3d start_a, Eigen::Vector3d end_pt,
     Eigen::Vector3d end_v, bool init, bool dynamic, double time_start) {
+
   start_vel_ = start_v;
   start_acc_ = start_a;
 
@@ -227,6 +228,12 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
 
             use_node_num_ += 1;
             if (use_node_num_ == allocate_num_) {
+              cout << "-start_pt  " << start_pt.transpose() << endl
+                   << "-start_vel " << start_vel_.transpose() << endl
+                   << "-start_acc " << start_acc_.transpose() << endl
+                   << "-end_pt    " << end_pt.transpose() << endl
+                   << "-end_vel   " << end_v.transpose() << endl
+                   << "-distance  " << (end_pt - start_pt).norm() << endl;
               cout << "run out of memory." << endl;
               return NO_PATH;
             }

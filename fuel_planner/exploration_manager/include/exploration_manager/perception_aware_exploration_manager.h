@@ -67,12 +67,13 @@ public:
 
 private:
   shared_ptr<EDTEnvironment> edt_environment_;
-  shared_ptr<SDFMap> sdf_map_, global_sdf_map_;
+  shared_ptr<SDFMap> sdf_map_;
 
   void searchYaw(const Vector3d& pos, vector<double>& yaw_samples_res);
 
 public:
   typedef shared_ptr<PAExplorationManager> Ptr;
+  shared_ptr<SDFMap> global_sdf_map_;
 };
 
 }  // namespace fast_planner

@@ -418,11 +418,17 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
   if (have_target_ && pa->search(odom_pos_, final_goal_) == Astar::REACH_END) {
     ed->path_next_goal_ = pa->getPath();
     is_best_viewpoint_searched = expl_manager_->findJunction(ed->path_next_goal_, refer_pos, refer_yaw);
-  } else if (!is_best_viewpoint_searched && have_target_)
+  } else if (!is_best_viewpoint_searched && have_target_) {
     refer_pos = final_goal_;
+  } else if (have_odom_) {                         //使用odom正前方一点
+    refer_pos(0) = odom_pos_(0) + cos(odom_yaw_);  // x方向
+    refer_pos(1) = odom_pos_(1) + sin(odom_yaw_);  // y方向
+    refer_pos(2) = odom_pos_(2);
+  } else {
+    ROS_ERROR("[frontierCallback] no refer pos for score frontier");
+    return;
+  }
 
-  else
-    refer_pos = Vector3d::Zero();
   debug_timer.function_end("pa->search");
   visualization_->drawAstar(ed->path_next_goal_, refer_pos, refer_yaw, is_best_viewpoint_searched);
   // ===========================================================================================================
@@ -473,7 +479,7 @@ void PAExplorationFSM::frontierCallback(const ros::TimerEvent& e) {
 }
 
 void PAExplorationFSM::safetyCallback(const ros::TimerEvent& e) {
-  if (!have_odom_ || run_continued_) {
+  if (!have_odom_ || run_continued_ || !expl_manager_->global_sdf_map_->global_map_has_been_init) {
     return;
   }
 

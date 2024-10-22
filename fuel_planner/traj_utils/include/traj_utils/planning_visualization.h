@@ -85,14 +85,14 @@ private:
     COMMON_TEXT = 1200,
     DEAD_FRONTOER = 1300,
     ACTIVE_FRONTIER = 1400,
-    BEST_FRONTIER = 1500,
     UNREACHABLE_POSTTAJ = 1600,
-    UNREACHABLE_YAWTAJ = 10000,  // 100递增
     SHOW_FEATURE_TEXT = 1700,
     DEBUG_POS = 1800,
     DEBUG_YAW = 1900,
     DEBUG_CONTROL_POINT_ARROW = 2000,
     DEBUG_CONTROL_POINT = 2200,
+    UNREACHABLE_YAWTAJ = 10000,  // 100递增
+    BEST_FRONTIER = 20000
   };
 
   enum TOPOLOGICAL_PATH_PLANNING_ID { GRAPH_NODE = 1, GRAPH_EDGE = 100, RAW_PATH = 200, FILTERED_PATH = 300, SELECT_PATH = 400 };
@@ -149,8 +149,8 @@ public:
   void drawFrontiersViewpointNow(const vector<vector<Eigen::Vector3d>>& frontiers,
       const vector<Eigen::Vector3d>& viewpoint_points, const vector<double>& viewpoint_yaw, const bool& use_gray_frontier,
       const vector<std::pair<size_t, double>> gains);
-  void drawScoreforFrontiers(const vector<Eigen::Vector3d>& frontier_average_pos, const vector<std::pair<size_t, double>> gains,
-      const vector<int>& frontier_ids_);
+  void drawScoreforFrontiers(const Eigen::Vector3d& viewpoint_points, const double& viewpoint_yaw,
+      const vector<Eigen::Vector3d>& frontiers, const vector<double>& score, const int& id = 0);
   void drawFrontiersUnreachable(const vector<Eigen::Vector3d>& Unreachable_frontier,
       const Eigen::Vector3d& Unreachable_viewpoint_points, const double& Unreachable_viewpoint_yaw, const int& UnreachableID,
       const Eigen::Vector3d& frontier_average_pos, const double gain, const vector<Eigen::Vector3d>& fail_pos_traj);

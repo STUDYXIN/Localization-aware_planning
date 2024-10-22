@@ -219,9 +219,9 @@
     <param name="frontier/min_view_feature_num_of_viewpoint" value="$(arg min_covisible_feature_num_plan)" type="int" />
     <param name="frontier/feature_sample_dphi" value="$(eval 15 * 3.1415926 / 180.0)" type="double" />
     <!-- 排序参数 -->
-    <param name="frontier/feature_num_max" value="200" type="int" />
+    <param name="frontier/feature_num_max" value="100" type="int" />
     <param name="frontier/visb_max" value="200" type="int" />
-    <param name="frontier/we" value="0.8" type="double" />
+    <param name="frontier/we" value="5.0" type="double" />
     <param name="frontier/wg" value="1.2" type="double" />
     <param name="frontier/wf" value="1.0" type="double" />
     <param name="frontier/wc" value="0.8" type="double" />
@@ -269,7 +269,7 @@
     <param name="manager/use_optimization" value="true" type="bool" />
     <param name="manager/use_active_perception" value="true" type="bool" />
     <param name="manager/use_4degree_kinoAstar" value="false" type="bool" />
-    <param name="manager/use_apace_pose_opt" value="false" type="bool" />
+    <param name="manager/use_apace_pose_opt" value="true" type="bool" />
     <param name="manager/use_fvp_opt" value="false" type="bool" />
     <param name="manager/min_time" value="true" type="bool" />
 
@@ -313,11 +313,11 @@
     <param name="rrt/yaw_sample_piece_num" value="6" type="int" />
 
     <param name="optimization/ld_smooth" value="25.0" type="double" />
-    <param name="optimization/ld_dist" value="20.0" type="double" />
+    <param name="optimization/ld_dist" value="50.0" type="double" />
     <param name="optimization/ld_feasi" value="2.0" type="double" />
     <param name="optimization/ld_feasi_yaw" value="5.0" type="double" />
-    <param name="optimization/ld_start" value="5000.0" type="double" />
-    <param name="optimization/ld_end" value="500.0" type="double" />
+    <param name="optimization/ld_start" value="1000.0" type="double" />
+    <param name="optimization/ld_end" value="100.0" type="double" />
     <param name="optimization/ld_guide" value="1.5" type="double" />
     <param name="optimization/ld_waypt" value="0.2" type="double" />
     <param name="optimization/ld_view" value="0.0" type="double" />
@@ -325,7 +325,7 @@
     <param name="optimization/ld_parallax" value="5.0" type="double" />
     <param name="optimization/ld_vertical_visibility" value="10.0" type="double" />
     <param name="optimization/ld_yaw_covisibility" value="10.0" type="double" />
-    <param name="optimization/ld_frontier_visibility_pos" value="5.0" type="double" />
+    <param name="optimization/ld_frontier_visibility_pos" value="1.0" type="double" />
     <param name="optimization/ld_frontier_visibility_yaw" value="30.0" type="double" />
     <param name="optimization/ld_weight1" value="50.0" type="double" />
     <param name="optimization/ld_weight2" value="10.0" type="double" />

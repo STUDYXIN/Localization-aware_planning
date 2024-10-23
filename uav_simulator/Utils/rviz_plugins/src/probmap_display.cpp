@@ -85,8 +85,10 @@ ProbMapDisplay::ProbMapDisplay()
   height_property_ = new IntProperty("Height", 0, "Height of the map, in meters. (not editable)", this);
   height_property_->setReadOnly(true);
 
-  position_property_ = new VectorProperty(
-      "Position", Ogre::Vector3::ZERO, "Position of the bottom left corner of the map, in meters. (not editable)", this);
+  position_property_ = new VectorProperty("Position", Ogre::Vector3::ZERO,
+      "Position of the bottom left corner of the map, in "
+      "meters. (not editable)",
+      this);
   position_property_->setReadOnly(true);
 
   orientation_property_ =
@@ -325,8 +327,9 @@ void ProbMapDisplay::update(float wall_dt, float ros_dt) {
 
     {
       std::stringstream ss;
-      ss << "Map is larger than your graphics card supports.  Downsampled from [" << width << "x" << height << "] to [" << fwidth
-         << "x" << fheight << "]";
+      ss << "Map is larger than your graphics card supports.  Downsampled from "
+            "["
+         << width << "x" << height << "] to [" << fwidth << "x" << fheight << "]";
       setStatus(StatusProperty::Ok, "Map", QString::fromStdString(ss.str()));
     }
 

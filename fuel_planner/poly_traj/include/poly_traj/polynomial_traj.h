@@ -59,11 +59,6 @@ private:
 
 class PolynomialTraj {
 public:
-  PolynomialTraj(/* args */) {
-  }
-  ~PolynomialTraj() {
-  }
-
   void reset() {
     segments_.clear();
     times_.clear();
@@ -125,7 +120,8 @@ public:
     return length_ / time_sum_;
   }
 
-  // Compute the integral of squared derivative (k is the order) along the trajectory
+  // Compute the integral of squared derivative (k is the order) along the
+  // trajectory
   double getIntegralCost(const int& k) {
     double cost = 0.0;
     if (time_sum_ < 0) getTotalTime();
@@ -154,6 +150,9 @@ public:
   // Pos: Nx3
   static void waypointsTraj(const Eigen::MatrixXd& positions, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& end_vel,
       const Eigen::Vector3d& start_acc, const Eigen::Vector3d& end_acc, const Eigen::VectorXd& times, PolynomialTraj& poly_traj);
+
+  static void OBVPTraj(const Eigen::MatrixXd& positions, const Eigen::Vector3d& start_vel, const Eigen::Vector3d& start_acc,
+      const double& dt, PolynomialTraj& poly_traj);
 
 private:
   vector<Polynomial> segments_;

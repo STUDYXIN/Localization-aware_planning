@@ -3,9 +3,8 @@
  libs/numeric/odeint/test/runge_kutta_error_concepts.cpp
 
  [begin_description]
- This file tests the Stepper concepts of odeint with all Runge-Kutta Error steppers.
- It's one of the main tests of odeint.
- [end_description]
+ This file tests the Stepper concepts of odeint with all Runge-Kutta Error
+ steppers. It's one of the main tests of odeint. [end_description]
 
  Copyright 2009-2012 Karsten Ahnert
  Copyright 2009-2012 Mario Mulansky
@@ -23,9 +22,9 @@
 
 #define BOOST_TEST_MODULE odeint_runge_kutta_error_concepts
 
-#include <vector>
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 #include <boost/numeric/odeint/config.hpp>
 
@@ -33,26 +32,26 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <boost/ref.hpp>
 #include <boost/bind.hpp>
-#include <boost/utility.hpp>
+#include <boost/ref.hpp>
 #include <boost/type_traits/add_reference.hpp>
+#include <boost/utility.hpp>
 
-#include <boost/mpl/vector.hpp>
+#include <boost/mpl/copy.hpp>
+#include <boost/mpl/end.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/insert_range.hpp>
-#include <boost/mpl/end.hpp>
-#include <boost/mpl/copy.hpp>
-#include <boost/mpl/placeholders.hpp>
 #include <boost/mpl/inserter.hpp>
+#include <boost/mpl/placeholders.hpp>
+#include <boost/mpl/vector.hpp>
 
-#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_fehlberg78.hpp>
 
-#include "prepare_stepper_testing.hpp"
 #include "dummy_odes.hpp"
+#include "prepare_stepper_testing.hpp"
 
 using std::vector;
 
@@ -120,10 +119,10 @@ class error_stepper_methods
   : public mpl::vector<runge_kutta_cash_karp54_classic<State, double, State, double, typename algebra_dispatcher<State>::type>,
         runge_kutta_cash_karp54<State, double, State, double, typename algebra_dispatcher<State>::type>,
         runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type>,
-        runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type> > {};
+        runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type>> {};
 
 typedef mpl::copy<container_types,
-    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, error_stepper_methods<mpl::_2> > > >::type
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, error_stepper_methods<mpl::_2>>>>::type
     all_error_stepper_methods;
 
 BOOST_AUTO_TEST_SUITE(runge_kutta_error_concept_test)

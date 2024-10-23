@@ -92,7 +92,7 @@
     <remap from="/map_ros/cloud" to="$(arg cloud_topic)" />
 
     <param name="feature/using_feature" value="true" />
-    <param name="feature/is_feature_known_globally" value="true" />
+    <param name="feature/is_feature_known_globally" value="false" />
     <param name="feature/load_from_file" value="true" />
     <param name="feature/filename" value="$(arg feature_filename)" />
     <param name="feature/occupied_thr" value="3" />
@@ -150,16 +150,8 @@
     <param name="fsm/thresh_replan1" value="$(arg thresh_replan1)" type="double" />
     <param name="fsm/thresh_replan2" value="$(arg thresh_replan2)" type="double" />
     <param name="fsm/thresh_replan3" value="$(arg thresh_replan3)" type="double" />
-    <param name="fsm/thresh_replan_viewpoint_length" value="0.8" type="double" />
-    <param name="fsm/do_replan" value="$(arg do_replan)" type="bool" />
-    <param name="fsm/replan_time" value="$(arg replan_time)" type="double" />
-    <param name="fsm/replan_out" value="1.0" type="double" />
-    <!-- param for rechoose viewpoint -->
-    <param name="fsm/draw_line2feature" value="false" type="bool" />
-    <param name="fsm/one_viewpoint_max_searchtimes" value="2" type="int" />
-    <param name="fsm/still_choose_new_length_thr" value="0.2" type="double" />
-    <!--flight_type:
-    EXPLORATION = 0,  PRESET_TARGET = 1 -->
+    <param name="fsm/goal_threshold" value="3.0" type="double" />
+
     <param name="fsm/flight_type" value="$(arg flight_type)" type="int" />
 
     <param name="fsm/wp_num" value="$(arg point_num)" type="int" />
@@ -186,12 +178,6 @@
     <param name="exploration/refined_radius" value="5.0" type="double" />
     <param name="exploration/max_decay" value="0.8" type="double" />
     <param name="exploration/top_view_num" value="15" type="int" />
-    <param name="exploration/vm" value="$(eval 1.0 * arg('max_vel'))" type="double" />
-    <param name="exploration/am" value="$(eval 1.0 * arg('max_acc'))" type="double" />
-    <param name="exploration/yd" value="$(eval 60 * 3.1415926 / 180.0)" type="double" />
-    <param name="exploration/ydd" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
-    <param name="exploration/w_dir" value="1.5" type="double" />
-    <param name="exploration/tsp_dir" value="$(find lkh_tsp_solver)/resource" type="string" />
     <param name="exploration/relax_time" value="1.0" type="double" />
     <param name="exploration/feature_num_max" value="200" type="int" />
     <param name="exploration/visb_max" value="200" type="int" />
@@ -251,7 +237,7 @@
     <param name="yaw_initial/max_yaw_rate2" value="$(eval 90 * 3.1415926 / 180.0)" type="double" />
     <param name="yaw_initial/w" value="100.0" type="double" />
     <param name="yaw_initial/min_info_gain" value="30" type="double" />
-    <param name="yaw_initial/piece_num" value="24" type="int" />
+    <param name="yaw_initial/piece_num" value="36" type="int" />
     <param name="yaw_initial/ld_frontier" value="1.0" type="double" />
     <param name="yaw_initial/ld_final_goal" value="100.0" type="double" />
 
@@ -274,6 +260,20 @@
     <param name="manager/use_apace_pose_opt" value="true" type="bool" />
     <param name="manager/use_fvp_opt" value="false" type="bool" />
     <param name="manager/min_time" value="true" type="bool" />
+
+    <param name="manager/lookforward_radius" value="5.0" type="double" />
+    <param name="manager/k_theta" value="0.5" type="double" />
+    <param name="manager/max_theta" value="$(eval 30 * 3.1415926 / 180.0)" type="double" />
+    <param name="manager/sample_num" value="5" type="int" />
+    <param name="manager/delta_v" value="0.2" type="double" />
+    <param name="manager/sample_pose_num" value="5" type="int" />
+    <param name="manager/safety_sphere_radius" value="0.5" type="double" />
+    <param name="manager/k_goal" value="10.0" type="double" />
+    <param name="manager/d_critic" value="15.0" type="double" />
+    <param name="manager/k" value="3" type="int" />
+    <param name="manager/col_prob_non_decreasing" value="true" type="bool" />
+    <param name="manager/k_col" value="-10000.0" type="double" />
+    <param name="manager/k_perc" value="1.5" type="double" />
 
     <!-- kinodynamic path searching -->
     <param name="search/max_tau" value="0.8" type="double" />
@@ -316,8 +316,8 @@
 
     <param name="optimization/ld_smooth" value="25.0" type="double" />
     <param name="optimization/ld_dist" value="20.0" type="double" />
-    <param name="optimization/ld_feasi" value="2.0" type="double" />
-    <param name="optimization/ld_feasi_yaw" value="5.0" type="double" />
+    <param name="optimization/ld_feasi" value="1000.0" type="double" />
+    <param name="optimization/ld_feasi_yaw" value="1000.0" type="double" />
     <param name="optimization/ld_start" value="5000.0" type="double" />
     <param name="optimization/ld_end" value="500.0" type="double" />
     <param name="optimization/ld_guide" value="1.5" type="double" />

@@ -20,7 +20,8 @@ void FeatureMap::initMap(ros::NodeHandle& nh) {
   nh.param("feature/is_feature_known_globally", is_feature_known_globally, false);
   nh.param("feature/load_from_file", load_from_file, true);
   if (load_from_file) {
-    nh.param<std::string>("feature/filename", filename, std::string(""));  // 显式指定默认值为 std::string
+    nh.param<std::string>("feature/filename", filename,
+        std::string(""));  // 显式指定默认值为 std::string
     loadMap(filename);
     has_been_observed.assign(features_cloud_.size(), is_feature_known_globally);
   }
@@ -74,7 +75,8 @@ void FeatureMap::addFeatureCloud(const Eigen::Vector3d& pos, const pcl::PointClo
 
   if (features_cloud_.points.empty()) return;
 
-  // ROS_INFO("Size before filtering: %d", static_cast<int>(features_cloud_.points.size()));
+  // ROS_INFO("Size before filtering: %d",
+  // static_cast<int>(features_cloud_.points.size()));
 
   pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
   voxel_filter.setInputCloud(features_cloud_.makeShared());
@@ -83,7 +85,8 @@ void FeatureMap::addFeatureCloud(const Eigen::Vector3d& pos, const pcl::PointClo
   voxel_filter.filter(*filtered_cloud);
   features_cloud_ = *filtered_cloud;
 
-  // ROS_INFO("Size after filtering: %d", static_cast<int>(features_cloud_.points.size()));
+  // ROS_INFO("Size after filtering: %d",
+  // static_cast<int>(features_cloud_.points.size()));
 
   features_kdtree_.setInputCloud(features_cloud_.makeShared());
 }
@@ -102,13 +105,16 @@ void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
   int feature_num = get_NumCloud_using_Odom(msg, visual_points_vec);
 
   //----------------------
-  // Eigen::Vector3d pos_odom(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
-  // Eigen::Quaterniond orient_odom(
-  //     msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
+  // Eigen::Vector3d pos_odom(msg->pose.pose.position.x,
+  // msg->pose.pose.position.y, msg->pose.pose.position.z); Eigen::Quaterniond
+  // orient_odom(
+  //     msg->pose.pose.orientation.w, msg->pose.pose.orientation.x,
+  //     msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
   // Eigen::Vector3d pos_camera;
   // Eigen::Quaterniond orient_camera;
-  // camera_param->fromOdom2Camera(pos_odom, orient_odom, pos_camera, orient_camera);
-  // camera_param->sampleInFOV(pos_camera, orient_camera, visual_points_vec);
+  // camera_param->fromOdom2Camera(pos_odom, orient_odom, pos_camera,
+  // orient_camera); camera_param->sampleInFOV(pos_camera, orient_camera,
+  // visual_points_vec);
   //----------------------
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -123,7 +129,8 @@ void FeatureMap::odometryCallback(const nav_msgs::OdometryConstPtr& msg) {
     pointcloud->points[i].z = visual_points_vec[i].z();
   }
 
-  // ROS_WARN("[FeatureMap] Visualize feature size: %d", static_cast<int>(pointcloud->points.size()));
+  // ROS_WARN("[FeatureMap] Visualize feature size: %d",
+  // static_cast<int>(pointcloud->points.size()));
   sensor_msgs::PointCloud2 pointcloud_msg;
   pcl::toROSMsg(*pointcloud, pointcloud_msg);
   visual_feature_cloud_pub_.publish(pointcloud_msg);
@@ -134,8 +141,9 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
   camera_p(0) = pose->pose.position.x;
   camera_p(1) = pose->pose.position.y;
   camera_p(2) = pose->pose.position.z;
-  Eigen::Quaterniond camera_q =
-      Eigen::Quaterniond(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
+  Eigen::Quaterniond camera_q(
+      pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
+
   if (!features_cloud_.empty() && !is_feature_known_globally) {
     pcl::PointXYZ searchPoint;
     searchPoint.x = camera_p(0);
@@ -149,7 +157,8 @@ void FeatureMap::sensorposCallback(const geometry_msgs::PoseStampedConstPtr& pos
 
     for (const auto& index : pointIdxRadiusSearch) {
       Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
-      if (camera_param->is_in_FOV(camera_p, f, camera_q))  // 检查特征点是否在相机FOV中
+      if (camera_param->is_in_FOV(camera_p, f,
+              camera_q))  // 检查特征点是否在相机FOV中
       {
         if (!sdf_map->checkObstacleBetweenPoints(camera_p, f))  // 检查这个特征点与无人机之间有无障碍
           has_been_observed[index] = true;
@@ -195,7 +204,8 @@ void FeatureMap::pubDebugmsg(int debugMode) {
     pointcloud->is_dense = true;
     pointcloud->header.frame_id = "world";
 
-    // ROS_WARN("Visualize feature size: %d", static_cast<int>(pointcloud->size()));
+    // ROS_WARN("Visualize feature size: %d",
+    // static_cast<int>(pointcloud->size()));
 
     sensor_msgs::PointCloud2 pointcloud_msg;
     pcl::toROSMsg(*pointcloud, pointcloud_msg);
@@ -350,7 +360,8 @@ int FeatureMap::get_More_NumCloud_using_CamPosOrient(
   for (const auto& index : pointIdxRadiusSearch) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if (!has_been_observed[index]) continue;
-    if (camera_param->is_in_wider_FOV(pos, f, orient))  // 检查特征点是否在相机FOV中
+    if (camera_param->is_in_wider_FOV(pos, f,
+            orient))  // 检查特征点是否在相机FOV中
     {
       if (!sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查这个特征点与无人机之间有无障碍
         res.push_back(make_pair(index, f));
@@ -391,7 +402,8 @@ void FeatureMap::getSortedYawsByPos(const Eigen::Vector3d& pos, const int sort_m
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful(pos, f) &&
-        !sdf_map->checkObstacleBetweenPoints(pos, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+        !sdf_map->checkObstacleBetweenPoints(pos,
+            f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
     {
     }
   }
@@ -417,8 +429,8 @@ int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos) {
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful(pos_transformed, f) &&
-        !sdf_map->checkObstacleBetweenPoints(
-            pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+        !sdf_map->checkObstacleBetweenPoints(pos_transformed,
+            f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
       feature_num++;
   }
   return feature_num;
@@ -445,8 +457,8 @@ int FeatureMap::get_NumCloud_using_justpos(const Eigen::Vector3d& pos, vector<Ei
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful(pos_transformed, f) &&
-        !sdf_map->checkObstacleBetweenPoints(
-            pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+        !sdf_map->checkObstacleBetweenPoints(pos_transformed,
+            f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
       res.push_back(f);
   }
   return res.size();
@@ -475,8 +487,8 @@ void FeatureMap::get_YawRange_using_Pos(
     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
     if (!has_been_observed[index]) continue;
     if (camera_param->is_depth_useful_at_level(pos_transformed, f) &&
-        !sdf_map->checkObstacleBetweenPoints(
-            pos_transformed, f, raycaster))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
+        !sdf_map->checkObstacleBetweenPoints(pos_transformed, f,
+            raycaster))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
     {
       Eigen::Vector2d yaw_range = camera_param->calculateYawRange(pos_transformed, f);
       // cout << "  " << yaw_range.transpose();

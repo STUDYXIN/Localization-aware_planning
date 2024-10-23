@@ -16,35 +16,35 @@
 
 #define BOOST_TEST_MODULE odeint_integrate_functions
 
-#include <vector>
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 #include <boost/numeric/odeint/config.hpp>
 
 #include <boost/array.hpp>
-#include <boost/ref.hpp>
 #include <boost/iterator/counting_iterator.hpp>
+#include <boost/ref.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 #include <boost/mpl/vector.hpp>
 
 // nearly everything from odeint is used in these tests
-#include <boost/numeric/odeint/integrate/integrate_const.hpp>
 #include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>
-#include <boost/numeric/odeint/integrate/integrate_times.hpp>
+#include <boost/numeric/odeint/integrate/integrate_const.hpp>
 #include <boost/numeric/odeint/integrate/integrate_n_steps.hpp>
+#include <boost/numeric/odeint/integrate/integrate_times.hpp>
+#include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
+#include <boost/numeric/odeint/stepper/bulirsch_stoer_dense_out.hpp>
+#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
+#include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
 #include <boost/numeric/odeint/stepper/euler.hpp>
 #include <boost/numeric/odeint/stepper/modified_midpoint.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_fehlberg78.hpp>
-#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
-#include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
-#include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
-#include <boost/numeric/odeint/stepper/bulirsch_stoer_dense_out.hpp>
 
 #include <boost/numeric/odeint/util/detail/less_with_sign.hpp>
 
@@ -93,19 +93,20 @@ struct perform_integrate_const_test {
 
     // int steps = times.size()-1;
 
-    // std::cout << t_end << " (" << dt << "), " << steps << " , " << times.size() << " , " <<
-    // 10.0+dt*steps << "=" << x_end[0] << std::endl;
+    // std::cout << t_end << " (" << dt << "), " << steps << " , " <<
+    // times.size() << " , " << 10.0+dt*steps << "=" << x_end[0] << std::endl;
 
     BOOST_CHECK_EQUAL(static_cast<int>(times.size()), static_cast<int>(floor(t_end / dt)) + 1);
 
     for (size_t i = 0; i < times.size(); ++i) {
-      // std::cout << i << " , " << times[i] << " , " << static_cast< value_type >(i)*dt << std::endl;
-      // check if observer was called at times 0,1,2,...
+      // std::cout << i << " , " << times[i] << " , " << static_cast< value_type
+      // >(i)*dt << std::endl; check if observer was called at times 0,1,2,...
       BOOST_CHECK_SMALL(times[i] - static_cast<value_type>(i) * dt, (i + 1) * 2E-16);
     }
 
     // check first, trivial, component
-    BOOST_CHECK_SMALL((10.0 + times[times.size() - 1]) - x_end[0], 1E-6);  // precision of steppers: 1E-6
+    BOOST_CHECK_SMALL((10.0 + times[times.size() - 1]) - x_end[0],
+        1E-6);  // precision of steppers: 1E-6
     // BOOST_CHECK_EQUAL( x[1] , x_end[1] );
     // BOOST_CHECK_EQUAL( x[2] , x_end[2] );
   }
@@ -122,7 +123,8 @@ struct perform_integrate_adaptive_test {
 
     size_t steps = integrate_adaptive(Stepper(), *lorenz, x, 0.0, t_end, dt, push_back_time(times, x_end));
 
-    //        std::cout << t_end << " , " << steps << " , " << times.size() << " , " << 10.0+dt*steps <<
+    //        std::cout << t_end << " , " << steps << " , " << times.size() << "
+    //        , " << 10.0+dt*steps <<
     //        "=" << x_end[0] << std::endl;
 
     BOOST_CHECK_EQUAL(times.size(), steps + 1);
@@ -131,9 +133,10 @@ struct perform_integrate_adaptive_test {
     BOOST_CHECK_SMALL(times[times.size() - 1] - t_end, times.size() * 2E-16);
 
     // check first, trivial, component
-    BOOST_CHECK_SMALL((10.0 + t_end) - x_end[0], 1E-6);  // precision of steppers: 1E-6
-                                                         //        BOOST_CHECK_EQUAL( x[1] , x_end[1] );
-                                                         //        BOOST_CHECK_EQUAL( x[2] , x_end[2] );
+    BOOST_CHECK_SMALL((10.0 + t_end) - x_end[0],
+        1E-6);  // precision of steppers: 1E-6
+                //        BOOST_CHECK_EQUAL( x[1] , x_end[1] );
+                //        BOOST_CHECK_EQUAL( x[2] , x_end[2] );
   }
 };
 
@@ -189,7 +192,8 @@ struct perform_integrate_n_steps_test {
       BOOST_CHECK_SMALL(times[i] - static_cast<value_type>(i) * dt, 2E-16);
 
     // check first, trivial, component
-    BOOST_CHECK_SMALL((10.0 + end_time) - x_end[0], 1E-6);  // precision of steppers: 1E-6
+    BOOST_CHECK_SMALL((10.0 + end_time) - x_end[0],
+        1E-6);  // precision of steppers: 1E-6
     //        BOOST_CHECK_EQUAL( x[1] , x_end[1] );
     //        BOOST_CHECK_EQUAL( x[2] , x_end[2] );
   }
@@ -198,9 +202,9 @@ struct perform_integrate_n_steps_test {
 class stepper_methods
   : public mpl::vector<euler<state_type>, modified_midpoint<state_type>, runge_kutta4<state_type>,
         runge_kutta_cash_karp54<state_type>, runge_kutta_dopri5<state_type>, runge_kutta_fehlberg78<state_type>,
-        controlled_runge_kutta<runge_kutta_cash_karp54<state_type> >, controlled_runge_kutta<runge_kutta_dopri5<state_type> >,
-        controlled_runge_kutta<runge_kutta_fehlberg78<state_type> >, bulirsch_stoer<state_type>,
-        dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > >
+        controlled_runge_kutta<runge_kutta_cash_karp54<state_type>>, controlled_runge_kutta<runge_kutta_dopri5<state_type>>,
+        controlled_runge_kutta<runge_kutta_fehlberg78<state_type>>, bulirsch_stoer<state_type>,
+        dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type>>>
         // bulirsch_stoer_dense_out< state_type >
         > {};
 

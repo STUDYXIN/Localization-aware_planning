@@ -19,7 +19,8 @@ using namespace std;
 // Threshold that determine a cell is occupied
 #define PROB_OCCUPIED_THRESHOLD 0.75
 
-// If beyond this threshold, the occupancy(occupied) of this cell is fixed, no decay
+// If beyond this threshold, the occupancy(occupied) of this cell is fixed, no
+// decay
 #define PROB_OCCUPIED_FIXED_THRESHOLD 0.95
 
 // Threshold that determine a cell is free
@@ -28,7 +29,8 @@ using namespace std;
 // If bwlow this threshold, the occupancy(free) of this cell is fixed, no decay
 #define PROB_FREE_FIXED_THRESHOLD 0.05
 
-// Used integer value to store occupancy, create a large scale factor to enable small scale decay
+// Used integer value to store occupancy, create a large scale factor to enable
+// small scale decay
 #define LOG_ODD_SCALE_FACTOR 10000
 
 // Decay factor per second
@@ -177,15 +179,16 @@ public:
     }
   }
 
-  // Merging two columns, merge the grids in input "gridList" into current column
+  // Merging two columns, merge the grids in input "gridList" into current
+  // column
   inline void Merge(const OccupancyGridList& gridsIn) {
     // Create a sorted list containing both upper and lower values
-    list<pair<int, int> > lp;
+    list<pair<int, int>> lp;
     for (list<OccupancyGrid>::const_iterator k = grids.begin(); k != grids.end(); k++) {
       lp.push_back(make_pair(k->upper, k->mass));
       lp.push_back(make_pair(k->lower, -1));
     }
-    list<pair<int, int> > lp2;
+    list<pair<int, int>> lp2;
     for (list<OccupancyGrid>::const_iterator k = gridsIn.grids.begin(); k != gridsIn.grids.end(); k++) {
       lp2.push_back(make_pair(k->upper, k->mass));
       lp2.push_back(make_pair(k->lower, -1));
@@ -198,9 +201,9 @@ public:
     int currMass = 0;
     int upperCnt = 0;
     int lowerCnt = 0;
-    list<pair<int, int> >::iterator lend = lp.end();
+    list<pair<int, int>>::iterator lend = lp.end();
     lend--;
-    for (list<pair<int, int> >::iterator k = lp.begin(); k != lp.end(); k++) {
+    for (list<pair<int, int>>::iterator k = lp.begin(); k != lp.end(); k++) {
       if (k->second > 0) {
         if (upperCnt == 0) currUpper = k->first;
         currMass = (k->second > currMass) ? k->second : currMass;
@@ -211,7 +214,7 @@ public:
         lowerCnt++;
       }
       if (lowerCnt == upperCnt && k != lend) {
-        list<pair<int, int> >::iterator j = k;
+        list<pair<int, int>>::iterator j = k;
         if (k->first - (++j)->first == 1) continue;
       }
       if (lowerCnt == upperCnt) {
@@ -364,7 +367,8 @@ public:
     ResizeMapBase(mx, my);
     if (!mapBase[my * mapX + mx]) mapBase[my * mapX + mx] = new OccupancyGridList;
     mapBase[my * mapX + mx]->SetOccupancyValue(mz, value);
-    // Also record the column that have been changed in another list, for publish incremental map
+    // Also record the column that have been changed in another list, for
+    // publish incremental map
     if (mapBase[my * mapX + mx]->GetUpdateCounter() != updateCounter) {
       updateList.push_back(mapBase[my * mapX + mx]);
       mapBase[my * mapX + mx]->SetUpdateCounterXY(updateCounter, x, y);

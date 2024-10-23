@@ -16,16 +16,16 @@
 
 #define BOOST_TEST_MODULE numeric_rosenbrock
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include <boost/array.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 #include <boost/numeric/odeint/stepper/rosenbrock4.hpp>
-#include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;

@@ -16,8 +16,8 @@
  * copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
 #include <complex>
+#include <iostream>
 
 #include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/external/mtl4/mtl4_resize.hpp>
@@ -27,11 +27,11 @@
 using namespace std;
 using namespace boost::numeric::odeint;
 
-typedef mtl::dense_vector<complex<double> > state_type;
+typedef mtl::dense_vector<complex<double>> state_type;
 
 struct hamiltonian {
 
-  typedef mtl::compressed2D<complex<double> > matrix_type;
+  typedef mtl::compressed2D<complex<double>> matrix_type;
   matrix_type m_H;
 
   hamiltonian(const int N) : m_H(N, N) {
@@ -49,7 +49,7 @@ struct hamiltonian {
 
   void initialize_kinetic_term() {
     const int N = num_rows(m_H);
-    mtl::matrix::inserter<matrix_type, mtl::update_plus<complex<double> > > ins(m_H);
+    mtl::matrix::inserter<matrix_type, mtl::update_plus<complex<double>>> ins(m_H);
     const double z = 1.0;
     // fill diagonal and upper and lower diagonal
     for (int i = 0; i < N; ++i) {
@@ -95,8 +95,8 @@ int main(int argc, char** argv) {
   // initialize gauss packet with nonzero velocity
   for (int i = 0; i < N; ++i) {
     x[i] = exp(-(i - N0) * (i - N0) / (4.0 * sigma0 * sigma0)) * exp(complex<double>(0.0, k0 * i));
-    // x[i] += 2.0*exp( -(i+N0-N)*(i+N0-N) / ( 4.0*sigma0*sigma0 ) ) * exp( complex< double >( 0.0 ,
-    // -k0*i ) );
+    // x[i] += 2.0*exp( -(i+N0-N)*(i+N0-N) / ( 4.0*sigma0*sigma0 ) ) * exp(
+    // complex< double >( 0.0 , -k0*i ) );
   }
   x /= mtl::two_norm(x);
 
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
   mtl::compressed2D<double> V(N, N);
   V = 0.0;
   {
-    mtl::matrix::inserter<mtl::compressed2D<double> > ins(V);
+    mtl::matrix::inserter<mtl::compressed2D<double>> ins(V);
     for (int i = 0; i < N; ++i) {
       // ins[i][i] << 1E-4*(i-N/2)*(i-N/2);
 

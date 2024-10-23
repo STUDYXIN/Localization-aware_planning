@@ -3,8 +3,8 @@
  libs/numeric/odeint/examples/black_hole.cpp
 
  [begin_description]
- This example shows how the __float128 from gcc libquadmath can be used with odeint.
- [end_description]
+ This example shows how the __float128 from gcc libquadmath can be used with
+ odeint. [end_description]
 
  Copyright 2012 Lee Hodgkinson
  Copyright 2012 Karsten Ahnert
@@ -15,15 +15,15 @@
  copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <cstdlib>
+#include <algorithm>
+#include <cassert>
 #include <cmath>
+#include <complex>
+#include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <utility>
-#include <algorithm>
-#include <cassert>
 #include <vector>
-#include <complex>
 
 extern "C" {
 #include <quadmath.h>
@@ -67,16 +67,16 @@ inline std::ostream& operator<<(std::ostream& os, const __float128& f) {
 }
 
 #include <boost/array.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/numeric.hpp>
 #include <boost/numeric/odeint.hpp>
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/numeric.hpp>
 
 using namespace boost::numeric::odeint;
 using namespace std;
 
 typedef __float128 my_float;
-typedef std::vector<std::complex<my_float> > state_type;
+typedef std::vector<std::complex<my_float>> state_type;
 
 struct radMod {
   my_float m_om;

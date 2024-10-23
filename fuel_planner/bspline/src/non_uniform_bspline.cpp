@@ -161,9 +161,9 @@ double NonUniformBspline::checkRatio() {
 }
 
 void NonUniformBspline::lengthenTime(const double& ratio) {
-  // To ensure that the boundary vel/acc remain the same, some of the knot should not be changed
-  // The start derivatives are not influenced from u_(2p), end derivatives are not influenced until
-  // u_(m-2p+1)=
+  // To ensure that the boundary vel/acc remain the same, some of the knot
+  // should not be changed The start derivatives are not influenced from u_(2p),
+  // end derivatives are not influenced until u_(m-2p+1)=
   int num1 = 2 * p_ - 1;
   int num2 = (getKnot().rows() - 1) - 2 * p_ + 1;
   if (num1 >= num2) return;
@@ -192,8 +192,8 @@ void NonUniformBspline::parameterizeToBspline(const double& ts, const vector<Eig
   int K = point_set.size();
 
   // Solve control points of B-spline (of different degree)
-  // The matrix representation is detailed in "General matrix representations for B-splines, Qin,
-  // Kaihuai"
+  // The matrix representation is detailed in "General matrix representations
+  // for B-splines, Qin, Kaihuai"
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(K + 4, K + degree - 1);
   Eigen::VectorXd bx(K + 4), by(K + 4), bz(K + 4);
   ctrl_pts.resize(K + degree - 1, 3);

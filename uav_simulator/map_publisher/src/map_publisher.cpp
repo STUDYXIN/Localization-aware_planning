@@ -1,11 +1,11 @@
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 
-#include <pcl/common/transforms.h>  //	pcl::transformPointCloud 用到这个头文件
 #include <nav_msgs/Path.h>
+#include <pcl/common/transforms.h>  //	pcl::transformPointCloud 用到这个头文件
 using namespace std;
 
 string filepath;
@@ -46,10 +46,12 @@ int main(int argc, char** argv) {
     mmax[1] = max(mmax[1], double(pt.y));
     mmax[2] = max(mmax[2], double(pt.z));
   }
-  ROS_WARN("[map_publisher] load map: %s \nmap size: min(%.4f %.4f %.4f) max(%.4f %.4f %.4f)", filepath.c_str(), mmin[0], mmin[1],
-      mmin[2], mmax[0], mmax[1], mmax[2]);
-  // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_2(new pcl::PointCloud<pcl::PointXYZ>);
-  // Eigen::Matrix4f transform = Eigen::Matrix4f::Zero();
+  ROS_WARN("[map_publisher] load map: %s \nmap size: min(%.4f %.4f %.4f) "
+           "max(%.4f %.4f %.4f)",
+      filepath.c_str(), mmin[0], mmin[1], mmin[2], mmax[0], mmax[1], mmax[2]);
+  // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_2(new
+  // pcl::PointCloud<pcl::PointXYZ>); Eigen::Matrix4f transform =
+  // Eigen::Matrix4f::Zero();
   // // transform(0, 1) = 1;
   // // transform(1, 2) = 1;
   // // transform(2, 0) = 1;

@@ -8,6 +8,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall")
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.7 REQUIRED)
+# sophus 
+find_package(Sophus REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -37,15 +39,13 @@ include_directories(
   ${catkin_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include
   ${EIGEN3_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
+  ${Sophus_INCLUDE_DIRS}
 )
 
 add_library(plan_manage 
   src/perception_aware_planner_manager.cpp
-  #src/yaw_graph_utils.cpp
-  src/yaw_initial_planner.cpp
-  #src/yaw_initial_planner_new.cpp
   )
-target_link_libraries(plan_manage ${catkin_LIBRARIES})
+target_link_libraries(plan_manage ${catkin_LIBRARIES} ${Sophus_LIBRARIES})
 
 add_executable(traj_server src/traj_server.cpp)
 target_link_libraries(traj_server ${catkin_LIBRARIES} -ldw)

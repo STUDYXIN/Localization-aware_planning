@@ -11,8 +11,8 @@
 
 #include <boost/array.hpp>
 
-#include <boost/numeric/odeint/stepper/runge_kutta4_classic.hpp>
 #include <boost/numeric/odeint/algebra/array_algebra.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta4_classic.hpp>
 
 #include "rk_performance_test_case.hpp"
 

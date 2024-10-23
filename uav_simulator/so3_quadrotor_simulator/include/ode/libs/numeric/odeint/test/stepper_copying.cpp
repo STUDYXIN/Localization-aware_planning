@@ -31,14 +31,14 @@
 
 #include <boost/numeric/odeint/util/state_wrapper.hpp>
 
-#include <boost/numeric/odeint/stepper/euler.hpp>
-#include <boost/numeric/odeint/stepper/runge_kutta4_classic.hpp>
-#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
-#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
-#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54.hpp>
-#include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 #include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
 #include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
+#include <boost/numeric/odeint/stepper/euler.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta4_classic.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 
 template <class T, size_t Dim>
 class test_array {
@@ -108,8 +108,8 @@ namespace odeint {
 
 // provide the state_wrapper
 template <class T, size_t Dim>
-struct state_wrapper<test_array<T, Dim> > {
-  typedef state_wrapper<test_array<T, Dim> > state_wrapper_type;
+struct state_wrapper<test_array<T, Dim>> {
+  typedef state_wrapper<test_array<T, Dim>> state_wrapper_type;
   typedef test_array<T, Dim> state_type;
   typedef T value_type;
 
@@ -141,8 +141,8 @@ struct state_wrapper<test_array<T, Dim> > {
 
 // provide the state_wrapper
 template <class T, size_t Dim>
-struct state_wrapper<test_array2<T, Dim> > {
-  typedef state_wrapper<test_array2<T, Dim> > state_wrapper_type;
+struct state_wrapper<test_array2<T, Dim>> {
+  typedef state_wrapper<test_array2<T, Dim>> state_wrapper_type;
   typedef test_array2<T, Dim> state_type;
   typedef T value_type;
 

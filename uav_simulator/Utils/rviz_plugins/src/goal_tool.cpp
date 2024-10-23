@@ -62,7 +62,8 @@ void Goal3DTool::onPoseSet(double x, double y, double z, double theta) {
   tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(quat, tf::Point(x, y, z)), ros::Time::now(), fixed_frame);
   geometry_msgs::PoseStamped goal;
   tf::poseStampedTFToMsg(p, goal);
-  ROS_INFO("Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), Orientation(%.3f, %.3f, %.3f, %.3f) = "
+  ROS_INFO("Setting goal: Frame:%s, Position(%.3f, %.3f, %.3f), "
+           "Orientation(%.3f, %.3f, %.3f, %.3f) = "
            "Angle: %.3f\n",
       fixed_frame.c_str(), goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, goal.pose.orientation.x,
       goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w, theta);

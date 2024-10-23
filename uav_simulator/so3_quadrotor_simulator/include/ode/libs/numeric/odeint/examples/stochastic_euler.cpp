@@ -11,10 +11,10 @@
  copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <vector>
-#include <iostream>
-#include <boost/random.hpp>
 #include <boost/array.hpp>
+#include <boost/random.hpp>
+#include <iostream>
+#include <vector>
 
 #include <boost/numeric/odeint.hpp>
 
@@ -47,7 +47,8 @@ public:
     // ...
 
     template< class System >
-    void do_step( System system , state_type &x , time_type t , time_type dt ) const
+    void do_step( System system , state_type &x , time_type t , time_type dt )
+const
     {
         deriv_type det , stoch ;
         system.first( x , det );

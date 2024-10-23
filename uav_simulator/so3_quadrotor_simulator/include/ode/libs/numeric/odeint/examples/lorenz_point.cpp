@@ -9,15 +9,15 @@
  * Example for the lorenz system with a 3D point type
  */
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include <boost/operators.hpp>
 
 #include <boost/numeric/odeint.hpp>
 
 //[point3D
-class point3D : boost::additive1<point3D, boost::additive2<point3D, double, boost::multiplicative2<point3D, double> > > {
+class point3D : boost::additive1<point3D, boost::additive2<point3D, double, boost::multiplicative2<point3D, double>>> {
 public:
   double x, y, z;
 
@@ -61,7 +61,8 @@ point3D abs(const point3D& p) {
 namespace boost {
 namespace numeric {
 namespace odeint {
-// specialization of vector_space_reduce, only required for steppers with error control
+// specialization of vector_space_reduce, only required for steppers with error
+// control
 template <>
 struct vector_space_reduce<point3D> {
   template <class Value, class Op>

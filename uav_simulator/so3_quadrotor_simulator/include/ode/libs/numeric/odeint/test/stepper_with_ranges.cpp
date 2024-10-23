@@ -24,20 +24,20 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <vector>
-#include <utility>
 #include <iostream>
+#include <utility>
+#include <vector>
 
 #include <boost/array.hpp>
 #include <boost/range.hpp>
 #include <boost/ref.hpp>
 
+#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
+#include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
 #include <boost/numeric/odeint/stepper/euler.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
-#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
 #include <boost/numeric/odeint/stepper/symplectic_euler.hpp>
-#include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
 
 typedef std::vector<double> state_type;
 typedef boost::array<double, 3> state_type2;
@@ -71,7 +71,8 @@ struct system1 {
 };
 
 /*
- * system2 is suited for all steppers, it allows you to calculate the result analytically.
+ * system2 is suited for all steppers, it allows you to calculate the result
+ * analytically.
  */
 struct system2 {
   template <class State, class Deriv>
@@ -182,7 +183,7 @@ BOOST_AUTO_TEST_CASE(runge_kutta_dopri5_with_range_v5) {
 BOOST_AUTO_TEST_CASE(controlled_error_stepper_rk54) {
   double t = 0.0, dt = 0.1;
   vector_fixture f;
-  boost::numeric::odeint::controlled_runge_kutta<boost::numeric::odeint::runge_kutta_cash_karp54_classic<state_type> > stepper;
+  boost::numeric::odeint::controlled_runge_kutta<boost::numeric::odeint::runge_kutta_cash_karp54_classic<state_type>> stepper;
   stepper.try_step(system2(), std::make_pair(f.in.begin() + 1, f.in.begin() + 4), t, dt);
   CHECK_VALUES(f.in, 0.0, 1.1, 2.2, 3.3, 4.0, 5.0);
 }
@@ -190,7 +191,7 @@ BOOST_AUTO_TEST_CASE(controlled_error_stepper_rk54) {
 BOOST_AUTO_TEST_CASE(controlled_error_stepper_dopri5) {
   double t = 0.0, dt = 0.1;
   vector_fixture f;
-  boost::numeric::odeint::controlled_runge_kutta<boost::numeric::odeint::runge_kutta_dopri5<state_type> > stepper;
+  boost::numeric::odeint::controlled_runge_kutta<boost::numeric::odeint::runge_kutta_dopri5<state_type>> stepper;
   stepper.try_step(system2(), std::make_pair(f.in.begin() + 1, f.in.begin() + 4), t, dt);
   CHECK_VALUES(f.in, 0.0, 1.1, 2.2, 3.3, 4.0, 5.0);
 }
@@ -216,7 +217,7 @@ BOOST_AUTO_TEST_CASE(symplectic_euler_coor_and_mom_func) {
 BOOST_AUTO_TEST_CASE(dense_output_euler_with_ranges) {
   using namespace boost::numeric::odeint;
   vector_fixture f;
-  dense_output_runge_kutta<euler<state_type> > stepper;
+  dense_output_runge_kutta<euler<state_type>> stepper;
   stepper.initialize(std::make_pair(f.in.begin() + 1, f.in.begin() + 4), 0.0, 0.1);
   stepper.do_step(system1());
   stepper.calc_state(0.05, std::make_pair(f.in.begin() + 1, f.in.begin() + 4));
@@ -226,7 +227,7 @@ BOOST_AUTO_TEST_CASE(dense_output_euler_with_ranges) {
 BOOST_AUTO_TEST_CASE(dense_output_dopri5_with_ranges) {
   using namespace boost::numeric::odeint;
   vector_fixture f;
-  dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > > stepper;
+  dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type>>> stepper;
   stepper.initialize(std::make_pair(f.in.begin() + 1, f.in.begin() + 4), 0.0, 0.1);
   stepper.do_step(system2());
   stepper.calc_state(0.05, std::make_pair(f.in.begin() + 1, f.in.begin() + 4));

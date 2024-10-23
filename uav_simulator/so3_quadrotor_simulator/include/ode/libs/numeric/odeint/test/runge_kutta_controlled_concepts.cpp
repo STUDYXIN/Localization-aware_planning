@@ -3,9 +3,8 @@
  libs/numeric/odeint/test/runge_kutta_controlled_concepts.cpp
 
  [begin_description]
- This file tests the Stepper concepts of odeint with all Controlled Runge-Kutta steppers.
- It's one of the main tests of odeint.
- [end_description]
+ This file tests the Stepper concepts of odeint with all Controlled Runge-Kutta
+ steppers. It's one of the main tests of odeint. [end_description]
 
  Copyright 2009-2012 Karsten Ahnert
  Copyright 2009-2012 Mario Mulansky
@@ -23,9 +22,9 @@
 
 #define BOOST_TEST_MODULE odeint_runge_kutta_controlled_concepts
 
-#include <vector>
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 #include <boost/numeric/odeint/config.hpp>
 
@@ -33,28 +32,28 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <boost/ref.hpp>
 #include <boost/bind.hpp>
-#include <boost/utility.hpp>
+#include <boost/ref.hpp>
 #include <boost/type_traits/add_reference.hpp>
+#include <boost/utility.hpp>
 
-#include <boost/mpl/vector.hpp>
+#include <boost/mpl/copy.hpp>
+#include <boost/mpl/end.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/insert_range.hpp>
-#include <boost/mpl/end.hpp>
-#include <boost/mpl/copy.hpp>
-#include <boost/mpl/placeholders.hpp>
 #include <boost/mpl/inserter.hpp>
+#include <boost/mpl/placeholders.hpp>
+#include <boost/mpl/vector.hpp>
 
-#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
+#include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
+#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_fehlberg78.hpp>
-#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
-#include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
 
-#include "prepare_stepper_testing.hpp"
 #include "dummy_odes.hpp"
+#include "prepare_stepper_testing.hpp"
 
 using std::vector;
 
@@ -70,16 +69,17 @@ template <class Stepper, class System>
 void check_controlled_stepper_concept(Stepper& stepper, System system, typename Stepper::state_type& x) {
   typedef Stepper stepper_type;
   typedef typename stepper_type::deriv_type container_type;
-  // typedef typename stepper_type::order_type order_type;  controlled_error_stepper don't necessarily
-  // have a order (burlish-stoer)
+  // typedef typename stepper_type::order_type order_type;
+  // controlled_error_stepper don't necessarily have a order (burlish-stoer)
   typedef typename stepper_type::time_type time_type;
 
   time_type t = 0.0, dt = 0.1;
   controlled_step_result step_result = stepper.try_step(system, x, t, dt);
 
-  BOOST_CHECK_MESSAGE(step_result == success, "step result: " << step_result);  // error = 0 for constant
-                                                                                // system -> step size is
-                                                                                // always too small
+  BOOST_CHECK_MESSAGE(step_result == success,
+      "step result: " << step_result);  // error = 0 for constant
+                                        // system -> step size is
+                                        // always too small
 }
 
 template <class ControlledStepper, class State>
@@ -92,7 +92,8 @@ struct perform_controlled_stepper_test<ControlledStepper, vector_type> {
     // typename ControlledStepper::stepper_type error_stepper;
     // default_error_checker< typename ControlledStepper::value_type ,
     //                             typename ControlledStepper::algebra_type ,
-    //                             typename ControlledStepper::operations_type > error_checker;
+    //                             typename ControlledStepper::operations_type >
+    //                             error_checker;
     // ControlledStepper controlled_stepper( error_stepper , error_checker );
     ControlledStepper controlled_stepper;
     check_controlled_stepper_concept(controlled_stepper, constant_system_standard<vector_type, vector_type, double>, x);
@@ -139,13 +140,13 @@ struct perform_controlled_stepper_test<ControlledStepper, array_type> {
 template <class State>
 class controlled_stepper_methods
   : public mpl::vector<controlled_runge_kutta<runge_kutta_cash_karp54_classic<State, double, State, double,
-                           typename algebra_dispatcher<State>::type> >,
-        controlled_runge_kutta<runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type> >,
-        controlled_runge_kutta<runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type> >,
-        bulirsch_stoer<State, double, State, double, typename algebra_dispatcher<State>::type> > {};
+                           typename algebra_dispatcher<State>::type>>,
+        controlled_runge_kutta<runge_kutta_dopri5<State, double, State, double, typename algebra_dispatcher<State>::type>>,
+        controlled_runge_kutta<runge_kutta_fehlberg78<State, double, State, double, typename algebra_dispatcher<State>::type>>,
+        bulirsch_stoer<State, double, State, double, typename algebra_dispatcher<State>::type>> {};
 
 typedef mpl::copy<container_types,
-    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, controlled_stepper_methods<mpl::_2> > > >::type
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, controlled_stepper_methods<mpl::_2>>>>::type
     all_controlled_stepper_methods;
 
 BOOST_AUTO_TEST_SUITE(controlled_runge_kutta_concept_test)

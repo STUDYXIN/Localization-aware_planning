@@ -12,8 +12,8 @@
  * copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
 #include <boost/array.hpp>
+#include <iostream>
 
 #include <boost/numeric/odeint.hpp>
 
@@ -98,8 +98,9 @@ int main(int argc, char** argv) {
         dt);  // Ok, internal derivative is not used, dxdtinout is updated
 
     rk.do_step(sys1, in, dxdtin, t, out, dxdtout, dt);
-    rk.do_step(sys2, in, dxdtin, t, out, dxdtout, dt);  // Ok, internal derivative is not used
-                                                        //]
+    rk.do_step(sys2, in, dxdtin, t, out, dxdtout,
+        dt);  // Ok, internal derivative is not used
+              //]
   }
 
   // Symplectic harmonic oscillator example
@@ -158,7 +159,7 @@ int main(int argc, char** argv) {
     double t = 0.0, dt = 0.1;
     state_type in;
     //[ dense_output_detail_example
-    dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > > dense;
+    dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type>>> dense;
     dense.initialize(in, t, dt);
     pair<double, double> times = dense.do_step(sys);
     //]
@@ -166,7 +167,7 @@ int main(int argc, char** argv) {
     state_type inout;
     double t_start = 0.0, t_end = 1.0;
     //[ dense_output_detail_generation1
-    typedef boost::numeric::odeint::result_of::make_dense_output<runge_kutta_dopri5<state_type> >::type dense_stepper_type;
+    typedef boost::numeric::odeint::result_of::make_dense_output<runge_kutta_dopri5<state_type>>::type dense_stepper_type;
     dense_stepper_type dense2 = make_dense_output(1.0e-6, 1.0e-6, runge_kutta_dopri5<state_type>());
     //]
 

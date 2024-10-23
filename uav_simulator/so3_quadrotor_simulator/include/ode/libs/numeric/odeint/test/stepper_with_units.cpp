@@ -16,9 +16,9 @@
 
 #define BOOST_TEST_MODULE odeint_stepper_with_units
 
-// the runge-kutta 78 stepper invoked with boost units requires increased fusion macro variables!
-// note that by default the rk78 + units test case is disabled as it requires enormous memory when
-// compiling (5 GB)
+// the runge-kutta 78 stepper invoked with boost units requires increased fusion
+// macro variables! note that by default the rk78 + units test case is disabled
+// as it requires enormous memory when compiling (5 GB)
 #define BOOST_FUSION_INVOKE_MAX_ARITY 15
 #define BOOST_RESULT_OF_NUM_ARGS 15
 
@@ -26,15 +26,20 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <boost/units/systems/si/acceleration.hpp>
+#include <boost/units/systems/si/io.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/time.hpp>
 #include <boost/units/systems/si/velocity.hpp>
-#include <boost/units/systems/si/acceleration.hpp>
-#include <boost/units/systems/si/io.hpp>
 
 #include <boost/fusion/container.hpp>
 #include <boost/mpl/vector.hpp>
 
+#include <boost/numeric/odeint/algebra/fusion_algebra.hpp>
+#include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
+#include <boost/numeric/odeint/stepper/bulirsch_stoer_dense_out.hpp>
+#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
+#include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
 #include <boost/numeric/odeint/stepper/euler.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta4_classic.hpp>
@@ -42,11 +47,6 @@
 #include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54_classic.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_fehlberg78.hpp>
-#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
-#include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
-#include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
-#include <boost/numeric/odeint/stepper/bulirsch_stoer_dense_out.hpp>
-#include <boost/numeric/odeint/algebra/fusion_algebra.hpp>
 
 using namespace boost::numeric::odeint;
 using namespace boost::unit_test;
@@ -230,35 +230,40 @@ class stepper_types : public mpl::vector<euler<state_type, value_type, deriv_typ
                           runge_kutta_cash_karp54<state_type, value_type, deriv_type, time_type, fusion_algebra>,
                           runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
                           // don't run rk78 test - gcc requires > 5GB RAM to compile this
-                          //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
+                          //, runge_kutta_fehlberg78< state_type , value_type , deriv_type ,
+                          // time_type , fusion_algebra >
                           > {};
 
-class fsal_stepper_types
-  : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
+class fsal_stepper_types : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra>> {
+};
 
 class error_stepper_types
   : public mpl::vector<runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>
-        //, runge_kutta_fehlberg78< state_type , value_type , deriv_type , time_type , fusion_algebra >
+        //, runge_kutta_fehlberg78< state_type , value_type ,
+        // deriv_type , time_type , fusion_algebra >
         > {};
 
 class fsal_error_stepper_types
-  : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > {};
+  : public mpl::vector<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra>> {};
 
 class controlled_stepper_types
   : public mpl::vector<
-        controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
-        controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
+        controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, deriv_type, time_type, fusion_algebra>>,
+        controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra>>,
         bulirsch_stoer<state_type, value_type, deriv_type, time_type, fusion_algebra>
-        // rk78 with units needs up to 3GB memory to compile - disable testing...
-        //, controlled_runge_kutta< runge_kutta_fehlberg78< state_type , value_type ,
+        // rk78 with units needs up to 3GB memory to compile - disable
+        // testing...
+        //, controlled_runge_kutta< runge_kutta_fehlberg78< state_type ,
+        // value_type ,
         // deriv_type , time_type , fusion_algebra > >
         > {};
 
 class dense_output_stepper_types
-  : public mpl::vector<dense_output_runge_kutta<euler<state_type, value_type, deriv_type, time_type, fusion_algebra> >,
+  : public mpl::vector<dense_output_runge_kutta<euler<state_type, value_type, deriv_type, time_type, fusion_algebra>>,
         dense_output_runge_kutta<
-            controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra> > >
-        //, bulirsch_stoer_dense_out< state_type , value_type , deriv_type , time_type ,
+            controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, fusion_algebra>>>
+        //, bulirsch_stoer_dense_out< state_type , value_type , deriv_type ,
+        // time_type ,
         // fusion_algebra >
         > {};
 

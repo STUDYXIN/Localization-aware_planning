@@ -12,15 +12,15 @@
 
 #define BOOST_TEST_MODULE odeint_vexcl
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
 #include <vexcl/vexcl.hpp>
 
-#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 #include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
-#include <boost/numeric/odeint/integrate/integrate_const.hpp>
 #include <boost/numeric/odeint/external/vexcl/vexcl_resize.hpp>
+#include <boost/numeric/odeint/integrate/integrate_const.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 
 #include <boost/test/unit_test.hpp>
 

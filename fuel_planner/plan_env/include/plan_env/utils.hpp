@@ -50,7 +50,7 @@ public:
   double wider_fov_vertical;
   double quarter_fov_horizontal_rad;
   double quarter_fov_vertical_rad;
-  Eigen::Matrix4d sensor2body;
+  Eigen::Matrix4d sensor2body;  // Tbc
 
   void init(ros::NodeHandle& nh) {
 
@@ -104,6 +104,16 @@ public:
     std::cout << "Half FOV Horizontal Rad: " << quarter_fov_horizontal_rad << std::endl;
     std::cout << "Half FOV Vertical Rad: " << quarter_fov_vertical_rad << std::endl;
     std::cout << "-----------------------------------------------------:" << std::endl;
+  }
+
+  Matrix3d getK() const {
+    Matrix3d K;
+    K << fx, 0, cx, 0, fy, cy, 0, 0, 1;
+    return K;
+  }
+
+  Eigen::Vector2d camera2pixel(const Eigen::Vector3d& p_c) {
+    return Eigen::Vector2d(fx * p_c.x() / p_c.z() + cx, fy * p_c.y() / p_c.z() + cy);
   }
 
   bool is_in_wider_FOV(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p, const Eigen::Quaterniond& camera_q) {
@@ -194,53 +204,6 @@ public:
       }
     }
   }
-
-  // void get_YawRange_using_Pos(const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<double>& unknown_ratio) {
-  //   Matrix4d Pose_receive = Matrix4d::Identity();
-  //   unknown_ratio.resize(sample_yaw.size());
-  //   std::fill(unknown_ratio.begin(), unknown_ratio.end(), 0);
-  //   Pose_receive.block<3, 1>(0, 3) = pos;
-  //   Matrix4d camera_Pose = Pose_receive * sensor2body;
-  //   Eigen::Vector3d pos_in_camera = camera_Pose.block<3, 1>(0, 3);
-  //   if (features_cloud_.empty()) return;
-  //   int feature_num = 0;
-  //   pcl::PointXYZ searchPoint;
-  //   searchPoint.x = pos_transformed(0);
-  //   searchPoint.y = pos_transformed(1);
-  //   searchPoint.z = pos_transformed(2);
-
-  //   vector<int> pointIdxRadiusSearch;
-  //   vector<float> pointRadiusSquaredDistance;
-  //   features_kdtree_.radiusSearch(
-  //       searchPoint, camera_param->feature_visual_max, pointIdxRadiusSearch, pointRadiusSquaredDistance);
-  //   // cout << " [FeatureMap::get_YawRange_using_Pos] debug yaw_range";
-  //   for (const auto& index : pointIdxRadiusSearch) {
-  //     Eigen::Vector3d f(features_cloud_[index].x, features_cloud_[index].y, features_cloud_[index].z);
-  //     if (camera_param->is_depth_useful_at_level(pos_transformed, f) &&
-  //         !sdf_map->checkObstacleBetweenPoints(
-  //             pos_transformed, f))  // 检查特征点是否在相机合适的深度范围内以及这个特征点与无人机之间有无障碍
-  //     {
-  //       Eigen::Vector2d yaw_range = camera_param->calculateYawRange(pos_transformed, f);
-  //       // cout << "  " << yaw_range.transpose();
-  //       for (size_t i = 0; i < sample_yaw.size(); ++i) {
-  //         double yaw = sample_yaw[i];
-  //         // 情况1：yaw_range(0) < yaw_range(1)，范围不跨越“π”
-  //         if (yaw_range(0) < yaw_range(1)) {
-  //           if (yaw >= yaw_range(0) && yaw <= yaw_range(1)) {
-  //             feature_visual_num[i] += 1;
-  //           }
-  //         }
-  //         // 情况2：yaw_range(0) > yaw_range(1)，范围跨越“π”
-  //         else {
-  //           if (yaw >= yaw_range(0) || yaw <= yaw_range(1)) {
-  //             feature_visual_num[i] += 1;
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  //   // cout << endl;
-  // }
 
   // 计算从 camera_p 看向 target_p 的可行 yaw 范围
   Eigen::Vector2d calculateYawRange(const Eigen::Vector3d& camera_p, const Eigen::Vector3d& target_p) {

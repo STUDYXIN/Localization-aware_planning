@@ -30,8 +30,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <boost/mpl/list.hpp>
-#include <boost/mpl/size_t.hpp>
 #include <boost/mpl/range_c.hpp>
+#include <boost/mpl/size_t.hpp>
 
 #include <boost/numeric/odeint/stepper/adams_bashforth.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(test_auto_initialization) {
   state_type x = { { 10.0, 10.0, 10.0 } };
 
   adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations, initially_resizer,
-      rk4_decorator<state_type> >
+      rk4_decorator<state_type>>
       adams;
 
   adams.initializing_stepper().do_count = 0;
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(test_manual_initialization) {
   state_type x = { { 10.0, 10.0, 10.0 } };
 
   adams_bashforth<3, state_type, value_type, state_type, value_type, range_algebra, default_operations, initially_resizer,
-      rk4_decorator<state_type> >
+      rk4_decorator<state_type>>
       adams;
 
   adams.initializing_stepper().do_count = 0;

@@ -15,6 +15,7 @@
 namespace backward {
 backward::SignalHandling sh;
 }
+
 using fast_planner::NonUniformBspline;
 using fast_planner::PerceptionUtils;
 using fast_planner::Polynomial;
@@ -193,7 +194,7 @@ void emergencyStopCallback(std_msgs::Empty msg) {
   emergency_stop_cmd.yaw = yaw;
   emergency_stop_cmd.yaw_dot = 0.0;
 
-  traj_cmd_.clear();
+  // traj_cmd_.clear();
   traj_real_.clear();
   traj_real_yaw_.clear();
 }
@@ -203,7 +204,8 @@ void replanCallback(std_msgs::Empty msg) {
   const double time_out = 1.0;
   ros::Time time_now = ros::Time::now();
   double t_stop = (time_now - start_time_).toSec() + time_out + replan_time_;
-  // traj_duration_ = max(t_stop, traj_duration_);  //这里的修改是如果状态机规划时间过长，也让无人机走完轨迹（安全性有待商榷）
+  // traj_duration_ = max(t_stop, traj_duration_);
+  // //这里的修改是如果状态机规划时间过长，也让无人机走完轨迹（安全性有待商榷）
   traj_duration_ = min(t_stop, traj_duration_);
 }
 
@@ -244,8 +246,6 @@ void pgTVioCallback(geometry_msgs::Pose msg) {
 
 void visCallback(const ros::TimerEvent& e) {
   // Draw the executed traj (desired state)
-  // displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(1, 0, 0, 1), pub_traj_id_);
-  // displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(0, 1, 0, 1), pub_traj_id_);
   displayTrajWithColor(traj_cmd_, 0.05, Eigen::Vector4d(0, 0, 1, 1), pub_traj_id_);
 }
 
@@ -334,7 +334,8 @@ void cmdCallback(const ros::TimerEvent& e) {
     double len = calcPathLength(traj_cmd_);
     double flight_t = (end_time - start_time).toSec();
     // ROS_WARN_THROTTLE(
-    //     2, "flight time: %lf, path length: %lf, mean vel: %lf, energy is: % lf ", flight_t, len, len / flight_t, energy);
+    //     2, "flight time: %lf, path length: %lf, mean vel: %lf, energy is: %
+    //     lf ", flight_t, len, len / flight_t, energy);
   }
 
   else {

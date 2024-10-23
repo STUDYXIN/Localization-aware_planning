@@ -21,7 +21,6 @@ find_package(catkin REQUIRED COMPONENTS
   bspline_opt
   traj_utils
   active_perception
-  lkh_tsp_solver
   plan_manage
   cv_bridge
   time_debug

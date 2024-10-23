@@ -133,8 +133,8 @@ private:
 
   /* ---------- helper ---------- */
   inline Eigen::Vector3d getSample();
-  vector<GraphNode::Ptr> findVisibGuard(Eigen::Vector3d pt);  // find pairs of visibile
-                                                              // guard
+  vector<GraphNode::Ptr> findVisibGuard(Eigen::Vector3d pt);  // find pairs of
+                                                              // visibile guard
   bool needConnection(GraphNode::Ptr g1, GraphNode::Ptr g2,
       Eigen::Vector3d pt);  // test redundancy with existing
                             // connection between two guard

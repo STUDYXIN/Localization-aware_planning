@@ -23,11 +23,11 @@
 #include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/algebra/fusion_algebra.hpp>
 
+#include <boost/units/systems/si/acceleration.hpp>
+#include <boost/units/systems/si/io.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/time.hpp>
 #include <boost/units/systems/si/velocity.hpp>
-#include <boost/units/systems/si/acceleration.hpp>
-#include <boost/units/systems/si/io.hpp>
 
 #include <boost/fusion/container.hpp>
 
@@ -92,7 +92,8 @@ int main(int argc, char** argv) {
   //    <
   //        controlled_runge_kutta
   //        <
-  //            runge_kutta_dopri5< state_type , double , deriv_type , time_type , fusion_algebra >
+  //            runge_kutta_dopri5< state_type , double , deriv_type , time_type
+  //            , fusion_algebra >
   //        >
   //    > stepper_type;
 

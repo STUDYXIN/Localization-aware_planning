@@ -18,20 +18,20 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <utility>
 #include <iostream>
+#include <utility>
 #include <vector>
 
-#include <boost/ref.hpp>
 #include <boost/iterator/counting_iterator.hpp>
+#include <boost/ref.hpp>
 
-#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
-#include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
-#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
+#include <boost/numeric/odeint/integrate/integrate_times.hpp>
 #include <boost/numeric/odeint/stepper/bulirsch_stoer.hpp>
 #include <boost/numeric/odeint/stepper/bulirsch_stoer_dense_out.hpp>
+#include <boost/numeric/odeint/stepper/controlled_runge_kutta.hpp>
 #include <boost/numeric/odeint/stepper/dense_output_runge_kutta.hpp>
-#include <boost/numeric/odeint/integrate/integrate_times.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
   times.clear();
 
   // controlled stepper
-  integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type> >(), lorenz, x, boost::counting_iterator<int>(0),
+  integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type>>(), lorenz, x, boost::counting_iterator<int>(0),
       boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times) {
   times.clear();
 
   // dense output stepper
-  integrate_times(dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type> > >(), lorenz, x,
+  integrate_times(dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<state_type>>>(), lorenz, x,
       boost::counting_iterator<int>(0), boost::counting_iterator<int>(10), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(test_integrate_times_ranges) {
   times.clear();
 
   // controlled stepper
-  integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type> >(), lorenz, x,
+  integrate_times(controlled_runge_kutta<runge_kutta_dopri5<state_type>>(), lorenz, x,
       std::make_pair(boost::counting_iterator<int>(0), boost::counting_iterator<int>(10)), dt, push_back_time(times));
 
   for (int i = 0; i < 10; ++i)

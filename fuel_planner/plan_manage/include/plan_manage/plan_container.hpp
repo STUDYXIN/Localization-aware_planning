@@ -117,7 +117,6 @@ struct PlanParameters {
   double ctrl_pt_dist;  // distance between adjacient B-spline control points
   int bspline_degree_;
   bool min_time_;
-  double min_observed_ratio_;
 
   double clearance_;
   int dynamic_;
@@ -125,6 +124,21 @@ struct PlanParameters {
   double time_search_ = 0.0;
   double time_optimize_ = 0.0;
   double time_adjust_ = 0.0;
+
+  double lookforward_radius_;
+  double k_theta_;
+  double max_theta_;
+  int sample_num_;
+  double delta_v_;
+  int sample_pose_num_;
+  double safety_sphere_radius_;  // 安全球半径
+  double safety_sphere_volume_;  // 安全球体积
+  double k_goal_;
+  double d_critic_;
+  int k_;
+  bool col_prob_non_decreasing_;
+  double k_col_;
+  double k_perc_;
 };
 
 struct LocalTrajData {
@@ -213,10 +227,14 @@ public:
 
 class MidPlanData {
 public:
-  MidPlanData(/* args */) {
-  }
-  ~MidPlanData() {
-  }
+  int best_traj_idx_;
+  vector<PolynomialTraj> candidate_trajs_;
+  vector<vector<Eigen::Vector3d>> candidate_trajs_vis_;
+  vector<vector<Eigen::Vector3d>> candidate_pos_;
+  vector<vector<Eigen::Vector3d>> candidate_acc_;
+  vector<vector<double>> candidate_yaw_;
+  // vector<bool> if_perc_cost_valid_;
+  // vector<Eigen::Vector4d> metric_;
 
   vector<Eigen::Vector3d> global_waypoints_;
 
@@ -226,45 +244,6 @@ public:
 
   // kinodynamic path
   vector<Eigen::Vector3d> kino_path_;
-
-  // topological paths
-  list<GraphNode::Ptr> topo_graph_;
-  vector<vector<Eigen::Vector3d>> topo_paths_;
-  vector<vector<Eigen::Vector3d>> topo_filtered_paths_;
-  vector<vector<Eigen::Vector3d>> topo_select_paths_;
-
-  // multiple topological trajectories
-  vector<NonUniformBspline> topo_traj_pos1_;
-  vector<NonUniformBspline> topo_traj_pos2_;
-  vector<NonUniformBspline> refines_;
-
-  // visibility constraint
-  vector<Eigen::Vector3d> block_pts_;
-  Eigen::MatrixXd ctrl_pts_;
-  NonUniformBspline no_visib_traj_;
-
-  // heading planning
-  vector<vector<Eigen::Vector3d>> frontiers_;
-  vector<double> path_yaw_;
-  double dt_yaw_;
-  double dt_yaw_path_;
-
-  void clearTopoPaths() {
-    topo_traj_pos1_.clear();
-    topo_traj_pos2_.clear();
-    topo_graph_.clear();
-    topo_paths_.clear();
-    topo_filtered_paths_.clear();
-    topo_select_paths_.clear();
-  }
-
-  void addTopoPaths(list<GraphNode::Ptr>& graph, vector<vector<Eigen::Vector3d>>& paths,
-      vector<vector<Eigen::Vector3d>>& filtered_paths, vector<vector<Eigen::Vector3d>>& selected_paths) {
-    topo_graph_ = graph;
-    topo_paths_ = paths;
-    topo_filtered_paths_ = filtered_paths;
-    topo_select_paths_ = selected_paths;
-  }
 };
 
 }  // namespace fast_planner

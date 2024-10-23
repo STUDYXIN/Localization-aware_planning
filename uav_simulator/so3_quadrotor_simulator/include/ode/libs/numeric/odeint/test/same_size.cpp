@@ -41,14 +41,14 @@ BOOST_AUTO_TEST_CASE(test_vector_false) {
 }
 
 BOOST_AUTO_TEST_CASE(test_fusion_true) {
-  boost::fusion::vector<double, std::vector<double> > v1, v2;
+  boost::fusion::vector<double, std::vector<double>> v1, v2;
   boost::fusion::at_c<1>(v1).resize(10);
   boost::fusion::at_c<1>(v2).resize(10);
   BOOST_CHECK_EQUAL(true, same_size(v1, v2));
 }
 
 BOOST_AUTO_TEST_CASE(test_fusion_false) {
-  boost::fusion::vector<double, std::vector<double> > v1, v2;
+  boost::fusion::vector<double, std::vector<double>> v1, v2;
   boost::fusion::at_c<1>(v1).resize(10);
   boost::fusion::at_c<1>(v2).resize(20);
   BOOST_CHECK_EQUAL(false, same_size(v1, v2));

@@ -8,7 +8,9 @@ void DebugTimer::setstart_time(const std::string& function_name, bool print_time
   function_times.clear();        // 清除之前的函数时间数据
   print_time_ = print_time;
   if (print_time_) {
-    std::cout << "\n==================== Function Execution Times ====================" << std::endl;
+    std::cout << "\n==================== Function Execution Times "
+                 "===================="
+              << std::endl;
     std::cout << "[DebugTimer] Start Record: " << function_name << " ------------ " << std::endl;
   }
 }
@@ -23,7 +25,9 @@ void DebugTimer::setstart_time(const std::string& function_name, int output_thr)
   } else
     print_time_ = false;
   if (print_time_) {
-    std::cout << "\n==================== Function Execution Times ====================" << std::endl;
+    std::cout << "\n==================== Function Execution Times "
+                 "===================="
+              << std::endl;
     std::cout << "[DebugTimer] Start Record: " << function_name << " ------------ " << std::endl;
   }
 }
@@ -53,9 +57,11 @@ void DebugTimer::function_end(const std::string& function_name) {
 
 void DebugTimer::output_time() {
   if (print_time_) {
-    //   std::cout << "==================== Function Execution Times ====================" << std::endl;
-    //   for (const auto& entry : function_times) {
-    //     std::cout << "Time of " << std::left << std::setw(24) << entry.first << ": " << std::fixed << std::setprecision(6)
+    //   std::cout << "==================== Function Execution Times
+    //   ====================" << std::endl; for (const auto& entry :
+    //   function_times) {
+    //     std::cout << "Time of " << std::left << std::setw(24) << entry.first
+    //     << ": " << std::fixed << std::setprecision(6)
     //               << entry.second << " (sec)" << std::endl;
     //   }
     auto total_end_time = std::chrono::high_resolution_clock::now();

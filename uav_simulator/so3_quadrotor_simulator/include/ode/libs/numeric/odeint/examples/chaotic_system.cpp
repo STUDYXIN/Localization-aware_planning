@@ -2,8 +2,8 @@
  * chaotic_system.cpp
  *
  * This example demonstrates how one can use odeint to determine the Lyapunov
- * exponents of a chaotic system namely the well known Lorenz system. Furthermore,
- * it shows how odeint interacts with boost.range.
+ * exponents of a chaotic system namely the well known Lorenz system.
+ * Furthermore, it shows how odeint interacts with boost.range.
  *
  * Copyright 2009-2012 Karsten Ahnert
  * Copyright 2009-2012 Mario Mulansky
@@ -13,8 +13,8 @@
  * copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
 #include <boost/array.hpp>
+#include <iostream>
 
 #include <boost/numeric/odeint.hpp>
 

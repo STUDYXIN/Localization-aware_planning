@@ -73,7 +73,8 @@ private:
 
   Eigen::MatrixXd getDerivativeControlPoints();
 
-  double limit_vel_, limit_acc_, limit_ratio_;  // physical limits and time adjustment ratio
+  double limit_vel_, limit_acc_,
+      limit_ratio_;  // physical limits and time adjustment ratio
 };
 }  // namespace fast_planner
 #endif

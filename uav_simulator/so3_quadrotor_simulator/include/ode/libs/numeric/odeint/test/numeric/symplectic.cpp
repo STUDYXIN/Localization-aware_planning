@@ -16,8 +16,8 @@
 
 #define BOOST_TEST_MODULE numeric_symplectic
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include <boost/array.hpp>
 
@@ -57,7 +57,8 @@ struct perform_symplectic_test {
     state_type q1, p1;
     std::pair<state_type, state_type> x1(q1, p1);
     const double t = 0.0;
-    /* do a first step with dt=0.1 to get an estimate on the prefactor of the error dx = f * dt^(order+1)
+    /* do a first step with dt=0.1 to get an estimate on the prefactor of the
+     * error dx = f * dt^(order+1)
      */
     double dt = 0.5;
     stepper.do_step(osc(), std::make_pair(q0, p0), t, x1, dt);
@@ -75,7 +76,7 @@ struct perform_symplectic_test {
   }
 };
 
-typedef mpl::vector<symplectic_euler<state_type>, symplectic_rkn_sb3a_mclachlan<state_type> > symplectic_steppers;
+typedef mpl::vector<symplectic_euler<state_type>, symplectic_rkn_sb3a_mclachlan<state_type>> symplectic_steppers;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(symplectic_test, Stepper, symplectic_steppers) {
   perform_symplectic_test<Stepper> tester;

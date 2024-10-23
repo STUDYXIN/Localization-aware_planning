@@ -18,8 +18,8 @@
 
 #include <utility>
 
-#include <boost/test/unit_test.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include <boost/numeric/odeint/util/is_pair.hpp>
 

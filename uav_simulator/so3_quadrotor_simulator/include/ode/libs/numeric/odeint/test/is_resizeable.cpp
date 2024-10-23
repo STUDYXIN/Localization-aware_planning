@@ -22,24 +22,24 @@
 
 #define BOOST_TEST_MODULE odeint_is_resizeable
 
-#include <vector>
 #include <cmath>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
-#include <boost/numeric/odeint/util/is_resizeable.hpp>
 #include <boost/fusion/include/vector.hpp>
+#include <boost/numeric/odeint/util/is_resizeable.hpp>
+#include <boost/units/systems/si/acceleration.hpp>
+#include <boost/units/systems/si/io.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/time.hpp>
 #include <boost/units/systems/si/velocity.hpp>
-#include <boost/units/systems/si/acceleration.hpp>
-#include <boost/units/systems/si/io.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;
 
 BOOST_AUTO_TEST_CASE(test_vector) {
-  BOOST_CHECK(is_resizeable<std::vector<int> >::value);
+  BOOST_CHECK(is_resizeable<std::vector<int>>::value);
 }
 
 BOOST_AUTO_TEST_CASE(test_double) {
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(test_double) {
 }
 
 BOOST_AUTO_TEST_CASE(test_fusion_vector_of_vector) {
-  typedef boost::fusion::vector<std::vector<double>, std::vector<double> > state_type;
+  typedef boost::fusion::vector<std::vector<double>, std::vector<double>> state_type;
   BOOST_CHECK(is_resizeable<state_type>::value);
 }
 
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(test_fusion_vector_of_double) {
 }
 
 BOOST_AUTO_TEST_CASE(test_fusion_vector_mixed1) {
-  typedef boost::fusion::vector<double, std::vector<double> > state_type;
+  typedef boost::fusion::vector<double, std::vector<double>> state_type;
   BOOST_CHECK(is_resizeable<state_type>::value);
 }
 

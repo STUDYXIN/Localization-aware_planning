@@ -7,14 +7,14 @@
  * copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
-#include <fstream>
-#include <utility>
 #include "time.h"
+#include <fstream>
+#include <iostream>
+#include <utility>
 
+#include <boost/numeric/mtl/mtl.hpp>
 #include <boost/numeric/odeint.hpp>
 #include <boost/phoenix/phoenix.hpp>
-#include <boost/numeric/mtl/mtl.hpp>
 
 #include <boost/numeric/odeint/external/mtl4/implicit_euler_mtl4.hpp>
 
@@ -29,7 +29,8 @@ typedef mtl::compressed2D<double> mat_mtl4;
 typedef boost::numeric::ublas::vector<double> vec_ublas;
 typedef boost::numeric::ublas::matrix<double> mat_ublas;
 
-// two systems defined 1 & 2 both are mostly sparse with the number of element variable
+// two systems defined 1 & 2 both are mostly sparse with the number of element
+// variable
 struct system1_mtl4 {
 
   void operator()(const vec_mtl4& x, vec_mtl4& dxdt, double t) {

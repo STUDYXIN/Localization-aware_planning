@@ -13,17 +13,6 @@ using std::vector;
 
 namespace fast_planner {
 
-enum VIEWPOINT_CHANGE_REASON {
-  NO_NEED_CHANGE,
-  PATH_SEARCH_FAIL,
-  POSITION_OPT_FAIL,
-  YAW_INIT_FAIL,
-  YAW_OPT_FAIL,
-  LOCABILITY_CHECK_FAIL,
-  EXPLORABILITI_CHECK_FAIL,
-  COLLISION_CHECK_FAIL
-};
-
 struct FSMData {
   // FSM data
   bool trigger_, have_odom_, static_state_;
@@ -34,64 +23,45 @@ struct FSMData {
   double odom_yaw_;
 
   Eigen::Vector3d start_pt_, start_vel_, start_acc_, start_yaw_;  // start state
-  Eigen::Vector3d end_pt_, end_vel_;                              // start state
-  vector<Eigen::Vector3d> start_poss;
+  Eigen::Vector3d end_pt_, end_vel_;                              // end state
   bspline::Bspline newest_traj_;
-};
-
-struct M2GData {
-  // move to goal data
-  int target_type_;  // 1 mannual select, 2 hard code
-  double no_replan_thresh_, replan_thresh_;
-  double waypoints_[50][3];
-  int waypoint_num_;
-  double last_arrive_time_;
-  int current_wp_;
 };
 
 struct FSMParam {
   double replan_thresh1_;
   double replan_thresh2_;
   double replan_thresh3_;
-  double replan_thresh_replan_viewpoint_length_;
-  double replan_time_;  // second
-  double replan_out_;
-  int one_viewpoint_max_searchtimes_;
+  double goal_threshold_;
 };
 
 struct ExplorationData {
   vector<vector<Vector3d>> frontiers_;
   vector<vector<Vector3d>> dead_frontiers_;
-  vector<pair<Vector3d, Vector3d>> frontier_boxes_;
   vector<Vector3d> points_;
-  vector<Vector3d> averages_;
   vector<Vector3d> views_;
   vector<double> yaws_;
   vector<size_t> visb_num_;
-  vector<Vector3d> global_tour_;
   vector<int> frontier_ids_;
 
   vector<vector<Vector3d>> frontier_cells_;
 
-  vector<int> refined_ids_;
-  vector<vector<Vector3d>> n_points_;
-  vector<Vector3d> unrefined_points_;
-  vector<Vector3d> refined_points_;
-  vector<Vector3d> refined_views_;  // points + dir(yaw)
-  vector<Vector3d> refined_views1_, refined_views2_;
-  vector<Vector3d> refined_tour_;
-
-  Vector3d next_goal_;
+  // Vector3d next_goal_;
   vector<Vector3d> path_next_goal_;
-
-  // viewpoint planning
-  // vector<Vector4d> views_;
-  vector<Vector3d> views_vis1_, views_vis2_;
-  vector<Vector3d> centers_, scales_;
 
   Vector3d point_now;
   vector<double> yaw_vector;
   vector<Vector3d> frontier_now;
+};
+
+enum NEXT_GOAL_TYPE { FINAL_GOAL, TMP_VIEWPOINT, NO_FRONTIER, LOCAL_PLAN_FAIL };
+
+struct NextGoalData {
+  NEXT_GOAL_TYPE type_;
+
+  Vector3d next_pos_;
+  vector<double> next_yaw_vec_;
+  double next_yaw_;
+  vector<Vector3d> next_frontier_cell_;
 };
 
 struct ExplorationParam {

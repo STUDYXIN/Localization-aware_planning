@@ -3,13 +3,13 @@
 
 // #include <active_perception/traj_visibility.h>
 #include <bspline/non_uniform_bspline.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_types.h>
 #include <plan_env/obj_predictor.h>
 #include <poly_traj/polynomial_traj.h>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/point_types.h>
 
 #include <Eigen/Eigen>
 #include <algorithm>
@@ -68,6 +68,17 @@ public:
   }
 };
 
+enum VIEWPOINT_CHANGE_REASON {
+  NO_NEED_CHANGE,
+  PATH_SEARCH_FAIL,
+  POSITION_OPT_FAIL,
+  YAW_INIT_FAIL,
+  YAW_OPT_FAIL,
+  LOCABILITY_CHECK_FAIL,
+  EXPLORABILITI_CHECK_FAIL,
+  COLLISION_CHECK_FAIL
+};
+
 class PlanningVisualization {
 private:
   enum TRAJECTORY_PLANNING_ID {
@@ -107,22 +118,12 @@ private:
   ros::Publisher yaw_pub_;        // 5, yaw trajectory
   ros::Publisher viewpoint_pub_;  // 6, viewpoint planning
   ros::Publisher text_pub_;       // 7, pub_text
+  ros::Publisher trajs_pub_;      // 8
   vector<ros::Publisher> pubs_;   //
 
   int last_frontier_num_;
 
 public:
-  enum VIEWPOINT_CHANGE_REASON_VISUAL {
-    NO_NEED_CHANGE,
-    PATH_SEARCH_FAIL,
-    POSITION_OPT_FAIL,
-    YAW_INIT_FAIL,
-    YAW_OPT_FAIL,
-    LOCABILITY_CHECK_FAIL,
-    EXPLORABILITI_CHECK_FAIL,
-    COLLISION_CHECK_FAIL
-  };
-
   enum FSM_STATUS {
     INIT,
     WAIT_TARGET,
@@ -154,7 +155,7 @@ public:
       const Eigen::Vector3d& Unreachable_viewpoint_points, const double& Unreachable_viewpoint_yaw, const int& UnreachableID,
       const Eigen::Vector3d& frontier_average_pos, const double gain, const vector<Eigen::Vector3d>& fail_pos_traj);
   int unreachable_num_;
-  VIEWPOINT_CHANGE_REASON_VISUAL fail_reason;
+  VIEWPOINT_CHANGE_REASON fail_reason;
   FSM_STATUS fsm_status;
   MESSAGE_HAS_BEEN_DRAW message_drawn;
   void drawFrontiersUnreachable(const vector<Eigen::Vector3d>& Unreachable_frontier,
@@ -163,8 +164,7 @@ public:
   void clearUnreachableMarker();
   void drawfeaturenum(const int& feature_num, const int& feature_num_thr, const Eigen::Vector3d& odom_pos);
   void drawfsmstatu(const Eigen::Vector3d& odom_pos);
-  void drawFrontiersGo(
-      const vector<Eigen::Vector3d>& Go_frontier, const Eigen::Vector3d& Go_viewpoint_points, const double& Go_viewpoint_yaw);
+  void drawFrontiersGo(const vector<Eigen::Vector3d>& frontier, const Eigen::Vector3d& vp_pos, const double& vp_yaw);
   // new interface
   void fillBasicInfo(visualization_msgs::Marker& mk, const Eigen::Vector3d& scale, const Eigen::Vector4d& color, const string& ns,
       const int& id, const int& shape);
@@ -194,6 +194,9 @@ public:
       const Eigen::Vector4d& color, int id, int pub_id = 0);
   void displayArrowList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2, double line_width,
       const Eigen::Vector4d& color, int id, int pub_id);
+
+  void drawCandidateTrajs(
+      const vector<vector<Eigen::Vector3d>> paths, const double resolution, const int best_idx, int pub_id = 8);
   // draw a piece-wise straight line path
   void drawGeometricPath(const vector<Eigen::Vector3d>& path, double resolution, const Eigen::Vector4d& color, int id = 0);
   // draw a polynomial trajectory
@@ -236,7 +239,8 @@ public:
     double y_avg = y_sum / points.size();
     return Eigen::Vector3d(x_avg, y_avg, max_z);
   }
-  // void drawYawOnKnots(constNonUniformBspline& pos, NonUniformBspline& acc, NonUniformBspline& yaw);
+  // void drawYawOnKnots(constNonUniformBspline& pos, NonUniformBspline& acc,
+  // NonUniformBspline& yaw);
 
   struct Color {
     double r_;

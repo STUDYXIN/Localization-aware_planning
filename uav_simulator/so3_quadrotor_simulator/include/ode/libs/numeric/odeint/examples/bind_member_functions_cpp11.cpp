@@ -14,8 +14,8 @@
  copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
 #include <array>
+#include <iostream>
 #include <type_traits>
 
 #include <boost/numeric/odeint.hpp>

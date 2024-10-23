@@ -1,7 +1,8 @@
 /*
  * fpu.cpp
  *
- * This example demonstrates how one can use odeint to solve the Fermi-Pasta-Ulam system.
+ * This example demonstrates how one can use odeint to solve the
+ Fermi-Pasta-Ulam system.
 
  *  Created on: July 13, 2011
  *
@@ -11,9 +12,9 @@
  * http://www.boost.org/LICENSE_1_0.txt)
  */
 
+#include <cmath>
 #include <iostream>
 #include <numeric>
-#include <cmath>
 #include <vector>
 
 #include <boost/numeric/odeint.hpp>

@@ -3,6 +3,7 @@
 
 #include <exploration_manager/perception_aware_exploration_fsm.h>
 #include <ros/ros.h>
+#include <traj_utils/planning_visualization.h>
 
 #include <Eigen/Eigen>
 #include <memory>
@@ -23,9 +24,8 @@ class PAExplorationFSM;
 class FrontierFinder;
 struct ExplorationParam;
 struct ExplorationData;
+struct NextGoalData;
 class SteppingDebug;
-
-enum NEXT_GOAL_TYPE { REACH_END, SEARCH_FRONTIER, NO_FRONTIER, NO_AVAILABLE_FRONTIER };
 
 class PAExplorationManager {
 public:
@@ -35,13 +35,14 @@ public:
 
   bool FindFinalGoal();
 
-  NEXT_GOAL_TYPE selectNextGoal(Vector3d& next_pos, vector<double>& next_yaw_vec, double& next_yaw);
+  void selectNextGoal();
   VIEWPOINT_CHANGE_REASON planToNextGoal(const Vector3d& next_pos, const vector<double>& next_yaw_vec, double& next_yaw,
       const vector<Vector3d>& frontire_cells, const bool check_exploration);
 
   bool findJunction(const vector<Vector3d>& path, Vector3d& point, double& yaw);
   weak_ptr<PAExplorationFSM> expl_fsm_;
 
+  shared_ptr<NextGoalData> ngd_ = nullptr;
   shared_ptr<ExplorationData> ed_;
   shared_ptr<ExplorationParam> ep_;
   shared_ptr<FastPlannerManager> planner_manager_;

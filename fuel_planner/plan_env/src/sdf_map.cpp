@@ -350,11 +350,12 @@ void SDFMap::inputGlobalPointCloud(const pcl::PointCloud<pcl::PointXYZ>& global_
   std::fill(md_->count_hit_.begin(), md_->count_hit_.end(), 0);
   std::fill(md_->count_miss_.begin(), md_->count_miss_.end(), 0);
 
-  // double sample_x = 0.5 * std::min(std::abs(max_bound[0]), std::abs(min_bound[0]));
-  // double sample_y = 0.5 * std::min(std::abs(max_bound[1]), std::abs(min_bound[1]));
-  // double sample_z = 0.5 * std::min(std::abs(max_bound[2]), std::abs(min_bound[2]));
-  // ROS_WARN("[SDFMap] sample_x,sample_y,sample_z: (%.2f %.2f %.2f)",sample_x,sample_y,sample_z);
-  // 遍历点云，更新地图
+  // double sample_x = 0.5 * std::min(std::abs(max_bound[0]),
+  // std::abs(min_bound[0])); double sample_y = 0.5 *
+  // std::min(std::abs(max_bound[1]), std::abs(min_bound[1])); double sample_z =
+  // 0.5 * std::min(std::abs(max_bound[2]), std::abs(min_bound[2]));
+  // ROS_WARN("[SDFMap] sample_x,sample_y,sample_z: (%.2f %.2f
+  // %.2f)",sample_x,sample_y,sample_z); 遍历点云，更新地图
   for (const auto& pt : global_points.points) {
     Eigen::Vector3d pt_w(pt.x, pt.y, pt.z);
     Eigen::Vector3i idx;
@@ -369,24 +370,20 @@ void SDFMap::inputGlobalPointCloud(const pcl::PointCloud<pcl::PointXYZ>& global_
       caster_->nextId(idx);
       while (caster_->nextId(idx)) setCacheOccupancy(toAddress(idx), 0);
 
-      // caster_->input(pt_w, Eigen::Vector3d(sample_x, sample_y, sample_z));  // 使用全局原点
-      // caster_->nextId(idx);
-      // while (caster_->nextId(idx))
+      // caster_->input(pt_w, Eigen::Vector3d(sample_x, sample_y, sample_z)); //
+      // 使用全局原点 caster_->nextId(idx); while (caster_->nextId(idx))
       //   setCacheOccupancy(toAddress(idx), 0);
 
-      // caster_->input(pt_w, Eigen::Vector3d(sample_x, -sample_y, sample_z));  // 使用全局原点
-      // caster_->nextId(idx);
-      // while (caster_->nextId(idx))
+      // caster_->input(pt_w, Eigen::Vector3d(sample_x, -sample_y, sample_z));
+      // // 使用全局原点 caster_->nextId(idx); while (caster_->nextId(idx))
       //   setCacheOccupancy(toAddress(idx), 0);
 
-      // caster_->input(pt_w, Eigen::Vector3d(-sample_x, sample_y, sample_z));  // 使用全局原点
-      // caster_->nextId(idx);
-      // while (caster_->nextId(idx))
+      // caster_->input(pt_w, Eigen::Vector3d(-sample_x, sample_y, sample_z));
+      // // 使用全局原点 caster_->nextId(idx); while (caster_->nextId(idx))
       //   setCacheOccupancy(toAddress(idx), 0);
 
-      // caster_->input(pt_w, Eigen::Vector3d(-sample_x, -sample_y, sample_z));  // 使用全局原点
-      // caster_->nextId(idx);
-      // while (caster_->nextId(idx))
+      // caster_->input(pt_w, Eigen::Vector3d(-sample_x, -sample_y, sample_z));
+      // // 使用全局原点 caster_->nextId(idx); while (caster_->nextId(idx))
       //   setCacheOccupancy(toAddress(idx), 0);
     }
   }
@@ -649,7 +646,8 @@ void SDFMap::countVisibleCells(
 
 bool SDFMap::getVisibility(const Vector3d& pos, const Vector3d& point) {
   Eigen::Vector3d camera_pos;
-  camera_param_ptr->fromOdom2Camera(pos, camera_pos);  // 这里假设相机位置和机器人位置一样，以后记得改 ========改了！
+  camera_param_ptr->fromOdom2Camera(pos, camera_pos);  // 这里假设相机位置和机器人位置一样，以后记得改
+                                                       // ========改了！
   if (!camera_param_ptr->is_depth_useful(camera_pos, point)) return false;
 
   // Check if frontier cell is visible (not occulded by obstacles)
@@ -685,7 +683,8 @@ bool SDFMap::getVisibility(const Vector3d& pos, const double& yaw, const Vector3
 }
 
 // 原先的逻辑，只检查最后两个点，这样侧面的特征点会看不到
-// bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+// bool SDFMap::checkObstacleBetweenPoints(const Eigen::Vector3d& start, const
+// Eigen::Vector3d& end) {
 //   caster_->input(start, end);
 //   Eigen::Vector3i idx;
 //   while (caster_->nextId(idx)) {

@@ -9,8 +9,8 @@
 
 /* example showing how odeint can be used with std::list */
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <list>
 
 #include <boost/numeric/odeint.hpp>

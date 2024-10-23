@@ -19,14 +19,14 @@
 #include <cmath>
 #include <complex>
 
-#include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
+#include <boost/test/unit_test.hpp>
 
+#include <boost/units/systems/si/acceleration.hpp>
+#include <boost/units/systems/si/io.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/time.hpp>
 #include <boost/units/systems/si/velocity.hpp>
-#include <boost/units/systems/si/acceleration.hpp>
-#include <boost/units/systems/si/io.hpp>
 
 #include <boost/mpl/list.hpp>
 
@@ -42,7 +42,7 @@ struct internal_value_type {
   typedef Value type;
 };
 template <class T>
-struct internal_value_type<std::complex<T> > {
+struct internal_value_type<std::complex<T>> {
   typedef T type;
 };
 
@@ -139,7 +139,7 @@ struct unit_fixture {
   acceleration_type d2x;
 };
 
-typedef mpl::list<float, double, std::complex<double> > test_types;
+typedef mpl::list<float, double, std::complex<double>> test_types;
 
 BOOST_AUTO_TEST_SUITE(check_operations_test)
 

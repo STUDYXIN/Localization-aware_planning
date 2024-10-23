@@ -4,19 +4,19 @@
 #include "plan_env/utils.hpp"
 #include <plan_env/raycast.h>
 
+#include <Eigen/Dense>
+#include <Eigen/Eigen>
 #include <geometry_msgs/PoseStamped.h>
+#include <memory>
 #include <nav_msgs/Odometry.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/search/impl/kdtree.hpp>
 #include <pcl/search/kdtree.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <Eigen/Dense>
-#include <Eigen/Eigen>
-#include <memory>
-#include <pcl/search/impl/kdtree.hpp>
 
 using std::pair;
 using std::shared_ptr;
@@ -67,6 +67,14 @@ public:
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
   int get_More_NumCloud_using_CamPosOrient(
       const Eigen::Vector3d& pos, const Eigen::Quaterniond& orient, vector<pair<int, Eigen::Vector3d>>& res);
+
+  Eigen::Vector2d camera2pixel(const Eigen::Vector3d& p_c) {
+    return camera_param->camera2pixel(p_c);
+  }
+
+  Matrix3d getK() {
+    return camera_param->getK();
+  }
 
   void get_YawRange_using_Pos(
       const Eigen::Vector3d& pos, const vector<double>& sample_yaw, vector<int>& feature_visual_num, RayCaster* raycaster);

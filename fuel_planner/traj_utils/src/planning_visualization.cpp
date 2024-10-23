@@ -1,6 +1,6 @@
-#include <traj_utils/planning_visualization.h>
 #include <iomanip>
 #include <sstream>
+#include <traj_utils/planning_visualization.h>
 using std::cout;
 using std::endl;
 
@@ -25,7 +25,6 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle& nh) {
   frontier_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/frontier", 10000);
   pubs_.push_back(frontier_pub_);
 
-  // yaw_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/yaw", 100);
   yaw_pub_ = node.advertise<visualization_msgs::MarkerArray>("/planning_vis/yaw", 100);
   pubs_.push_back(yaw_pub_);
 
@@ -34,6 +33,9 @@ PlanningVisualization::PlanningVisualization(ros::NodeHandle& nh) {
 
   text_pub_ = node.advertise<visualization_msgs::Marker>("/planning_vis/text", 100);
   pubs_.push_back(text_pub_);
+
+  trajs_pub_ = node.advertise<visualization_msgs::MarkerArray>("/planning_vis/candidate_trajs", 100);
+  pubs_.push_back(trajs_pub_);
 
   last_frontier_num_ = 0;
   unreachable_num_ = 0;
@@ -239,7 +241,8 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
   ss << std::fixed << std::setprecision(2) << gain;
   std::string text = "id: " + std::to_string(UnreachableID) + " score: " + ss.str();
   displayText(show_text_pos, text, color, 0.3, UNREACHABLE_VIEWPOINT + UnreachableID % 100, 7);
-  // displaySphereList(fail_pos_traj, 0.05, color, UNREACHABLE_KINOASTAR + UnreachableID % 100);
+  // displaySphereList(fail_pos_traj, 0.05, color, UNREACHABLE_KINOASTAR +
+  // UnreachableID % 100);
   drawGeometricPath(fail_pos_traj, 0.05, color, UNREACHABLE_KINOASTAR + UnreachableID % 100);
   last_max++;
 }
@@ -247,6 +250,7 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
 void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3d>& Unreachable_frontier,
     const Eigen::Vector3d& Unreachable_viewpoint_points, const double& Unreachable_viewpoint_yaw,
     const vector<Eigen::Vector3d>& fail_pos_traj, NonUniformBspline& fail_pos_opt, NonUniformBspline& yaw, const double& dt) {
+
   Vector3d top_middle = calculateTopMiddlePoint(Unreachable_frontier);
   if (message_drawn.queryNearestViewpoint(top_middle) < 0.1) return;
   message_drawn.addpoint(top_middle);
@@ -280,37 +284,45 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
       break;
     case YAW_INIT_FAIL:
       error_reason = "YAW_INIT_FAIL";
-      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple,
+      // UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
       drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
           UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
       break;
     case YAW_OPT_FAIL:
       error_reason = "YAW_OPT_FAIL";
-      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple,
+      // UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
       drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
           UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
       cout << "unreachable_num_" << unreachable_num_ << endl;
       break;
     case LOCABILITY_CHECK_FAIL:
       error_reason = "LOCABILITY_CHECK_FAIL";
-      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple,
+      // UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
       drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
           UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
-      // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_ * 100) % 10000);
+      // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_
+      // * 100) % 10000);
       break;
     case EXPLORABILITI_CHECK_FAIL:
       error_reason = "EXPLORABILITI_CHECK_FAIL";
-      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple,
+      // UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
       drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
           UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
-      // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_ * 100) % 10000);
+      // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_
+      // * 100) % 10000);
       break;
     case COLLISION_CHECK_FAIL:
       error_reason = "COLLISION_CHECK_FAIL";
-      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple, UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
+      // drawGeometricPath(fail_pos_traj, geometricpathsize, color_purple,
+      // UNREACHABLE_KINOASTAR + unreachable_num_ % 100);
       drawBspline(fail_pos_opt, posoptsize, color_purple, true, geometricpathsize, Vector4d(1, 1, 0, 1),
           UNREACHABLE_POSTTAJ + unreachable_num_ % 100);
-      // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_ * 100) % 10000);
+      // drawYawTraj(fail_pos_opt, yaw, dt, UNREACHABLE_YAWTAJ + (unreachable_num_
+      // * 100) % 10000);
       break;
     default:
       error_reason = "UNKONW_FAIL";
@@ -320,7 +332,8 @@ void PlanningVisualization::drawFrontiersUnreachable(const vector<Eigen::Vector3
   color_purple(3) = 1.0;
   displayText(top_middle, text, color_purple, 0.2, UNREACHABLE_VIEWPOINT + unreachable_num_ % 100, 7);
   unreachable_num_++;
-  // displaySphereList(fail_pos_traj, 0.02, color, UNREACHABLE_KINOASTAR + UnreachableID % 100);
+  // displaySphereList(fail_pos_traj, 0.02, color, UNREACHABLE_KINOASTAR +
+  // UnreachableID % 100);
 }
 
 void PlanningVisualization::clearUnreachableMarker() {
@@ -339,7 +352,8 @@ void PlanningVisualization::clearUnreachableMarker() {
     displayText(zero_pos, text, black_color, 0.3, UNREACHABLE_VIEWPOINT + i % 100, 7);
     drawBspline(empty_traj, 0.1, black_color, true, 0.15, Vector4d(1, 1, 0, 1), UNREACHABLE_POSTTAJ + i % 100);
     drawGeometricPath(empty_vector_Vector3d, 0.02, black_color, UNREACHABLE_KINOASTAR + i % 100);
-    // drawYawTraj(empty_traj, empty_traj, empty_yaw, (unreachable_num_ * 100) % 10000);
+    // drawYawTraj(empty_traj, empty_traj, empty_yaw, (unreachable_num_ * 100) %
+    // 10000);
   }
   unreachable_num_ = 0;
 }
@@ -444,15 +458,14 @@ void PlanningVisualization::drawfsmstatu(const Eigen::Vector3d& odom_pos) {
   displayText(show_pos, text_err, err_color, 0.2, SHOW_FEATURE_TEXT + 2, 7);
 }
 
-void PlanningVisualization::drawFrontiersGo(
-    const vector<Eigen::Vector3d>& Go_frontier, const Eigen::Vector3d& Go_viewpoint_points, const double& Go_viewpoint_yaw) {
+void PlanningVisualization::drawFrontiersGo(const vector<Vector3d>& frontier, const Vector3d& vp_pos, const double& vp_yaw) {
   Vector4d color(0.0, 1.0, 0.0, 0.7);
-  drawCubes(Go_frontier, 0.1, color, "frontier", GO_VIEWPOINT, 4);
+  drawCubes(frontier, 0.1, color, "frontier", GO_VIEWPOINT, 4);
   vector<Eigen::Vector3d> thisviewpoint, viewpoint_line;
-  thisviewpoint.push_back(Go_viewpoint_points);
-  Eigen::Vector3d direction(cos(Go_viewpoint_yaw), sin(Go_viewpoint_yaw), 0.0);
-  Eigen::Vector3d end_point = Go_viewpoint_points + direction * 1.0;
-  viewpoint_line.push_back(Go_viewpoint_points);
+  thisviewpoint.push_back(vp_pos);
+  Eigen::Vector3d direction(cos(vp_yaw), sin(vp_yaw), 0.0);
+  Eigen::Vector3d end_point = vp_pos + direction * 1.0;
+  viewpoint_line.push_back(vp_pos);
   viewpoint_line.push_back(end_point);
   displaySphereList(thisviewpoint, 0.4, color, GO_VIEWPOINT);
   drawLines(viewpoint_line, 0.25, color, "viewpoint_vectoer_line", GO_VIEWPOINT, 1);
@@ -559,6 +572,7 @@ void PlanningVisualization::clearLines(const string& ns, const int& id, const in
 
 void PlanningVisualization::displaySphereList(
     const vector<Eigen::Vector3d>& list, double resolution, const Eigen::Vector4d& color, int id, int pub_id) {
+
   visualization_msgs::Marker mk;
   mk.header.frame_id = "world";
   mk.header.stamp = ros::Time::now();
@@ -739,6 +753,63 @@ void PlanningVisualization::displayArrowList(
   // ros::Duration(0.0005).sleep();
 }
 
+void PlanningVisualization::drawCandidateTrajs(
+    const vector<vector<Vector3d>> paths, const double resolution, const int best_idx, int pub_id) {
+
+  // cout << "displayArrowList" << endl;
+  if (pubs_[pub_id].getNumSubscribers() == 0) return;
+
+  visualization_msgs::MarkerArray markerArray_del;
+  for (size_t i = 0; i < paths.size(); i++) {
+    visualization_msgs::Marker mk;
+    mk.header.frame_id = "world";
+    mk.header.stamp = ros::Time::now();
+    mk.type = visualization_msgs::Marker::SPHERE_LIST;
+    mk.action = visualization_msgs::Marker::DELETE;
+    mk.id = i;
+    markerArray_del.markers.emplace_back(mk);
+  }
+  pubs_[pub_id].publish(markerArray_del);
+
+  visualization_msgs::MarkerArray markerArray_add;
+  for (size_t i = 0; i < paths.size(); i++) {
+    visualization_msgs::Marker mk;
+    mk.header.frame_id = "world";
+    mk.header.stamp = ros::Time::now();
+    mk.type = visualization_msgs::Marker::SPHERE_LIST;
+    mk.action = visualization_msgs::Marker::ADD;
+    mk.id = i;
+    mk.pose.orientation.x = 0.0;
+    mk.pose.orientation.y = 0.0;
+    mk.pose.orientation.z = 0.0;
+    mk.pose.orientation.w = 1.0;
+
+    Eigen::Vector4d color = (i == best_idx) ? Eigen::Vector4d(0.0, 1.0, 0.0, 1.0) : Eigen::Vector4d(0.0, 0.0, 0.0, 1);
+
+    // Eigen::Vector4d color(0.0, 1.0, 0.0, 1.0);
+
+    mk.color.r = color(0);
+    mk.color.g = color(1);
+    mk.color.b = color(2);
+    mk.color.a = color(3);
+
+    mk.scale.x = resolution;
+    mk.scale.y = resolution;
+    mk.scale.z = resolution;
+
+    geometry_msgs::Point pt;
+    for (const auto& pos : paths[i]) {
+      pt.x = pos.x();
+      pt.y = pos.y();
+      pt.z = pos.z();
+      mk.points.push_back(pt);
+    }
+    markerArray_add.markers.push_back(mk);
+  }
+  pubs_[pub_id].publish(markerArray_add);
+  ros::Duration(0.0005).sleep();
+}
+
 void PlanningVisualization::drawGeometricPath(const vector<Vector3d>& path, double resolution, const Vector4d& color, int id) {
   displaySphereList(path, resolution, color, PATH + id % 100);
 }
@@ -754,8 +825,9 @@ void PlanningVisualization::drawDebugPosBspline(NonUniformBspline& bspline, cons
 void PlanningVisualization::drawDebugControlpoint(
     const vector<Eigen::Vector3d>& contrtol_point, const vector<Eigen::Vector3d>& grad) {
   if (grad.size() != contrtol_point.size()) {
-    ROS_ERROR("[PlanningVisualization::drawYawTraj] contrtol_point.size(): %zu != grad.size() %zu !!!!!!", contrtol_point.size(),
-        grad.size());
+    ROS_ERROR("[PlanningVisualization::drawYawTraj] contrtol_point.size(): %zu "
+              "!= grad.size() %zu !!!!!!",
+        contrtol_point.size(), grad.size());
     return;
   }
   // 绘制knot
@@ -791,11 +863,11 @@ void PlanningVisualization::drawDebugCloud(const vector<Eigen::Vector3d>& cloud,
   // for (size_t i = 0; i < intense.size(); ++i) {
   //   cout << intense[i] << " ";
   //   if (intense[i] < 0) {
-  //     ROS_ERROR("[PlanningVisualization] Intensity value is less than 0. Setting it to 0.");
-  //     normalized_intense[i] = 0.0;
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is less than 0.
+  //     Setting it to 0."); normalized_intense[i] = 0.0;
   //   } else if (intense[i] > 1.0) {
-  //     ROS_ERROR("[PlanningVisualization] Intensity value is greater than 1.0. Setting it to 1.0");
-  //     normalized_intense[i] = 1.0;
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is greater than 1.0.
+  //     Setting it to 1.0"); normalized_intense[i] = 1.0;
   //   } else {
   //     normalized_intense[i] = intense[i];
   //   }
@@ -808,11 +880,11 @@ void PlanningVisualization::drawDebugCloud(const vector<Eigen::Vector3d>& cloud,
   // for (size_t i = 0; i < intense.size(); ++i) {
   //   cout << intense[i] << " ";
   //   if (intense[i] < -1.0) {
-  //     ROS_ERROR("[PlanningVisualization] Intensity value is less than -1.0. Setting it to -1.0.");
-  //     normalized_intense[i] = -1.0;
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is less than -1.0.
+  //     Setting it to -1.0."); normalized_intense[i] = -1.0;
   //   } else if (intense[i] > 1.0) {
-  //     ROS_ERROR("[PlanningVisualization] Intensity value is greater than 1.0. Setting it to 1.0");
-  //     normalized_intense[i] = 1.0;
+  //     ROS_ERROR("[PlanningVisualization] Intensity value is greater than 1.0.
+  //     Setting it to 1.0"); normalized_intense[i] = 1.0;
   //   } else {
   //     normalized_intense[i] = intense[i];
   //   }
@@ -844,7 +916,8 @@ void PlanningVisualization::drawDebugCloud(const vector<Eigen::Vector3d>& cloud,
   pubs_[4].publish(mk);
 
   // Step 5: Fill in the points and colors for the cloud visualization
-  mk.action = visualization_msgs::Marker::ADD;  // Reset the action to ADD for the new marker
+  mk.action = visualization_msgs::Marker::ADD;  // Reset the action to ADD for
+                                                // the new marker
   for (size_t i = 0; i < cloud.size(); ++i) {
     geometry_msgs::Point pt;
     pt.x = cloud[i][0];
@@ -853,9 +926,9 @@ void PlanningVisualization::drawDebugCloud(const vector<Eigen::Vector3d>& cloud,
     mk.points.push_back(pt);
 
     std_msgs::ColorRGBA color;
-    // color.r = 1.0 - normalized_intense[i];  // Red component decreases as intensity increases
-    // color.g = normalized_intense[i];        // Green component increases as intensity increases
-    // color.b = 0.0;
+    // color.r = 1.0 - normalized_intense[i];  // Red component decreases as
+    // intensity increases color.g = normalized_intense[i];        // Green
+    // component increases as intensity increases color.b = 0.0;
 
     if (normalized_intense[i] >= 0) {
       // 当 normalized_intense >= 0 时，从红变绿
@@ -957,7 +1030,9 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBsplin
   double pos_duration = pos.getTimeSum();
   double yaw_duration = yaw.getTimeSum();
   if (pos_duration != yaw_duration) {
-    ROS_ERROR("[PlanningVisualization::drawYawTraj] pos_duration: %.4f != yaw_duration %.4f !!!!!!", pos_duration, yaw_duration);
+    ROS_ERROR("[PlanningVisualization::drawYawTraj] pos_duration: %.4f != "
+              "yaw_duration %.4f !!!!!!",
+        pos_duration, yaw_duration);
     return;
   }
   // ROS_ASSERT(pos_duration == yaw_duration);
@@ -978,7 +1053,9 @@ void PlanningVisualization::drawYawTraj(NonUniformBspline& pos, NonUniformBsplin
 
 void PlanningVisualization::drawYawTraj(const vector<Vector3d>& pos, const vector<Vector3d>& yaw, int id) {
   if (pos.size() != yaw.size()) {
-    ROS_ERROR("[PlanningVisualization::drawYawTraj] pos.size(): %zu != yaw.size() %zu !!!!!!", pos.size(), yaw.size());
+    ROS_ERROR("[PlanningVisualization::drawYawTraj] pos.size(): %zu != "
+              "yaw.size() %zu !!!!!!",
+        pos.size(), yaw.size());
     return;
   }
 
@@ -1012,8 +1089,9 @@ void PlanningVisualization::displayText(
   visualization_msgs::Marker mk;
   // ROS_WARN("[PlanningVisualization::displayText] DEBUG ----");
   // std::cout << "Displaying text: " << text << std::endl;
-  // std::cout << "Position: [" << position(0) << ", " << position(1) << ", " << position(2) << "]" << std::endl;
-  // std::cout << "Color: [" << color(0) << ", " << color(1) << ", " << color(2) << ", " << color(3) << "]" << std::endl;
+  // std::cout << "Position: [" << position(0) << ", " << position(1) << ", " <<
+  // position(2) << "]" << std::endl; std::cout << "Color: [" << color(0) << ",
+  // " << color(1) << ", " << color(2) << ", " << color(3) << "]" << std::endl;
   // std::cout << "Scale: " << scale << std::endl;
   // std::cout << "ID: " << id << ", pub_id: " << pub_id << std::endl;
   mk.header.frame_id = "world";  // 坐标系
@@ -1044,31 +1122,6 @@ void PlanningVisualization::displayText(
 
   ros::Duration(0.0005).sleep();
 }
-
-// void PlanningVisualization::drawYawOnKnots(NonUniformBspline& pos, NonUniformBspline& acc, NonUniformBspline& yaw) {
-//   if (pos.getControlPoint().size() == 0 || yaw.getControlPoint().size() == 0) return;
-
-//   vector<Eigen::Vector3d> pos_knot_pts, acc_knot_pts, yaw_knot_pts;
-//   pos.getKnotPoint(pos_knot_pts);
-//   acc.getKnotPoint(acc_knot_pts);
-//   yaw.getKnotPoint(yaw_knot_pts);
-
-//   vector<Eigen::Vector3d> arrow_end_pts;
-//   for (int i = 0; i < yaw_knot_pts.size(); ++i) {
-//     Eigen::Vector3d plane_yaw_dir(cos(yaw_knot_pts[i](0)), sin(yaw_knot_pts[i](0)), 0);
-//     Eigen::Vector3d g(0, 0, -9.8);
-
-//     Eigen::Vector3d thrust, temp, yaw_dir, end_pt;
-//     thrust = acc_knot_pts[i] - g;
-//     temp = thrust.cross(plane_yaw_dir);
-//     yaw_dir = temp.cross(thrust).normalized();
-//     end_pt = pos_knot_pts[i] + 0.75 * yaw_dir;
-//     arrow_end_pts.push_back(end_pt);
-//   }
-
-//   // displayLineList(pos_knot_pts, yaw_dir, 0.02, Color::Magenta(), 1, PUBLISHER::YAW_TRAJ);
-//   displayArrowList(pos_knot_pts, arrow_end_pts, 0.05, Color::Pink(), 1, PUBLISHER::YAW_TRAJ_ARRAY);
-// }
 
 Eigen::Vector4d PlanningVisualization::getColor(const double& h, double alpha) {
   double h1 = h;

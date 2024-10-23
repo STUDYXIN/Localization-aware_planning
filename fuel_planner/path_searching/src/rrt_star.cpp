@@ -125,14 +125,15 @@ void RRTStar::init(ros::NodeHandle& nh, const EDTEnvironment::Ptr& env) {
 
 bool RRTStar::makeProblem(const Vector3d& start_pos, const double start_yaw, const Vector3d& end_pos, const double end_yaw) {
 
-  // if (edt_env_->sdf_map_->getInflateOccupancy(start_pos) == 1 || edt_env_->sdf_map_->getOccupancy(start_pos) ==
-  // SDFMap::UNKNOWN) {
+  // if (edt_env_->sdf_map_->getInflateOccupancy(start_pos) == 1 ||
+  // edt_env_->sdf_map_->getOccupancy(start_pos) == SDFMap::UNKNOWN) {
 
   //   ROS_WARN("Start position is in unkown space or obstacle!!!");
   //   return false;
   // }
 
-  // if (edt_env_->sdf_map_->getInflateOccupancy(end_pos) == 1 || edt_env_->sdf_map_->getOccupancy(end_pos) == SDFMap::UNKNOWN) {
+  // if (edt_env_->sdf_map_->getInflateOccupancy(end_pos) == 1 ||
+  // edt_env_->sdf_map_->getOccupancy(end_pos) == SDFMap::UNKNOWN) {
 
   //   ROS_WARN("End position is in unkown space or obstacle!!!");
   //   return false;
@@ -218,7 +219,8 @@ RRTNode* RRTStar::findNearestNode(const Vector3d& point) {
     vector<int> k_indices(1);
     vector<float> k_distances(1);
     // cout << "tree size: " << tree_point_cloud_->size() << endl;
-    // cout << "tree first: " << tree_point_cloud_->points.front().x << " " << tree_point_cloud_->points.front().y << " "
+    // cout << "tree first: " << tree_point_cloud_->points.front().x << " " <<
+    // tree_point_cloud_->points.front().y << " "
     //      << tree_point_cloud_->points.front().z << endl;
 
     // cout << "start pos: " << tree_.front()->position_.transpose() << endl;
@@ -281,13 +283,15 @@ void RRTStar::generateNewNode(const Vector3d& pos, vector<RRTNode::Ptr>& nodes) 
 
   // std::for_each(std::execution::par, yaws.begin())
 
-  // std::for_each(std::execution::par, yaws.begin(), yaws.end(), [&](double yaw) {
-  //   Eigen::Matrix3d rot = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()).toRotationMatrix();
-  //   Quaterniond quat(rot);
+  // std::for_each(std::execution::par, yaws.begin(), yaws.end(), [&](double
+  // yaw) {
+  //   Eigen::Matrix3d rot = Eigen::AngleAxisd(yaw,
+  //   Eigen::Vector3d::UnitZ()).toRotationMatrix(); Quaterniond quat(rot);
 
   //   vector<Eigen::Vector3d> res;
 
-  //   if (feature_map_->get_NumCloud_using_PosOrient(pos, quat, res) > param_.min_feature_num_) {
+  //   if (feature_map_->get_NumCloud_using_PosOrient(pos, quat, res) >
+  //   param_.min_feature_num_) {
   //     RRTNode::Ptr node = make_unique<RRTNode>();
   //     node->position_ = pos;
   //     node->yaw_ = yaw;
@@ -306,13 +310,15 @@ void RRTStar::generateNewNode(const Vector3d& pos, vector<RRTNode::Ptr>& nodes) 
 
     auto feature_num = feature_map_->get_NumCloud_using_Odom(pos, quat, res);
     // RRTNode* node = tree_.front().get();
-    // auto feature_num = feature_map_->get_NumCloud_using_Odom(node->position_, Quaterniond::Identity(), res);
-    // cout << "feature_num: " << feature_num << endl;
+    // auto feature_num = feature_map_->get_NumCloud_using_Odom(node->position_,
+    // Quaterniond::Identity(), res); cout << "feature_num: " << feature_num <<
+    // endl;
 
     int min_feature_num = Utils::getGlobalParam().min_feature_num_plan_;
     if (feature_num > min_feature_num) {
 
-      // if (feature_map_->get_NumCloud_using_PosOrient(pos, quat, res) > param_.min_feature_num_) {
+      // if (feature_map_->get_NumCloud_using_PosOrient(pos, quat, res) >
+      // param_.min_feature_num_) {
       RRTNode::Ptr node = make_unique<RRTNode>();
       node->position_ = pos;
       node->yaw_ = yaw;
@@ -353,7 +359,8 @@ void RRTStar::findNeighbors(const RRTNode* new_node, vector<neighbor_info_t>& ne
     vector<float> k_distances;
     int neighbor_num = kdtree_->radiusSearch(eigen2pcl(new_node->position_), param_.neighbor_radius_, k_indices, k_distances);
 
-    // std::for_each(std::execution::par, k_indices.begin(), k_indices.end(), [&](int i) {
+    // std::for_each(std::execution::par, k_indices.begin(), k_indices.end(),
+    // [&](int i) {
     //   RRTNode* node_ptr = tree_[i].get();
     //   if (checkCollision(*new_node, *node_ptr)) {
     //     neighbor_info.node_ = node_ptr;

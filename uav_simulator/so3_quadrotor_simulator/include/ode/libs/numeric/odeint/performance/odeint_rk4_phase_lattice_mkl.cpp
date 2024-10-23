@@ -11,9 +11,9 @@
 
 #include <boost/array.hpp>
 
-#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 #include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
 #include <boost/numeric/odeint/external/mkl/mkl_operations.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 
 #include "rk_performance_test_case.hpp"
 

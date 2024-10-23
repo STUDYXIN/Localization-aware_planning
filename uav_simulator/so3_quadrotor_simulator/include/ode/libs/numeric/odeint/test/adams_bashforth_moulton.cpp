@@ -21,8 +21,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <boost/mpl/list.hpp>
-#include <boost/mpl/size_t.hpp>
 #include <boost/mpl/range_c.hpp>
+#include <boost/mpl/size_t.hpp>
 
 #include <boost/numeric/odeint/stepper/adams_bashforth_moulton.hpp>
 

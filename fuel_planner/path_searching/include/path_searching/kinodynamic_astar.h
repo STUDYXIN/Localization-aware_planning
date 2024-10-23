@@ -1,18 +1,18 @@
 #ifndef _KINODYNAMIC_ASTAR_H
 #define _KINODYNAMIC_ASTAR_H
 
+#include "plan_env/edt_environment.h"
 #include <Eigen/Eigen>
+#include <boost/functional/hash.hpp>
 #include <iostream>
 #include <map>
+#include <path_searching/matrix_hash.h>
+#include <queue>
 #include <ros/console.h>
 #include <ros/ros.h>
-#include <utility>
 #include <string>
 #include <unordered_map>
-#include "plan_env/edt_environment.h"
-#include <boost/functional/hash.hpp>
-#include <queue>
-#include <path_searching/matrix_hash.h>
+#include <utility>
 
 namespace fast_planner {
 // #define REACH_HORIZON 1

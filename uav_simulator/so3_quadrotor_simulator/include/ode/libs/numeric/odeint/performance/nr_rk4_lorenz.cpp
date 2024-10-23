@@ -21,7 +21,8 @@ typedef boost::array<double, dim> state_type;
 
 template <class System, typename T, size_t dim>
 void rk4_step(const System sys, boost::array<T, dim>& x, const double t,
-    const double dt) {  // fast rk4 implementation adapted from the book 'Numerical Recipes'
+    const double dt) {  // fast rk4 implementation adapted from the
+                        // book 'Numerical Recipes'
   size_t i;
   const double hh = dt * 0.5;
   const double h6 = dt / 6.0;

@@ -14,21 +14,21 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <boost/numeric/odeint/external/mtl4/mtl4_resize.hpp>
 #include <boost/numeric/mtl/vector/dense_vector.hpp>
+#include <boost/numeric/odeint/external/mtl4/mtl4_resize.hpp>
 
 namespace odeint = boost::numeric::odeint;
 
 BOOST_AUTO_TEST_CASE(test_dense_vector_resizeability) {
-  BOOST_CHECK(odeint::is_resizeable<mtl::dense_vector<double> >::value);
+  BOOST_CHECK(odeint::is_resizeable<mtl::dense_vector<double>>::value);
 }
 
 BOOST_AUTO_TEST_CASE(test_dense2D_resizeability) {
-  BOOST_CHECK(odeint::is_resizeable<mtl::dense2D<double> >::value);
+  BOOST_CHECK(odeint::is_resizeable<mtl::dense2D<double>>::value);
 }
 
 BOOST_AUTO_TEST_CASE(test_compressed2D_resizeability) {
-  BOOST_CHECK(odeint::is_resizeable<mtl::compressed2D<double> >::value);
+  BOOST_CHECK(odeint::is_resizeable<mtl::compressed2D<double>>::value);
 }
 
 BOOST_AUTO_TEST_CASE(test_dense_vector_vector_same_size) {

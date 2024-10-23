@@ -22,19 +22,19 @@
 
 #include <cmath>
 #include <complex>
-#include <utility>
 #include <functional>
+#include <utility>
 
 #include <boost/numeric/odeint/config.hpp>
 
-#include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
+#include <boost/test/unit_test.hpp>
 
+#include <boost/units/systems/si/acceleration.hpp>
+#include <boost/units/systems/si/io.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/time.hpp>
 #include <boost/units/systems/si/velocity.hpp>
-#include <boost/units/systems/si/acceleration.hpp>
-#include <boost/units/systems/si/io.hpp>
 
 #include <boost/fusion/container.hpp>
 

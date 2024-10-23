@@ -23,12 +23,12 @@
 #include <boost/test/unit_test.hpp>
 
 #include <boost/mpl/list.hpp>
-#include <boost/mpl/size_t.hpp>
 #include <boost/mpl/range_c.hpp>
+#include <boost/mpl/size_t.hpp>
 
+#include <boost/numeric/odeint/stepper/adams_moulton.hpp>
 #include <boost/numeric/odeint/stepper/detail/adams_moulton_coefficients.hpp>
 #include <boost/numeric/odeint/stepper/detail/rotating_buffer.hpp>
-#include <boost/numeric/odeint/stepper/adams_moulton.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;

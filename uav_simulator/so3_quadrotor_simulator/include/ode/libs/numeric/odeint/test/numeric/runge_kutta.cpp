@@ -16,8 +16,8 @@
 
 #define BOOST_TEST_MODULE numeric_runge_kutta
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include <boost/array.hpp>
 
@@ -72,7 +72,8 @@ struct perform_runge_kutta_test {
     const state_type x0 = { { 0.0, 1.0 } };
     state_type x1;
     const double t = 0.0;
-    /* do a first step with dt=0.1 to get an estimate on the prefactor of the error dx = f * dt^(order+1)
+    /* do a first step with dt=0.1 to get an estimate on the prefactor of the
+     * error dx = f * dt^(order+1)
      */
     double dt = 0.5;
     stepper.do_step(osc(), x0, t, x1, dt);
@@ -103,7 +104,8 @@ struct perform_runge_kutta_error_test {
     const state_type x0 = { { 0.0, 1.0 } };
     state_type x1, x_err;
     const double t = 0.0;
-    /* do a first step with dt=0.1 to get an estimate on the prefactor of the error dx = f * dt^(order+1)
+    /* do a first step with dt=0.1 to get an estimate on the prefactor of the
+     * error dx = f * dt^(order+1)
      */
     double dt = 0.5;
     stepper.do_step(osc(), x0, t, x1, dt, x_err);
@@ -126,7 +128,7 @@ struct perform_runge_kutta_error_test {
 
 typedef mpl::vector<euler<state_type>, modified_midpoint<state_type>, runge_kutta4<state_type>, runge_kutta4_classic<state_type>,
     runge_kutta_cash_karp54_classic<state_type>, runge_kutta_cash_karp54<state_type>, runge_kutta_dopri5<state_type>,
-    runge_kutta_fehlberg78<state_type> >
+    runge_kutta_fehlberg78<state_type>>
     runge_kutta_steppers;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(runge_kutta_test, Stepper, runge_kutta_steppers) {
@@ -135,7 +137,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(runge_kutta_test, Stepper, runge_kutta_steppers) {
 }
 
 typedef mpl::vector<runge_kutta_cash_karp54_classic<state_type>, runge_kutta_cash_karp54<state_type>,
-    runge_kutta_dopri5<state_type>, runge_kutta_fehlberg78<state_type> >
+    runge_kutta_dopri5<state_type>, runge_kutta_fehlberg78<state_type>>
     runge_kutta_error_steppers;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(runge_kutta_error_test, Stepper, runge_kutta_error_steppers) {

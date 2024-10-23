@@ -5,6 +5,7 @@
 #include <exploration_manager/perception_aware_exploration_manager.h>
 #include <plan_manage/plan_container.hpp>
 #include <time_debug.hpp>
+#include <traj_utils/planning_visualization.h>
 
 #include <bspline/Bspline.h>
 #include <nav_msgs/Odometry.h>
@@ -44,10 +45,6 @@ enum FSM_EXEC_STATE { INIT, WAIT_TARGET, START_IN_STATIC, PUB_TRAJ, MOVE_TO_NEXT
 
 enum TARGET_TYPE { MANUAL_TARGET = 1, PRESET_TARGET = 2 };
 
-enum REPLAN_TYPE { START_FROM_LAST_TRAJ, START_FROM_ODOM };
-
-enum REPLAN_REASON { REACH_TMP = 0, CLUSTER_COVER = 1, TIME_OUT = 2, COLLISION_CHECK = 3, NO_REPLAN = 4 };
-
 class PAExplorationFSM : public std::enable_shared_from_this<PAExplorationFSM> {
 public:
   shared_ptr<FastPlannerManager> planner_manager_;
@@ -70,33 +67,19 @@ public:
 
   Eigen::Vector3d start_pos_, start_vel_, start_acc_, start_yaw_;  // start state
   Eigen::Vector3d end_pt_, end_vel_;                               // end state
-  bspline::Bspline newest_traj_;
-  bool has_traj_ = false;
-  vector<pair<size_t, double>> gains_;  // gains for viewpoint
+  bspline::Bspline last_traj_msg_;
+  std::shared_ptr<LocalTrajData> last_traj_ = nullptr;
   FSM_EXEC_STATE exec_state_ = FSM_EXEC_STATE::INIT;
-  Eigen::Vector3d last_used_viewpoint_pos;
-
-  // 在发布轨迹后更新
-  LocalTrajData last_traj;
-  bool is_last_traj_init;
-  bool do_replan_;
 
   Eigen::Vector3d final_goal_;
-  int next_goal_;
 
   int target_type_;  // 1 mannual select, 2 hard code
   double waypoints_[50][3];
   int waypoint_num_;
   int current_wp_ = 0;
 
-  vector<pair<int, Eigen::Vector3d>> last_visible_feature_, cur_visible_feature_;
-
   /* Debug utils */
-  vector<int> last_viewpoint_line, last_feature_line;
-  bool draw_line2feature;
   DebugTimer debug_timer;
-  bool run_continued_;
-  bool direct_replan;
 
   /* ROS utils */
   ros::NodeHandle node_;
@@ -104,19 +87,17 @@ public:
   ros::Timer exec_timer_, safety_timer_, vis_timer_, frontier_timer_;
 
   ros::Publisher replan_pub_, new_pub_, bspline_pub_, emergency_stop_pub_;
-  ros::Publisher vis_num_pub_, exploration_ratio_pub_;
 
   ros::Subscriber odom_sub_;
   ros::Subscriber waypoint_sub_;
 
   /* helper functions */
-  int callExplorationPlanner();
+  void callRecedingHorizonPlanner();
   void transitState(const FSM_EXEC_STATE new_state, const string& pos_call);
 
   /* ROS functions */
   void FSMCallback(const ros::TimerEvent& e);
   void safetyCallback(const ros::TimerEvent& e);
-  void frontierCallback(const ros::TimerEvent& e);
 
   // Subscriber callbacks
   void odometryCallback(const nav_msgs::OdometryConstPtr& msg);
@@ -132,30 +113,13 @@ public:
   // viewpoint的重新选择
   // Data
   VIEWPOINT_CHANGE_REASON last_fail_reason = VIEWPOINT_CHANGE_REASON::NO_NEED_CHANGE;
-  Eigen::Vector3d choose_pos_, origin_pos_;
-  vector<double> choose_yaw_vec_;
-  double choose_yaw_, origin_yaw_;
-  vector<Eigen::Vector3d> choose_frontier_cell;
+  // Eigen::Vector3d choose_pos_;
+  Eigen::Vector3d origin_pos_;
+  // vector<double> choose_yaw_vec_;
+  // double choose_yaw_,
+  double origin_yaw_;
+  // vector<Eigen::Vector3d> choose_frontier_cell;
   ros::Time replan_begin_time;
-  bool do_final_plan;
-  // Param
-  double still_choose_new_length_thr_;  // 由于计算需要时间，如果这个过程距离变化不大，可以继续选择最好的
-
-  // 发布给python可视化程序过程使用的变量
-  ros::Time start_time_for_pub;
-  double duration_for_pub;
-  vector<Eigen::Vector3d> choose_frontier_cell_for_pub;
-
-  // Function
-  bool transitViewpoint();  // 根据错误原因，选择转变的重计算方式
-  void setStartState(REPLAN_TYPE replan_switch);
-  void setVisualErrorType(const VIEWPOINT_CHANGE_REASON& viewpoint_change_reason);
-  void setVisualFSMType(const FSM_EXEC_STATE& fsm_status, const REPLAN_REASON& replan_type = NO_REPLAN);
-
-  void continued_run();
-
-  void updatePubData();
-  void pubData(const nav_msgs::OdometryConstPtr& msg);
 };
 }  // namespace fast_planner
 

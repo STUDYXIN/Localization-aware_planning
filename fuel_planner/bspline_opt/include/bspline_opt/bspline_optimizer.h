@@ -1,8 +1,8 @@
 #ifndef _BSPLINE_OPTIMIZER_H_
 #define _BSPLINE_OPTIMIZER_H_
 
-#include <plan_env/utils.hpp>
 #include <plan_env/edt_environment.h>
+#include <plan_env/utils.hpp>
 #include <ros/ros.h>
 
 #include <Eigen/Eigen>
@@ -74,7 +74,8 @@ public:
 
   // optional inputs
   void setGuidePath(const vector<Vector3d>& guide_pt);
-  void setWaypoints(const vector<Vector3d>& waypts, const vector<int>& waypt_idx);  // N-2 constraints at most
+  void setWaypoints(const vector<Vector3d>& waypts,
+      const vector<int>& waypt_idx);  // N-2 constraints at most
   void enableDynamic(double time_start);
 
   // SECTION Perception Aware Optimization
@@ -178,9 +179,10 @@ private:
   // Input to solver
   int dim_;  // dimension of the B-spline
   vector<Eigen::Vector3d> start_state_, end_state_;
-  vector<bool> start_con_index_, end_con_index_;  // whether constraint on (pos, vel, acc)
-  vector<Eigen::Vector3d> guide_pts_;             // geometric guiding path points, N-6
-  vector<Eigen::Vector3d> waypoints_;             // waypts constraints
+  vector<bool> start_con_index_,
+      end_con_index_;                  // whether constraint on (pos, vel, acc)
+  vector<Eigen::Vector3d> guide_pts_;  // geometric guiding path points, N-6
+  vector<Eigen::Vector3d> waypoints_;  // waypts constraints
   vector<int> waypt_idx_;
   int max_num_id_, max_time_id_;  // stopping criteria
   int cost_function_;

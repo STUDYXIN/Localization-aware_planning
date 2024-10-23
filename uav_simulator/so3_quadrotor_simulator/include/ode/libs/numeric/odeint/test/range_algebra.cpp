@@ -16,23 +16,23 @@
 
 #define BOOST_TEST_MODULE odeint_standard_algebra
 
+#include <boost/array.hpp>
 #include <cmath>
 #include <complex>
-#include <utility>
 #include <functional>
-#include <boost/array.hpp>
+#include <utility>
 
-#include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
+#include <boost/test/unit_test.hpp>
 
+#include <boost/units/systems/si/io.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/time.hpp>
 #include <boost/units/systems/si/velocity.hpp>
-#include <boost/units/systems/si/io.hpp>
 
+#include <boost/numeric/odeint/algebra/array_algebra.hpp>
 #include <boost/numeric/odeint/algebra/default_operations.hpp>
 #include <boost/numeric/odeint/algebra/range_algebra.hpp>
-#include <boost/numeric/odeint/algebra/array_algebra.hpp>
 
 #include <boost/mpl/list.hpp>
 

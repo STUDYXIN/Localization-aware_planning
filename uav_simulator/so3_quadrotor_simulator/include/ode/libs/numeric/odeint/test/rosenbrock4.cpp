@@ -3,8 +3,8 @@
  libs/numeric/odeint/test/rosenbrock4.cpp
 
  [begin_description]
- This file tests the Rosenbrock 4 stepper and its controller and dense output stepper.
- [end_description]
+ This file tests the Rosenbrock 4 stepper and its controller and dense output
+ stepper. [end_description]
 
  Copyright 2009-2012 Karsten Ahnert
  Copyright 2009-2012 Mario Mulansky
@@ -22,8 +22,8 @@
 
 #define BOOST_TEST_MODULE odeint_rosenbrock4
 
-#include <utility>
 #include <iostream>
+#include <utility>
 
 #include <boost/test/unit_test.hpp>
 
@@ -31,8 +31,8 @@
 #include <boost/numeric/odeint/stepper/rosenbrock4_controller.hpp>
 #include <boost/numeric/odeint/stepper/rosenbrock4_dense_output.hpp>
 
-#include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(test_rosenbrock4_stepper) {
 }
 
 BOOST_AUTO_TEST_CASE(test_rosenbrock4_controller) {
-  typedef rosenbrock4_controller<rosenbrock4<value_type> > stepper_type;
+  typedef rosenbrock4_controller<rosenbrock4<value_type>> stepper_type;
   stepper_type stepper;
 
   typedef stepper_type::state_type state_type;
@@ -104,8 +104,8 @@ BOOST_AUTO_TEST_CASE(test_rosenbrock4_controller) {
 }
 
 BOOST_AUTO_TEST_CASE(test_rosenbrock4_dense_output) {
-  typedef rosenbrock4_dense_output<rosenbrock4_controller<rosenbrock4<value_type> > > stepper_type;
-  typedef rosenbrock4_controller<rosenbrock4<value_type> > controlled_stepper_type;
+  typedef rosenbrock4_dense_output<rosenbrock4_controller<rosenbrock4<value_type>>> stepper_type;
+  typedef rosenbrock4_controller<rosenbrock4<value_type>> controlled_stepper_type;
   controlled_stepper_type c_stepper;
   stepper_type stepper(c_stepper);
 
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(test_rosenbrock4_dense_output) {
 }
 
 BOOST_AUTO_TEST_CASE(test_rosenbrock4_copy_dense_output) {
-  typedef rosenbrock4_controller<rosenbrock4<value_type> > controlled_stepper_type;
+  typedef rosenbrock4_controller<rosenbrock4<value_type>> controlled_stepper_type;
   typedef rosenbrock4_dense_output<controlled_stepper_type> stepper_type;
 
   controlled_stepper_type c_stepper;

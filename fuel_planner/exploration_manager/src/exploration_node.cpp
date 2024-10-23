@@ -1,5 +1,5 @@
-#include <ros/ros.h>
 #include <exploration_manager/perception_aware_exploration_fsm.h>
+#include <ros/ros.h>
 
 #include <plan_manage/backward.hpp>
 namespace backward {

@@ -1,7 +1,8 @@
 /*
  * phase_oscillator_ensemble.cpp
  *
- * Demonstrates the phase transition from an unsynchronized to an synchronized state.
+ * Demonstrates the phase transition from an unsynchronized to an synchronized
+ * state.
  *
  * Copyright 2009-2012 Karsten Ahnert and Mario Mulansky.
  * Distributed under the Boost Software License, Version 1.0. (See
@@ -54,7 +55,7 @@ struct phase_ensemble {
   void create_frequencies(double g) {
     boost::mt19937 rng;
     boost::cauchy_distribution<> cauchy(0.0, g);
-    boost::variate_generator<boost::mt19937&, boost::cauchy_distribution<> > gen(rng, cauchy);
+    boost::variate_generator<boost::mt19937&, boost::cauchy_distribution<>> gen(rng, cauchy);
     generate(m_omega.begin(), m_omega.end(), gen);
   }
 
@@ -108,7 +109,7 @@ int main(int argc, char** argv) {
 
   boost::mt19937 rng;
   boost::uniform_real<> unif(0.0, 2.0 * M_PI);
-  boost::variate_generator<boost::mt19937&, boost::uniform_real<> > gen(rng, unif);
+  boost::variate_generator<boost::mt19937&, boost::uniform_real<>> gen(rng, unif);
 
   // gamma = 1, the phase transition occurs at epsilon = 2
   phase_ensemble ensemble(n, 1.0);

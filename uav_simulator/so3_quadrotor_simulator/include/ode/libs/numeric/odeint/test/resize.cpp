@@ -22,19 +22,19 @@
 
 #define BOOST_TEST_MODULE odeint_resize
 
-#include <vector>
 #include <cmath>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
-#include <boost/numeric/odeint/util/resize.hpp>
-#include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/include/at.hpp>
+#include <boost/fusion/include/vector.hpp>
+#include <boost/numeric/odeint/util/resize.hpp>
+#include <boost/units/systems/si/acceleration.hpp>
+#include <boost/units/systems/si/io.hpp>
 #include <boost/units/systems/si/length.hpp>
 #include <boost/units/systems/si/time.hpp>
 #include <boost/units/systems/si/velocity.hpp>
-#include <boost/units/systems/si/acceleration.hpp>
-#include <boost/units/systems/si/io.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(test_vector) {
 }
 
 BOOST_AUTO_TEST_CASE(test_fusion_vector_of_vector) {
-  typedef boost::fusion::vector<std::vector<double>, std::vector<double> > state_type;
+  typedef boost::fusion::vector<std::vector<double>, std::vector<double>> state_type;
   state_type x1;
   boost::fusion::at_c<0>(x1).resize(10);
   boost::fusion::at_c<1>(x1).resize(10);

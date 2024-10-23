@@ -1,9 +1,9 @@
-#include <stepping_debug.hpp>
-#include <traj_utils/planning_visualization.h>
 #include <fstream>
-#include <iostream>
-#include <thread>
 #include <iomanip>
+#include <iostream>
+#include <stepping_debug.hpp>
+#include <thread>
+#include <traj_utils/planning_visualization.h>
 namespace fast_planner {
 // ANSI 颜色代码
 const std::string COLOR_GREEN = "\033[32m";
@@ -68,7 +68,8 @@ void SteppingDebug::calldebug(DEBUG_TYPE type, const vector<Eigen::Vector3d>& pa
   vector<Vector3d> knot_pos;
   switch (type) {
     case BEFORE_POS_OPT:
-      visualization_->drawGeometricPath(path, 0.05, Eigen::Vector4d(1.0, 0.647, 0, 0.5), 99);  // 新开一个id，防止被使用,使用橙色
+      visualization_->drawGeometricPath(path, 0.05, Eigen::Vector4d(1.0, 0.647, 0, 0.5),
+          99);  // 新开一个id，防止被使用,使用橙色
       break;
     case EVERY_POS_OPT:
       points.resize(path.size(), 3);
@@ -164,7 +165,8 @@ void SteppingDebug::coutDebugMsg(DEBUG_TYPE type, const size_t& max_size) {
   ctrl_point_cost.resize(max_size + 1);
   std::fill(ctrl_point_cost.begin(), ctrl_point_cost.end(), 0.0);
   // 表头
-  std::cout << "\n================================================================== Cost Change Statistics "
+  std::cout << "\n================================================================== "
+               "Cost Change Statistics "
                "=================================================================="
             << std::endl;
   std::cout << std::setw(15) << std::right << "ctrl_id"
@@ -172,8 +174,10 @@ void SteppingDebug::coutDebugMsg(DEBUG_TYPE type, const size_t& max_size) {
   for (size_t i = 0; i < max_size; ++i) std::cout << std::setw(10) << std::right << i << " ";
   std::cout << std::setw(10) << std::right << " cost_total";
   std::cout << std::endl;
-  std::cout << "------------------------------------------------------------------------------"
-               "------------------------------------------------------------------------------\n";
+  std::cout << "---------------------------------------------------------------"
+               "---------------"
+               "---------------------------------------------------------------"
+               "---------------\n";
   // 内容
   for (auto& entry : cost_record) {
     COST_TYPE cost_type = entry.first;
@@ -224,8 +228,10 @@ void SteppingDebug::coutDebugMsg(DEBUG_TYPE type, const size_t& max_size) {
 
   // 输出 Total 行
   double ctrl_point_total = 0.0;
-  std::cout << "------------------------------------------------------------------------------"
-               "------------------------------------------------------------------------------\n";
+  std::cout << "---------------------------------------------------------------"
+               "---------------"
+               "---------------------------------------------------------------"
+               "---------------\n";
   std::cout << std::setw(15) << std::right << "Total"
             << ": ";
 
@@ -263,8 +269,10 @@ void SteppingDebug::coutDebugMsg(DEBUG_TYPE type, const size_t& max_size) {
   last_ctrl_point_cost = ctrl_point_cost;
   cost_record.clear();
   ctrl_point_cost.clear();
-  std::cout << "=============================================================================="
-               "==============================================================================\n"
+  std::cout << "==============================================================="
+               "==============="
+               "==============================================================="
+               "===============\n"
             << std::endl;
 }
 

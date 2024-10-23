@@ -5,18 +5,18 @@
 #include <ros/ros.h>
 
 #include <Eigen/Eigen>
+#include <iostream>
 #include <list>
 #include <memory>
-#include <utility>
-#include <iostream>
-#include <vector>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_types.h>
 #include <time_debug.hpp>
+#include <utility>
+#include <vector>
 
-#include <thread>
 #include <atomic>
 #include <mutex>
+#include <thread>
 
 using Eigen::Vector3d;
 using std::list;
@@ -174,12 +174,13 @@ public:
   void getFrontierBoxes(vector<pair<Vector3d, Vector3d>>& boxes);
   int getVisibleFrontiersNum(const Vector3d& pos, const double& yaw);
   // Get viewpoint with highest coverage for each frontier
-  // void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>&
-  // averages,
+  // void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>&
+  // points, vector<double>& yaws, vector<Vector3d>& averages,
   //     vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells);
-  // void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>&
-  // averages,
-  //     vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells, vector<int>& idx);
+  // void getTopViewpointsInfo(const Vector3d& cur_pos, vector<Vector3d>&
+  // points, vector<double>& yaws, vector<Vector3d>& averages,
+  //     vector<size_t>& visb_num, vector<vector<Vector3d>>& frontier_cells,
+  //     vector<int>& idx);
   // 把分数管理放在frontier当中，减少程序复杂性
   Sortrefer sort_refer_;
   vector<int> frontier_sort_id;
@@ -200,7 +201,8 @@ public:
   void getSortedViewpointVector(vector<Viewpoint>& viewpoints);
   void updateScorePos();
   void computeYawEndPoint(const Vector3d& start, Vector3d& end, const vector<Vector3d>& cells);
-  // void getMessage2draw(vector<Vector3d>& points, vector<double>& yaws, vector<Vector3d>& averages, vector<double>& gains);
+  // void getMessage2draw(vector<Vector3d>& points, vector<double>& yaws,
+  // vector<Vector3d>& averages, vector<double>& gains);
   bool chooseNextViewpoint(Vector3d& point, vector<double>& yaws, vector<Vector3d>& frontier_cells);
 
   // get frontiers near new point
@@ -259,14 +261,17 @@ public:
   void store_init_state() {
     if (!use_independent_thread) {
       if (best_viewpoint.score_yaw.empty()) {
-        ROS_ERROR("[FrontierFinder::store_init_state] best_viewpoint have not been init, or there is no available "
+        ROS_ERROR("[FrontierFinder::store_init_state] best_viewpoint have not "
+                  "been init, or there is no available "
                   "viewpoint!!!!!");
         return;
       }
       init_viewpoint = best_viewpoint;
       unavailableViewpointManage_.clear();
       unavailableViewpointManage_.addViewpoint(init_viewpoint);
-    } else {
+    }
+
+    else {
       std::lock_guard<std::mutex> lock(data_mutex_share_);  // 加锁以保护共享数据
       shared_param_.unavailableViewpointManage_.clear();
     }
@@ -303,7 +308,8 @@ public:
   void getShareFrontierParam(const Vector3d& cur_pos, const double& yaw_now, const Vector3d& refer_pos,
       bool has_pos_refer_,  // input
       vector<vector<Eigen::Vector3d>>& active_frontiers, vector<vector<Eigen::Vector3d>>& dead_frontiers, Vector3d& points,
-      vector<double>& yaws, vector<Vector3d>& frontier_cells, vector<double>& score);  // out_put
+      vector<double>& yaws, vector<Vector3d>& frontier_cells,
+      vector<double>& score);  // out_put
 };
 
 }  // namespace fast_planner

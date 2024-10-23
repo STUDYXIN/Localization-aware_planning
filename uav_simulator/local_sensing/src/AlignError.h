@@ -22,7 +22,8 @@ struct AlignError {
     velodyne_t[2] = velodyne_trans.z();
   }
 
-  // Factory to hide the construction of the CostFunction object from the client code.
+  // Factory to hide the construction of the CostFunction object from the client
+  // code.
   static ceres::CostFunction* Create(const Eigen::Quaterniond camera_pose, const Eigen::Vector3d camera_trans,
       const Eigen::Quaterniond velodyne_pose, const Eigen::Vector3d velodyne_trans) {
     return (new ceres::AutoDiffCostFunction<AlignError, 6, 4, 3, 4, 3>(
@@ -32,11 +33,11 @@ struct AlignError {
   template <typename T>
   bool operator()(const T* const world_rotation, const T* const world_translation, const T* const v2c_rotation,
       const T* const v2c_translation, T* residuals) const {
-    Eigen::Quaternion<T> q_world = Eigen::Map<const Eigen::Quaternion<T> >(world_rotation);
-    Eigen::Matrix<T, 3, 1> t_world = Eigen::Map<const Eigen::Matrix<T, 3, 1> >(world_translation);
+    Eigen::Quaternion<T> q_world = Eigen::Map<const Eigen::Quaternion<T>>(world_rotation);
+    Eigen::Matrix<T, 3, 1> t_world = Eigen::Map<const Eigen::Matrix<T, 3, 1>>(world_translation);
 
-    Eigen::Quaternion<T> q_v2c = Eigen::Map<const Eigen::Quaternion<T> >(v2c_rotation);
-    Eigen::Matrix<T, 3, 1> t_v2c = Eigen::Map<const Eigen::Matrix<T, 3, 1> >(v2c_translation);
+    Eigen::Quaternion<T> q_v2c = Eigen::Map<const Eigen::Quaternion<T>>(v2c_rotation);
+    Eigen::Matrix<T, 3, 1> t_v2c = Eigen::Map<const Eigen::Matrix<T, 3, 1>>(v2c_translation);
 
     Eigen::Quaternion<T> q_c;
     Eigen::Matrix<T, 3, 1> t_c;

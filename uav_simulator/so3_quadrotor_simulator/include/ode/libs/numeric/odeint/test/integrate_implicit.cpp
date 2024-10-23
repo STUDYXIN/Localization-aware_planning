@@ -3,8 +3,8 @@
  libs/numeric/odeint/test/integrate_implicit.cpp
 
  [begin_description]
- This file tests the integrate function and its variants with the implicit steppers.
- [end_description]
+ This file tests the integrate function and its variants with the implicit
+ steppers. [end_description]
 
  Copyright 2009-2012 Karsten Ahnert
  Copyright 2009-2012 Mario Mulansky
@@ -16,26 +16,26 @@
 
 #define BOOST_TEST_MODULE odeint_integrate_functions_implicit
 
-#include <vector>
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 #include <boost/numeric/odeint/config.hpp>
 
 #include <boost/array.hpp>
-#include <boost/ref.hpp>
 #include <boost/iterator/counting_iterator.hpp>
-#include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/ref.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 #include <boost/mpl/vector.hpp>
 
-#include <boost/numeric/odeint/integrate/integrate_const.hpp>
 #include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>
-#include <boost/numeric/odeint/integrate/integrate_times.hpp>
+#include <boost/numeric/odeint/integrate/integrate_const.hpp>
 #include <boost/numeric/odeint/integrate/integrate_n_steps.hpp>
+#include <boost/numeric/odeint/integrate/integrate_times.hpp>
 #include <boost/numeric/odeint/stepper/rosenbrock4.hpp>
 #include <boost/numeric/odeint/stepper/rosenbrock4_controller.hpp>
 #include <boost/numeric/odeint/stepper/rosenbrock4_dense_output.hpp>
@@ -160,8 +160,8 @@ struct perform_integrate_n_steps_test {
   }
 };
 
-class stepper_methods : public mpl::vector<rosenbrock4<value_type>, rosenbrock4_controller<rosenbrock4<value_type> >,
-                            rosenbrock4_dense_output<rosenbrock4_controller<rosenbrock4<value_type> > > > {};
+class stepper_methods : public mpl::vector<rosenbrock4<value_type>, rosenbrock4_controller<rosenbrock4<value_type>>,
+                            rosenbrock4_dense_output<rosenbrock4_controller<rosenbrock4<value_type>>>> {};
 
 BOOST_AUTO_TEST_SUITE(integrate_test)
 
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(integrate_times_test_case, Stepper, stepper_method
   tester();
 }
 
-class simple_stepper_methods : public mpl::vector<rosenbrock4<value_type> > {};
+class simple_stepper_methods : public mpl::vector<rosenbrock4<value_type>> {};
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(integrate_n_steps_test_case, Stepper, simple_stepper_methods) {
   perform_integrate_n_steps_test<Stepper> tester;

@@ -233,7 +233,8 @@ int KinodynamicAstar4Degree::search(const Vector3d& start_pt, const Vector3d& st
     bool reach_horizon = (cur_node->state.head(3) - start_pt).norm() >= horizon_;
 
     bool near_end = (cur_node->index.head(3) - end_index.head(3)).lpNorm<Infinity>() <= tolerance;
-    // bool near_end = (cur_node->index - end_index).lpNorm<Infinity>() <= tolerance;
+    // bool near_end = (cur_node->index - end_index).lpNorm<Infinity>() <=
+    // tolerance;
 
     if (reach_horizon || near_end) {
       terminate_node = cur_node;
@@ -536,7 +537,8 @@ bool KinodynamicAstar4Degree::computeShotTraj(const PVYawState& state1, const PV
       acc(dim) = (Tm * Tm * poly1d).dot(t);
     }
 
-    // if (coord(0) < origin_(0) || coord(0) >= map_size_3d_(0) || coord(1) < origin_(1) || coord(1) >= map_size_3d_(1) ||
+    // if (coord(0) < origin_(0) || coord(0) >= map_size_3d_(0) || coord(1) <
+    // origin_(1) || coord(1) >= map_size_3d_(1) ||
     //     coord(2) < origin_(2) || coord(2) >= map_size_3d_(2)) {
     //   return false;
     // }

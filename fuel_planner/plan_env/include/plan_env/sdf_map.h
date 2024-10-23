@@ -119,8 +119,9 @@ struct MapParam {
   double default_dist_;
   bool optimistic_, signed_dist_;
   // map fusion
-  double p_hit_, p_miss_, p_min_, p_max_, p_occ_;                                            // occupancy probability
-  double prob_hit_log_, prob_miss_log_, clamp_min_log_, clamp_max_log_, min_occupancy_log_;  // logit
+  double p_hit_, p_miss_, p_min_, p_max_, p_occ_;  // occupancy probability
+  double prob_hit_log_, prob_miss_log_, clamp_min_log_, clamp_max_log_,
+      min_occupancy_log_;  // logit
   double max_ray_length_;
   double local_bound_inflate_;
   int local_map_margin_;

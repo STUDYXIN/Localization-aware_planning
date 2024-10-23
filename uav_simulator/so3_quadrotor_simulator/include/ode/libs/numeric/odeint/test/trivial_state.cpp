@@ -3,8 +3,8 @@
  libs/numeric/odeint/test/trivial_state.cpp
 
  [begin_description]
- This file tests if the steppers can integrate the trivial state consisting of a single double.
- [end_description]
+ This file tests if the steppers can integrate the trivial state consisting of a
+ single double. [end_description]
 
  Copyright 2009-2012 Karsten Ahnert
  Copyright 2009-2012 Mario Mulansky
@@ -24,17 +24,17 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/int.hpp>
 #include <boost/mpl/at.hpp>
+#include <boost/mpl/int.hpp>
+#include <boost/mpl/vector.hpp>
 
+#include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
+#include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>
 #include <boost/numeric/odeint/stepper/euler.hpp>
+#include <boost/numeric/odeint/stepper/generation.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
-#include <boost/numeric/odeint/stepper/generation.hpp>
-#include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>
-#include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_SUITE(trivial_state_test)
 /* test different do_step methods of simple steppers */
 
 typedef mpl::vector<euler<state_type, value_type, deriv_type, time_type, vector_space_algebra, default_operations, never_resizer>,
-    runge_kutta4<state_type, value_type, deriv_type, time_type, vector_space_algebra, default_operations, never_resizer> >::type
+    runge_kutta4<state_type, value_type, deriv_type, time_type, vector_space_algebra, default_operations, never_resizer>>::type
     stepper_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_do_step, T, stepper_types) {
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_do_step, T, stepper_types) {
 
 typedef mpl::vector<runge_kutta_cash_karp54<state_type, value_type, deriv_type, time_type, vector_space_algebra,
                         default_operations, never_resizer>,
-    runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, vector_space_algebra, default_operations, never_resizer> >
+    runge_kutta_dopri5<state_type, value_type, deriv_type, time_type, vector_space_algebra, default_operations, never_resizer>>
     error_stepper_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_integrate, T, error_stepper_types) {

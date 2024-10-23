@@ -1,8 +1,8 @@
 /*
  * stuart_landau.cpp
  *
- * This example demonstrates how one can use odeint can be used with state types consisting of complex
- * variables.
+ * This example demonstrates how one can use odeint can be used with state types
+ * consisting of complex variables.
  *
  * Copyright 2009-2012 Karsten Ahnert and Mario Mulansky.
  * Distributed under the Boost Software License, Version 1.0. (See
@@ -10,9 +10,9 @@
  * http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
-#include <complex>
 #include <boost/array.hpp>
+#include <complex>
+#include <iostream>
 
 #include <boost/numeric/odeint.hpp>
 
@@ -44,7 +44,8 @@ double alpha = 1.0;
 void stuart_landau( const state_type &x , state_type &dxdt , double t )
 {
     const complex< double > I( 0.0 , 1.0 );
-    dxdt[0] = ( 1.0 + m_eta * I ) * x[0] - ( 1.0 + m_alpha * I ) * norm( x[0] ) * x[0];
+    dxdt[0] = ( 1.0 + m_eta * I ) * x[0] - ( 1.0 + m_alpha * I ) * norm( x[0] )
+* x[0];
 }
 //]
 */

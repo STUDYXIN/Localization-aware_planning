@@ -31,31 +31,31 @@
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/is_same.hpp>
 
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/zip_view.hpp>
-#include <boost/mpl/vector_c.hpp>
-#include <boost/mpl/insert_range.hpp>
-#include <boost/mpl/end.hpp>
-#include <boost/mpl/size.hpp>
-#include <boost/mpl/copy.hpp>
-#include <boost/mpl/placeholders.hpp>
-#include <boost/mpl/inserter.hpp>
 #include <boost/mpl/at.hpp>
+#include <boost/mpl/copy.hpp>
+#include <boost/mpl/end.hpp>
+#include <boost/mpl/insert_range.hpp>
+#include <boost/mpl/inserter.hpp>
+#include <boost/mpl/placeholders.hpp>
+#include <boost/mpl/size.hpp>
+#include <boost/mpl/vector.hpp>
+#include <boost/mpl/vector_c.hpp>
+#include <boost/mpl/zip_view.hpp>
 
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/include/make_vector.hpp>
 
-#include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
 #include <boost/numeric/odeint/algebra/fusion_algebra.hpp>
+#include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
 #include <boost/numeric/odeint/stepper/symplectic_euler.hpp>
-#include <boost/numeric/odeint/stepper/symplectic_rkn_sb3a_mclachlan.hpp>
 #include <boost/numeric/odeint/stepper/symplectic_rkn_sb3a_m4_mclachlan.hpp>
+#include <boost/numeric/odeint/stepper/symplectic_rkn_sb3a_mclachlan.hpp>
 
-#include "diagnostic_state_type.hpp"
+#include "boost_units_helpers.hpp"
 #include "const_range.hpp"
+#include "diagnostic_state_type.hpp"
 #include "dummy_odes.hpp"
 #include "vector_space_1d.hpp"
-#include "boost_units_helpers.hpp"
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;
@@ -70,7 +70,7 @@ template <class Coor, class Mom, class Value, class CoorDeriv, class MomDeriv, c
 class complete_steppers
   : public mpl::vector<symplectic_euler<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer>,
         symplectic_rkn_sb3a_mclachlan<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer>,
-        symplectic_rkn_sb3a_m4_mclachlan<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer> > {};
+        symplectic_rkn_sb3a_m4_mclachlan<Coor, Mom, Value, CoorDeriv, MomDeriv, Time, Algebra, Operations, Resizer>> {};
 
 template <class Resizer>
 class vector_steppers : public complete_steppers<diagnostic_state_type, diagnostic_state_type2, double, diagnostic_deriv_type,
@@ -80,12 +80,12 @@ typedef mpl::vector<initially_resizer, always_resizer, never_resizer> resizers;
 typedef mpl::vector_c<int, 1, 3, 0> resizer_multiplicities;
 
 typedef mpl::copy<resizers,
-    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, vector_steppers<mpl::_2> > > >::type
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, vector_steppers<mpl::_2>>>>::type
     all_stepper_methods;
 
-typedef mpl::size<vector_steppers<initially_resizer> >::type num_steppers;
+typedef mpl::size<vector_steppers<initially_resizer>>::type num_steppers;
 typedef mpl::copy<resizer_multiplicities,
-    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, const_range<num_steppers, mpl::_2> > > >::type
+    mpl::inserter<mpl::vector0<>, mpl::insert_range<mpl::_1, mpl::end<mpl::_1>, const_range<num_steppers, mpl::_2>>>>::type
     all_multiplicities;
 
 BOOST_AUTO_TEST_SUITE(symplectic_steppers_test)
@@ -107,11 +107,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_types, Stepper, vector_steppers<initial
                                                                                                                   "e");
 
   BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::state_type, std::pair<diagnostic_state_type, diagnostic_state_type2> >::value), "State "
-                                                                                                                        "type");
+      (boost::is_same<typename Stepper::state_type, std::pair<diagnostic_state_type, diagnostic_state_type2>>::value), "State "
+                                                                                                                       "type");
   BOOST_STATIC_ASSERT_MSG(
-      (boost::is_same<typename Stepper::deriv_type, std::pair<diagnostic_deriv_type, diagnostic_deriv_type2> >::value), "Deriv "
-                                                                                                                        "type");
+      (boost::is_same<typename Stepper::deriv_type, std::pair<diagnostic_deriv_type, diagnostic_deriv_type2>>::value), "Deriv "
+                                                                                                                       "type");
 
   BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::value_type, double>::value), "Value type");
   BOOST_STATIC_ASSERT_MSG((boost::is_same<typename Stepper::time_type, double>::value), "Time type");
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_adjust_size, Stepper, vector_steppers<initial
   TEST_COUNTERS(counter_deriv2, 1, 1, 0, 1);
 }
 
-typedef mpl::zip_view<mpl::vector<all_stepper_methods, all_multiplicities> >::type zipped_steppers;
+typedef mpl::zip_view<mpl::vector<all_stepper_methods, all_multiplicities>>::type zipped_steppers;
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_resizing, Stepper, zipped_steppers) {
   typedef typename mpl::at_c<Stepper, 0>::type stepper_type;
   const size_t multiplicity = mpl::at_c<Stepper, 1>::type::value;
@@ -227,7 +227,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_do_step_v1, Stepper, vector_steppers<initiall
 
   s.do_step(constant_mom_func(), std::make_pair(boost::ref(x5_coor), boost::ref(x5_mom)), 0.0, 0.1);
 
-  // checking for absolute values is not possible here, since the steppers are to different
+  // checking for absolute values is not possible here, since the steppers are
+  // to different
   BOOST_CHECK_CLOSE(x1.first[0], x2.first[0], 1.0e-14);
   BOOST_CHECK_CLOSE(x2.first[0], x3.first[0], 1.0e-14);
   BOOST_CHECK_CLOSE(x3.first[0], x4.first[0], 1.0e-14);

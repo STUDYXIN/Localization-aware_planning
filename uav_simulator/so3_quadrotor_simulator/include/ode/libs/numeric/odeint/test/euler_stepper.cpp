@@ -18,12 +18,12 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <utility>
 #include <iostream>
+#include <utility>
 #include <vector>
 
-#include <boost/numeric/odeint/stepper/euler.hpp>
 #include <boost/numeric/odeint/algebra/range_algebra.hpp>
+#include <boost/numeric/odeint/stepper/euler.hpp>
 
 using namespace boost::unit_test;
 using namespace boost::numeric::odeint;
@@ -61,7 +61,8 @@ typedef double value_type;
 // typedef std::vector< value_type > state_type;
 typedef my_vec state_type;
 
-/* use functors, because functions don't work with msvc 10, I guess this is a bug */
+/* use functors, because functions don't work with msvc 10, I guess this is a
+ * bug */
 struct sys {
   void operator()(const state_type& x, state_type& dxdt, const value_type t) const {
     std::cout << "sys start " << dxdt.size() << std::endl;

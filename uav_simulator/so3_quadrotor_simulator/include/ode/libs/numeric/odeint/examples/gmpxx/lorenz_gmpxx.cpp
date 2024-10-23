@@ -1,7 +1,8 @@
 /*
  * lorenz_gmpxx.cpp
  *
- * This example demonstrates how odeint can be used with arbitrary precision types.
+ * This example demonstrates how odeint can be used with arbitrary precision
+ * types.
  *
  * Copyright 2009-2012 Karsten Ahnert
  * Copyright 2009-2012 Mario Mulansky
@@ -11,8 +12,8 @@
  * copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
 #include <boost/array.hpp>
+#include <iostream>
 
 #include <gmpxx.h>
 

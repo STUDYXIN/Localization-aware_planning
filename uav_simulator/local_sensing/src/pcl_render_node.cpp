@@ -143,11 +143,11 @@ void rcvOdometryCallbck(const nav_msgs::Odometry& odom) {
   // publish tf
   /*static tf::TransformBroadcaster br;
   tf::Transform transform;
-  transform.setOrigin( tf::Vector3(cam2world(0,3), cam2world(1,3), cam2world(2,3) ));
-  transform.setRotation(tf::Quaternion(cam2world_quat.x(), cam2world_quat.y(), cam2world_quat.z(),
-  cam2world_quat.w()));
-  br.sendTransform(tf::StampedTransform(transform, last_odom_stamp, "world", "camera")); //publish
-  transform from world frame to quadrotor frame.*/
+  transform.setOrigin( tf::Vector3(cam2world(0,3), cam2world(1,3),
+  cam2world(2,3) )); transform.setRotation(tf::Quaternion(cam2world_quat.x(),
+  cam2world_quat.y(), cam2world_quat.z(), cam2world_quat.w()));
+  br.sendTransform(tf::StampedTransform(transform, last_odom_stamp, "world",
+  "camera")); //publish transform from world frame to quadrotor frame.*/
 }
 
 void pubCameraPose(const ros::TimerEvent& event) {
@@ -291,8 +291,8 @@ void render_currentpose() {
       max = depth > max ? depth : max;
       depth_mat.at<float>(i, j) = depth;
     }
-  // ROS_INFO("render cost %lf ms.", (ros::Time::now().toSec() - this_time) * 1000.0f);
-  // printf("max_depth %lf.\n", max);
+  // ROS_INFO("render cost %lf ms.", (ros::Time::now().toSec() - this_time) *
+  // 1000.0f); printf("max_depth %lf.\n", max);
 
   cv_bridge::CvImage out_msg;
   out_msg.header.stamp = last_odom_stamp;
@@ -331,10 +331,12 @@ void render_currentpose() {
   // // For running EWOK code
   // static tf::TransformBroadcaster br;
   // tf::Transform transform;
-  // transform.setOrigin(tf::Vector3(cam2world(0, 3), cam2world(1, 3), cam2world(2, 3)));
-  // transform.setRotation(
-  //     tf::Quaternion(cam2world_quat.x(), cam2world_quat.y(), cam2world_quat.z(), cam2world_quat.w()));
-  // br.sendTransform(tf::StampedTransform(transform, last_odom_stamp, "world", "SQ01s/camera"));
+  // transform.setOrigin(tf::Vector3(cam2world(0, 3), cam2world(1, 3),
+  // cam2world(2, 3))); transform.setRotation(
+  //     tf::Quaternion(cam2world_quat.x(), cam2world_quat.y(),
+  //     cam2world_quat.z(), cam2world_quat.w()));
+  // br.sendTransform(tf::StampedTransform(transform, last_odom_stamp, "world",
+  // "SQ01s/camera"));
 }
 
 int main(int argc, char** argv) {
@@ -357,10 +359,11 @@ int main(int argc, char** argv) {
 
   depthrender.set_para(fx, fy, cx, cy, width, height);
 
-  // cam02body <<  0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-  //               0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-  //               -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-  //               0.0, 0.0, 0.0, 1.0;
+  // cam02body <<  0.0148655429818, -0.999880929698, 0.00414029679422,
+  // -0.0216401454975,
+  //               0.999557249008, 0.0149672133247, 0.025715529948,
+  //               -0.064676986768, -0.0257744366974, 0.00375618835797,
+  //               0.999660727178, 0.00981073058949, 0.0, 0.0, 0.0, 1.0;
 
   cam02body << 0.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
 
@@ -416,14 +419,9 @@ height: 240
 width: 320
 distortion_model: "plumb_bob"
 D: [0.0, 0.0, 0.0, 0.0, 0.0]
-K: [159.99941228826285, 0.0, 160.5, 0.0, 159.99941228826285, 120.5, 0.0, 0.0, 1.0]
-R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
-P: [159.99941228826285, 0.0, 160.5, -0.0, 0.0, 159.99941228826285, 120.5, 0.0, 0.0, 0.0, 1.0, 0.0]
-binning_x: 0
-binning_y: 0
-roi:
-  x_offset: 0
-  y_offset: 0
-  height: 0
+K: [159.99941228826285, 0.0, 160.5, 0.0, 159.99941228826285, 120.5, 0.0,
+0.0, 1.0] R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0] P:
+[159.99941228826285, 0.0, 160.5, -0.0, 0.0, 159.99941228826285, 120.5, 0.0, 0.0,
+0.0, 1.0, 0.0] binning_x: 0 binning_y: 0 roi: x_offset: 0 y_offset: 0 height: 0
   width: 0
   do_rectify: False */

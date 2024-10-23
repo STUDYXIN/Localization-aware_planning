@@ -85,8 +85,10 @@ AerialMapDisplay::AerialMapDisplay()
   height_property_ = new IntProperty("Height", 0, "Height of the map, in meters. (not editable)", this);
   height_property_->setReadOnly(true);
 
-  position_property_ = new VectorProperty(
-      "Position", Ogre::Vector3::ZERO, "Position of the bottom left corner of the map, in meters. (not editable)", this);
+  position_property_ = new VectorProperty("Position", Ogre::Vector3::ZERO,
+      "Position of the bottom left corner of the map, in "
+      "meters. (not editable)",
+      this);
   position_property_->setReadOnly(true);
 
   orientation_property_ =

@@ -1,14 +1,14 @@
 #ifndef FOV_MARKER_H
 #define FOV_MARKER_H
 
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include <visualization_msgs/Marker.h>
+#include <Eigen/Dense>
 #include <geometry_msgs/Point.h>
+#include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_datatypes.h>
-#include <Eigen/Dense>
 #include <vector>
+#include <visualization_msgs/Marker.h>
 
 class FOVMarker {
 public:

@@ -10,8 +10,8 @@
 #include <boost/array.hpp>
 
 //#include <boost/numeric/odeint/stepper/explicit_generic_rk.hpp>
-#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 #include <boost/numeric/odeint/algebra/array_algebra.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta4.hpp>
 
 #include "rk_performance_test_case.hpp"
 
@@ -22,8 +22,8 @@ using namespace boost::numeric::odeint;
 typedef boost::array<double, 3> state_type;
 
 /*
-typedef explicit_generic_rk< 4 , 4 , state_type , double , state_type , double , array_algebra >
-rk4_type;
+typedef explicit_generic_rk< 4 , 4 , state_type , double , state_type , double ,
+array_algebra > rk4_type;
 
 typedef rk4_type::coef_a_type coef_a_type;
 typedef rk4_type::coef_b_type coef_b_type;

@@ -12,9 +12,9 @@
 
 #define BOOST_TEST_MODULE odeint_gsl
 
-#include <gsl/gsl_vector.h>
-#include <boost/numeric/odeint/stepper/euler.hpp>
 #include <boost/numeric/odeint/external/gsl/gsl_wrapper.hpp>
+#include <boost/numeric/odeint/stepper/euler.hpp>
+#include <gsl/gsl_vector.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(gsl) {
 
   euler.do_step(lorenz, x, 0.0, 0.1);
 
-  // cout << gsl_vector_get( x , 0 ) << "  " << gsl_vector_get( x , 1 ) << "  " << gsl_vector_get( x , 2
-  // ) << endl;
+  // cout << gsl_vector_get( x , 0 ) << "  " << gsl_vector_get( x , 1 ) << "  "
+  // << gsl_vector_get( x , 2 ) << endl;
 
   gsl_vector_free(x);
 }

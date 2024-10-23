@@ -10,8 +10,8 @@
  copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <iostream>
 #include <boost/numeric/odeint.hpp>
+#include <iostream>
 
 using namespace std;
 using namespace boost::numeric::odeint;
@@ -34,6 +34,7 @@ typedef runge_kutta_dopri5<double, double, double, double, vector_space_algebra,
 
 int main() {
   double x = 0.0;  // initial value x(1) = 0
-  // use dopri5 with stepsize control and allowed errors 10^-12, integrate t=1...10
+  // use dopri5 with stepsize control and allowed errors 10^-12, integrate
+  // t=1...10
   integrate_adaptive(make_controlled(1E-12, 1E-12, stepper_type()), rhs, x, 1.0, 10.0, 0.1, write_cout);
 }

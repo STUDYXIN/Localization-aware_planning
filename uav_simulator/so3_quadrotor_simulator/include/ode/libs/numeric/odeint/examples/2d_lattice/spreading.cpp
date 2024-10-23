@@ -9,21 +9,20 @@
 
 /*
  * Example of a 2D simulation of nonlinearly coupled oscillators.
- * Program just prints final energy which should be close to the initial energy (1.0).
- * No parallelization is employed here.
- * Run time on a 2.3GHz Intel Core-i5: about 10 seconds for 100 steps.
- * Compile simply via bjam or directly:
+ * Program just prints final energy which should be close to the initial energy
+ * (1.0). No parallelization is employed here. Run time on a 2.3GHz Intel
+ * Core-i5: about 10 seconds for 100 steps. Compile simply via bjam or directly:
  * g++ -O3 -I${BOOST_ROOT} -I../../../../.. spreading.cpp
  */
 
-#include <iostream>
-#include <fstream>
-#include <vector>
 #include <cstdlib>
+#include <fstream>
+#include <iostream>
 #include <sys/time.h>
+#include <vector>
 
-#include <boost/ref.hpp>
 #include <boost/numeric/odeint/stepper/symplectic_rkn_sb3a_mclachlan.hpp>
+#include <boost/ref.hpp>
 
 // we use a vector< vector< double > > as state type,
 // for that some functionality has to be added for odeint to work
@@ -56,7 +55,7 @@ double beta = 1.0;
 int realization_index = 0;
 
 // the state type
-typedef vector<vector<double> > state_type;
+typedef vector<vector<double>> state_type;
 
 // the stepper, choose a symplectic one to account for hamiltonian structure
 // use nested_range_algebra for calculations on vector< vector< ... > >

@@ -27,31 +27,31 @@ struct MultiOccupancyGrid_ {
   MultiOccupancyGrid_(const ContainerAllocator& _alloc) : maps(_alloc), origins(_alloc) {
   }
 
-  typedef std::vector< ::nav_msgs::OccupancyGrid_<ContainerAllocator>,
-      typename ContainerAllocator::template rebind< ::nav_msgs::OccupancyGrid_<ContainerAllocator> >::other>
+  typedef std::vector<::nav_msgs::OccupancyGrid_<ContainerAllocator>,
+      typename ContainerAllocator::template rebind<::nav_msgs::OccupancyGrid_<ContainerAllocator>>::other>
       _maps_type;
-  std::vector< ::nav_msgs::OccupancyGrid_<ContainerAllocator>,
-      typename ContainerAllocator::template rebind< ::nav_msgs::OccupancyGrid_<ContainerAllocator> >::other>
+  std::vector<::nav_msgs::OccupancyGrid_<ContainerAllocator>,
+      typename ContainerAllocator::template rebind<::nav_msgs::OccupancyGrid_<ContainerAllocator>>::other>
       maps;
 
-  typedef std::vector< ::geometry_msgs::Pose_<ContainerAllocator>,
-      typename ContainerAllocator::template rebind< ::geometry_msgs::Pose_<ContainerAllocator> >::other>
+  typedef std::vector<::geometry_msgs::Pose_<ContainerAllocator>,
+      typename ContainerAllocator::template rebind<::geometry_msgs::Pose_<ContainerAllocator>>::other>
       _origins_type;
-  std::vector< ::geometry_msgs::Pose_<ContainerAllocator>,
-      typename ContainerAllocator::template rebind< ::geometry_msgs::Pose_<ContainerAllocator> >::other>
+  std::vector<::geometry_msgs::Pose_<ContainerAllocator>,
+      typename ContainerAllocator::template rebind<::geometry_msgs::Pose_<ContainerAllocator>>::other>
       origins;
 
-  typedef boost::shared_ptr< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> const> ConstPtr;
+  typedef boost::shared_ptr<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>> Ptr;
+  typedef boost::shared_ptr<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> const> ConstPtr;
 };  // struct MultiOccupancyGrid
-typedef ::multi_map_server::MultiOccupancyGrid_<std::allocator<void> > MultiOccupancyGrid;
+typedef ::multi_map_server::MultiOccupancyGrid_<std::allocator<void>> MultiOccupancyGrid;
 
-typedef boost::shared_ptr< ::multi_map_server::MultiOccupancyGrid> MultiOccupancyGridPtr;
-typedef boost::shared_ptr< ::multi_map_server::MultiOccupancyGrid const> MultiOccupancyGridConstPtr;
+typedef boost::shared_ptr<::multi_map_server::MultiOccupancyGrid> MultiOccupancyGridPtr;
+typedef boost::shared_ptr<::multi_map_server::MultiOccupancyGrid const> MultiOccupancyGridConstPtr;
 
 template <typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>& v) {
-  ros::message_operations::Printer< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> >::stream(s, "", v);
+  ros::message_operations::Printer<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>>::stream(s, "", v);
   return s;
 }
 
@@ -60,11 +60,11 @@ std::ostream& operator<<(std::ostream& s, const ::multi_map_server::MultiOccupan
 namespace ros {
 namespace message_traits {
 template <class ContainerAllocator>
-struct IsMessage< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > : public TrueType {};
+struct IsMessage<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>> : public TrueType {};
 template <class ContainerAllocator>
-struct IsMessage< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> const> : public TrueType {};
+struct IsMessage<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> const> : public TrueType {};
 template <class ContainerAllocator>
-struct MD5Sum< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
+struct MD5Sum<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>> {
   static const char* value() {
     return "61e63a291f11a6b1796a1edf79f34f72";
   }
@@ -77,7 +77,7 @@ struct MD5Sum< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
 };
 
 template <class ContainerAllocator>
-struct DataType< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
+struct DataType<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>> {
   static const char* value() {
     return "multi_map_server/MultiOccupancyGrid";
   }
@@ -88,7 +88,7 @@ struct DataType< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
 };
 
 template <class ContainerAllocator>
-struct Definition< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
+struct Definition<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>> {
   static const char* value() {
     return "nav_msgs/OccupancyGrid[] maps\n\
 geometry_msgs/Pose[] origins\n\
@@ -177,7 +177,7 @@ namespace ros {
 namespace serialization {
 
 template <class ContainerAllocator>
-struct Serializer< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
+struct Serializer<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>> {
   template <typename Stream, typename T>
   inline static void allInOne(Stream& stream, T m) {
     stream.next(m.maps);
@@ -193,7 +193,7 @@ namespace ros {
 namespace message_operations {
 
 template <class ContainerAllocator>
-struct Printer< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
+struct Printer<::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>> {
   template <typename Stream>
   static void stream(Stream& s, const std::string& indent, const ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator>& v) {
     s << indent << "maps[]" << std::endl;
@@ -201,14 +201,14 @@ struct Printer< ::multi_map_server::MultiOccupancyGrid_<ContainerAllocator> > {
       s << indent << "  maps[" << i << "]: ";
       s << std::endl;
       s << indent;
-      Printer< ::nav_msgs::OccupancyGrid_<ContainerAllocator> >::stream(s, indent + "    ", v.maps[i]);
+      Printer<::nav_msgs::OccupancyGrid_<ContainerAllocator>>::stream(s, indent + "    ", v.maps[i]);
     }
     s << indent << "origins[]" << std::endl;
     for (size_t i = 0; i < v.origins.size(); ++i) {
       s << indent << "  origins[" << i << "]: ";
       s << std::endl;
       s << indent;
-      Printer< ::geometry_msgs::Pose_<ContainerAllocator> >::stream(s, indent + "    ", v.origins[i]);
+      Printer<::geometry_msgs::Pose_<ContainerAllocator>>::stream(s, indent + "    ", v.origins[i]);
     }
   }
 };

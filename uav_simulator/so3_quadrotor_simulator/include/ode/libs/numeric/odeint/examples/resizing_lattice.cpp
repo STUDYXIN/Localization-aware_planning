@@ -17,8 +17,8 @@
 
 #include <boost/numeric/odeint.hpp>
 
-#include <boost/ref.hpp>
 #include <boost/random.hpp>
+#include <boost/ref.hpp>
 
 using namespace std;
 using namespace boost::numeric::odeint;
@@ -39,7 +39,7 @@ struct compacton_lattice {
     // fill random potential with iid values from [0,1]
     boost::mt19937 rng;
     boost::uniform_real<> unif(0.0, 1.0);
-    boost::variate_generator<boost::mt19937&, boost::uniform_real<> > gen(rng, unif);
+    boost::variate_generator<boost::mt19937&, boost::uniform_real<>> gen(rng, unif);
     generate(m_pot.begin(), m_pot.end(), gen);
   }
 
@@ -117,7 +117,8 @@ int main() {
   // create the system
   compacton_lattice lattice(max_N, beta, (max_N - N_start) / 2);
 
-  // create the stepper, note that we use an always_resizer because state size might change during steps
+  // create the stepper, note that we use an always_resizer because state size
+  // might change during steps
   typedef symplectic_rkn_sb3a_mclachlan<coord_type, coord_type, double, coord_type, coord_type, double, range_algebra,
       default_operations, always_resizer>
       hamiltonian_stepper;

@@ -9,10 +9,10 @@
  * http://www.boost.org/LICENSE_1_0.txt)
  */
 
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
-#include <fstream>
 
 #ifndef M_PI            // not there on windows
 #define M_PI 3.1415927  //...

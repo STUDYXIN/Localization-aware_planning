@@ -14,8 +14,8 @@
 
 #include <gmpxx.h>
 
-#include <boost/test/unit_test.hpp>
 #include <boost/array.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include <boost/mpl/vector.hpp>
 
@@ -32,7 +32,8 @@ const int precision = 1024;
 typedef mpf_class value_type;
 typedef mpf_class state_type;
 
-// provide min, max and pow functions for mpf types - required for controlled steppers
+// provide min, max and pow functions for mpf types - required for controlled
+// steppers
 value_type min(const value_type a, const value_type b) {
   if (a < b)
     return a;
@@ -80,7 +81,7 @@ typedef mpl::vector<euler<state_type, value_type, state_type, value_type, vector
     runge_kutta_cash_karp54_classic<state_type, value_type, state_type, value_type, vector_space_algebra>,
     runge_kutta_cash_karp54<state_type, value_type, state_type, value_type, vector_space_algebra>,
     runge_kutta_dopri5<state_type, value_type, state_type, value_type, vector_space_algebra>,
-    runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra> >
+    runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra>>
     stepper_types;
 
 template <class Stepper>
@@ -94,8 +95,9 @@ struct perform_integrate_const_test {
     mpf_init(eps_);
     mpf_init(unity);
     mpf_set_d(unity, 1.0);
-    mpf_div_2exp(eps_, unity, precision - 1);  // 2^(-precision+1) : smallest number that can be
-                                               // represented with used precision
+    mpf_div_2exp(eps_, unity,
+        precision - 1);  // 2^(-precision+1) : smallest number that can
+                         // be represented with used precision
     value_type eps(eps_);
 
     Stepper stepper;
@@ -123,11 +125,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(integrate_const_test, Stepper, stepper_types) {
   tester();
 }
 
-typedef mpl::vector<controlled_runge_kutta<
-                        runge_kutta_cash_karp54_classic<state_type, value_type, state_type, value_type, vector_space_algebra> >,
-    controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, state_type, value_type, vector_space_algebra> >,
-    controlled_runge_kutta<runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra> >,
-    bulirsch_stoer<state_type, value_type, state_type, value_type, vector_space_algebra> >
+typedef mpl::vector<
+    controlled_runge_kutta<runge_kutta_cash_karp54_classic<state_type, value_type, state_type, value_type, vector_space_algebra>>,
+    controlled_runge_kutta<runge_kutta_dopri5<state_type, value_type, state_type, value_type, vector_space_algebra>>,
+    controlled_runge_kutta<runge_kutta_fehlberg78<state_type, value_type, state_type, value_type, vector_space_algebra>>,
+    bulirsch_stoer<state_type, value_type, state_type, value_type, vector_space_algebra>>
     controlled_stepper_types;
 
 template <class Stepper>
@@ -140,8 +142,9 @@ struct perform_integrate_adaptive_test {
     mpf_init(eps_);
     mpf_init(unity);
     mpf_set_d(unity, 1.0);
-    mpf_div_2exp(eps_, unity, precision - 1);  // 2^(-precision+1) : smallest number that can be
-                                               // represented with used precision
+    mpf_div_2exp(eps_, unity,
+        precision - 1);  // 2^(-precision+1) : smallest number that can
+                         // be represented with used precision
     value_type eps(eps_);
 
     Stepper stepper;

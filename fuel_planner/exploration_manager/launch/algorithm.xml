@@ -92,7 +92,7 @@
     <remap from="/map_ros/cloud" to="$(arg cloud_topic)" />
 
     <param name="feature/using_feature" value="true" />
-    <param name="feature/is_feature_known_globally" value="false" />
+    <param name="feature/is_feature_known_globally" value="true" />
     <param name="feature/load_from_file" value="true" />
     <param name="feature/filename" value="$(arg feature_filename)" />
     <param name="feature/occupied_thr" value="3" />

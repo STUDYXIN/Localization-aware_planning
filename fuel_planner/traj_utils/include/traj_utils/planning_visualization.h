@@ -195,8 +195,8 @@ public:
   void displayArrowList(const vector<Eigen::Vector3d>& list1, const vector<Eigen::Vector3d>& list2, double line_width,
       const Eigen::Vector4d& color, int id, int pub_id);
 
-  void drawCandidateTrajs(
-      const vector<vector<Eigen::Vector3d>> paths, const double resolution, const int best_idx, int pub_id = 8);
+  void drawCandidateTrajs(const vector<vector<Eigen::Vector3d>> paths, const vector<bool> valids, const double resolution,
+      const int best_idx, int pub_id = 8);
   // draw a piece-wise straight line path
   void drawGeometricPath(const vector<Eigen::Vector3d>& path, double resolution, const Eigen::Vector4d& color, int id = 0);
   // draw a polynomial trajectory

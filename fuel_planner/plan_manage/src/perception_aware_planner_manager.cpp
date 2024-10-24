@@ -620,13 +620,14 @@ void FastPlannerManager::selectBestTraj(const Vector3d& start_pos, const Vector3
   }
 
   // Step4: 为每段备选waypoint计算各项cost
-  vector<bool> if_perc_cost_valid_;
+  // vector<bool> if_perc_cost_valid_;
+  plan_data_.if_perc_cost_valid_.clear();
   vector<Eigen::Vector4d> metric_;
 
   for (size_t i = 0; i < plan_data_.candidate_pos_.size(); i++) {
     double R_perc;
     bool ifvalid = calPerceptionCost(i, R_perc);
-    if_perc_cost_valid_.emplace_back(ifvalid);
+    plan_data_.if_perc_cost_valid_.emplace_back(ifvalid);
 
     double R_goal = calGoalProcessCost(i);
     double R_col = pp_.k_col_;
@@ -646,12 +647,12 @@ void FastPlannerManager::selectBestTraj(const Vector3d& start_pos, const Vector3
 
   // 如果备选簇中有至少一个perc_cost有效的轨迹，那就让所有perc_cost有效的轨迹来参与排序
   vector<double> scores;
-  if (std::any_of(if_perc_cost_valid_.begin(), if_perc_cost_valid_.end(), [](bool v) { return v; })) {
+  if (std::any_of(plan_data_.if_perc_cost_valid_.begin(), plan_data_.if_perc_cost_valid_.end(), [](bool v) { return v; })) {
     // Handle the case where there is at least one valid perception cost
     ROS_INFO("There is at least one valid perception cost.");
 
     for (size_t i = 0; i < plan_data_.candidate_pos_.size(); i++) {
-      if (!if_perc_cost_valid_[i]) {
+      if (!plan_data_.if_perc_cost_valid_[i]) {
         scores.emplace_back(std::numeric_limits<double>::min());
       }
 

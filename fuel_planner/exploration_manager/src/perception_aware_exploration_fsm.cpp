@@ -283,7 +283,8 @@ void PAExplorationFSM::visualize() {
   auto plan_data = &planner_manager_->plan_data_;
 
   // 可视化备选轨迹簇
-  visualization_->drawCandidateTrajs(plan_data->candidate_trajs_vis_, 0.075, plan_data->best_traj_idx_);
+  visualization_->drawCandidateTrajs(
+      plan_data->candidate_trajs_vis_, plan_data->if_perc_cost_valid_, 0.075, plan_data->best_traj_idx_);
   // 可视化真正用来算cost的那些waypoint
 
   // 可视化位置轨迹

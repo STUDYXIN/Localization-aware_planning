@@ -754,7 +754,7 @@ void PlanningVisualization::displayArrowList(
 }
 
 void PlanningVisualization::drawCandidateTrajs(
-    const vector<vector<Vector3d>> paths, const double resolution, const int best_idx, int pub_id) {
+    const vector<vector<Vector3d>> paths, const vector<bool> valids, const double resolution, const int best_idx, int pub_id) {
 
   // cout << "displayArrowList" << endl;
   if (pubs_[pub_id].getNumSubscribers() == 0) return;
@@ -785,6 +785,8 @@ void PlanningVisualization::drawCandidateTrajs(
     mk.pose.orientation.w = 1.0;
 
     Eigen::Vector4d color = (i == best_idx) ? Eigen::Vector4d(0.0, 1.0, 0.0, 1.0) : Eigen::Vector4d(0.0, 0.0, 0.0, 1);
+
+    if (!valids[i]) color << 1.0, 1.0, 0.0, 1.0;
 
     // Eigen::Vector4d color(0.0, 1.0, 0.0, 1.0);
 

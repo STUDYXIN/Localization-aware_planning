@@ -233,7 +233,7 @@ public:
   vector<vector<Eigen::Vector3d>> candidate_pos_;
   vector<vector<Eigen::Vector3d>> candidate_acc_;
   vector<vector<double>> candidate_yaw_;
-  // vector<bool> if_perc_cost_valid_;
+  vector<bool> if_perc_cost_valid_;
   // vector<Eigen::Vector4d> metric_;
 
   vector<Eigen::Vector3d> global_waypoints_;
